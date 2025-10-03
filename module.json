@@ -1,0 +1,22 @@
+{
+  "id": "gb-socket-items",
+  "title": "GB - Socket Items",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "Gustavo Bacelar",
+      "flags": {}
+    }
+  ],
+  "flags": {
+    "canUpload": true
+  },
+  "description": "",
+  "esmodules": [
+    "scripts/main.js"
+  ]
+}

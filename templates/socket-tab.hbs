@@ -1,0 +1,73 @@
+<section class="sockets tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}"
+  data-application-part="{{partId}}">
+
+  <section class="items-list sockets-list" data-item-list="sockets">
+    <div class="items-section card" data-socket-type="default">
+
+      <div class="items-header header">
+        <h3 class="item-name socket-name">Sockets</h3>
+        <div class="item-header socket-source">Slot</div>
+        <div class="item-header item-controls socket-controls">
+          <a class="socket-control item-control always-interactive" data-action="addSocketSlot" data-tooltip
+            aria-label="{{ localize 'DND5E.Add' }}">
+            <i class="fas fa-plus"></i> {{ localize "DND5E.Add" }}
+          </a>
+        </div>
+      </div>
+
+      {{#if sockets.length}}
+      <ol class="item-list unlist">
+        {{#each sockets as |slot i|}}
+        <li class="item flexrow socket-row" data-index="{{i}}" data-dropzone="socket-slot" aria-dropeffect="copy"
+          tabindex="0" role="button">
+
+          <!-- Coluna 1: nome/ícone -->
+          <div class="item-name socket-name">
+            <img class="item-image socket-icon" src="{{slot.img}}" alt="{{slot.name}}">
+            <div class="name name-stacked">
+              <span class="title">{{slot.name}}</span>
+              {{#if slot.gem}}
+              <small>({{slot.gem.name}})</small>
+              {{else}}
+              <small class="muted">{{ localize "DND5E.Empty" }}</small>
+              {{/if}}
+            </div>
+          </div>
+
+          <!-- Coluna 2: “source” -->
+          <div class="item-detail socket-source {{#unless slot.gem}}empty{{/unless}}">
+            {{#if slot.gem}}
+            {{slot.gem.name}}
+            {{else}}
+            &ndash;
+            {{/if}}
+          </div>
+
+
+          <!-- Coluna 3: controles -->
+          <div class="item-detail item-controls socket-controls">
+            {{#if ../editable}}
+              <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{i}}"
+                aria-label="{{ localize 'GBSockets.RemoveGem' }}">
+                <i class="fas fa-circle-xmark"></i>
+              </a>
+              <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{i}}" data-tooltip
+                aria-label="{{ localize 'DND5E.Delete' }}">
+                <i class="fas fa-trash"></i>
+              </a>
+            {{/if}}
+          </div>
+        </li>
+        {{/each}}
+      </ol>
+      {{else}}
+      <ol class="item-list unlist">
+        <li class="notification info" data-dropzone="socket-slot" aria-dropeffect="copy">
+          {{ localize "DND5E.None" }}
+        </li>
+      </ol>
+      {{/if}}
+
+    </div>
+  </section>
+</section>
