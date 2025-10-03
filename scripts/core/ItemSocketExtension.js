@@ -2,10 +2,9 @@
 import { SheetExtension } from "./SheetExtension.js";
 import { DialogHelper } from "../helpers/DialogHelper.js";
 import { DragHelper } from "../helpers/DragHelper.js";
-import { SocketManager } from "./SocketManager.js";
+import { SocketService } from "./services/SocketService.js";
 
 export class ItemSocketExtension extends SheetExtension {
-  // Constantes de UI (evita typos e facilita manutenção)
   static TAB_ID = "sockets";
   static PART_ID = "item-sockets-part";
 
@@ -18,11 +17,11 @@ export class ItemSocketExtension extends SheetExtension {
     this.#registerPart();
     this.#registerContext();
     this.#registerActions();
-
-    Hooks.on("renderItemSheet5e", (sheet) => this.#bindDnD(sheet));
+    Hooks.on("renderItemSheet5e", (sheet) => {
+      this.#bindDnD(sheet);
+    });
   }
 
-  // Reutilizável em várias verificações
   #isSockeable = this.makeItemCondition({ types: ["weapon", "equipment"] });
 
   #registerTab() {
@@ -42,16 +41,14 @@ export class ItemSocketExtension extends SheetExtension {
   }
 
   #registerContext() {
-    // Se você renomeou na SheetExtension para addContext, beleza.
-    // Caso contrário, troque para this.injectContext(...)
     this.addContext(ItemSocketExtension.PART_ID, (sheet, ctx) => {
-      // Dados apenas via service (sem lógica de domínio aqui)
       ctx.editable = sheet.isEditable;
       ctx.dataEditable = ctx.editable ? "true" : "false";
 
-      ctx.sockets = SocketManager.get(sheet.item);
+      // Leia via Service (evita acoplar UI ao store/flags)
+      ctx.sockets = SocketService.getSlots(sheet.item);
 
-      // Estado de UI (ativo) sem jQuery
+      // Estado visual da aba
       const node = sheet.element?.querySelector(
         `[data-application-part="${ItemSocketExtension.PART_ID}"]`
       );
@@ -73,59 +70,72 @@ export class ItemSocketExtension extends SheetExtension {
     this.addActions({
       async addSocketSlot(event) {
         event.preventDefault();
-        await SocketManager.add(this.item);
+        await SocketService.addSlot(this.item);
+        this.sheet?.render();
       },
 
       async removeSocketSlot(event, target) {
         event.preventDefault();
         event.stopPropagation();
 
-        const idx = Number(
-          target.dataset.index ?? target.closest("[data-index]")?.dataset.index
-        );
-        if (!Number.isInteger(idx)) return;
+        const idx = Number(target.dataset.index ?? target.closest("[data-index]")?.dataset.index);
+        if (!Number.isInteger(idx)) {
+          return;
+        }
 
         if (!event.shiftKey) {
           const ok = await DialogHelper.confirmDeleteSocket();
-          if (!ok) return;
+          if (!ok) {
+            return;
+          }
         }
 
-        await SocketManager.removeGem(this.item, idx);
-        await SocketManager.remove(this.item, idx);
+        // garante estado limpo: tira a gema (se houver) e remove o slot
+        await SocketService.removeGem(this.item, idx);
+        await SocketService.removeSlot(this.item, idx);
+        this.sheet?.render();
       },
 
       async removeGemFromSlot(event, target) {
         event.preventDefault();
         event.stopPropagation();
 
-        const idx = Number(
-          target.dataset.index ?? target.closest("[data-index]")?.dataset.index
-        );
-        if (!Number.isInteger(idx)) return;
+        const idx = Number(target.dataset.index ?? target.closest("[data-index]")?.dataset.index);
+        if (!Number.isInteger(idx)) {
+          return;
+        }
 
         if (!event.shiftKey) {
-          const ok = await DialogHelper.confirmGeneric('Title', 'Are you sure you want to remove the gem from this slot?');
-          if (!ok) return;
+          const ok = await DialogHelper.confirmGeneric(
+            "Remove Gem",
+            "Are you sure you want to remove the gem from this slot?"
+          );
+          if (!ok) {
+            return;
+          }
         }
-        await SocketManager.removeGem(this.item, idx); // -1 = todos 
+
+        await SocketService.removeGem(this.item, idx);
+        this.sheet?.render();
       }
-      
     });
   }
 
   #bindDnD(sheet) {
-    const isSockeable = this.#isSockeable(sheet.item);
-    if (!isSockeable) return;
-
+    if (!this.#isSockeable(sheet.item)) {
+      return;
+    }
     const root = sheet.element;
-    if (!root) return;
+    if (!root) {
+      return;
+    }
 
     DragHelper.bindDropZones(
       root,
-      '[data-dropzone="socket-slot"]', // <- slot, não o container
+      '[data-dropzone="socket-slot"]',
       async ({ data, index }) => {
-        await SocketManager.addGem(sheet.item, index, data); // valida, troca img e copia efeitos
-        sheet.render(); // re-render para refletir a imagem do slot
+        await SocketService.addGem(sheet.item, index, data);
+        sheet.render();
       }
     );
   }

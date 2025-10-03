@@ -1,4 +1,3 @@
-// helpers/DragHelper.js
 export class DragHelper {
   /**
    * Liga DnD em elementos que combinem com o selector.

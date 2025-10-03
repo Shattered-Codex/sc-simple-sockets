@@ -17,15 +17,6 @@ Hooks.once("setup", () => {
 
 });
 
-// Hooks.once("setup", () => {
-//   console.log(`${Constants.MODULE_ID} | setup`);
-//   GemstoneItemSheet.registerSheet();
-//   SocketItemSheet.registerSheet();
-// });
-
-// Hooks.once("ready", () => {
-//   console.log(`${Constants.MODULE_ID} | ready`);
-// });
 
 Hooks.on("updateItem", async (item, changes) => {
   const typeChanged =

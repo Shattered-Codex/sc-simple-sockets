@@ -1,4 +1,3 @@
-// ui/DialogHelper.js
 export class DialogHelper {
   static async confirmDeleteSocket() {
     const { DialogV2 } = foundry.applications.api;
