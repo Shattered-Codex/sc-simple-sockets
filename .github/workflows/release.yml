@@ -34,10 +34,6 @@ jobs:
       # --- STEP 3: Detect merged branch from PR ---
       - name: Detect merged branch from PR
         id: merged_branch
-        shell: bash
-        env:
-          MODULE_ID: ci-workflows
-          GH_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }}
         run: |
           echo "Fetching merged branch via GitHub CLI..."
           MERGED_BRANCH=$(gh pr list \
