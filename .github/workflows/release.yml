@@ -8,3 +8,5 @@ on:
 jobs:
   release:
     uses: Shattered-Codex/ci-workflows/.github/workflows/foundry-ci-release.yml@v1
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }}
