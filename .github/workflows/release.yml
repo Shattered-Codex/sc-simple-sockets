@@ -7,22 +7,25 @@
 #   - Updates module.json manifest
 #   - Packages module files into ZIP
 #   - Publishes GitHub Release
-#   - Works for private repos in Free Plan
+#   - Fully compatible with private repos in Free Plan
 # ==========================================================
 
 name: Release
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:   # Allows manual run
   push:
     branches:
-      - main  # Trigger only on merges to main
+      - main          # Trigger only when PRs are merged into main
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required to create tags, commits, releases
+      contents: write   # Required to create tags, commits, releases
+
+    env:
+      GH_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }}  # PAT with 'repo' scope
 
     steps:
       # --- STEP 1: Checkout repository ---
@@ -37,8 +40,6 @@ jobs:
       - name: Detect merged branch from PR
         id: merged_branch
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }} # Personal Access Token with repo+workflow
         run: |
           echo "Fetching merged branch via GitHub CLI..."
           MERGED_BRANCH=$(gh pr list \
@@ -47,6 +48,7 @@ jobs:
             --limit 1 \
             --json number,headRefName \
             -q '.[0].headRefName')
+          
           if [[ -z "$MERGED_BRANCH" ]]; then
             echo "Cannot detect merged branch, defaulting to patch/unknown"
             MERGED_BRANCH="patch/unknown"
