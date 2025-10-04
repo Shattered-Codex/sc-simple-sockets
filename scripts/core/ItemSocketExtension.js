@@ -1,4 +1,3 @@
-// ItemSocketExtension.js
 import { SheetExtension } from "./SheetExtension.js";
 import { DialogHelper } from "../helpers/DialogHelper.js";
 import { DragHelper } from "../helpers/DragHelper.js";
@@ -45,10 +44,8 @@ export class ItemSocketExtension extends SheetExtension {
       ctx.editable = sheet.isEditable;
       ctx.dataEditable = ctx.editable ? "true" : "false";
 
-      // Leia via Service (evita acoplar UI ao store/flags)
       ctx.sockets = SocketService.getSlots(sheet.item);
 
-      // Estado visual da aba
       const node = sheet.element?.querySelector(
         `[data-application-part="${ItemSocketExtension.PART_ID}"]`
       );

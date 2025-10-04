@@ -3,17 +3,18 @@ import { SheetExtension } from "./core/SheetExtension.js";
 import { GemSheetExtension } from "./core/GemSheetExtension.js";
 import { ItemSocketExtension } from "./core/ItemSocketExtension.js";
 import { EffectHandler } from "./handlers/EffectHandler.js";
+import { ActorGemBadges } from "./core/ui/ActorGemBadges.js";
 
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
 
 Hooks.once("setup", () => {
-  // console.log(dnd5e.applications.item.ItemSheet5e.TABS);
   console.log(`${Constants.MODULE_ID} | setup`);
   console.log("HELLO WORLD");
   gemSheet.applyChanges();
   itemSocketSheet.applyChanges();
+  ActorGemBadges.init();
 
 });
 
@@ -54,4 +55,7 @@ Hooks.on("preCreateItem", (item, data) => {
     // Grava na fonte do documento pendente
     item.updateSource({ effects: incoming });
   }
+
+
+
 });

@@ -8,7 +8,10 @@ export class GemSheetExtension extends SheetExtension {
   }
 
   static getRules() {
-    return { types: "loot", subtype: "gem" };
+    return {
+      types: Constants.ITEM_TYPE_LOOT,
+      subtype: Constants.ITEM_SUBTYPE_GEM
+    };
   }
 
   applyChanges() {

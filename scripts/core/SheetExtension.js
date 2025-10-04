@@ -209,17 +209,16 @@ export class SheetExtension {
     rec.installed = true;
 
     const Cls = this.sheetClass;
-    const proto = Cls.prototype;
+    const proto = Cls?.prototype;
     const moduleId = this.moduleId;
 
-    // Ensure the method exists
     const original = proto?.[method];
     if (typeof original !== "function") {
-      console.warn(`[${moduleId}] ${Cls.name}.prototype.${method} not found – nothing to wrap.`);
+      console.warn(`[${moduleId}] ${Cls?.name ?? "Sheet"}.prototype.${method} not found – nothing to wrap.`);
       return;
     }
 
-    // Common executor
+    // executor comum (roda original e depois os injectors)
     const run = async function (partId, context, options, callOriginal) {
       context = await callOriginal(partId, context, options);
       const { injectors } = SheetExtension.#registry.get(Cls) ?? {};
@@ -235,37 +234,63 @@ export class SheetExtension {
       return context;
     };
 
-    const wrapFn = function (wrapped, partId, context, options) {
+    const wrapInvoker = function (wrapped, partId, context, options) {
       return run.call(this, partId, context, options, (...args) => wrapped.call(this, ...args));
     };
 
-    // 1) Prefer libWrapper: can register by function reference
-    const applyPatch = () => {
-      if (globalThis.libWrapper) {
+    // Resolve um caminho string global para o Cls, se possível
+    const resolveGlobalPath = () => {
+      // Caso conhecido: dnd5e
+      if (globalThis.dnd5e?.applications?.item?.ItemSheet5e === Cls) {
+        return `dnd5e.applications.item.ItemSheet5e.prototype.${method}`;
+      }
+      // Procura direta na janela global (atenção: só classes expostas globalmente)
+      for (const key of Object.keys(globalThis)) {
         try {
-          libWrapper.register(
-            moduleId,
-            proto[method],                         // function reference, not string path
-            function (wrapped, partId, context, options) {
-              return wrapFn.call(this, wrapped, partId, context, options);
-            },
-            "WRAPPER"
-          );
-          return;
+          if (globalThis[key] === Cls) return `${key}.prototype.${method}`;
+        } catch { /* ignore getters esquisitos */ }
+      }
+      return null;
+    };
+
+    const installWithLibWrapperString = () => {
+      const targetStr = resolveGlobalPath();
+      if (!targetStr) return false; // sem caminho, não dá pra string
+      libWrapper.register(
+        moduleId,
+        targetStr, // ✅ string é sempre aceita
+        function (wrapped, partId, context, options) {
+          return wrapInvoker.call(this, wrapped, partId, context, options);
+        },
+        "WRAPPER"
+      );
+      return true;
+    };
+
+    const install = () => {
+      // 1) Tenta libWrapper com STRING (evita a tupla problemática)
+      if (globalThis.libWrapper?.register) {
+        try {
+          const ok = installWithLibWrapperString();
+          if (ok) return;
+          // Se não achou caminho string, faz fallback
+          console.warn(`[${moduleId}] Could not resolve global string path for ${Cls.name}.${method}. Falling back to monkey patch.`);
         } catch (e) {
           console.error(`[${moduleId}] Failed to register libWrapper on ${Cls.name}.${method}`, e);
         }
       }
-      // 2) Fallback: direct monkey-patch
+
+      // 2) Fallback: monkey-patch seguro
       const _orig = original;
       proto[method] = function (partId, context, options) {
-        return wrapFn.call(this, _orig, partId, context, options);
+        return wrapInvoker.call(this, _orig, partId, context, options);
       };
     };
 
-    // If libWrapper exists but is not "Ready" yet, wait for the hook
-    if (globalThis.libWrapper) Hooks.once("libWrapper.Ready", applyPatch);
-    else applyPatch();
+    // Se há libWrapper, espere ele ficar pronto; senão instala já
+    if (globalThis.libWrapper) Hooks.once("libWrapper.Ready", install);
+    else install();
   }
+
 
 }

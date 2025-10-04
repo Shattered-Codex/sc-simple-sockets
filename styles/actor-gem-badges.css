@@ -1,0 +1,14 @@
+.sc-sockets-badges {
+  display: flex;
+  flex-wrap: wrap;       /* permite quebrar em várias linhas */
+  gap: 3px;              /* espaço entre gemas */
+  margin-left: 6px;
+  max-width: 200px;      /* opcional: limite horizontal para forçar quebra */
+}
+
+.sc-sockets-badges .gem img {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+  object-fit: cover;
+}

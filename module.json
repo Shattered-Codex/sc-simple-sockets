@@ -1,6 +1,6 @@
 {
-  "id": "gb-socket-items",
-  "title": "GB - Socket Items",
+  "id": "sc-simple-sockets",
+  "title": "SC - Simple Sockets",
   "version": "1.0.0",
   "compatibility": {
     "minimum": "13",
@@ -10,6 +10,14 @@
     {
       "name": "Gustavo Bacelar",
       "flags": {}
+    },
+    {
+      "name": "Bruno Bicudo",
+      "flags": {}
+    },
+    {
+      "name": "Felipe Gibin",
+      "flags": {}
     }
   ],
   "flags": {
@@ -18,5 +26,8 @@
   "description": "",
   "esmodules": [
     "scripts/main.js"
+  ],
+  "styles": [
+    "styles/actor-gem-badges.css"
   ]
 }
