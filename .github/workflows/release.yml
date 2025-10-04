@@ -91,6 +91,13 @@ jobs:
             module.json README.md LICENSE CHANGELOG.md \
             css/ img/ lang/ packs/ scripts/ templates/ || true
 
+      # --- STEP 7: Ensure CHANGELOG.md exists ---
+      - name: Ensure CHANGELOG.md exists
+        run: |
+          if [ ! -f CHANGELOG.md ]; then
+            echo "No changelog yet." > CHANGELOG.md
+          fi
+
       # --- STEP 7: Publish GitHub Release ---
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
