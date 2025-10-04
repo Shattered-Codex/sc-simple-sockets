@@ -1,0 +1,110 @@
+# .github/workflows/release.yml
+# ==========================================================
+# Release workflow for Foundry VTT modules (merge-based)
+# Features:
+#   - Detect merged branch name from PR (major/minor/patch)
+#   - Automatic semantic version bump
+#   - Updates module.json manifest
+#   - Packages module files into ZIP
+#   - Publishes GitHub Release
+#   - Fully compatible with private repos in Free Plan
+# ==========================================================
+
+name: Release
+
+on:
+  workflow_dispatch:   # Allows manual run
+  push:
+    branches:
+      - main          # Trigger only when PRs are merged into main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Required to create tags, commits, releases
+
+    env:
+      GH_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }}  # PAT with 'repo' scope
+
+    steps:
+      # --- STEP 1: Checkout repository ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- STEP 2: Set MODULE_ID from repo name ---
+      - name: Set MODULE_ID
+        run: echo "MODULE_ID=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      # --- STEP 3: Detect merged branch from PR ---
+      - name: Detect merged branch from PR
+        id: merged_branch
+        shell: bash
+        run: |
+          echo "Fetching merged branch via GitHub CLI..."
+          MERGED_BRANCH=$(gh pr list \
+            --state merged \
+            --base main \
+            --limit 1 \
+            --json number,headRefName \
+            -q '.[0].headRefName')
+          
+          if [[ -z "$MERGED_BRANCH" ]]; then
+            echo "Cannot detect merged branch, defaulting to patch/unknown"
+            MERGED_BRANCH="patch/unknown"
+          fi
+
+          PREFIX=$(echo "$MERGED_BRANCH" | cut -d'/' -f1)
+          if [[ "$PREFIX" != "major" && "$PREFIX" != "minor" && "$PREFIX" != "patch" ]]; then
+            PREFIX="patch"
+          fi
+
+          echo "Merged branch: $MERGED_BRANCH"
+          echo "BUMP_TYPE=$PREFIX" >> $GITHUB_ENV
+          echo "MERGED_BRANCH=$MERGED_BRANCH" >> $GITHUB_ENV
+
+      # --- STEP 4: Bump version and push tag ---
+      - name: Bump semantic version
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.CI_WORKFLOWS_TOKEN }}
+          default_bump: ${{ env.BUMP_TYPE }}
+
+      # --- STEP 5: Update module.json manifest ---
+      - name: Update module manifest
+        uses: microsoft/variable-substitution@v1
+        with:
+          files: "module.json"
+        env:
+          version: ${{ steps.tag_version.outputs.new_version }}
+          id: ${{ env.MODULE_ID }}
+          url: https://github.com/${{ github.repository }}
+          download: https://github.com/${{ github.repository }}/releases/download/${{ steps.tag_version.outputs.new_tag }}/${{ env.MODULE_ID }}.zip
+          manifest: https://github.com/${{ github.repository }}/releases/latest/download/module.json
+          flags.hotReload: false
+
+      # --- STEP 6: Create ZIP archive ---
+      - name: Create ZIP archive
+        run: |
+          zip -r ./${{ env.MODULE_ID }}.zip \
+            module.json README.md LICENSE CHANGELOG.md \
+            css/ img/ lang/ packs/ scripts/ templates/ || true
+
+      # --- STEP 7: Ensure CHANGELOG.md exists ---
+      - name: Ensure CHANGELOG.md exists
+        run: |
+          if [ ! -f CHANGELOG.md ]; then
+            echo "No changelog yet." > CHANGELOG.md
+          fi
+
+      # --- STEP 7: Publish GitHub Release ---
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          bodyFile: CHANGELOG.md
+          allowUpdates: true
+          artifacts: "./module.json, ./${{ env.MODULE_ID }}.zip, ./CHANGELOG.md"
+          token: ${{ secrets.CI_WORKFLOWS_TOKEN }}
