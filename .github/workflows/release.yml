@@ -1,15 +1,102 @@
-name: Release
+# .github/workflows/foundry-module-release.yml
+# ==========================================================
+# Reusable workflow for Foundry VTT modules (merge-based release).
+# Features:
+#   - Detects merged branch name from PR (major/minor/patch)
+#   - Automatic semantic version bump
+#   - Updates module.json manifest
+#   - Packages module files into ZIP
+#   - Publishes GitHub Release
+#   - Deletes merged branch automatically
+# Versionable via Git tag (@v1, @v2, etc.)
+
+name: Foundry Module Release
 
 on:
+  workflow_call:
+    secrets:
+      GITHUB_TOKEN:
+        required: true
   workflow_dispatch:
-  push:
-    branches:
-      - main  # Only trigger workflow when PRs are merged into main
 
 jobs:
-  release:
-    uses: Shattered-Codex/ci-workflows/.github/workflows/foundry-ci-release.yml@main
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }}
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for tags, commits, releases
 
-      
+    steps:
+      # --- STEP 1: Checkout repository ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # --- STEP 2: Derive MODULE_ID from repository name ---
+      - name: Set MODULE_ID from repo name
+        run: echo "MODULE_ID=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      # --- STEP 3: Detect merged branch from PR ---
+      - name: Detect merged branch from PR
+        id: merged_branch
+        shell: bash
+        env:
+          MODULE_ID: ci-workflows
+          GH_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }}
+        run: |
+          echo "Fetching merged branch via GitHub CLI..."
+          MERGED_BRANCH=$(gh pr list \
+            --state merged \
+            --base main \
+            --sort mergedAt:desc \
+            --json number,headRefName \
+            -q '.[0].headRefName')
+          if [[ -z "$MERGED_BRANCH" ]]; then
+            echo "Cannot detect merged branch, defaulting to patch/unknown"
+            MERGED_BRANCH="patch/unknown"
+          fi
+
+          PREFIX=$(echo "$MERGED_BRANCH" | cut -d'/' -f1)
+          if [[ "$PREFIX" != "major" && "$PREFIX" != "minor" && "$PREFIX" != "patch" ]]; then
+            PREFIX="patch"
+          fi
+
+          echo "Merged branch: $MERGED_BRANCH"
+          echo "BUMP_TYPE=$PREFIX" >> $GITHUB_ENV
+          echo "MERGED_BRANCH=$MERGED_BRANCH" >> $GITHUB_ENV
+
+      # --- STEP 4: Create semantic version tag based on merged branch ---
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: ${{ env.BUMP_TYPE }}
+
+      # --- STEP 5: Update module.json manifest ---
+      - name: Update module manifest
+        uses: microsoft/variable-substitution@v1
+        with:
+          files: "module.json"
+        env:
+          version: ${{ steps.tag_version.outputs.new_version }}
+          id: ${{ env.MODULE_ID }}
+          url: https://github.com/${{ github.repository }}
+          download: https://github.com/${{ github.repository }}/releases/download/${{ steps.tag_version.outputs.new_tag }}/${{ env.MODULE_ID }}.zip
+          manifest: https://github.com/${{ github.repository }}/releases/latest/download/module.json
+          flags.hotReload: false
+
+      # --- STEP 6: Package module files into ZIP ---
+      - name: Create ZIP archive
+        run: zip -r ./${{ env.MODULE_ID }}.zip \
+          module.json README.md LICENSE CHANGELOG.md \
+          css/ img/ lang/ packs/ scripts/ templates/ || true
+
+      # --- STEP 7: Publish GitHub Release ---
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          bodyFile: CHANGELOG.md
+          allowUpdates: true
+          artifacts: "./module.json, ./${{ env.MODULE_ID }}.zip, ./CHANGELOG.md"
+          token: ${{ secrets.GITHUB_TOKEN }}
