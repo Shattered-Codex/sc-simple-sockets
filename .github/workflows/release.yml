@@ -7,4 +7,4 @@ on:
 
 jobs:
   release:
-    uses: Shattered-Codex/ci-workflows/.github/workflows/foundry-module-release.yml@v1
+    uses: Shattered-Codex/ci-workflows/.github/workflows/foundry-ci-release.yml@v1
