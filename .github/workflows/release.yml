@@ -14,9 +14,6 @@ name: Foundry Module Release
 
 on:
   workflow_call:
-    secrets:
-      GITHUB_TOKEN:
-        required: true
   workflow_dispatch:
 
 jobs:
@@ -68,7 +65,7 @@ jobs:
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.CI_WORKFLOWS_TOKEN }}
           default_bump: ${{ env.BUMP_TYPE }}
 
       # --- STEP 5: Update module.json manifest ---
