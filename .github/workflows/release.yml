@@ -98,7 +98,19 @@ jobs:
             echo "No changelog yet." > CHANGELOG.md
           fi
 
-      # --- STEP 7: Publish GitHub Release ---
+      # --- STEP 8: Generate CHANGELOG.md ---
+      - name: Generate CHANGELOG.md
+        shell: bash
+        run: |
+          echo "Generating CHANGELOG.md from commits..."
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            git log --pretty=format:"* %s" > CHANGELOG.md
+          else
+            git log $LAST_TAG..HEAD --pretty=format:"* %s" > CHANGELOG.md
+          fi
+
+      # --- STEP 9: Publish GitHub Release ---
       - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
