@@ -21,7 +21,7 @@
         <li class="item flexrow socket-row" data-index="{{i}}" data-dropzone="socket-slot" aria-dropeffect="copy"
           tabindex="0" role="button">
 
-          <!-- Coluna 1: nome/ícone -->
+          <!-- Column 1: name/icon -->
           <div class="item-name socket-name">
             <img class="item-image socket-icon" src="{{slot.img}}" alt="{{slot.name}}">
             <div class="name name-stacked">
@@ -34,7 +34,7 @@
             </div>
           </div>
 
-          <!-- Coluna 2: “source” -->
+          <!-- Column 2: source -->
           <div class="item-detail socket-source {{#unless slot.gem}}empty{{/unless}}">
             {{#if slot.gem}}
             {{slot.gem.name}}
@@ -43,18 +43,17 @@
             {{/if}}
           </div>
 
-
-          <!-- Coluna 3: controles -->
+          <!-- Column 3: controls -->
           <div class="item-detail item-controls socket-controls">
             {{#if ../editable}}
-              <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{i}}"
-                aria-label="{{ localize 'SCSockets.RemoveGem' }}">
-                <i class="fas fa-circle-xmark"></i>
-              </a>
-              <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{i}}" data-tooltip
-                aria-label="{{ localize 'DND5E.Delete' }}">
-                <i class="fas fa-trash"></i>
-              </a>
+            <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{i}}"
+              aria-label="{{ localize 'SCSockets.RemoveGem' }}">
+              <i class="fas fa-circle-xmark"></i>
+            </a>
+            <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{i}}" data-tooltip
+              aria-label="{{ localize 'DND5E.Delete' }}">
+              <i class="fas fa-trash"></i>
+            </a>
             {{/if}}
           </div>
         </li>

@@ -3,17 +3,39 @@ import { Constants } from "../Constants.js";
 export class ActorGemBadges {
   static CSS_CLASS = "sc-sockets-badges";
   static FLAG_KEY = "sockets";
+  static #handlers = new Map();
 
-  static init() {
-    const handlers = [
+  static activate() {
+    if (this.#handlers.size) {
+      return;
+    }
+
+    const hookNames = [
       "renderActorSheet5e",     // dnd5e padrão (ApplicationV2)
       "renderBaseActorSheet",   // alguns módulos
       "renderActorSheet"        // fallback genérico
     ];
-    for (const h of handlers) {
-      Hooks.on(h, (sheet, html, ...rest) => this.#onRenderActorSheet(sheet, html, ...rest));
+
+    for (const hook of hookNames) {
+      const handler = (sheet, html, ...rest) => this.#onRenderActorSheet(sheet, html, ...rest);
+      Hooks.on(hook, handler);
+      this.#handlers.set(hook, handler);
     }
-    console.debug(`[${Constants.MODULE_ID}] ActorGemBadges init OK`);
+
+    console.debug(`[${Constants.MODULE_ID}] ActorGemBadges activated`);
+  }
+
+  static deactivate() {
+    if (!this.#handlers.size) {
+      return;
+    }
+
+    for (const [hook, handler] of this.#handlers) {
+      Hooks.off(hook, handler);
+    }
+    this.#handlers.clear();
+
+    console.debug(`[${Constants.MODULE_ID}] ActorGemBadges deactivated`);
   }
 
   static #onRenderActorSheet(sheet, html) {
