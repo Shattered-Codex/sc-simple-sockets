@@ -5,15 +5,18 @@ export class ActorGemBadges {
   static FLAG_KEY = "sockets";
   static #handlers = new Map();
 
+  /**
+   * Activates badge rendering on supported actor sheets.
+   */
   static activate() {
     if (this.#handlers.size) {
       return;
     }
 
     const hookNames = [
-      "renderActorSheet5e",     // dnd5e padrão (ApplicationV2)
-      "renderBaseActorSheet",   // alguns módulos
-      "renderActorSheet"        // fallback genérico
+      "renderActorSheet5e",     // dnd5e default (ApplicationV2)
+      "renderBaseActorSheet",   // some modules
+      "renderActorSheet"        // generic fallback
     ];
 
     for (const hook of hookNames) {
@@ -25,6 +28,9 @@ export class ActorGemBadges {
     console.debug(`[${Constants.MODULE_ID}] ActorGemBadges activated`);
   }
 
+  /**
+   * Deactivates badge rendering and removes hooks.
+   */
   static deactivate() {
     if (!this.#handlers.size) {
       return;
@@ -38,6 +44,10 @@ export class ActorGemBadges {
     console.debug(`[${Constants.MODULE_ID}] ActorGemBadges deactivated`);
   }
 
+  /**
+   * Handles rendering of gem badges on actor sheets.
+   * @private
+   */
   static #onRenderActorSheet(sheet, html) {
     const actor = sheet?.actor;
     if (!actor) return;
@@ -60,10 +70,10 @@ export class ActorGemBadges {
       const cell = this.#findItemNameCell(root, item.id);
       if (!cell) continue;
 
-      // remove bloco anterior (idempotente)
+      // Remove previous badge block (idempotent)
       cell.querySelectorAll(`.${this.CSS_CLASS}[data-item-id="${item.id}"]`).forEach(e => e.remove());
 
-      // monta o bloco
+      // Build badge block
       const wrap = document.createElement("div");
       wrap.className = this.CSS_CLASS;
       wrap.dataset.itemId = item.id;
@@ -85,25 +95,31 @@ export class ActorGemBadges {
       cell.appendChild(wrap);
     }
 
-    // debug opcional:
+    // Optional debug:
     // console.debug(`[${Constants.MODULE_ID}] gem badges applied`, {actor: actor.name, count: socketed.length});
   }
 
-  /** Normaliza html -> HTMLElement (funciona com jQuery ou HTMLElement) */
+  /**
+   * Normalizes html to HTMLElement (supports jQuery or HTMLElement).
+   * @private
+   */
   static #rootOf(html) {
     if (!html) return null;
-    // jQuery?
+    // jQuery
     if (html.jquery || typeof html.get === "function") return html[0] ?? html.get(0);
-    // HTMLElement?
+    // HTMLElement
     if (html instanceof Element || html?.querySelector) return html;
-    // alguns temas expõem via sheet.element
+    // Some themes expose via sheet.element
     return null;
   }
 
-  /** Tenta localizar a célula de nome do item em diferentes layouts e retorna o primeiro que existir */
+  /**
+   * Attempts to locate the item name cell in different layouts and returns the first found.
+   * @private
+   */
   static #findItemNameCell(root, itemId) {
     const selectors = [
-      `li.item[data-item-id="${itemId}"] .name`,                              // dnd5e padrão
+      `li.item[data-item-id="${itemId}"] .name`,                              // dnd5e default
       `div.item-table-row-container[data-item-id="${itemId}"] .item-table-cell.primary`, // tidy5e-like
       `[data-item-id="${itemId}"] .name`,
       `[data-item-id="${itemId}"] .item-name`
