@@ -1,15 +1,7 @@
-// core/SheetExtension.js
 import { Constants } from "./Constants.js";
 
-/**
- * SheetExtension (clean)
- * - addTab / updateTabCondition / addPart (no getData)
- * - addContext(partId, fn) to enrich the PART context
- * - addActions to register actions in DEFAULT_OPTIONS.actions
- * - A single wrapper in _preparePartContext (libWrapper if available)
- */
 export class SheetExtension {
-  /** Registry per sheetClass: { installed:boolean, injectors: Map<partId, Set<fn>> } */
+  // Registry per sheetClass: { installed:boolean, injectors: Map<partId, Set<fn>> }
   static #registry = new WeakMap();
 
   constructor(sheetClass, { moduleId = Constants.MODULE_ID, blankTemplatePath } = {}) {
@@ -72,9 +64,9 @@ export class SheetExtension {
   }
 
   /**
-   * Adds a TAB to the AppV2 of the given sheet class.
+   * Adds a tab to the AppV2 of the given sheet class.
    * @param {Object} def
-   * @param {string} def.tab                - Tab ID (e.g.: "effects")
+   * @param {string} def.tab                - Tab ID
    * @param {string} def.label              - Tab label
    * @param {(sheet:any)=>boolean} [def.condition] - If absent, always visible
    */
@@ -118,10 +110,8 @@ export class SheetExtension {
     return true;
   }
 
-  // ---------- Parts ----------
   /**
-   * addPart: only registers the PART (no getData).
-   * To pass data to the template, use injectContext(partId, fn).
+   * Registers a PART (no getData). To pass data to the template, use injectContext(partId, fn).
    */
   addPart({ id, tab, template, setup, replace = false } = {}) {
     if (!id || !tab) throw new Error("addPart: 'id' and 'tab' are required.");
@@ -147,9 +137,7 @@ export class SheetExtension {
   }
 
   /**
-   * injectContext(partId, fn):
-   * Registers a function that receives (sheet, context) and can mutate/return data
-   * to be merged into the context of the corresponding PART after the original.
+   * Registers a function to mutate/return data for the context of the corresponding PART.
    */
   addContext(partId, fn) {
     if (!partId || typeof fn !== "function") {
@@ -218,7 +206,7 @@ export class SheetExtension {
       return;
     }
 
-    // executor comum (roda original e depois os injectors)
+    // Runs the original and then all injectors for the part
     const run = async function (partId, context, options, callOriginal) {
       context = await callOriginal(partId, context, options);
       const { injectors } = SheetExtension.#registry.get(Cls) ?? {};
@@ -238,27 +226,25 @@ export class SheetExtension {
       return run.call(this, partId, context, options, (...args) => wrapped.call(this, ...args));
     };
 
-    // Resolve um caminho string global para o Cls, se possível
+    // Attempts to resolve a global string path for libWrapper registration
     const resolveGlobalPath = () => {
-      // Caso conhecido: dnd5e
       if (globalThis.dnd5e?.applications?.item?.ItemSheet5e === Cls) {
         return `dnd5e.applications.item.ItemSheet5e.prototype.${method}`;
       }
-      // Procura direta na janela global (atenção: só classes expostas globalmente)
       for (const key of Object.keys(globalThis)) {
         try {
           if (globalThis[key] === Cls) return `${key}.prototype.${method}`;
-        } catch { /* ignore getters esquisitos */ }
+        } catch { /* ignore problematic getters */ }
       }
       return null;
     };
 
     const installWithLibWrapperString = () => {
       const targetStr = resolveGlobalPath();
-      if (!targetStr) return false; // sem caminho, não dá pra string
+      if (!targetStr) return false;
       libWrapper.register(
         moduleId,
-        targetStr, // ✅ string é sempre aceita
+        targetStr,
         function (wrapped, partId, context, options) {
           return wrapInvoker.call(this, wrapped, partId, context, options);
         },
@@ -268,29 +254,24 @@ export class SheetExtension {
     };
 
     const install = () => {
-      // 1) Tenta libWrapper com STRING (evita a tupla problemática)
       if (globalThis.libWrapper?.register) {
         try {
           const ok = installWithLibWrapperString();
           if (ok) return;
-          // Se não achou caminho string, faz fallback
           console.warn(`[${moduleId}] Could not resolve global string path for ${Cls.name}.${method}. Falling back to monkey patch.`);
         } catch (e) {
           console.error(`[${moduleId}] Failed to register libWrapper on ${Cls.name}.${method}`, e);
         }
       }
 
-      // 2) Fallback: monkey-patch seguro
+      // Fallback: safe monkey-patch
       const _orig = original;
       proto[method] = function (partId, context, options) {
         return wrapInvoker.call(this, _orig, partId, context, options);
       };
     };
 
-    // Se há libWrapper, espere ele ficar pronto; senão instala já
     if (globalThis.libWrapper) Hooks.once("libWrapper.Ready", install);
     else install();
   }
-
-
 }

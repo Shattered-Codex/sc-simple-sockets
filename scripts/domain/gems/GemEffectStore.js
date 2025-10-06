@@ -1,6 +1,9 @@
-import { Constants } from "../core/Constants.js";
+import { Constants } from "../../core/Constants.js";
 
-export class EffectHandler {
+/**
+ * Persists active effects for gem items so they can be restored later.
+ */
+export class GemEffectStore {
 
   static async stash(item) {
     if (!item?.effects?.size) {

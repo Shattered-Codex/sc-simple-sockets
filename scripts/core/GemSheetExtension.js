@@ -1,27 +1,56 @@
-// GemSheetExtension.js
 import { SheetExtension } from "./SheetExtension.js";
-import { Constants } from "./Constants.js";
+import { GemCriteria } from "../domain/gems/GemCriteria.js";
 
 export class GemSheetExtension extends SheetExtension {
-  constructor() {
-    super(dnd5e.applications.item.ItemSheet5e);
+
+  #criteria;
+  #condition;
+
+  constructor({
+    sheetClass = dnd5e.applications.item.ItemSheet5e,
+    criteria = GemCriteria
+  } = {}) {
+    super(sheetClass);
+    this.#criteria = criteria;
+    this.#condition = this.#resolveCondition(criteria);
   }
 
-  static getRules() {
-    return {
-      types: Constants.ITEM_TYPE_LOOT,
-      subtype: Constants.ITEM_SUBTYPE_GEM
-    };
+  /**
+     * Returns the criteria collaborator used to determine gem eligibility.
+     * @returns {{ definition: object }}
+     */
+  get criteria() {
+    return this.#criteria;
+  }
+
+  /**
+     * Returns the predicate used to determine if the effects tab should render.
+     * @returns {(item: Item|object) => boolean}
+     */
+  get condition() {
+    return this.#condition;
   }
 
   applyChanges() {
-    this.updateTabCondition(
-      "effects",
-      this.makeItemCondition(GemSheetExtension.getRules()),
-      { mode: "or" }
-    );
-
+    this.updateTabCondition("effects", this.#condition, { mode: "or" });
   }
 
+  #resolveCondition(criteria) {
+    if (!criteria) {
+      return this.makeItemCondition();
+    }
 
+    if (typeof criteria?.matches === "function") {
+      return (item) => criteria.matches(item);
+    }
+
+    if (typeof criteria?.matcher === "function") {
+      return (item) => criteria.matcher(item);
+    }
+
+    const definition = criteria?.definition ?? criteria;
+    return this.makeItemCondition(definition);
+  }
 }
+
+

@@ -1,16 +1,15 @@
 import { Constants } from "../core/Constants.js";
 
 export class SocketStore {
-  static FLAGS = { sockets: "sockets" };
 
   static getSlots(item) {
     return foundry.utils.duplicate(
-      item.getFlag(Constants.MODULE_ID, this.FLAGS.sockets) ?? []
+      item.getFlag(Constants.MODULE_ID, Constants.FLAGS.sockets) ?? []
     );
   }
 
   static async setSlots(item, slots) {
-    return item.setFlag(Constants.MODULE_ID, this.FLAGS.sockets, slots);
+    return item.setFlag(Constants.MODULE_ID, Constants.FLAGS.sockets, slots);
   }
 
   static async addSlot(item, defaultSlot) {
