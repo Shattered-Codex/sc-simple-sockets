@@ -1,9 +1,9 @@
 .sc-sockets-badges {
   display: flex;
-  flex-wrap: wrap;       /* permite quebrar em várias linhas */
-  gap: 3px;              /* espaço entre gemas */
+  flex-wrap: wrap;       /* allows wrapping to multiple lines */
+  gap: 3px;              /* space between gems */
   margin-left: 6px;
-  max-width: 200px;      /* opcional: limite horizontal para forçar quebra */
+  max-width: 200px;      /* optional: horizontal limit to force wrapping */
 }
 
 .sc-sockets-badges .gem img {

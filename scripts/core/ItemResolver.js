@@ -1,4 +1,4 @@
-import { Constants } from "./Constants.js";
+import { GemCriteria } from "../domain/gems/GemCriteria.js";
 
 export class ItemResolver {
   static async resolveDraggedItem(data) {
@@ -14,14 +14,7 @@ export class ItemResolver {
   }
 
   static isGem(itemDoc) {
-    if (!itemDoc || itemDoc.documentName !== "Item") {
-      return false;
-    }
-    if (itemDoc.type !== Constants.ITEM_TYPE_LOOT) {
-      return false;
-    }
-    const subtype = foundry.utils.getProperty(itemDoc, "system.type.value");
-    return String(subtype ?? "").toLowerCase() === Constants.ITEM_SUBTYPE_GEM;
+    return GemCriteria.matches(itemDoc);
   }
 
   static snapshotOne(gemItem) {
