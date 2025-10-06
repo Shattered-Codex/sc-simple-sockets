@@ -3,6 +3,7 @@ import { EffectService } from "./EffectService.js";
 import { InventoryService } from "./InventoryService.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { SocketSlot } from "../model/SocketSlot.js";
+import { Constants } from "../Constants.js";
 
 export class SocketService {
   static async addGem(hostItem, idx, source) {
@@ -64,14 +65,30 @@ export class SocketService {
   }
 
   static async addSlot(hostItem) {
+    if (!this.hasRequiredPermission("editSocketPermission")) {
+      return;
+    }
     return SocketStore.addSlot(hostItem, SocketSlot.makeDefault());
   }
 
   static async removeSlot(hostItem, idx) {
+    if (!this.hasRequiredPermission("editSocketPermission")) {
+      return;
+    }
     return SocketStore.removeSlot(hostItem, idx);
   }
 
   static getSlots(hostItem) {
     return SocketStore.getSlots(hostItem);
+  }
+
+  static hasRequiredPermission(permissionConfig) {
+    const requiredEditGemRole = game.settings.get(Constants.MODULE_ID, permissionConfig);
+    if (game.user.role == requiredEditGemRole) {
+      const roleName = Object.keys(CONST.USER_ROLES).find(key => CONST.USER_ROLES[key] == requiredEditGemRole);
+      ui.notifications?.warn?.(`Requires at least ${roleName} role.`);
+      return false;
+    }
+    return true;
   }
 }

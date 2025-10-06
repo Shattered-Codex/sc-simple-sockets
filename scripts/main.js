@@ -9,6 +9,20 @@ import { ActorGemBadges } from "./core/ui/ActorGemBadges.js";
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
 
+Hooks.once("init", async function() {
+  const roles = Object.keys(CONST.USER_ROLES)
+
+  game.settings.register(Constants.MODULE_ID, "editSocketPermission", {
+    name: "Edit Socket Permission",
+    hint: "The minimum role required to add/remove sockets from items.",
+    scope: "world",
+    config: true,
+    type: String,
+    choices: roles,
+    default: CONST.USER_ROLES.PLAYER,
+  });
+})
+
 Hooks.once("setup", () => {
   console.log(`${Constants.MODULE_ID} | setup`);
   console.log("HELLO WORLD");
