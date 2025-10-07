@@ -1,26 +1,19 @@
 import { Constants } from "./core/Constants.js";
-import { SheetExtension } from "./core/SheetExtension.js";
 import { GemSheetExtension } from "./core/GemSheetExtension.js";
 import { ItemSocketExtension } from "./core/ItemSocketExtension.js";
 import { ActorGemBadges } from "./core/ui/ActorGemBadges.js";
 import { GemLifecycleService } from "./domain/gems/GemLifecycleService.js";
+import { ModuleSettings } from "./core/settings/ModuleSettings.js"; 
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
 const lifecycle = new GemLifecycleService();
 
 Hooks.once("init", async function() {
-  const roles = Object.keys(CONST.USER_ROLES)
-
-  game.settings.register(Constants.MODULE_ID, "editSocketPermission", {
-    name: "Edit Socket Permission",
-    hint: "The minimum role required to add/remove sockets from items.",
-    scope: "world",
-    config: true,
-    type: String,
-    choices: roles,
-    default: CONST.USER_ROLES.PLAYER,
-  });
+  console.log(`${Constants.MODULE_ID} | init`);
+  
+  const settings =  new ModuleSettings();
+  settings.register();
 })
 
 Hooks.once("setup", () => {
