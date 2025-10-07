@@ -1,13 +1,20 @@
 import { Constants } from "./core/Constants.js";
-import { SheetExtension } from "./core/SheetExtension.js";
 import { GemSheetExtension } from "./core/GemSheetExtension.js";
 import { ItemSocketExtension } from "./core/ItemSocketExtension.js";
 import { ActorGemBadges } from "./core/ui/ActorGemBadges.js";
 import { GemLifecycleService } from "./domain/gems/GemLifecycleService.js";
+import { ModuleSettings } from "./core/settings/ModuleSettings.js"; 
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
 const lifecycle = new GemLifecycleService();
+
+Hooks.once("init", async function() {
+  console.log(`${Constants.MODULE_ID} | init`);
+  
+  const settings =  new ModuleSettings();
+  settings.register();
+})
 
 Hooks.once("setup", () => {
   console.log(`${Constants.MODULE_ID} | setup`);

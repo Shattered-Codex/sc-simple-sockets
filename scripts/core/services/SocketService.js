@@ -3,6 +3,7 @@ import { EffectService } from "./EffectService.js";
 import { InventoryService } from "./InventoryService.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { SocketSlot } from "../model/SocketSlot.js";
+import { ModuleSettings } from "../settings/ModuleSettings.js";
 
 export class SocketService {
   static async addGem(hostItem, idx, source) {
@@ -51,10 +52,12 @@ export class SocketService {
 
     const slot = slots[idx] ?? {};
 
-    try {
-      await InventoryService.returnOne(hostItem, slot._gemData);
-    } catch (e) {
-      console.warn("return inventory failed:", e);
+    if (!ModuleSettings.shouldDeleteGemOnRemoval()) {
+      try {
+        await InventoryService.returnOne(hostItem, slot._gemData);
+      } catch (e) {
+        console.warn("return inventory failed:", e);
+      }
     }
 
     await EffectService.removeGemEffects(hostItem, idx);
@@ -64,14 +67,27 @@ export class SocketService {
   }
 
   static async addSlot(hostItem) {
+    if (!ModuleSettings.canAddOrRemoveSocket()) {
+      return;
+    }
+    const currentSlots = SocketStore.getSlots(hostItem);
+    const maxSlots = ModuleSettings.getMaxSockets();
+    if (currentSlots.length >= maxSlots) {
+      ui.notifications?.warn?.("Maximum number of sockets reached.");
+      return;
+    }
     return SocketStore.addSlot(hostItem, SocketSlot.makeDefault());
   }
 
   static async removeSlot(hostItem, idx) {
+    if (!ModuleSettings.canAddOrRemoveSocket()) {
+      return;
+    }
     return SocketStore.removeSlot(hostItem, idx);
   }
 
   static getSlots(hostItem) {
     return SocketStore.getSlots(hostItem);
   }
+
 }
