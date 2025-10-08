@@ -87,7 +87,6 @@ export class ItemSocketExtension extends SheetExtension {
           }
         }
 
-        // garante estado limpo: tira a gema (se houver) e remove o slot
         await SocketService.removeGem(this.item, idx);
         await SocketService.removeSlot(this.item, idx);
         this.sheet?.render();
