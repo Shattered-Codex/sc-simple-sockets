@@ -23,11 +23,36 @@
   "flags": {
     "canUpload": true
   },
-  "description": "",
   "esmodules": [
     "scripts/main.js"
   ],
   "styles": [
-    "styles/actor-gem-badges.css"
-  ]
+    {
+      "src": "styles/actor-gem-badges.css"
+    }
+  ],
+  "url": "https://github.com/Shattered-Codex/sc_simple_sockets",
+  "packs": [
+    {
+      "name": "sc-gems",
+      "label": "SC - Gems",
+      "path": "packs/sc-gems",
+      "type": "Item",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "system": "dnd5e"
+    }
+  ],
+  "relationships": {
+    "recommends": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "compatibility": {}
+      }
+    ]
+  },
+  "description": ""
 }
