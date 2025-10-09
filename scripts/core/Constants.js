@@ -5,4 +5,5 @@ export class Constants {
   static FLAG_STASH = "stashedEffects";
   static FLAG_SOURCE_GEM = "sourceGem";
   static FLAGS = { sockets: "sockets" };
+  static SOCKET_SLOT_IMG = `modules/${this.MODULE_ID}/assets/imgs/socket-slot.webp`;
 }
