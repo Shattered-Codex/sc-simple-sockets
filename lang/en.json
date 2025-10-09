@@ -1,0 +1,48 @@
+{
+  "SCSockets": {
+    "TabLabel": "Sockets",
+    "ColumnSlot": "Slot",
+    "ActionAdd": "Add",
+    "ActionDelete": "Delete",
+    "ActionRemoveGem": "Remove Gem",
+    "EmptyList": "None",
+    "SocketEmptyName": "Empty",
+    "SocketEmptyTooltip": "Empty Slot",
+    "Notifications": {
+      "InvalidSocketIndex": "Invalid socket index.",
+      "CannotResolveItem": "Cannot resolve dropped item.",
+      "OnlyGems": "Only gems can be socketed.",
+      "GemUnsocketed": "Gem unsocketed.",
+      "MaxReached": "Maximum number of sockets reached."
+    },
+    "Effects": {
+      "DefaultName": "Gem Effect"
+    },
+    "Settings": {
+      "EditPermission": {
+        "Name": "Edit Socket Permission",
+        "Hint": "The minimum role required to add or remove sockets from items."
+      },
+      "MaxSockets": {
+        "Name": "Maximum Number of Sockets per Item",
+        "Hint": "Maximum number of sockets an item can have. Use -1 for unlimited."
+      },
+      "DeleteOnRemoval": {
+        "Name": "Delete Gem on Removal",
+        "Hint": "If enabled, a gem is destroyed when removed from a socket; otherwise it's returned to the player's inventory."
+      }
+    },
+    "Dialogs": {
+      "DeleteSocket": {
+        "Title": "Delete Socket",
+        "Message": "Are you sure you want to delete this socket?",
+        "Warning": "This action cannot be undone.",
+        "Hint": "Hold Shift to bypass this prompt."
+      },
+      "RemoveGem": {
+        "Title": "Remove Gem",
+        "Message": "Are you sure you want to remove the gem from this slot?"
+      }
+    }
+  }
+}

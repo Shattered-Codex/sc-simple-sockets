@@ -5,12 +5,12 @@
     <div class="items-section card" data-socket-type="default">
 
       <div class="items-header header">
-        <h3 class="item-name socket-name">Sockets</h3>
-        <div class="item-header socket-source">Slot</div>
+        <h3 class="item-name socket-name">{{ localize "SCSockets.TabLabel" }}</h3>
+        <div class="item-header socket-source">{{ localize "SCSockets.ColumnSlot" }}</div>
         <div class="item-header item-controls socket-controls">
           <a class="socket-control item-control always-interactive" data-action="addSocketSlot" data-tooltip
-            aria-label="{{ localize 'DND5E.Add' }}">
-            <i class="fas fa-plus"></i> {{ localize "DND5E.Add" }}
+            aria-label="{{ localize 'SCSockets.ActionAdd' }}">
+            <i class="fas fa-plus"></i> {{ localize "SCSockets.ActionAdd" }}
           </a>
         </div>
       </div>
@@ -42,11 +42,11 @@
           <div class="item-detail item-controls socket-controls">
             {{#if ../editable}}
             <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{i}}"
-              aria-label="{{ localize 'SCSockets.RemoveGem' }}">
+              aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}">
               <i class="fas fa-circle-xmark"></i>
             </a>
             <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{i}}" data-tooltip
-              aria-label="{{ localize 'DND5E.Delete' }}">
+              aria-label="{{ localize 'SCSockets.ActionDelete' }}">
               <i class="fas fa-trash"></i>
             </a>
             {{/if}}
@@ -57,7 +57,7 @@
       {{else}}
       <ol class="item-list unlist">
         <li class="notification info" data-dropzone="socket-slot" aria-dropeffect="copy">
-          {{ localize "DND5E.None" }}
+          {{ localize "SCSockets.EmptyList" }}
         </li>
       </ol>
       {{/if}}

@@ -1,0 +1,10 @@
+packs/**/*.log
+packs/**/LOG*
+packs/**/MANIFEST*
+packs/**/CURRENT
+packs/**/LOCK
+packs/**/000*
+packs/**/*.sst
+
+packs/**/*.old
+packs/**/*.bak

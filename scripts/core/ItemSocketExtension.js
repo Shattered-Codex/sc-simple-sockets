@@ -1,3 +1,4 @@
+import { Constants } from "./Constants.js";
 import { SheetExtension } from "./SheetExtension.js";
 import { DialogHelper } from "../helpers/DialogHelper.js";
 import { DragHelper } from "../helpers/DragHelper.js";
@@ -26,7 +27,7 @@ export class ItemSocketExtension extends SheetExtension {
   #registerTab() {
     this.addTab({
       tab: ItemSocketExtension.TAB_ID,
-      label: "Sockets",
+      label: Constants.localize("SCSockets.TabLabel", "Sockets"),
       condition: this.#isSockeable
     });
   }
@@ -103,8 +104,8 @@ export class ItemSocketExtension extends SheetExtension {
 
         if (!event.shiftKey) {
           const ok = await DialogHelper.confirmGeneric(
-            "Remove Gem",
-            "Are you sure you want to remove the gem from this slot?"
+            "SCSockets.Dialogs.RemoveGem.Title",
+            "SCSockets.Dialogs.RemoveGem.Message"
           );
           if (!ok) {
             return;

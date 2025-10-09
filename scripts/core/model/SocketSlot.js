@@ -3,10 +3,11 @@ import { Constants } from "../Constants.js";
 export class SocketSlot {
   
   static makeDefault() {
+    const name = Constants.localize("SCSockets.SocketEmptyName", "Empty");
     return {
       gem: null,
       img: Constants.SOCKET_SLOT_IMG,
-      name: "Empty"
+      name
     };
   }
 

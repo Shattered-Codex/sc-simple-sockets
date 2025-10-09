@@ -10,7 +10,8 @@ export class EffectService {
     const toCreate = src.map(eff => {
       const data = eff.toObject();
       delete data._id;
-      data.name ??= eff.name ?? gemItem.name ?? "Gem Effect";
+      data.name ??= eff.name ?? gemItem.name ??
+        Constants.localize("SCSockets.Effects.DefaultName", "Gem Effect");
       data.img ??= eff.img ?? gemItem.img;
       data.disabled = false;
       data.transfer = true;
