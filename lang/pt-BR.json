@@ -1,0 +1,48 @@
+{
+  "SCSockets": {
+    "TabLabel": "Soquetes",
+    "ColumnSlot": "Slot",
+    "ActionAdd": "Adicionar",
+    "ActionDelete": "Excluir",
+    "ActionRemoveGem": "Remover gema",
+    "EmptyList": "Nenhum",
+    "SocketEmptyName": "Vazio",
+    "SocketEmptyTooltip": "Slot vazio",
+    "Notifications": {
+      "InvalidSocketIndex": "Índice de soquete inválido.",
+      "CannotResolveItem": "Não foi possível identificar o item solto.",
+      "OnlyGems": "Somente gemas podem ser encaixadas.",
+      "GemUnsocketed": "Gema removida do soquete.",
+      "MaxReached": "Quantidade máxima de soquetes atingida."
+    },
+    "Effects": {
+      "DefaultName": "Efeito de Gema"
+    },
+    "Settings": {
+      "EditPermission": {
+        "Name": "Permissão para editar soquetes",
+        "Hint": "Cargo mínimo necessário para adicionar ou remover soquetes de itens."
+      },
+      "MaxSockets": {
+        "Name": "Número máximo de soquetes por item",
+        "Hint": "Número máximo de soquetes que um item pode ter. Use -1 para ilimitado."
+      },
+      "DeleteOnRemoval": {
+        "Name": "Destruir gema ao remover",
+        "Hint": "Se ativado, a gema é destruída ao ser removida do soquete; caso contrário, volta para o inventário do jogador."
+      }
+    },
+    "Dialogs": {
+      "DeleteSocket": {
+        "Title": "Excluir soquete",
+        "Message": "Tem certeza de que deseja excluir este soquete?",
+        "Warning": "Esta ação não pode ser desfeita.",
+        "Hint": "Segure Shift para pular esta confirmação."
+      },
+      "RemoveGem": {
+        "Title": "Remover gema",
+        "Message": "Tem certeza de que deseja remover a gema deste slot?"
+      }
+    }
+  }
+}

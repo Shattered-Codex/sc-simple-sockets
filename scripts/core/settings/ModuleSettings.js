@@ -38,10 +38,15 @@ export class ModuleSettings {
 
   #registerEditSocketPermission() {
     const roles = Object.keys(CONST.USER_ROLES)
+    const name = Constants.localize("SCSockets.Settings.EditPermission.Name", "Edit Socket Permission");
+    const hint = Constants.localize(
+      "SCSockets.Settings.EditPermission.Hint",
+      "The minimum role required to add or remove sockets from items."
+    );
 
     game.settings.register(Constants.MODULE_ID, "editSocketPermission", {
-      name: "Edit Socket Permission",
-      hint: "The minimum role required to add/remove sockets from items.",
+      name,
+      hint,
       scope: "world",
       config: true,
       type: String,
@@ -55,9 +60,18 @@ export class ModuleSettings {
   }
 
   #registerMaxSockets() {
+    const name = Constants.localize(
+      "SCSockets.Settings.MaxSockets.Name",
+      "Maximum Number of Sockets per Item"
+    );
+    const hint = Constants.localize(
+      "SCSockets.Settings.MaxSockets.Hint",
+      "Maximum number of sockets an item can have. Use -1 for unlimited."
+    );
+
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_MAX_SOCKETS, {
-      name: "Maximum Number of Sockets per Item",
-      hint: "Maximum number of sockets an item can have. Use -1 for unlimited.",
+      name,
+      hint,
       scope: "world",
       config: true,
       type: Number,
@@ -70,9 +84,18 @@ export class ModuleSettings {
   }
 
   #registerDeleteOnRemoval() {
+    const name = Constants.localize(
+      "SCSockets.Settings.DeleteOnRemoval.Name",
+      "Delete Gem on Removal"
+    );
+    const hint = Constants.localize(
+      "SCSockets.Settings.DeleteOnRemoval.Hint",
+      "If enabled, a gem is destroyed when removed from a socket; otherwise it's returned to the player's inventory."
+    );
+
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE, {
-      name: "Delete Gem on Removal",
-      hint: "If enabled, a gem is destroyed when removed from a socket; otherwise it's returned to the player's inventory.",
+      name,
+      hint,
       scope: "world",
       config: true,
       type: Boolean,

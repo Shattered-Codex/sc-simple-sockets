@@ -1,3 +1,4 @@
+import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
 import { EffectService } from "./EffectService.js";
 import { InventoryService } from "./InventoryService.js";
@@ -10,7 +11,9 @@ export class SocketService {
     const slots = SocketStore.getSlots(hostItem);
 
     if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
-      return ui.notifications?.warn?.("Invalid socket index.");
+      return ui.notifications?.warn?.(
+        Constants.localize("SCSockets.Notifications.InvalidSocketIndex", "Invalid socket index.")
+      );
     }
 
     let gemItem = null;
@@ -26,11 +29,15 @@ export class SocketService {
     }
 
     if (!gemItem) {
-      return ui.notifications?.warn?.("Cannot resolve dropped item.");
+      return ui.notifications?.warn?.(
+        Constants.localize("SCSockets.Notifications.CannotResolveItem", "Cannot resolve dropped item.")
+      );
     }
 
     if (!ItemResolver.isGem(gemItem)) {
-      return ui.notifications?.warn?.("Only gems can be socketed.");
+      return ui.notifications?.warn?.(
+        Constants.localize("SCSockets.Notifications.OnlyGems", "Only gems can be socketed.")
+      );
     }
 
     await EffectService.removeGemEffects(hostItem, idx);
@@ -63,7 +70,9 @@ export class SocketService {
     await EffectService.removeGemEffects(hostItem, idx);
     slots[idx] = SocketSlot.makeDefault();
     await SocketStore.setSlots(hostItem, slots);
-    ui.notifications?.info?.("Gem unsocketed.");
+    ui.notifications?.info?.(
+      Constants.localize("SCSockets.Notifications.GemUnsocketed", "Gem unsocketed.")
+    );
   }
 
   static async addSlot(hostItem) {
@@ -73,7 +82,9 @@ export class SocketService {
     const currentSlots = SocketStore.getSlots(hostItem);
     const maxSlots = ModuleSettings.getMaxSockets();
     if (currentSlots.length >= maxSlots) {
-      ui.notifications?.warn?.("Maximum number of sockets reached.");
+      ui.notifications?.warn?.(
+        Constants.localize("SCSockets.Notifications.MaxReached", "Maximum number of sockets reached.")
+      );
       return;
     }
     return SocketStore.addSlot(hostItem, SocketSlot.makeDefault());

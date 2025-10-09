@@ -90,7 +90,7 @@ export class ActorGemBadges {
           slot?.img ??
           slot?.gem?.img ??
           Constants.SOCKET_SLOT_IMG;
-        const label = slot?.gem?.name ?? slot?.name ?? "Empty Slot";
+        const label = slot?.gem?.name ?? slot?.name ?? this.#emptySlotLabel();
         img.src = src;
         img.alt = label;
         img.draggable = false;
@@ -175,7 +175,7 @@ export class ActorGemBadges {
    * @private
    */
   static #buildSlotTooltip(slot, fallbackLabel) {
-    const label = slot?.gem?.name ?? slot?.name ?? fallbackLabel;
+    const label = slot?.gem?.name ?? slot?.name ?? fallbackLabel ?? this.#emptySlotLabel();
 
     if (slot?.gem?.uuid && game?.system?.id === "dnd5e") {
       return {
@@ -202,5 +202,9 @@ export class ActorGemBadges {
       type: "text",
       label
     };
+  }
+
+  static #emptySlotLabel() {
+    return Constants.localize("SCSockets.SocketEmptyTooltip", "Empty Slot");
   }
 }
