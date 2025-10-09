@@ -41,6 +41,9 @@
   "styles": [
     {
       "src": "styles/actor-gem-badges.css"
+    },
+    {
+      "src": "styles/item-activity-badges.css"
     }
   ],
   "url": "https://github.com/Shattered-Codex/sc_simple_sockets",

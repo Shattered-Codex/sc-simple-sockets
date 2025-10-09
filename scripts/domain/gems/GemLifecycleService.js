@@ -1,8 +1,13 @@
-import { GemEffectStore } from "./GemEffectStore.js";
 import { GemCriteria } from "./GemCriteria.js";
+import { GemActivityStore } from "./GemActivityStore.js";
+import { GemEffectStore } from "./GemEffectStore.js";
 
 export class GemLifecycleService {
-  constructor({ effectStore = GemEffectStore } = {}) {
+  constructor({
+    activityStore = GemActivityStore,
+    effectStore = GemEffectStore
+  } = {}) {
+    this.activityStore = activityStore;
     this.effectStore = effectStore;
   }
 
@@ -12,11 +17,14 @@ export class GemLifecycleService {
     }
 
     if (!GemCriteria.matches(item)) {
+      await this.activityStore.stash(item);
+      await this.activityStore.removeAll(item);
       await this.effectStore.stash(item);
       await this.effectStore.removeAll(item);
       return;
     }
 
+    await this.activityStore.restore(item);
     await this.effectStore.restore(item);
   }
 

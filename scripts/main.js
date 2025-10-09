@@ -4,6 +4,8 @@ import { ItemSocketExtension } from "./core/ItemSocketExtension.js";
 import { ActorGemBadges } from "./core/ui/ActorGemBadges.js";
 import { GemLifecycleService } from "./domain/gems/GemLifecycleService.js";
 import { ModuleSettings } from "./core/settings/ModuleSettings.js"; 
+import { LootActivitiesExtension } from "./domain/gems/LootActivitiesExtension.js";
+import { ItemActivityBadges } from "./core/ui/ItemActivityBadges.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -14,7 +16,9 @@ Hooks.once("init", async function() {
   
   const settings =  new ModuleSettings();
   settings.register();
-})
+
+  LootActivitiesExtension.ensure();
+});
 
 Hooks.once("setup", () => {
   console.log(`${Constants.MODULE_ID} | setup`);
@@ -22,6 +26,7 @@ Hooks.once("setup", () => {
   gemSheet.applyChanges();
   itemSocketSheet.applyChanges();
   ActorGemBadges.activate();
+  ItemActivityBadges.activate();
 
 });
 
