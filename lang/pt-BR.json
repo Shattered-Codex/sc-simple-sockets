@@ -13,7 +13,8 @@
       "CannotResolveItem": "Não foi possível identificar o item solto.",
       "OnlyGems": "Somente gemas podem ser encaixadas.",
       "GemUnsocketed": "Gema removida do soquete.",
-      "MaxReached": "Quantidade máxima de soquetes atingida."
+      "MaxReached": "Quantidade máxima de soquetes atingida.",
+      "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada."
     },
     "Effects": {
       "DefaultName": "Efeito de Gema"

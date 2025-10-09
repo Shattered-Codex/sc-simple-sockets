@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
 import { EffectService } from "./EffectService.js";
+import { ActivityTransferService } from "./ActivityTransferService.js";
 import { InventoryService } from "./InventoryService.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { SocketSlot } from "../model/SocketSlot.js";
@@ -41,12 +42,14 @@ export class SocketService {
     }
 
     await EffectService.removeGemEffects(hostItem, idx);
+    await ActivityTransferService.removeForSlot(hostItem, idx);
 
     const snap = ItemResolver.snapshotOne(gemItem);
     slots[idx] = SocketSlot.fillFromGem(slots[idx], gemItem, snap, idx);
     await SocketStore.setSlots(hostItem, slots);
 
     await EffectService.applyGemEffects(hostItem, idx, gemItem);
+    await ActivityTransferService.applyFromGem(hostItem, idx, gemItem);
     await InventoryService.consumeOne(gemItem);
   }
 
@@ -68,6 +71,7 @@ export class SocketService {
     }
 
     await EffectService.removeGemEffects(hostItem, idx);
+    await ActivityTransferService.removeForSlot(hostItem, idx);
     slots[idx] = SocketSlot.makeDefault();
     await SocketStore.setSlots(hostItem, slots);
     ui.notifications?.info?.(

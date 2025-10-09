@@ -13,7 +13,8 @@
       "CannotResolveItem": "Cannot resolve dropped item.",
       "OnlyGems": "Only gems can be socketed.",
       "GemUnsocketed": "Gem unsocketed.",
-      "MaxReached": "Maximum number of sockets reached."
+      "MaxReached": "Maximum number of sockets reached.",
+      "GemRequiresSocket": "This gem must be socketed before it can be used."
     },
     "Effects": {
       "DefaultName": "Gem Effect"

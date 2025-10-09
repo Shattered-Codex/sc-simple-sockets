@@ -35,8 +35,10 @@ export class InventoryService {
     if (same) {
       const qty = Number(same.system?.quantity ?? 1);
       await same.update({ "system.quantity": qty + 1 });
-    } else {
-      await actor.createEmbeddedDocuments("Item", [payload]);
+      return same;
     }
+
+    const created = await actor.createEmbeddedDocuments("Item", [payload]);
+    return created?.[0] ?? null;
   }
 }
