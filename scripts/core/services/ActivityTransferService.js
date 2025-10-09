@@ -14,25 +14,39 @@ export class ActivityTransferService {
       return;
     }
 
-    const updates = {};
     const createdIds = [];
     const activityMeta = {};
     for (const activity of sourceActivities) {
-      const data = activity.toObject();
-      const newId = ActivityTransferService.#makeActivityId();
-      data._id = newId;
-      updates[`system.activities.${newId}`] = data;
+      const original = activity.toObject();
+      const type = original.type;
+      const config = CONFIG.DND5E.activityTypes[type];
+      if (!config) continue;
+      const ActivityClass = config.documentClass;
+
+      const createData = foundry.utils.deepClone(original);
+      delete createData._id;
+
+      const doc = new ActivityClass({ type, ...createData }, { parent: hostItem });
+      if (doc._preCreate(createData) === false) {
+        continue;
+      }
+
+      const payload = doc.toObject();
+      const newId = doc.id;
+      await hostItem.update({ [`system.activities.${newId}`]: payload });
       createdIds.push(newId);
       activityMeta[newId] = {
         sourceId: activity.id,
+        hostActivityId: newId,
         slot: slotIndex,
         gemImg: gemItem.img,
         gemName: gemItem.name,
-        activityName: activity.name
+        gemUuid: gemItem.uuid,
+        activityName: original.name
       };
     }
 
-    if (!Object.keys(updates).length) {
+    if (!createdIds.length) {
       return;
     }
 
@@ -45,10 +59,7 @@ export class ActivityTransferService {
     };
 
     const flagPath = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`;
-    await hostItem.update({
-      ...updates,
-      [flagPath]: flagPayload
-    });
+    await hostItem.update({ [flagPath]: flagPayload });
   }
 
   static async removeForSlot(hostItem, slotIndex) {
@@ -59,35 +70,32 @@ export class ActivityTransferService {
     const flag = hostItem.getFlag(Constants.MODULE_ID, Constants.FLAG_SOCKET_ACTIVITIES);
     const slotData = flag?.[slotIndex];
     const ids = Array.isArray(slotData?.activityIds) ? slotData.activityIds : [];
+    const meta = slotData?.activityMeta ?? {};
     if (!ids.length) {
       return;
     }
 
-    const updates = {};
+    const updates = { [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`]: null };
+    const collection = hostItem.system?.activities;
     for (const id of ids) {
+      if (!collection?.has?.(id)) {
+        delete meta[id];
+        continue;
+      }
       updates[`system.activities.-=${id}`] = null;
-    }
-    await hostItem.update(updates);
-
-    const clone = foundry.utils.duplicate(flag ?? {});
-    if (slotData) {
-      const next = foundry.utils.duplicate(slotData);
-      delete next.activityIds;
-      delete next.activityMeta;
-      delete next.gemUuid;
-      delete next.gemName;
-      delete next.gemImg;
-
-      if (Object.keys(next).length) {
-        clone[slotIndex] = next;
-      } else {
-        delete clone[slotIndex];
+      const source = meta[id]?.sourceId;
+      if (source) {
+        const activity = collection.get?.(source);
+        if (activity && !activity.cachedSpell) {
+          const cached = activity.toObject();
+          if (cached.spell?.uuid && foundry.utils.getType(cached.spell.uuid) === "string") {
+            updates[`flags.${Constants.MODULE_ID}.cachedSpells`] ??= {};
+            updates[`flags.${Constants.MODULE_ID}.cachedSpells`][cached.spell.uuid] = true;
+          }
+        }
       }
     }
-    const flagUpdate = Object.keys(clone).length
-      ? { [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]: clone }
-      : { [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]: null };
-    await hostItem.update(flagUpdate);
+    await hostItem.update(updates);
   }
 
   static #makeActivityId() {
@@ -96,15 +104,5 @@ export class ActivityTransferService {
 
   static #hasActivitiesField(item) {
     return item?.system && Object.prototype.hasOwnProperty.call(item.system, "activities");
-  }
-
-  static async #updateFlag(item, slotIndex, data) {
-    const flag = foundry.utils.duplicate(
-      item.getFlag(Constants.MODULE_ID, Constants.FLAG_SOCKET_ACTIVITIES) ?? {}
-    );
-    flag[slotIndex] = data;
-    await item.update({
-      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]: flag
-    });
   }
 }

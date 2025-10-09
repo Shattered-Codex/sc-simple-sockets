@@ -79,13 +79,15 @@ export class GemSheetExtension extends SheetExtension {
     }
 
     const evaluate = function (item, originalResult) {
-      if (item?.type === Constants.ITEM_TYPE_LOOT && !GemCriteria.matches(item)) {
-        return false;
-      }
       if (originalResult) {
         return true;
       }
-      return GemCriteria.matches(item);
+
+      if (!GemCriteria.matches(item)) {
+        return originalResult;
+      }
+
+      return true;
     };
 
     if (globalThis.libWrapper?.register) {

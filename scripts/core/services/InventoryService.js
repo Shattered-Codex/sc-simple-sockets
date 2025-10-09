@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 
 export class InventoryService {
 
@@ -24,14 +25,7 @@ export class InventoryService {
       return;
     }
 
-    const isGem = (i) => {
-      return (
-        i.type === Constants.ITEM_TYPE_LOOT &&
-        String(i.system?.type?.value ?? "").toLowerCase() === Constants.ITEM_SUBTYPE_GEM
-      );
-    };
-
-    const same = actor.items.find(i => isGem(i) && i.name === payload.name);
+    const same = actor.items.find(i => GemCriteria.matches(i) && i.name === payload.name);
     if (same) {
       const qty = Number(same.system?.quantity ?? 1);
       await same.update({ "system.quantity": qty + 1 });
