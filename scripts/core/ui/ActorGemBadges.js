@@ -57,15 +57,15 @@ export class ActorGemBadges {
 
     const socketed = actor.items.filter(i => {
       const sockets = i.getFlag(Constants.MODULE_ID, this.FLAG_KEY);
-      return Array.isArray(sockets) && sockets.some(s => s?.gem?.img);
+      return Array.isArray(sockets) && sockets.length > 0;
     });
 
     if (!socketed.length) return;
 
     for (const item of socketed) {
       const sockets = item.getFlag(Constants.MODULE_ID, this.FLAG_KEY) ?? [];
-      const gems = sockets.map(s => s?.gem).filter(Boolean);
-      if (!gems.length) continue;
+      const slots = sockets.filter(Boolean);
+      if (!slots.length) continue;
 
       const cell = this.#findItemNameCell(root, item.id);
       if (!cell) continue;
@@ -78,15 +78,24 @@ export class ActorGemBadges {
       wrap.className = this.CSS_CLASS;
       wrap.dataset.itemId = item.id;
 
-      for (const gem of gems) {
+      for (const slot of slots) {
         const div = document.createElement("div");
         div.className = "gem";
+        if (!slot?.gem) {
+          div.classList.add("empty");
+        }
 
         const img = document.createElement("img");
-        img.src = gem.img;
-        img.alt = gem.name ?? "Gem";
-        img.setAttribute("data-tooltip", gem.name ?? "Gem");
+        const src =
+          slot?.img ??
+          slot?.gem?.img ??
+          Constants.SOCKET_SLOT_IMG;
+        const label = slot?.gem?.name ?? slot?.name ?? "Empty Slot";
+        img.src = src;
+        img.alt = label;
         img.draggable = false;
+
+        this.#applySlotTooltip(div, slot, label);
 
         div.appendChild(img);
         wrap.appendChild(div);
@@ -129,5 +138,69 @@ export class ActorGemBadges {
       if (el) return el;
     }
     return null;
+  }
+
+  /**
+   * Assigns tooltip behaviour for a gem slot icon.
+   * @param {HTMLElement} element  The element receiving the tooltip.
+   * @param {object} slot          Slot data, possibly containing gem details.
+   * @param {string} fallbackLabel Default label if no richer info is available.
+   * @private
+   */
+  static #applySlotTooltip(element, slot, fallbackLabel) {
+    const tooltip = this.#buildSlotTooltip(slot, fallbackLabel);
+    if (!tooltip) return;
+
+    const { type, label, uuid, direction, cssClass } = tooltip;
+    if (type === "item" && uuid) {
+      element.classList.add("item-tooltip");
+      element.dataset.tooltip =
+        `<section class="loading" data-uuid="${uuid}"><i class="fas fa-spinner fa-spin-pulse"></i></section>`;
+      element.dataset.tooltipClass = cssClass ?? "dnd5e2 dnd5e-tooltip item-tooltip themed theme-light";
+      element.dataset.tooltipDirection ??= direction ?? "LEFT";
+      element.dataset.uuid = uuid;
+      return;
+    }
+
+    element.dataset.tooltip = label ?? fallbackLabel;
+    element.dataset.tooltipDirection ??= direction ?? "LEFT";
+    if (cssClass) element.dataset.tooltipClass = cssClass;
+  }
+
+  /**
+   * Builds tooltip metadata for a gem slot.
+   * @param {object} slot
+   * @param {string} fallbackLabel
+   * @returns {{type: string, label?: string, uuid?: string, direction?: string, cssClass?: string}|null}
+   * @private
+   */
+  static #buildSlotTooltip(slot, fallbackLabel) {
+    const label = slot?.gem?.name ?? slot?.name ?? fallbackLabel;
+
+    if (slot?.gem?.uuid && game?.system?.id === "dnd5e") {
+      return {
+        type: "item",
+        uuid: slot.gem.uuid,
+        direction: "LEFT",
+        cssClass: "dnd5e2 dnd5e-tooltip item-tooltip themed theme-light",
+        label
+      };
+    }
+
+    const description = foundry?.utils?.getProperty(slot, "_gemData.system.description.value");
+    if (description && typeof TextEditor?.stripHTML === "function") {
+      const plain = TextEditor.stripHTML(description)?.trim();
+      if (plain) {
+        return {
+          type: "text",
+          label: `${label}\n${plain}`
+        };
+      }
+    }
+
+    return {
+      type: "text",
+      label
+    };
   }
 }

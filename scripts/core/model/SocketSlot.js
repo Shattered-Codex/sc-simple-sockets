@@ -5,7 +5,7 @@ export class SocketSlot {
   static makeDefault() {
     return {
       gem: null,
-      img: `modules/${Constants.MODULE_ID}/assets/imgs/socket-slot.webp`,
+      img: Constants.SOCKET_SLOT_IMG,
       name: "Empty"
     };
   }
