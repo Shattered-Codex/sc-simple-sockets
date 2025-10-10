@@ -27,12 +27,12 @@ The module targets Foundry VTT v13+ with the official **dnd5e** system.
 4. **Socket a gem** – drag a gem from an actor sheet, compendium, or sidebar into an empty slot. The gem is consumed from inventory, its active effects are enabled on the host, and any activities are cloned onto the item.
 5. **Unsocket when needed** – remove a gem via the slot controls. By default the gem returns to the actor's inventory; enable the *Delete Gem on Removal* setting to destroy it instead. Hold `Shift` to bypass the confirmation prompt.
 
-![spellpoints on sheet](https://i.imgur.com/azxl7Gz.png)
-![spellpoints on sheet](https://i.imgur.com/bv1mJui.png)
-![spellpoints on sheet](https://i.imgur.com/WyNyxKL.png)
-![spellpoints on sheet](https://i.imgur.com/IiOMgMd.png)
-![spellpoints on sheet](https://i.imgur.com/BDLfybi.png)
-![spellpoints on sheet](https://i.imgur.com/WyNyxKL.png)
+![sockets](https://i.imgur.com/azxl7Gz.png)
+![sockets](https://i.imgur.com/bv1mJui.png)
+![sockets](https://i.imgur.com/WyNyxKL.png)
+![sockets](https://i.imgur.com/IiOMgMd.png)
+![sockets](https://i.imgur.com/BDLfybi.png)
+![sockets](https://i.imgur.com/WyNyxKL.png)
 
 ## Features
 
