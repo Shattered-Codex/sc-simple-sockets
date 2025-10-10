@@ -20,6 +20,7 @@ on:
 
 jobs:
   release:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: write   # Required to create tags, commits, releases
@@ -83,6 +84,21 @@ jobs:
           download: https://github.com/${{ github.repository }}/releases/download/${{ steps.tag_version.outputs.new_tag }}/${{ env.MODULE_ID }}.zip
           manifest: https://github.com/${{ github.repository }}/releases/latest/download/module.json
           flags.hotReload: false
+
+      # --- STEP 5B: Commit and push manifest update ---
+      - name: Commit module manifest update
+        env:
+          GH_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add module.json
+          if git diff --cached --quiet; then
+            echo "Manifest already up to date; nothing to commit."
+            exit 0
+          fi
+          git commit -m "chore: sync module manifest to ${{ steps.tag_version.outputs.new_version }}"
+          git push https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} HEAD:${GITHUB_REF#refs/heads/}
 
       # --- STEP 6: Create ZIP archive ---
       - name: Create ZIP archive
