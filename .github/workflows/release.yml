@@ -105,7 +105,7 @@ jobs:
         run: |
           zip -r ./${{ env.MODULE_ID }}.zip \
             module.json README.md LICENSE CHANGELOG.md \
-            css/ img/ lang/ packs/ scripts/ templates/ || true
+            css/ img/ lang/ packs/ scripts/ templates/ assets/ || true
 
       # --- STEP 7: Ensure CHANGELOG.md exists ---
       - name: Ensure CHANGELOG.md exists
@@ -136,3 +136,44 @@ jobs:
           allowUpdates: true
           artifacts: "./module.json, ./${{ env.MODULE_ID }}.zip, ./CHANGELOG.md"
           token: ${{ secrets.CI_WORKFLOWS_TOKEN }}
+
+      # --- STEP 10: Publish release to Foundry ---
+      - name: Publish to Foundry Package API
+        if: ${{ success() }}
+        env:
+          RELEASE_TOKEN: ${{ secrets.FOUNDRY_RELEASE_TOKEN }}
+          VERSION: ${{ steps.tag_version.outputs.new_version }}
+          TAG: ${{ steps.tag_version.outputs.new_tag }}
+        run: |
+          if [ -z "${RELEASE_TOKEN}" ]; then
+            echo "FOUNDRY_RELEASE_TOKEN is not configured. Skipping Foundry publish."
+            exit 0
+          fi
+
+          MANIFEST_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/module.json"
+          NOTES_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
+
+          COMPAT_MIN=$(jq -r '.compatibility.minimum // empty' module.json)
+          COMPAT_VERIFIED=$(jq -r '.compatibility.verified // empty' module.json)
+          COMPAT_MAX=$(jq -r '.compatibility.maximum // empty' module.json)
+
+          if [ -z "${COMPAT_MIN}" ] || [ -z "${COMPAT_VERIFIED}" ]; then
+            echo "Compatibility data is missing from module.json. Skipping Foundry publish."
+            exit 0
+          fi
+
+          payload=$(jq -n \
+            --arg id "${MODULE_ID}" \
+            --arg version "${VERSION}" \
+            --arg manifest "${MANIFEST_URL}" \
+            --arg notes "${NOTES_URL}" \
+            --arg min "${COMPAT_MIN}" \
+            --arg verified "${COMPAT_VERIFIED}" \
+            --arg max "${COMPAT_MAX}" \
+            '{id:$id, release:{version:$version, manifest:$manifest, notes:$notes, compatibility:{minimum:$min, verified:$verified, maximum:$max}}}')
+
+          curl -sSf -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: ${RELEASE_TOKEN}" \
+            -d "${payload}" \
+            https://foundryvtt.com/_api/packages/release_version/
