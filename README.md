@@ -32,7 +32,6 @@ The module targets Foundry VTT v13+ with the official **dnd5e** system.
 ![sockets](https://i.imgur.com/WyNyxKL.png)
 ![sockets](https://i.imgur.com/IiOMgMd.png)
 ![sockets](https://i.imgur.com/BDLfybi.png)
-![sockets](https://i.imgur.com/WyNyxKL.png)
 
 ## Features
 
