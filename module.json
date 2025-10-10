@@ -31,11 +31,11 @@
         "scripts/main.js"
     ],
     "styles": [
-       "css/actor-gem-badges.css"
+        "css/actor-gem-badges.css"
     ],
-    "url": "https://github.com/Shattered-Codex/sc_simple_sockets",
-    "manifest": "https://github.com/Shattered-Codex/sc_simple_sockets/releases/latest/download/module.json",
-    "download": "https://github.com/Shattered-Codex/sc_simple_sockets/releases/download/v1.0.16/sc_simple_sockets.zip",
+    "url": "https://github.com/Shattered-Codex/sc-simple-sockets",
+    "manifest": "https://github.com/Shattered-Codex/sc-simple-sockets/releases/latest/download/module.json",
+    "download": "https://github.com/Shattered-Codex/sc-simple-sockets/releases/download/v1.0.16/sc-simple-sockets.zip",
     "packs": [
         {
             "name": "sc-gems",
