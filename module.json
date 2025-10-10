@@ -1,7 +1,7 @@
 {
   "id": "sc-simple-sockets",
   "title": "SC - Simple Sockets",
-  "version": "1.0.0",
+  "version": "1.0.7",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
@@ -9,14 +9,6 @@
   "authors": [
     {
       "name": "Gustavo Bacelar",
-      "flags": {}
-    },
-    {
-      "name": "Bruno Bicudo",
-      "flags": {}
-    },
-    {
-      "name": "Felipe Gibin",
       "flags": {}
     }
   ],
