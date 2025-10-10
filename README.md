@@ -3,6 +3,7 @@
 ![Foundry VTT 13+](https://img.shields.io/badge/Foundry%20VTT-13%2B-orange?logo=foundry-vtt&logoColor=white)
 ![System: dnd5e](https://img.shields.io/badge/System-dnd5e-blue)
 [![libWrapper Recommended](https://img.shields.io/badge/libWrapper-Recommended-8A2BE2)](https://github.com/ruipin/fvtt-lib-wrapper)
+![Forks][forks-shield]
 
 Lightweight socketing for D&D 5e weapons and equipment. Add gem slots to items, drag and drop gem loot, and let the module move active effects and activities to the host item automatically. SC - Simple Sockets keeps your tables focused on play, not bookkeeping.
 
@@ -27,11 +28,12 @@ The module targets Foundry VTT v13+ with the official **dnd5e** system.
 4. **Socket a gem** – drag a gem from an actor sheet, compendium, or sidebar into an empty slot. The gem is consumed from inventory, its active effects are enabled on the host, and any activities are cloned onto the item.
 5. **Unsocket when needed** – remove a gem via the slot controls. By default the gem returns to the actor's inventory; enable the *Delete Gem on Removal* setting to destroy it instead. Hold `Shift` to bypass the confirmation prompt.
 
-![sockets](https://i.imgur.com/azxl7Gz.png)
-![sockets](https://i.imgur.com/bv1mJui.png)
 ![sockets](https://i.imgur.com/WyNyxKL.png)
-![sockets](https://i.imgur.com/IiOMgMd.png)
 ![sockets](https://i.imgur.com/BDLfybi.png)
+![sockets](https://i.imgur.com/IiOMgMd.png)
+![sockets](https://i.imgur.com/bv1mJui.png)
+![sockets](https://i.imgur.com/azxl7Gz.png)
+
 
 ## Features
 
@@ -77,3 +79,6 @@ If a gem temporarily loses its `gem` subtype, the module stashes its effects and
 ---
 
 SC - Simple Sockets is a Shattered Codex project. Pull requests and issue reports are welcome!
+
+
+[forks-shield]:https://img.shields.io/github/forks/Shattered-Codex/sc_simple_sockets.svg?style=flat-round
