@@ -15,7 +15,7 @@
         "scripts/main.js"
     ],
     "styles": [
-        "styles/actor-gem-badges.css"
+        "css/actor-gem-badges.css"
     ],
     "url": "https://github.com/Shattered-Codex/sc_simple_sockets",
     "manifest": "https://github.com/Shattered-Codex/sc_simple_sockets/releases/latest/download/module.json",
