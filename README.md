@@ -8,14 +8,14 @@
 
 Lightweight socketing for D&D 5e weapons and equipment. Add gem slots to items, drag and drop gem loot, and let the module move active effects and activities to the host item automatically. SC - Simple Sockets keeps your tables focused on play, not bookkeeping.
 
-[Request features or report issues](https://github.com/Shattered-Codex/sc_simple_sockets/issues)
+[Request features or report issues](https://github.com/Shattered-Codex/sc-simple-sockets/issues)
 
 ---
 
 ## Installation
 
 1. In Foundry's **Add-on Modules > Install Module** dialog, paste the manifest URL  
-   `https://github.com/Shattered-Codex/sc_simple_sockets/releases/latest/download/module.json`
+   `https://github.com/Shattered-Codex/sc-simple-sockets/releases/latest/download/module.json`
 2. Install, then enable **SC - Simple Sockets** in your World's module list.
 3. (Optional) Install and activate [`libWrapper`](https://github.com/ruipin/fvtt-lib-wrapper) for safer compatibility with other modules.
 
@@ -82,4 +82,4 @@ If a gem temporarily loses its `gem` subtype, the module stashes its effects and
 SC - Simple Sockets is a Shattered Codex project. Pull requests and issue reports are welcome!
 
 
-[forks-shield]:https://img.shields.io/github/forks/Shattered-Codex/sc_simple_sockets.svg?style=flat-round
+[forks-shield]:https://img.shields.io/github/forks/Shattered-Codex/sc-simple-sockets.svg?style=flat-round
