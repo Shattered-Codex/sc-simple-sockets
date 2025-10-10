@@ -3,6 +3,7 @@
 ![Foundry VTT 13+](https://img.shields.io/badge/Foundry%20VTT-13%2B-orange?logo=foundry-vtt&logoColor=white)
 ![System: dnd5e](https://img.shields.io/badge/System-dnd5e-blue)
 [![libWrapper Recommended](https://img.shields.io/badge/libWrapper-Recommended-8A2BE2)](https://github.com/ruipin/fvtt-lib-wrapper)
+[![Support on Patreon](https://img.shields.io/badge/Patreon-Shattered%20Codex-FF424D?logo=patreon&logoColor=white)](https://www.patreon.com/c/shatteredcodex)
 ![Forks][forks-shield]
 
 Lightweight socketing for D&D 5e weapons and equipment. Add gem slots to items, drag and drop gem loot, and let the module move active effects and activities to the host item automatically. SC - Simple Sockets keeps your tables focused on play, not bookkeeping.
