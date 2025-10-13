@@ -44,6 +44,25 @@
         "Title": "Remover gema",
         "Message": "Tem certeza de que deseja remover a gema deste slot?"
       }
+    },
+    "Macro": {
+      "AddSocket": {
+        "SelectPrompt": "Clique em um item para adicionar um soquete. Pressione Esc para cancelar.",
+        "Cancelled": "Seleção cancelada.",
+        "NoPermission": "Você não tem permissão para adicionar soquetes.",
+        "ItemPermissionTitle": "Não é possível editar o item",
+        "ItemPermissionBody": "Você não tem permissão para editar {name}.",
+        "InvalidTypeTitle": "Item incompatível",
+        "InvalidTypeBody": "{name} não pode receber soquetes.",
+        "MaxReachedTitle": "Limite atingido",
+        "MaxReachedBody": "{name} já possui {count} soquete(s), que é o máximo permitido ({max}).",
+        "ConfirmTitle": "Adicionar soquete",
+        "ConfirmBody": "Adicionar um novo soquete em {name}?",
+        "SelectAnotherTitle": "Selecionar outro item",
+        "SelectAnother": "Deseja selecionar outro item?",
+        "Success": "Um soquete foi adicionado a {name}.",
+        "Error": "Falha ao adicionar soquete. Veja o console para detalhes."
+      }
     }
   }
 }

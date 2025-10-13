@@ -3,13 +3,15 @@ import { GemSheetExtension } from "./core/GemSheetExtension.js";
 import { ItemSocketExtension } from "./core/ItemSocketExtension.js";
 import { ActorGemBadges } from "./core/ui/ActorGemBadges.js";
 import { GemLifecycleService } from "./domain/gems/GemLifecycleService.js";
-import { ModuleSettings } from "./core/settings/ModuleSettings.js"; 
+import { ModuleSettings } from "./core/settings/ModuleSettings.js";
 import { LootActivitiesExtension } from "./domain/gems/LootActivitiesExtension.js";
 import { ItemActivityBadges } from "./core/ui/ItemActivityBadges.js";
+import { MacroAPI } from "./core/api/MacroAPI.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
 const lifecycle = new GemLifecycleService();
+MacroAPI.register();
 
 Hooks.once("init", async function() {
   console.log(`${Constants.MODULE_ID} | init`);

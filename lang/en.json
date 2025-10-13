@@ -44,6 +44,25 @@
         "Title": "Remove Gem",
         "Message": "Are you sure you want to remove the gem from this slot?"
       }
+    },
+    "Macro": {
+      "AddSocket": {
+        "SelectPrompt": "Click an item to add a socket. Press Esc to cancel.",
+        "Cancelled": "Selection cancelled.",
+        "NoPermission": "You do not have permission to add sockets.",
+        "ItemPermissionTitle": "Cannot Edit Item",
+        "ItemPermissionBody": "You do not have permission to edit {name}.",
+        "InvalidTypeTitle": "Unsupported Item",
+        "InvalidTypeBody": "{name} cannot receive sockets.",
+        "MaxReachedTitle": "Maximum Reached",
+        "MaxReachedBody": "{name} already has {count} socket(s), which is the maximum allowed ({max}).",
+        "ConfirmTitle": "Add Socket",
+        "ConfirmBody": "Add a new socket to {name}?",
+        "SelectAnotherTitle": "Select Another Item",
+        "SelectAnother": "Do you want to select another item?",
+        "Success": "A socket was added to {name}.",
+        "Error": "Failed to add socket. See console for details."
+      }
     }
   }
 }

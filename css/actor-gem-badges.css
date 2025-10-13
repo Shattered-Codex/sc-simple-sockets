@@ -47,3 +47,13 @@
   border-radius: inherit;
   pointer-events: none;
 }
+
+:root {
+  --sc-sockets-cursor: url("/modules/sc-simple-sockets/assets/imgs/hammer-cursor.png") 16 16, crosshair;
+}
+
+html.sc-sockets-target-cursor,
+body.sc-sockets-target-cursor,
+body.sc-sockets-target-cursor * {
+  cursor: var(--sc-sockets-cursor, crosshair) !important;
+}
