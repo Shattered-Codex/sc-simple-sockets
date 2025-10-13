@@ -1,3 +1,4 @@
-2025/10/09-18:32:21.370757 78f80b3ff6c0 Recovering log #34
-2025/10/09-18:32:21.377602 78f80b3ff6c0 Delete type=3 #32
-2025/10/09-18:32:21.377639 78f80b3ff6c0 Delete type=0 #34
+2025/10/13-21:48:24.555293 791d577fe6c0 Log #72: 0 ops saved to Table #73 OK
+2025/10/13-21:48:24.556889 791d577fe6c0 Archiving /home/foundry/data/Data/modules/sc-simple-sockets/packs/sc-gems/000072.log: OK
+2025/10/13-21:48:24.557077 791d577fe6c0 Table #27: 51 entries OK
+2025/10/13-21:48:24.559470 791d577fe6c0 **** Repaired leveldb /home/foundry/data/Data/modules/sc-simple-sockets/packs/sc-gems; recovered 1 files; 15703 bytes. Some data may have been lost. ****

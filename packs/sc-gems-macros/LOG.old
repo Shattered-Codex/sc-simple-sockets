@@ -1,0 +1,5 @@
+2025/10/13-21:48:24.574645 791d64ffe6c0 Log #20: 0 ops saved to Table #21 OK
+2025/10/13-21:48:24.575606 791d64ffe6c0 Archiving /home/foundry/data/Data/modules/sc-simple-sockets/packs/sc-gems-macros/000020.log: OK
+2025/10/13-21:48:24.575677 791d64ffe6c0 Table #5: 3 entries OK
+2025/10/13-21:48:24.575744 791d64ffe6c0 Archiving /home/foundry/data/Data/modules/sc-simple-sockets/packs/sc-gems-macros/MANIFEST-000018: OK
+2025/10/13-21:48:24.578096 791d64ffe6c0 **** Repaired leveldb /home/foundry/data/Data/modules/sc-simple-sockets/packs/sc-gems-macros; recovered 1 files; 864 bytes. Some data may have been lost. ****
