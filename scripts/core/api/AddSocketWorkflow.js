@@ -2,6 +2,7 @@ import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketService } from "../services/SocketService.js";
 import { SelectionController } from "./SelectionController.js";
+import { ItemSocketExtension } from "../ItemSocketExtension.js";
 
 export const DEFAULT_OPTIONS = {
   renderSheet: true,
@@ -34,14 +35,7 @@ export class AddSocketWorkflow {
   }
 
   async run() {
-    if (!ModuleSettings.canAddOrRemoveSocket(game.user)) {
-      this.#notify(
-        "warn",
-        "SCSockets.Macro.AddSocket.NoPermission",
-        "You do not have permission to add sockets."
-      );
-      return { success: false, reason: "no-permission" };
-    }
+    const hasModulePermission = ModuleSettings.canAddOrRemoveSocket(game.user);
 
     const { DialogV2 } = foundry.applications.api;
 
@@ -174,10 +168,7 @@ export class AddSocketWorkflow {
       }
 
       try {
-        await SocketService.addSlot(item);
-        if (this.options.renderSheet) {
-          await item.sheet?.render(true);
-        }
+        await SocketService.addSlot(item, { bypassPermission: !hasModulePermission });
         this.#notify(
           "info",
           "SCSockets.Macro.AddSocket.Success",

@@ -79,8 +79,10 @@ export class SocketService {
     );
   }
 
-  static async addSlot(hostItem) {
-    if (!ModuleSettings.canAddOrRemoveSocket()) {
+  static async addSlot(hostItem, options = {}) {
+    const { bypassPermission = false } = options;
+
+    if (!bypassPermission && !ModuleSettings.canAddOrRemoveSocket()) {
       return;
     }
     const currentSlots = SocketStore.getSlots(hostItem);
