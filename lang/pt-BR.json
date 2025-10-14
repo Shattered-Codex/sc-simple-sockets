@@ -12,12 +12,27 @@
       "InvalidSocketIndex": "Índice de soquete inválido.",
       "CannotResolveItem": "Não foi possível identificar o item solto.",
       "OnlyGems": "Somente gemas podem ser encaixadas.",
+      "GemIncompatible": "Esta gema não pode ser encaixada neste item.",
       "GemUnsocketed": "Gema removida do soquete.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada."
     },
     "Effects": {
       "DefaultName": "Efeito de Gema"
+    },
+    "GemTargetTypes": {
+      "Label": "Tipos de item permitidos",
+      "Hint": "Escolha quais subtipos de item podem receber esta gema.",
+      "AllTypes": "Todos os tipos",
+      "Groups": {
+        "Weapons": "Armas",
+        "Equipment": "Equipamentos"
+      }
+    },
+    "Tooltips": {
+      "RemoveGem": "Remover a gema deste soquete.",
+      "DeleteSocket": "Excluir este soquete do item.",
+      "DeleteSlotLabel": "Excluir soquete"
     },
     "Settings": {
       "EditPermission": {

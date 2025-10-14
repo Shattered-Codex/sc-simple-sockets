@@ -41,6 +41,12 @@ export class SocketService {
       );
     }
 
+    if (!SocketService.#gemMatchesHostType(gemItem, hostItem)) {
+      return ui.notifications?.warn?.(
+        Constants.localize("SCSockets.Notifications.GemIncompatible", "This gem cannot be socketed into this item.")
+      );
+    }
+
     await EffectService.removeGemEffects(hostItem, idx);
     await ActivityTransferService.removeForSlot(hostItem, idx);
 
@@ -105,6 +111,54 @@ export class SocketService {
 
   static getSlots(hostItem) {
     return SocketStore.getSlots(hostItem);
+  }
+
+  static #gemMatchesHostType(gemItem, hostItem) {
+    if (!gemItem || !hostItem) {
+      return false;
+    }
+
+    const allowed = gemItem.getFlag(Constants.MODULE_ID, Constants.FLAG_GEM_ALLOWED_TYPES);
+    if (!Array.isArray(allowed) || !allowed.length) {
+      return true;
+    }
+
+    if (allowed.includes(Constants.GEM_ALLOWED_TYPES_ALL)) {
+      return true;
+    }
+
+    const hostKeys = SocketService.#resolveHostTypeKeys(hostItem);
+    return hostKeys.some((key) => allowed.includes(key));
+  }
+
+  static #resolveHostTypeKeys(hostItem) {
+    const keys = new Set();
+    if (!hostItem) {
+      return Array.from(keys);
+    }
+
+    const type = typeof hostItem.type === "string"
+      ? hostItem.type
+      : String(hostItem.type ?? "");
+    const getProperty = globalThis?.foundry?.utils?.getProperty;
+    const subtypePaths = [
+      "system.type.value",
+      "system.type.subtype"
+    ];
+
+    for (const path of subtypePaths) {
+      const value = typeof getProperty === "function" ? getProperty(hostItem, path) : undefined;
+      if (value) {
+        const normalized = typeof value === "string" ? value : String(value);
+        keys.add(`${type}:${normalized}`);
+      }
+    }
+
+    if (type) {
+      keys.add(type);
+    }
+
+    return Array.from(keys);
   }
 
 }

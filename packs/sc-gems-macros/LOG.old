@@ -1,5 +1,11 @@
-2025/10/13-21:48:24.574645 791d64ffe6c0 Log #20: 0 ops saved to Table #21 OK
-2025/10/13-21:48:24.575606 791d64ffe6c0 Archiving /home/foundry/data/Data/modules/sc-simple-sockets/packs/sc-gems-macros/000020.log: OK
-2025/10/13-21:48:24.575677 791d64ffe6c0 Table #5: 3 entries OK
-2025/10/13-21:48:24.575744 791d64ffe6c0 Archiving /home/foundry/data/Data/modules/sc-simple-sockets/packs/sc-gems-macros/MANIFEST-000018: OK
-2025/10/13-21:48:24.578096 791d64ffe6c0 **** Repaired leveldb /home/foundry/data/Data/modules/sc-simple-sockets/packs/sc-gems-macros; recovered 1 files; 864 bytes. Some data may have been lost. ****
+2025/10/14-14:43:38.885028 77573cff96c0 Delete type=3 #1
+2025/10/14-14:58:32.350448 77549fbff6c0 Level-0 table #33: started
+2025/10/14-14:58:32.350472 77549fbff6c0 Level-0 table #33: 0 bytes OK
+2025/10/14-14:58:32.352443 77549fbff6c0 Delete type=0 #31
+2025/10/14-14:58:32.360921 77549fbff6c0 Manual compaction at level-0 from '!macros!DgtCnqUtWORqdeA1' @ 72057594037927935 : 1 .. '!macros!DgtCnqUtWORqdeA1' @ 0 : 0; will stop at '!macros!DgtCnqUtWORqdeA1' @ 3 : 1
+2025/10/14-14:58:32.360931 77549fbff6c0 Compacting 1@0 + 0@1 files
+2025/10/14-14:58:32.362460 77549fbff6c0 Generated table #34@0: 1 keys, 774 bytes
+2025/10/14-14:58:32.362468 77549fbff6c0 Compacted 1@0 + 0@1 files => 774 bytes
+2025/10/14-14:58:32.364175 77549fbff6c0 compacted to: files[ 0 1 0 0 0 0 0 ]
+2025/10/14-14:58:32.364215 77549fbff6c0 Delete type=2 #28
+2025/10/14-14:58:32.364532 77549fbff6c0 Manual compaction at level-0 from '!macros!DgtCnqUtWORqdeA1' @ 3 : 1 .. '!macros!DgtCnqUtWORqdeA1' @ 0 : 0; will stop at (end)

@@ -57,3 +57,34 @@ body.sc-sockets-target-cursor,
 body.sc-sockets-target-cursor * {
   cursor: var(--sc-sockets-cursor, crosshair) !important;
 }
+
+.sc-sockets-gem-target-filter {
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.sc-sockets-gem-target-filter .form-fields {
+  width: 100%;
+}
+
+.sc-sockets-gem-target-filter .sc-sockets-gem-target-select {
+  min-height: 120px;
+  height: 150px;
+  box-sizing: border-box;
+  padding: 0.35rem;
+}
+
+.sc-sockets-gem-target-filter .sc-sockets-gem-target-select option:checked {
+  background: #2a3e57;
+  color: #f0f6ff;
+}
+
+
+.item-detail.item-controls.socket-controls {
+  justify-content: right;
+}
+
+.item-name.socket-name {
+  flex: 2;
+}

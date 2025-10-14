@@ -12,12 +12,27 @@
       "InvalidSocketIndex": "Invalid socket index.",
       "CannotResolveItem": "Cannot resolve dropped item.",
       "OnlyGems": "Only gems can be socketed.",
+      "GemIncompatible": "This gem cannot be socketed into this item.",
       "GemUnsocketed": "Gem unsocketed.",
       "MaxReached": "Maximum number of sockets reached.",
       "GemRequiresSocket": "This gem must be socketed before it can be used."
     },
     "Effects": {
       "DefaultName": "Gem Effect"
+    },
+    "GemTargetTypes": {
+      "Label": "Allowed Item Types",
+      "Hint": "Choose which item subtypes can receive this gem.",
+      "AllTypes": "All Types",
+      "Groups": {
+        "Weapons": "Weapons",
+        "Equipment": "Equipment"
+      }
+    },
+    "Tooltips": {
+      "RemoveGem": "Remove the gem from this socket.",
+      "DeleteSocket": "Delete this slot from the item.",
+      "DeleteSlotLabel": "Delete slot"
     },
     "Settings": {
       "EditPermission": {

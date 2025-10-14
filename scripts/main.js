@@ -6,6 +6,8 @@ import { GemLifecycleService } from "./domain/gems/GemLifecycleService.js";
 import { ModuleSettings } from "./core/settings/ModuleSettings.js";
 import { LootActivitiesExtension } from "./domain/gems/LootActivitiesExtension.js";
 import { ItemActivityBadges } from "./core/ui/ItemActivityBadges.js";
+import { TransferFilterUI } from "./core/ui/TransferFilterUI.js";
+import { SocketTooltipUI } from "./core/ui/SocketTooltipUI.js";
 import { MacroAPI } from "./core/api/MacroAPI.js";
 
 const gemSheet = new GemSheetExtension();
@@ -29,6 +31,8 @@ Hooks.once("setup", () => {
   itemSocketSheet.applyChanges();
   ActorGemBadges.activate();
   ItemActivityBadges.activate();
+  TransferFilterUI.activate();
+  SocketTooltipUI.activate();
 
 });
 
