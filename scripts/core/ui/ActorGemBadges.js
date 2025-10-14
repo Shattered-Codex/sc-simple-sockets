@@ -29,6 +29,24 @@ export class ActorGemBadges {
   }
 
   /**
+   * Exposes tooltip behaviour so other UIs can reuse the gem tooltip logic.
+   * @param {HTMLElement} element
+   * @param {object} slot
+   * @param {string} [fallbackLabel]
+   */
+  static applyTooltip(element, slot, fallbackLabel) {
+    ActorGemBadges.#applySlotTooltip(element, slot, fallbackLabel ?? ActorGemBadges.#emptySlotLabel());
+  }
+
+  /**
+   * Returns the localized fallback label for empty slots.
+   * @returns {string}
+   */
+  static emptySlotLabel() {
+    return ActorGemBadges.#emptySlotLabel();
+  }
+
+  /**
    * Deactivates badge rendering and removes hooks.
    */
   static deactivate() {

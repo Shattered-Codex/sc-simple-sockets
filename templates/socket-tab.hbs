@@ -42,11 +42,15 @@
           <div class="item-detail item-controls socket-controls">
             {{#if ../editable}}
             <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{i}}"
-              aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}">
+              aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}"
+              data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
+              data-tooltip-direction="LEFT">
               <i class="fas fa-circle-xmark"></i>
             </a>
             <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{i}}" data-tooltip
-              aria-label="{{ localize 'SCSockets.ActionDelete' }}">
+              aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}"
+              data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"
+              data-tooltip-direction="LEFT">
               <i class="fas fa-trash"></i>
             </a>
             {{/if}}
