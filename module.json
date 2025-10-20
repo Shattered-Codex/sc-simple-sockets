@@ -1,7 +1,7 @@
 {
     "id": "sc-simple-sockets",
     "title": "SC - Simple Sockets",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "compatibility": {
         "minimum": "13",
         "verified": "13"
@@ -42,7 +42,7 @@
     ],
     "url": "https://github.com/Shattered-Codex/sc-simple-sockets",
     "manifest": "https://github.com/Shattered-Codex/sc-simple-sockets/releases/latest/download/module.json",
-    "download": "https://github.com/Shattered-Codex/sc-simple-sockets/releases/download/v1.1.0/sc-simple-sockets.zip",
+    "download": "https://github.com/Shattered-Codex/sc-simple-sockets/releases/download/v1.1.1/sc-simple-sockets.zip",
     "packs": [
         {
             "name": "sc-gems",
