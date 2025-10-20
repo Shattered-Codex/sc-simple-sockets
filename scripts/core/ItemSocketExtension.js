@@ -24,6 +24,54 @@ export class ItemSocketExtension extends SheetExtension {
 
   #isSockeable = this.makeItemCondition({ types: ["weapon", "equipment"] });
 
+  /**
+   * Checks if an item can receive sockets.
+   * @param {Item|object} item
+   * @returns {boolean}
+   */
+  isSockeable(item) {
+    return this.#isSockeable(item);
+  }
+
+  /**
+   * Builds the context consumed by the socket tab template.
+   * @param {ItemSheet} sheet
+   * @param {object} [options]
+   * @param {boolean} [options.includeTab=true]
+   * @param {boolean} [options.includePartId=true]
+   * @param {string} [options.partId=ItemSocketExtension.PART_ID]
+   * @returns {object}
+   */
+  buildSocketTabContext(sheet, {
+    includeTab = true,
+    includePartId = true,
+    partId = ItemSocketExtension.PART_ID
+  } = {}) {
+    const editable = !!sheet?.isEditable;
+    const item = sheet?.item ?? null;
+    const sockets = SocketService.getSlots(item);
+    const context = {
+      editable,
+      dataEditable: editable ? "true" : "false",
+      sockets
+    };
+
+    if (includePartId) {
+      context.partId = partId;
+    }
+
+    if (includeTab) {
+      const isActive = this.#isTabActive(sheet, partId);
+      context.tab = {
+        id: ItemSocketExtension.TAB_ID,
+        group: "primary",
+        cssClass: isActive ? "active" : ""
+      };
+    }
+
+    return context;
+  }
+
   #registerTab() {
     this.addTab({
       tab: ItemSocketExtension.TAB_ID,
@@ -41,26 +89,8 @@ export class ItemSocketExtension extends SheetExtension {
   }
 
   #registerContext() {
-    this.addContext(ItemSocketExtension.PART_ID, (sheet, ctx) => {
-      ctx.editable = sheet.isEditable;
-      ctx.dataEditable = ctx.editable ? "true" : "false";
-
-      ctx.sockets = SocketService.getSlots(sheet.item);
-
-      const node = sheet.element?.querySelector(
-        `[data-application-part="${ItemSocketExtension.PART_ID}"]`
-      );
-      const isActive =
-        node?.classList.contains("active") ||
-        sheet.tabGroups?.primary === ItemSocketExtension.TAB_ID ||
-        sheet._activeTab?.primary === ItemSocketExtension.TAB_ID;
-
-      ctx.tab = {
-        id: ItemSocketExtension.TAB_ID,
-        group: "primary",
-        cssClass: isActive ? "active" : ""
-      };
-      ctx.partId = ItemSocketExtension.PART_ID;
+    this.addContext(ItemSocketExtension.PART_ID, (sheet) => {
+      return this.buildSocketTabContext(sheet);
     });
   }
 
@@ -135,5 +165,21 @@ export class ItemSocketExtension extends SheetExtension {
         sheet.render();
       }
     );
+  }
+
+  #isTabActive(sheet, partId) {
+    const node = sheet.element?.querySelector(
+      `[data-application-part="${partId}"]`
+    );
+    if (node?.classList.contains("active")) {
+      return true;
+    }
+    if (sheet.tabGroups?.primary === ItemSocketExtension.TAB_ID) {
+      return true;
+    }
+    if (sheet._activeTab?.primary === ItemSocketExtension.TAB_ID) {
+      return true;
+    }
+    return false;
   }
 }

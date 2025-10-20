@@ -22,6 +22,10 @@ export class TransferFilterUI {
   }
 
   static #onRender(sheet, html) {
+    TransferFilterUI.bindToSheet(sheet, html);
+  }
+
+  static bindToSheet(sheet, html) {
     const item = sheet?.item;
     if (!GemCriteria.matches(item)) {
       return;

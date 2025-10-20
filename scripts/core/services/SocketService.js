@@ -110,7 +110,7 @@ export class SocketService {
   }
 
   static getSlots(hostItem) {
-    return SocketStore.getSlots(hostItem);
+    return SocketStore.peekSlots(hostItem);
   }
 
   static #gemMatchesHostType(gemItem, hostItem) {

@@ -23,6 +23,10 @@ export class SocketTooltipUI {
   }
 
   static #onRender(sheet, html) {
+    SocketTooltipUI.refresh(sheet, html);
+  }
+
+  static refresh(sheet, html) {
     const item = sheet?.item;
     if (!item) {
       return;

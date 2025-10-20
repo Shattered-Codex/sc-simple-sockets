@@ -1,6 +1,7 @@
 import { Constants } from "./Constants.js";
 import { SheetExtension } from "./SheetExtension.js";
 import { GemCriteria } from "../domain/gems/GemCriteria.js";
+import { GemTargetFilterBuilder } from "../domain/gems/GemTargetFilterBuilder.js";
 
 export class GemSheetExtension extends SheetExtension {
 
@@ -57,6 +58,47 @@ export class GemSheetExtension extends SheetExtension {
     this.#ensureActivitiesWrapper();
   }
 
+  /**
+   * Determines whether the provided item qualifies as a gem according to the configured criteria.
+   * @param {Item|object} item
+   * @returns {boolean}
+   */
+  isGem(item) {
+    return this.#condition(item);
+  }
+
+  /**
+   * Produces the context consumed by the gem target filter template.
+   * @param {ItemSheet} sheet
+   * @param {Object} [options]
+   * @param {string} [options.partId]
+   * @param {string} [options.tab="details"]
+   * @param {string} [options.group="primary"]
+   * @param {boolean} [options.includeHints=true]
+   * @returns {object}
+   */
+  buildGemTargetFilterContext(sheet, {
+    partId,
+    tab = "details",
+    group = "primary",
+    includeHints = true
+  } = {}) {
+    const item = sheet?.item ?? null;
+    const isActive = partId ? this.#isPartActive(sheet, partId, tab) : false;
+
+    return GemTargetFilterBuilder.buildContext(item, {
+      editable: sheet?.isEditable,
+      selectId: partId ? `${partId}-select` : undefined,
+      part: partId ? {
+        id: partId,
+        tab,
+        group,
+        cssClass: isActive ? "active" : ""
+      } : undefined,
+      includeHints
+    });
+  }
+
   #registerGemTargetFilter() {
     const partId = "sc-sockets-gem-target-filter";
     this.addPart({
@@ -66,35 +108,9 @@ export class GemSheetExtension extends SheetExtension {
     });
 
     this.addContext(partId, (sheet) => {
-      const item = sheet?.item;
-      const isGem = GemCriteria.matches(item);
-      const stored = this.#getStoredAllowedTypes(item);
-      const selected = stored.length ? stored : [Constants.GEM_ALLOWED_TYPES_ALL];
-      const selectedMap = Object.fromEntries(selected.map((value) => [value, true]));
-      const options = this.#applySelectionToOptions(this.#buildGemTargetOptions(), selectedMap);
-      const node = sheet?.element?.querySelector?.(`[data-application-part="${partId}"]`);
-      const isActive =
-        node?.classList?.contains?.("active") ||
-        sheet?.tabGroups?.primary === "details" ||
-        sheet?._activeTab?.primary === "details";
+      const filter = this.buildGemTargetFilterContext(sheet, { partId });
       return {
-        gemTargetFilter: {
-          isGem,
-          editable: !!(sheet?.isEditable && isGem),
-          label: Constants.localize("SCSockets.GemTargetTypes.Label", "Allowed Item Types"),
-          hint: Constants.localize("SCSockets.GemTargetTypes.Hint", "Choose which item subtypes can receive this gem."),
-          selectId: `${partId}-select`,
-          options,
-          selected,
-          selectedMap,
-          allValue: Constants.GEM_ALLOWED_TYPES_ALL,
-          part: {
-            id: partId,
-            tab: "details",
-            group: "primary",
-            cssClass: isActive ? "active" : ""
-          }
-        }
+        gemTargetFilter: filter
       };
     });
   }
@@ -157,125 +173,20 @@ export class GemSheetExtension extends SheetExtension {
     GemSheetExtension.#activitiesPatched = true;
   }
 
-  #getStoredAllowedTypes(item) {
-    const raw = item?.getFlag(Constants.MODULE_ID, Constants.FLAG_GEM_ALLOWED_TYPES);
-    if (!Array.isArray(raw)) {
-      return [];
+  #isPartActive(sheet, partId, tab) {
+    if (!sheet) {
+      return false;
     }
-    const unique = new Set();
-    for (const value of raw) {
-      if (typeof value === "string" && value.trim().length) {
-        unique.add(value);
-      }
+    const node = sheet.element?.querySelector?.(`[data-application-part="${partId}"]`);
+    if (node?.classList?.contains?.("active")) {
+      return true;
     }
-    return Array.from(unique);
-  }
-
-  #buildGemTargetOptions() {
-    const options = [];
-
-    options.push({
-      value: Constants.GEM_ALLOWED_TYPES_ALL,
-      label: Constants.localize("SCSockets.GemTargetTypes.AllTypes", "All Types")
-    });
-
-    const dnd5e = CONFIG?.DND5E;
-    if (!dnd5e) {
-      return options;
+    if (sheet.tabGroups?.primary === tab) {
+      return true;
     }
-
-    const groups = [
-      {
-        label: Constants.localize("SCSockets.GemTargetTypes.Groups.Weapons", "Weapons"),
-        entries: this.#normalizeCollection(dnd5e.weaponTypes),
-        prefix: "weapon"
-      },
-      {
-        label: Constants.localize("SCSockets.GemTargetTypes.Groups.Equipment", "Equipment"),
-        entries: this.#normalizeCollection(dnd5e.equipmentTypes),
-        prefix: "equipment"
-      }
-    ];
-
-    for (const group of groups) {
-      if (!group.entries.length) {
-        continue;
-      }
-      options.push({
-        label: group.label,
-        options: group.entries
-          .map(([key, value]) => ({
-            value: `${group.prefix}:${key}`,
-            label: this.#localizeConfigLabel(value, key)
-          }))
-          .sort((a, b) => a.label.localeCompare(b.label, game?.i18n?.lang ?? undefined))
-      });
+    if (sheet._activeTab?.primary === tab) {
+      return true;
     }
-
-    return options;
-  }
-
-  #applySelectionToOptions(options, selectedMap) {
-    if (!Array.isArray(options)) return [];
-    return options.map((entry) => {
-      if (entry?.options) {
-        return {
-          ...entry,
-          options: entry.options.map((opt) => ({
-            ...opt,
-            selected: !!selectedMap?.[opt.value]
-          }))
-        };
-      }
-      return {
-        ...entry,
-        selected: !!selectedMap?.[entry?.value]
-      };
-    });
-  }
-
-  #normalizeCollection(collection) {
-    if (!collection) {
-      return [];
-    }
-    if (collection instanceof Map) {
-      return Array.from(collection.entries());
-    }
-    if (Array.isArray(collection)) {
-      return collection.map((value, index) => [String(index), value]);
-    }
-    if (typeof collection === "object") {
-      return Object.entries(collection);
-    }
-    return [];
-  }
-
-  #localizeConfigLabel(value, fallback) {
-    if (value && typeof value === "object") {
-      if (typeof value.label === "string") {
-        return this.#localizeString(value.label, fallback);
-      }
-      if (typeof value.name === "string") {
-        return this.#localizeString(value.name, fallback);
-      }
-    }
-    if (typeof value === "string") {
-      return this.#localizeString(value, fallback);
-    }
-    return this.#formatFallbackLabel(fallback);
-  }
-
-  #localizeString(key, fallback) {
-    const localized = game?.i18n?.localize?.(key);
-    if (localized && localized !== key) {
-      return localized;
-    }
-    return key ?? this.#formatFallbackLabel(fallback);
-  }
-
-  #formatFallbackLabel(key) {
-    if (!key) return "";
-    const formatted = key.replace(/([A-Z])/g, " $1").replace(/[-_:]/g, " ");
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    return false;
   }
 }

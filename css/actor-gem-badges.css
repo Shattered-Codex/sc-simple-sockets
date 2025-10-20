@@ -1,9 +1,23 @@
 .sc-sockets-badges {
   display: flex;
-  flex-wrap: wrap;       /* allows wrapping to multiple lines */
-  gap: 3px;              /* space between gems */
+  flex-wrap: wrap;
+  gap: 3px;
   margin-top: 6px;
-  max-width: 200px;      /* optional: horizontal limit to force wrapping */
+  max-width: 200px;
+}
+
+.sc-sockets-badges.sc-sockets-badges-block {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 0.35rem;
+}
+
+.sc-sockets-badges.sc-sockets-badges-inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
 }
 
 .sc-sockets-badges .gem img {
@@ -16,6 +30,48 @@
 .sc-sockets-badges .gem.empty img {
   opacity: 0.55;
   filter: grayscale(1);
+}
+
+.sc-sockets-badges-block .gem,
+.sc-sockets-badges-inline .gem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tidy5e-sheet .sc-sockets-badges,
+.tidy5e-sheet.quadrone .sc-sockets-badges {
+  width: 100%;
+  margin-top: 0.3rem;
+  margin-bottom: 0.25rem;
+  gap: 3px;
+  justify-content: flex-start;
+}
+
+.tidy5e-sheet .sc-sockets-badges.sc-sockets-badges-inline,
+.tidy5e-sheet.quadrone .sc-sockets-badges.sc-sockets-badges-inline {
+  margin: 0;
+}
+
+.tidy5e-sheet .sc-sockets-name-with-badges,
+.tidy5e-sheet.quadrone .sc-sockets-name-with-badges {
+  display: flex;
+  /* flex-direction: column; */
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+
+
+
+.tidy5e-sheet .sc-sockets-badges .gem img,
+.tidy5e-sheet.quadrone .sc-sockets-badges .gem img {
+  width: 18px;
+  height: 18px;
+}
+
+.tidy5e-sheet .cell-text .sc-sockets-badges,
+.tidy5e-sheet.quadrone .cell-text .sc-sockets-badges {
+  order: initial;
 }
 
 /* Positioning for activity badges on item sheets and activity choices */

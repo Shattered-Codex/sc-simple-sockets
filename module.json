@@ -35,6 +35,9 @@
     "styles": [
         {
             "src": "css/actor-gem-badges.css"
+        },
+        {
+            "src": "css/tidy-sockets.css"
         }
     ],
     "url": "https://github.com/Shattered-Codex/sc-simple-sockets",

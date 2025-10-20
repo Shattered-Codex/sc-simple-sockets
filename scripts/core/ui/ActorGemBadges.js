@@ -6,6 +6,15 @@ export class ActorGemBadges {
   static #handlers = new Map();
 
   /**
+   * Applies badges to the provided sheet/element combo.
+   * @param {DocumentSheet} sheet
+   * @param {HTMLElement|JQuery} html
+   */
+  static render(sheet, html) {
+    this.#onRenderActorSheet(sheet, html);
+  }
+
+  /**
    * Activates badge rendering on supported actor sheets.
    */
   static activate() {
@@ -73,53 +82,28 @@ export class ActorGemBadges {
     const root = this.#rootOf(html);
     if (!root) return;
 
-    const socketed = actor.items.filter(i => {
-      const sockets = i.getFlag(Constants.MODULE_ID, this.FLAG_KEY);
-      return Array.isArray(sockets) && sockets.length > 0;
-    });
+    const socketed = [];
+    for (const item of actor.items) {
+      const sockets = item.getFlag(Constants.MODULE_ID, this.FLAG_KEY);
+      if (Array.isArray(sockets) && sockets.length) {
+        socketed.push({ item, sockets });
+      }
+    }
 
     if (!socketed.length) return;
 
-    for (const item of socketed) {
-      const sockets = item.getFlag(Constants.MODULE_ID, this.FLAG_KEY) ?? [];
-      const slots = sockets.filter(Boolean);
+    for (const { item, sockets } of socketed) {
+      const slots = this.#normalizeSlots(sockets);
       if (!slots.length) continue;
 
-      const cell = this.#findItemNameCell(root, item.id);
-      if (!cell) continue;
+      this.#removeExistingBadges(root, item.id);
 
-      // Remove previous badge block (idempotent)
-      cell.querySelectorAll(`.${this.CSS_CLASS}[data-item-id="${item.id}"]`).forEach(e => e.remove());
+      const targets = this.#collectTargets(root, item, slots);
+      if (!targets.length) continue;
 
-      // Build badge block
-      const wrap = document.createElement("div");
-      wrap.className = this.CSS_CLASS;
-      wrap.dataset.itemId = item.id;
-
-      for (const slot of slots) {
-        const div = document.createElement("div");
-        div.className = "gem";
-        if (!slot?.gem) {
-          div.classList.add("empty");
-        }
-
-        const img = document.createElement("img");
-        const src =
-          slot?.img ??
-          slot?.gem?.img ??
-          Constants.SOCKET_SLOT_IMG;
-        const label = slot?.gem?.name ?? slot?.name ?? this.#emptySlotLabel();
-        img.src = src;
-        img.alt = label;
-        img.draggable = false;
-
-        this.#applySlotTooltip(div, slot, label);
-
-        div.appendChild(img);
-        wrap.appendChild(div);
+      for (const target of targets) {
+        this.#scheduleInjection(target);
       }
-
-      cell.appendChild(wrap);
     }
 
     // Optional debug:
@@ -140,22 +124,220 @@ export class ActorGemBadges {
     return null;
   }
 
-  /**
-   * Attempts to locate the item name cell in different layouts and returns the first found.
-   * @private
-   */
-  static #findItemNameCell(root, itemId) {
+  static #normalizeSlots(raw) {
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw.map((entry, index) => {
+      const slot = entry ?? {};
+      return {
+        ...slot,
+        _index: index,
+        name: slot?.name ?? Constants.localize("SCSockets.SocketEmptyName", "Empty"),
+        img: slot?.img ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
+        gem: slot?.gem ?? null
+      };
+    });
+  }
+
+  static #collectTargets(root, item, slots) {
+    const targets = [];
+    const itemId = item.id;
+
+    const listTarget = this.#findListTarget(root, itemId);
+    if (listTarget) {
+      targets.push({ ...listTarget, slots });
+    }
+
+    const tidyTargets = this.#findTidyItemTargets(root, itemId);
+    if (tidyTargets.length) {
+      for (const tidyTarget of tidyTargets) {
+        targets.push({ ...tidyTarget, slots });
+      }
+    }
+
+    const activityTargets = this.#findTidyActivityTargets(root, item, slots);
+    if (activityTargets.length) {
+      targets.push(...activityTargets);
+    }
+
+    return targets;
+  }
+
+static #removeExistingBadges(root, itemId) {
+    if (!root) return;
+    root.querySelectorAll(`.${this.CSS_CLASS}[data-item-id="${itemId}"]`).forEach((el) => el.remove());
+    root
+      .querySelectorAll(`div.tidy-table-row-container[data-item-id="${itemId}"] .sc-sockets-name-with-badges`)
+      .forEach((el) => el.classList.remove("sc-sockets-name-with-badges"));
+  }
+
+  static #findListTarget(root, itemId) {
     const selectors = [
-      `li.item[data-item-id="${itemId}"] .name`,                              // dnd5e default
-      `div.item-table-row-container[data-item-id="${itemId}"] .item-table-cell.primary`, // tidy5e-like
-      `[data-item-id="${itemId}"] .name`,
-      `[data-item-id="${itemId}"] .item-name`
+      `li.item[data-item-id="${itemId}"] .name`,
+      `div.list-item[data-item-id="${itemId}"] .name`
     ];
     for (const sel of selectors) {
       const el = root.querySelector(sel);
-      if (el) return el;
+      if (el) {
+        return {
+          itemId,
+          container: el,
+          reference: null,
+          inline: false
+        };
+      }
     }
     return null;
+  }
+
+  static #findTidyItemTargets(root, itemId) {
+    const results = [];
+
+    const containers = Array.from(
+      root.querySelectorAll(`div.tidy-table-row-container[data-item-id="${itemId}"]`)
+    );
+
+    if (!containers.length && root.matches?.(`div.tidy-table-row-container[data-item-id="${itemId}"]`)) {
+      containers.push(root);
+    }
+
+    for (const rowContainer of containers) {
+      const row = rowContainer.querySelector?.(".tidy-table-row:not(.activity)") ?? rowContainer;
+      if (!row) continue;
+
+      const itemName =
+        row.querySelector?.(".tidy-table-cell.item-label .item-name") ??
+        row.querySelector?.(".tidy-table-cell.item-label") ??
+        row.querySelector?.(".item-name");
+      if (!itemName) continue;
+
+      const cellText = itemName.querySelector(":scope > .cell-text") ?? itemName;
+      const indicator = itemName.querySelector(":scope > .row-detail-expand-indicator");
+
+      results.push({
+        itemId,
+        container: itemName,
+        label: cellText,
+        reference: indicator ?? null,
+        inline: true
+      });
+    }
+
+    return results;
+  }
+
+  static #findTidyActivityTargets(root, item, slots) {
+    const results = [];
+    const flag = item.getFlag(Constants.MODULE_ID, Constants.FLAG_SOCKET_ACTIVITIES) ?? {};
+    for (const [slotIndex, payload] of Object.entries(flag)) {
+      const index = Number(slotIndex);
+      const slot = slots[index];
+      if (!slot?.gem) continue;
+
+      const meta = payload?.activityMeta ?? {};
+      for (const [activityId] of Object.entries(meta)) {
+        const row = root.querySelector(
+          `div.tidy-table-row.activity[data-activity-id="${activityId}"]`
+        );
+        if (!row) continue;
+        const cellText = row.querySelector(".tidy-table-cell.primary .item-name .cell-text");
+        if (!cellText) continue;
+        const indicator = cellText.querySelector(":scope > .row-detail-expand-indicator");
+        results.push({
+          itemId: item.id,
+          container: cellText,
+          reference: indicator ?? null,
+          inline: true,
+          activityId,
+          slots: [slot]
+        });
+      }
+    }
+    return results;
+  }
+
+static #scheduleInjection(target) {
+    if (!target) return;
+    const schedule =
+      globalThis?.requestAnimationFrame ??
+      ((fn) => (typeof globalThis?.setTimeout === "function" ? globalThis.setTimeout(fn, 16) : fn()));
+    schedule(() => {
+      if (!target?.container?.isConnected) {
+        return;
+      }
+      ActorGemBadges.#injectBadges(target);
+    });
+  }
+
+  static #injectBadges(target) {
+    if (!target?.container) return;
+    const slots = Array.isArray(target.slots) ? target.slots : [];
+    if (!slots.length) return;
+
+    const wrap = document.createElement(target.inline ? "span" : "div");
+    wrap.className = this.CSS_CLASS;
+    wrap.dataset.itemId = target.itemId;
+    wrap.classList.add(target.inline ? "sc-sockets-badges-inline" : "sc-sockets-badges-block");
+    if (target.activityId) {
+      wrap.dataset.activityId = target.activityId;
+      wrap.classList.add("sc-sockets-badges-activity");
+    }
+
+    const container = target.container;
+    const host = target.label ?? container;
+    host?.classList.add("sc-sockets-name-with-badges");
+    if (host !== container) {
+      container.classList.add("sc-sockets-name-with-badges");
+    }
+
+    for (const slot of slots) {
+      const badge = this.#createBadgeElement(slot, target.inline);
+      wrap.appendChild(badge);
+    }
+
+    if (target.inline) {
+      const host = target.label ?? container.querySelector(":scope > .cell-text") ?? container;
+      host.classList.add("sc-sockets-name-with-badges");
+
+      const cellContext = host.querySelector(":scope > .cell-context");
+      const cellName = host.querySelector(":scope > .cell-name");
+
+      if (cellContext) {
+        cellContext.insertAdjacentElement("afterend", wrap);
+      } else if (cellName) {
+        cellName.insertAdjacentElement("afterend", wrap);
+      } else {
+        host.appendChild(wrap);
+      }
+    } else {
+      const reference = target.reference ?? null;
+      if (reference && reference.parentNode === target.container) {
+        target.container.insertBefore(wrap, reference);
+      } else {
+        target.container.appendChild(wrap);
+      }
+    }
+  }
+
+  static #createBadgeElement(slot, inline = false) {
+    const tag = inline ? "span" : "div";
+    const el = document.createElement(tag);
+    el.className = "gem";
+    if (!slot?.gem) {
+      el.classList.add("empty");
+    }
+
+    const img = document.createElement("img");
+    const label = slot?.gem?.name ?? slot?.name ?? this.#emptySlotLabel();
+    img.src = slot?.img ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG;
+    img.alt = label;
+    img.draggable = false;
+
+    this.#applySlotTooltip(el, slot, label);
+
+    el.appendChild(img);
+    return el;
   }
 
   /**
@@ -185,7 +367,7 @@ export class ActorGemBadges {
   /**
    * Builds tooltip metadata for a gem slot.
    * @param {object} slot
-   * @param {string} fallbackLabel
+  * @param {string} fallbackLabel
    * @returns {{type: string, label?: string, uuid?: string, direction?: string, cssClass?: string}|null}
    * @private
    */
@@ -264,70 +446,44 @@ export class ActorGemBadges {
   static async #verifyTooltipDocument(element, candidateUuids, fallbackLabel, direction, cssClass) {
     if (typeof fromUuid !== "function") return;
 
-    const unique = Array.from(new Set(candidateUuids.filter((u) => typeof u === "string" && u.length)));
-    if (!unique.length) {
-      this.#applyTextTooltip(element, fallbackLabel, direction, cssClass);
-      return;
-    }
-
-    for (const uuid of unique) {
+    for (const uuid of candidateUuids) {
       try {
         const doc = await fromUuid(uuid);
-        if (!doc) continue;
-        if (!element?.isConnected) return;
-        if (element.dataset.uuid !== uuid) {
-          this.#setTooltipLoader(element, uuid, direction, cssClass);
+        if (doc) {
+          element.dataset.uuid = uuid;
+          return;
         }
-        return;
-      } catch (error) {
-        console.debug(`[${Constants.MODULE_ID}] Unable to resolve tooltip uuid: ${uuid}`, error);
+      } catch (err) {
+        console.warn(`[${Constants.MODULE_ID}] failed to resolve tooltip uuid`, err);
       }
     }
 
-    if (element?.isConnected) {
-      this.#applyTextTooltip(element, fallbackLabel, direction, cssClass);
-    }
+    this.#applyTextTooltip(element, fallbackLabel, direction, cssClass);
   }
 
   /**
-   * Assign the loading template for a given UUID.
+   * Configures dataset properties to show the tidy tooltip loader.
    * @private
    */
   static #setTooltipLoader(element, uuid, direction, cssClass) {
-    element.classList.add("item-tooltip");
-    element.dataset.tooltip =
-      `<section class="loading" data-uuid="${uuid}"><i class="fas fa-spinner fa-spin-pulse"></i></section>`;
-    element.dataset.tooltipClass = cssClass ?? "dnd5e2 dnd5e-tooltip item-tooltip themed theme-light";
-    element.dataset.tooltipDirection = direction;
     element.dataset.uuid = uuid;
+    element.dataset.tooltipDirection = direction;
+    element.dataset.tooltip = `<section class="loading" data-uuid="${uuid}"><i class="fas fa-spinner fa-spin-pulse"></i></section>`;
+    element.dataset.tooltipClass = cssClass;
+    element.classList.add("item-tooltip");
   }
 
-  /**
-   * Collect potential UUIDs to resolve the gem document.
-   * @private
-   */
   static #collectCandidateUuids(slot) {
-    const uuids = [];
-
-    const primary = slot?.gem?.uuid;
-    if (typeof primary === "string" && primary.length) {
-      uuids.push(primary);
+    const candidates = [];
+    const direct = slot?.gem?.uuid ?? slot?.gem?.flags?.core?.sourceId ?? slot?.gem?.sourceUuid;
+    if (direct) {
+      candidates.push(direct);
     }
-
-    const propertyLookup = globalThis?.foundry?.utils?.getProperty;
-    const sourceUuid =
-      slot?.gem?.sourceUuid ??
-      propertyLookup?.(slot, "_gemData.flags.core.sourceId");
-    if (typeof sourceUuid === "string" && sourceUuid.length && !uuids.includes(sourceUuid)) {
-      uuids.push(sourceUuid);
+    const stored = slot?.gem?.flags?.core?.sourceId ?? slot?._gemData?.flags?.core?.sourceId;
+    if (stored) {
+      candidates.push(stored);
     }
-
-    const worldUuid = propertyLookup?.(slot, "_gemData._stats.importedId");
-    if (typeof worldUuid === "string" && worldUuid.length && !uuids.includes(worldUuid)) {
-      uuids.push(worldUuid);
-    }
-
-    return uuids;
+    return candidates;
   }
 
   static #emptySlotLabel() {
