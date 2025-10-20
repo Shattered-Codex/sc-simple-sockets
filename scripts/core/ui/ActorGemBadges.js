@@ -82,15 +82,18 @@ export class ActorGemBadges {
     const root = this.#rootOf(html);
     if (!root) return;
 
-    const socketed = actor.items.filter((item) => {
+    const socketed = [];
+    for (const item of actor.items) {
       const sockets = item.getFlag(Constants.MODULE_ID, this.FLAG_KEY);
-      return Array.isArray(sockets) && sockets.length;
-    });
+      if (Array.isArray(sockets) && sockets.length) {
+        socketed.push({ item, sockets });
+      }
+    }
 
     if (!socketed.length) return;
 
-    for (const item of socketed) {
-      const slots = this.#normalizeSlots(item.getFlag(Constants.MODULE_ID, this.FLAG_KEY));
+    for (const { item, sockets } of socketed) {
+      const slots = this.#normalizeSlots(sockets);
       if (!slots.length) continue;
 
       this.#removeExistingBadges(root, item.id);
@@ -143,13 +146,13 @@ export class ActorGemBadges {
 
     const listTarget = this.#findListTarget(root, itemId);
     if (listTarget) {
-      targets.push({ ...listTarget, slots: [...slots] });
+      targets.push({ ...listTarget, slots });
     }
 
     const tidyTargets = this.#findTidyItemTargets(root, itemId);
     if (tidyTargets.length) {
       for (const tidyTarget of tidyTargets) {
-        targets.push({ ...tidyTarget, slots: [...slots] });
+        targets.push({ ...tidyTarget, slots });
       }
     }
 

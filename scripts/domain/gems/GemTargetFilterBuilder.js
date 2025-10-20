@@ -5,6 +5,9 @@ import { GemCriteria } from "./GemCriteria.js";
  * Helper responsible for building the data model used by the gem target filter UI.
  */
 export class GemTargetFilterBuilder {
+  static #optionsCache = null;
+  static #cacheLang = null;
+  static #cacheConfig = null;
 
   /**
    * Builds the full context object consumed by the gem target filter template.
@@ -82,6 +85,12 @@ export class GemTargetFilterBuilder {
    * @returns {Array}
    */
   static buildGemTargetOptions() {
+    const lang = game?.i18n?.lang ?? "en";
+    const configRef = CONFIG?.DND5E ?? null;
+    if (this.#optionsCache && this.#cacheLang === lang && this.#cacheConfig === configRef) {
+      return this.#optionsCache;
+    }
+
     const options = [];
 
     options.push({
@@ -91,7 +100,10 @@ export class GemTargetFilterBuilder {
 
     const dnd5e = CONFIG?.DND5E;
     if (!dnd5e) {
-      return options;
+      this.#cacheLang = lang;
+      this.#cacheConfig = configRef;
+      this.#optionsCache = options;
+      return this.#optionsCache;
     }
 
     const groups = [
@@ -122,7 +134,10 @@ export class GemTargetFilterBuilder {
       });
     }
 
-    return options;
+    this.#cacheLang = lang;
+    this.#cacheConfig = configRef;
+    this.#optionsCache = options;
+    return this.#optionsCache;
   }
 
   /**

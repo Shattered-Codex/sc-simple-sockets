@@ -3,9 +3,8 @@ import { Constants } from "../core/Constants.js";
 export class SocketStore {
 
   static getSlots(item) {
-    return foundry.utils.duplicate(
-      item.getFlag(Constants.MODULE_ID, Constants.FLAGS.sockets) ?? []
-    );
+    const slots = this.peekSlots(item);
+    return foundry.utils.duplicate(slots);
   }
 
   static async setSlots(item, slots) {
@@ -24,5 +23,10 @@ export class SocketStore {
       slots.splice(idx, 1);
       return this.setSlots(item, slots);
     }
+  }
+
+  static peekSlots(item) {
+    const slots = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAGS.sockets);
+    return Array.isArray(slots) ? slots : [];
   }
 }
