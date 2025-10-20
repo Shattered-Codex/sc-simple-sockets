@@ -1,0 +1,71 @@
+.sc-sockets-tidy {
+  position: relative;
+}
+
+.sc-sockets-tidy .socket-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-right: 0.5rem;
+}
+
+.sc-sockets-tidy .socket-icon-wrapper .item-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.sc-sockets-tidy .tidy-table-cell.primary .item-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sc-sockets-tidy .tidy-table-row-container.socket .tidy-table-row {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.sc-sockets-tidy .tidy-table-row-container.socket .tidy-table-row > .tidy-table-cell.primary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sc-sockets-tidy .tidy-table-row-container.socket .tidy-table-row > .tidy-table-cell.tidy-table-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.sc-sockets-expandable {
+  display: block;
+}
+
+.sc-sockets-tidy[data-sc-expanded="false"] .sc-sockets-expandable {
+  display: none;
+}
+
+.sc-sockets-tidy .expand-button .fa-solid {
+  transition: transform 0.2s ease;
+}
+
+.sc-sockets-tidy[data-sc-expanded="true"] .expand-button .fa-solid {
+  transform: rotate(90deg);
+}
+
+.sc-sockets-tidy__empty {
+  border: 1px dashed var(--color-border-light-primary, rgba(0, 0, 0, 0.2));
+  border-radius: 6px;
+  padding: 1rem;
+  text-align: center;
+  font-style: italic;
+  color: var(--color-text-muted, rgba(0, 0, 0, 0.6));
+}
+
+.sc-sockets-tidy__empty {
+  margin: 0.5rem auto;
+}

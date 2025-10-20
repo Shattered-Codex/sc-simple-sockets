@@ -9,11 +9,16 @@ import { ItemActivityBadges } from "./core/ui/ItemActivityBadges.js";
 import { TransferFilterUI } from "./core/ui/TransferFilterUI.js";
 import { SocketTooltipUI } from "./core/ui/SocketTooltipUI.js";
 import { MacroAPI } from "./core/api/MacroAPI.js";
+import { TidyIntegration } from "./core/integration/TidyIntegration.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
 const lifecycle = new GemLifecycleService();
 MacroAPI.register();
+TidyIntegration.register({
+  gemSheetExtension: gemSheet,
+  itemSocketExtension: itemSocketSheet
+});
 
 Hooks.once("init", async function() {
   console.log(`${Constants.MODULE_ID} | init`);

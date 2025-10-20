@@ -1,0 +1,39 @@
+{{#with gemTargetFilter as |filter|}}
+<section class="tab sc-sockets-gem-target-filter-part {{filter.part.cssClass}}"
+         data-tab="{{filter.part.tab}}"
+         data-group="{{filter.part.group}}"
+         data-application-part="{{filter.part.id}}">
+  {{#if filter.isGem}}
+    <fieldset class="form-group sc-sockets-gem-target-filter">
+      <legend class="form-header">{{filter.label}}</legend>
+      <div class="form-fields">
+        <select id="{{filter.selectId}}"
+                class="sc-sockets-gem-target-select"
+                data-sc-sockets="gem-target-select"
+                multiple
+                size="6"
+                {{#unless filter.editable}}disabled{{/unless}}>
+          {{#each filter.options as |entry|}}
+            {{#if entry.options}}
+              <optgroup label="{{entry.label}}">
+                {{#each entry.options as |option|}}
+                  <option value="{{option.value}}" {{#if option.selected}}selected{{/if}}>
+                    {{option.label}}
+                  </option>
+                {{/each}}
+              </optgroup>
+            {{else}}
+              <option value="{{entry.value}}" {{#if entry.selected}}selected{{/if}}>
+                {{entry.label}}
+              </option>
+            {{/if}}
+          {{/each}}
+        </select>
+      </div>
+      {{#if filter.hint}}
+        <p class="hint">{{filter.hint}}</p>
+      {{/if}}
+    </fieldset>
+  {{/if}}
+</section>
+{{/with}}

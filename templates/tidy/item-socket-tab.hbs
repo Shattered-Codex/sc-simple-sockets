@@ -1,0 +1,79 @@
+<section class="tidy-table sc-sockets-tidy" data-sc-sockets="tab" data-tidy-sheet-part="item-table" data-tidy-section-key="sc-sockets" data-sc-expanded="true">
+  <header class="tidy-table-header-row theme-dark toggleable" data-tidy-sheet-part="table-header-row">
+    <div class="tidy-table-header-cell header-label-cell primary" data-tidy-sheet-part="table-header-cell">
+      <div class="button expand-button expanded" aria-hidden="true">
+        <i class="fa-solid fa-chevron-right" data-tidy-sheet-part="table-expansion-toggle"></i>
+      </div>
+      <h3>{{ localize "SCSockets.TabLabel" }}</h3>
+      <span class="table-header-count">{{sockets.length}}</span>
+    </div>
+
+    <div class="tidy-table-header-cell tidy-table-actions" data-tidy-sheet-part="table-header-cell">
+      {{#if editable}}
+        <a class="tidy-table-button"
+           data-action="addSocketSlot"
+           data-tooltip="{{ localize 'SCSockets.ActionAdd' }}"
+           aria-label="{{ localize 'SCSockets.ActionAdd' }}">
+          <i class="fas fa-plus"></i>
+        </a>
+      {{/if}}
+    </div>
+  </header>
+
+  <div class="expandable sc-sockets-expandable expanded">
+    <div class="expandable-child-animation-wrapper">
+      <div class="item-table-body">
+        {{#if sockets.length}}
+          {{#each sockets as |slot i|}}
+            <div class="tidy-table-row-container socket" data-index="{{i}}" data-dropzone="socket-slot" aria-hidden="false">
+              <div class="tidy-table-row tidy-table-row-v2" data-tidy-table-row="" data-tidy-sheet-part="table-row">
+                <div class="tidy-table-cell primary" data-tidy-sheet-part="table-cell">
+                  <div class="tidy-table-row-use-button socket-icon-wrapper">
+                    <img class="item-image" src="{{slot.img}}" alt="{{slot.name}}">
+                  </div>
+                  <div class="item-name">
+                    <span class="cell-text">
+                      <span class="cell-name">{{slot.name}}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="tidy-table-cell tidy-table-actions" data-tidy-sheet-part="table-cell">
+                  {{#if ../editable}}
+                    <a class="tidy-table-button"
+                       data-action="removeGemFromSlot"
+                       data-index="{{i}}"
+                       data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
+                       aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}">
+                      <i class="fas fa-circle-xmark"></i>
+                    </a>
+                    <a class="tidy-table-button"
+                       data-action="removeSocketSlot"
+                       data-index="{{i}}"
+                       data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"
+                       aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  {{/if}}
+                </div>
+              </div>
+            </div>
+          {{/each}}
+        {{else}}
+          <div class="tidy-table-row-container socket empty">
+            <div class="tidy-table-row tidy-table-row-v2">
+              <div class="tidy-table-cell" data-tidy-sheet-part="table-cell" colspan="2">
+                <div class="sc-sockets-tidy__empty"
+                     data-dropzone="socket-slot"
+                     aria-dropeffect="copy">
+                  {{ localize "SCSockets.EmptyList" }}
+                </div>
+              </div>
+              <div class="tidy-table-cell tidy-table-actions" data-tidy-sheet-part="table-cell"></div>
+            </div>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+  </div>
+</section>
