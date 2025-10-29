@@ -11,8 +11,8 @@
     "Notifications": {
       "InvalidSocketIndex": "Invalid socket index.",
       "CannotResolveItem": "Cannot resolve dropped item.",
-      "OnlyGems": "Only gems can be socketed.",
-      "GemIncompatible": "This gem cannot be socketed into this item.",
+      "OnlyGems": "Only socket-compatible items can be inserted.",
+      "GemIncompatible": "That item is not compatible with this socket.",
       "GemUnsocketed": "Gem unsocketed.",
       "MaxReached": "Maximum number of sockets reached.",
       "GemRequiresSocket": "This gem must be socketed before it can be used."
@@ -46,6 +46,25 @@
       "DeleteOnRemoval": {
         "Name": "Delete Gem on Removal",
         "Hint": "If enabled, a gem is destroyed when removed from a socket; otherwise it's returned to the player's inventory."
+      },
+      "GemLootSubtypes": {
+        "Name": "Gem Loot Subtypes",
+        "Label": "Configure Gem Loot Subtypes",
+        "Hint": "Select which loot subtypes count as gems and customize the extra subtype label.",
+        "Title": "Gem Loot Subtype Settings",
+        "SelectLabel": "Loot subtypes considered gems",
+        "SelectHint": "Items with these loot subtypes will be treated as gems.",
+        "Save": "Save",
+        "Custom": {
+          "Heading": "Custom loot subtypes",
+          "Hint": "Add new loot subtype keys and labels that will be available for gems.",
+          "Key": "Subtype key",
+          "KeyPlaceholder": "e.g. extra",
+          "Label": "Display label",
+          "LabelPlaceholder": "Extra",
+          "Add": "Add subtype",
+          "Remove": "Remove"
+        }
       }
     },
     "Dialogs": {

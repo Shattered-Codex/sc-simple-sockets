@@ -1,0 +1,78 @@
+<section class="flexcol" data-application-part="form">
+  <div class="form-group section-heading">
+    <div>
+      <h4>{{strings.subtypeSelect}}</h4>
+      <p class="notes">{{strings.subtypeHint}}</p>
+    </div>
+    <select id="{{selectId}}" name="subtypes" multiple size="{{selectSize}}" class="wide-select">
+      {{#each availableSubtypes}}
+        <option
+          value="{{this.value}}"
+          {{#if this.selected}}selected{{/if}}
+          {{#if this.isCustom}}data-custom="true"{{/if}}
+        >
+          {{this.label}}
+        </option>
+      {{/each}}
+    </select>
+  </div>
+
+  <div class="form-group custom-subtypes">
+    <div>
+      <h4>{{strings.custom.heading}}</h4>
+      <p class="notes">{{strings.custom.hint}}</p>
+    </div>
+    <table class="custom-subtype-table">
+      <thead>
+        <tr>
+          <th scope="col">{{strings.custom.keyLabel}}</th>
+          <th scope="col">{{strings.custom.labelLabel}}</th>
+          <th scope="col" class="actions">&nbsp;</th>
+        </tr>
+      </thead>
+      <tbody
+        data-custom-subtypes
+        data-placeholder-key="{{strings.custom.keyPlaceholder}}"
+        data-placeholder-label="{{strings.custom.labelPlaceholder}}"
+        data-remove-label="{{strings.custom.remove}}"
+      >
+        {{#each customSubtypes}}
+          <tr data-subtype-row data-index="{{@index}}">
+            <td>
+              <input
+                type="text"
+                name="customSubtypes.{{@index}}.key"
+                value="{{this.key}}"
+                placeholder="{{../strings.custom.keyPlaceholder}}"
+                data-custom-field="key"
+                autocomplete="off"
+              />
+            </td>
+            <td>
+              <input
+                type="text"
+                name="customSubtypes.{{@index}}.label"
+                value="{{this.label}}"
+                placeholder="{{../strings.custom.labelPlaceholder}}"
+                data-custom-field="label"
+                autocomplete="off"
+              />
+            </td>
+            <td class="actions">
+              <button type="button" class="dialog-button" data-action="removeCustomSubtype">
+                {{../strings.custom.remove}}
+              </button>
+            </td>
+          </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="form-footer button-row">
+    <button type="button" class="dialog-button" data-action="addCustomSubtype">
+      {{strings.custom.add}}
+    </button>
+    <button type="submit" class="dialog-button ok">{{strings.submit}}</button>
+  </footer>
+</section>

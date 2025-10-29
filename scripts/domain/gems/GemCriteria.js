@@ -1,15 +1,14 @@
 import { Constants } from "../../core/Constants.js";
+import { ModuleSettings } from "../../core/settings/ModuleSettings.js";
 
 export class GemCriteria {
   static #SUBTYPE_PATH = "system.type.value";
 
-  static #definition = Object.freeze({
-    types: Constants.ITEM_TYPE_LOOT,
-    subtype: Constants.ITEM_SUBTYPE_GEM
-  });
-
   static get definition() {
-    return GemCriteria.#definition;
+    return {
+      types: Constants.ITEM_TYPE_LOOT,
+      subtype: ModuleSettings.getGemLootSubtypes()
+    };
   }
 
   static get matcher() {
@@ -23,7 +22,14 @@ export class GemCriteria {
     if (item.type !== Constants.ITEM_TYPE_LOOT) return false;
 
     const subtype = foundry?.utils?.getProperty?.(item, GemCriteria.#SUBTYPE_PATH);
-    return String(subtype ?? "").toLowerCase() === String(Constants.ITEM_SUBTYPE_GEM).toLowerCase();
+    const normalized = String(subtype ?? "").trim().toLowerCase();
+    if (!normalized.length) {
+      return false;
+    }
+
+    return ModuleSettings.getGemLootSubtypes()
+      .map((value) => String(value ?? "").trim().toLowerCase())
+      .includes(normalized);
   }
 
   static hasTypeUpdate(changes) {

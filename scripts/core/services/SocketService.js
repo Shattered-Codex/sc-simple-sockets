@@ -37,13 +37,19 @@ export class SocketService {
 
     if (!ItemResolver.isGem(gemItem)) {
       return ui.notifications?.warn?.(
-        Constants.localize("SCSockets.Notifications.OnlyGems", "Only gems can be socketed.")
+        Constants.localize(
+          "SCSockets.Notifications.OnlyGems",
+          "Only socket-compatible items can be inserted."
+        )
       );
     }
 
     if (!SocketService.#gemMatchesHostType(gemItem, hostItem)) {
       return ui.notifications?.warn?.(
-        Constants.localize("SCSockets.Notifications.GemIncompatible", "This gem cannot be socketed into this item.")
+        Constants.localize(
+          "SCSockets.Notifications.GemIncompatible",
+          "That item is not compatible with this socket."
+        )
       );
     }
 
