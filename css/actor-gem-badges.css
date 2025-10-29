@@ -144,3 +144,39 @@ body.sc-sockets-target-cursor * {
 .item-name.socket-name {
   flex: 2;
 }
+
+.gem-subtype-settings select.wide-select {
+  min-height: 16rem;
+  background: rgba(0,0,0,0.15);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.gem-subtype-settings select.wide-select option:checked {
+  background: var(--color-accent, rgba(255, 215, 0, 0.35));
+  color: var(--color-text-light-heading, #fff);
+}
+
+.gem-subtype-settings .button-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.gem-subtype-settings .section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gem-subtype-settings .section-heading > h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.form-group.custom-subtypes {
+    margin: 18px 0px;
+}

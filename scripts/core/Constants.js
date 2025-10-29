@@ -13,6 +13,9 @@ export class Constants {
   };
   static GEM_ALLOWED_TYPES_ALL = "*";
   static SOCKET_SLOT_IMG = `modules/${this.MODULE_ID}/assets/imgs/socket-slot.webp`;
+  static SETTING_GEM_LOOT_SUBTYPES = "gemLootSubtypes";
+  static SETTING_LOOT_SUBTYPE_MENU = "gemLootSubtypeSettings";
+  static SETTING_CUSTOM_LOOT_SUBTYPES = "customLootSubtypes";
 
   static localize(key, fallback = key) {
     return game?.i18n?.localize?.(key) ?? fallback ?? key;

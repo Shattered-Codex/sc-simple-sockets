@@ -11,8 +11,8 @@
     "Notifications": {
       "InvalidSocketIndex": "Índice de soquete inválido.",
       "CannotResolveItem": "Não foi possível identificar o item solto.",
-      "OnlyGems": "Somente gemas podem ser encaixadas.",
-      "GemIncompatible": "Esta gema não pode ser encaixada neste item.",
+      "OnlyGems": "Somente itens compatíveis com soquetes podem ser encaixados.",
+      "GemIncompatible": "Esse item não é compatível com este soquete.",
       "GemUnsocketed": "Gema removida do soquete.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada."
@@ -46,6 +46,25 @@
       "DeleteOnRemoval": {
         "Name": "Destruir gema ao remover",
         "Hint": "Se ativado, a gema é destruída ao ser removida do soquete; caso contrário, volta para o inventário do jogador."
+      },
+      "GemLootSubtypes": {
+        "Name": "Subtipos de loot que são gemas",
+        "Label": "Configurar subtipos de loot para gemas",
+        "Hint": "Selecione quais subtipos de loot contam como gemas e personalize o rótulo do subtipo extra.",
+        "Title": "Configurações de subtipos de loot",
+        "SelectLabel": "Subtipos de loot considerados gemas",
+        "SelectHint": "Itens com esses subtipos de loot serão tratados como gemas.",
+        "Save": "Salvar",
+        "Custom": {
+          "Heading": "Subtipos de loot personalizados",
+          "Hint": "Adicione novos identificadores e rótulos de subtipos de loot disponíveis para gemas.",
+          "Key": "Identificador do subtipo",
+          "KeyPlaceholder": "ex.: extra",
+          "Label": "Rótulo exibido",
+          "LabelPlaceholder": "Extra",
+          "Add": "Adicionar subtipo",
+          "Remove": "Remover"
+        }
       }
     },
     "Dialogs": {

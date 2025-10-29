@@ -5,14 +5,18 @@ export class ModuleSettings {
   static SETTING_EDIT_SOCKET = "editSocketPermission";
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
+  static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
+  static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
+  static SETTING_CUSTOM_LOOT_SUBTYPES = Constants.SETTING_CUSTOM_LOOT_SUBTYPES;
 
   constructor() {
   }
 
-  register() {
+  async register() {
     this.#registerEditSocketPermission();
     this.#registerMaxSockets();
     this.#registerDeleteOnRemoval();
+    await this.#registerLootSubtypeSettings();
   }
 
   static canAddOrRemoveSocket(user = game.user) {
@@ -34,6 +38,103 @@ export class ModuleSettings {
 
   static shouldDeleteGemOnRemoval() {
     return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE);
+  }
+
+  static getGemLootSubtypes() {
+    const raw = game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_LOOT_SUBTYPES);
+    if (!Array.isArray(raw)) {
+      return [Constants.ITEM_SUBTYPE_GEM];
+    }
+    const cleaned = [];
+    const seen = new Set();
+    for (const value of raw) {
+      if (typeof value !== "string") continue;
+      const trimmed = value.trim();
+      if (!trimmed.length) continue;
+      const lower = trimmed.toLowerCase();
+      if (seen.has(lower)) continue;
+      seen.add(lower);
+      cleaned.push(trimmed);
+    }
+    if (!cleaned.length) {
+      cleaned.push(Constants.ITEM_SUBTYPE_GEM);
+    }
+    return cleaned;
+  }
+
+  static async setGemLootSubtypes(subtypes = []) {
+    const normalized = Array.isArray(subtypes) ? subtypes : [subtypes];
+    const cleaned = [];
+    const seen = new Set();
+    for (const value of normalized) {
+      if (typeof value !== "string") continue;
+      const trimmed = value.trim();
+      if (!trimmed.length) continue;
+      const lower = trimmed.toLowerCase();
+      if (seen.has(lower)) continue;
+      seen.add(lower);
+      cleaned.push(trimmed);
+    }
+    if (!cleaned.length) {
+      cleaned.push(Constants.ITEM_SUBTYPE_GEM);
+    }
+    await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_LOOT_SUBTYPES, cleaned);
+    return cleaned;
+  }
+
+  static getCustomLootSubtypes() {
+    const raw = game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_CUSTOM_LOOT_SUBTYPES);
+    const entries = Array.isArray(raw) ? raw : [];
+    const sanitized = ModuleSettings.#sanitizeCustomSubtypeEntries(entries);
+    if (!ModuleSettings.#areSubtypeEntriesEqual(entries, sanitized)) {
+      game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_CUSTOM_LOOT_SUBTYPES, sanitized).catch(() => {});
+    }
+    return sanitized;
+  }
+
+  static async setCustomLootSubtypes(entries = []) {
+    const sanitized = ModuleSettings.#sanitizeCustomSubtypeEntries(entries);
+    await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_CUSTOM_LOOT_SUBTYPES, sanitized);
+    return sanitized;
+  }
+
+  static #sanitizeCustomSubtypeEntries(entries) {
+    if (!Array.isArray(entries)) {
+      return [];
+    }
+
+    const cleaned = [];
+    const seen = new Set();
+    for (const entry of entries) {
+      const key = typeof entry?.key === "string" ? entry.key.trim() : "";
+      if (!key.length) continue;
+      const lower = key.toLowerCase();
+      if (seen.has(lower)) continue;
+      seen.add(lower);
+
+      const label = (typeof entry?.label === "string" && entry.label.trim().length)
+        ? entry.label.trim()
+        : ModuleSettings.formatSubtypeLabel(key);
+
+      cleaned.push({ key, label });
+    }
+    return cleaned;
+  }
+
+  static #areSubtypeEntriesEqual(a, b) {
+    if (a === b) return true;
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    return a.every((entry, index) => {
+      const other = b[index];
+      return entry?.key === other?.key && entry?.label === other?.label;
+    });
+  }
+
+  static formatSubtypeLabel(key) {
+    if (!key) return "Custom";
+    const normalized = key.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+    if (!normalized.length) return "Custom";
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
   }
 
   #registerEditSocketPermission() {
@@ -104,6 +205,36 @@ export class ModuleSettings {
         console.log(`${Constants.MODULE_ID} | maxSockets changed to ${value}, reloading page`);
         window.location.reload();
       }
+    });
+  }
+
+  async #registerLootSubtypeSettings() {
+    const { GemSubtypeSettings } = await import("./GemSubtypeSettings.js");
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_CUSTOM_LOOT_SUBTYPES, {
+      scope: "world",
+      config: false,
+      type: Array,
+      default: []
+    });
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_LOOT_SUBTYPES, {
+      scope: "world",
+      config: false,
+      type: Array,
+      default: [Constants.ITEM_SUBTYPE_GEM]
+    });
+
+    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_LOOT_SUBTYPE_MENU, {
+      name: Constants.localize("SCSockets.Settings.GemLootSubtypes.Name", "Gem Loot Subtypes"),
+      label: Constants.localize("SCSockets.Settings.GemLootSubtypes.Label", "Configure Gem Loot Subtypes"),
+      hint: Constants.localize(
+        "SCSockets.Settings.GemLootSubtypes.Hint",
+        "Select which loot subtypes count as gems and customize the extra subtype label."
+      ),
+      icon: "fas fa-gem",
+      type: GemSubtypeSettings,
+      restricted: true
     });
   }
 }

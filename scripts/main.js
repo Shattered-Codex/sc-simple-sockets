@@ -5,6 +5,7 @@ import { ActorGemBadges } from "./core/ui/ActorGemBadges.js";
 import { GemLifecycleService } from "./domain/gems/GemLifecycleService.js";
 import { ModuleSettings } from "./core/settings/ModuleSettings.js";
 import { LootActivitiesExtension } from "./domain/gems/LootActivitiesExtension.js";
+import { GemLootTypeExtension } from "./domain/gems/GemLootTypeExtension.js";
 import { ItemActivityBadges } from "./core/ui/ItemActivityBadges.js";
 import { TransferFilterUI } from "./core/ui/TransferFilterUI.js";
 import { SocketTooltipUI } from "./core/ui/SocketTooltipUI.js";
@@ -24,8 +25,9 @@ Hooks.once("init", async function() {
   console.log(`${Constants.MODULE_ID} | init`);
   
   const settings =  new ModuleSettings();
-  settings.register();
+  await settings.register();
 
+  GemLootTypeExtension.ensure();
   LootActivitiesExtension.ensure();
 });
 
