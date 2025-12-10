@@ -15,6 +15,7 @@ export class TidyIntegration {
   static #api = null;
   static #gemExtension = null;
   static #socketExtension = null;
+  static #gemFilterTabId = `${Constants.MODULE_ID}-tidy-gem-filter`;
 
   /**
    * Registers hooks to integrate with tidy5e sheet once its API is available.
@@ -41,11 +42,32 @@ export class TidyIntegration {
       void TidyIntegration.#syncTabConfiguration(item);
     });
 
-    Hooks.on("renderItemSheet", (sheet, element) => {
-      if (!sheet?.constructor?.name?.toLowerCase?.()?.includes?.("tidy")) {
-        return;
+    Hooks.on("renderItemSheet", (sheet) => {
+      // Ensure default tabs (including Allowed Item Types) are present for existing gems
+      // even when the subtype hasn't just changed.
+      const name = sheet?.constructor?.name?.toLowerCase?.() ?? "";
+      if (name.includes("tidy")) {
+        void TidyIntegration.#syncTabConfiguration(sheet.item, sheet);
       }
-      void TidyIntegration.#ensureGemFilterRendered(sheet, element[0] ?? element);
+
+      if (sheet instanceof dnd5e.applications.item.ItemSheet5e) {
+        void TidyIntegration.#syncTabConfiguration(sheet.item, sheet);
+      }
+    });
+
+    Hooks.on("createItem", (item) => {
+      // Ensure freshly created/imported gem items get the default tab configuration.
+      void TidyIntegration.#syncTabConfiguration(item);
+    });
+
+    Hooks.once("ready", () => {
+      // One-time sync for existing gem items (GM only) so they get the tabs without subtype edits.
+      if (!game.user?.isGM) return;
+      for (const item of game.items ?? []) {
+        if (GemCriteria.matches(item)) {
+          void TidyIntegration.#syncTabConfiguration(item);
+        }
+      }
     });
   }
 
@@ -55,43 +77,47 @@ export class TidyIntegration {
     }
     TidyIntegration.#api = api;
     TidyIntegration.#registerGemFilter(api);
+    TidyIntegration.#registerGemFilterTab(api);
     TidyIntegration.#registerSocketTab(api);
     TidyIntegration.#registerActorBadges(api);
     TidyIntegration.#associateExistingTabs(api);
   }
 
   static #registerGemFilter(api) {
-    if (!TidyIntegration.#gemExtension) {
+    // Disabled to avoid duplicate render; replaced by dedicated tab.
+  }
+
+  static #registerGemFilterTab(api) {
+    const HandlebarsTab = api.models?.HandlebarsTab;
+    if (!HandlebarsTab) {
       return;
     }
 
-    const HandlebarsContent = api.models?.HandlebarsContent;
-    if (!HandlebarsContent) {
-      return;
-    }
+    const tab = new HandlebarsTab({
+      tabId: TidyIntegration.#gemFilterTabId,
+      title: Constants.localize("SCSockets.GemTargetTypes.Label", "Allowed Item Types"),
+      path: `modules/${Constants.MODULE_ID}/templates/tidy/gem-target-filter-tab.hbs`,
+      getData: (context) => ({
+        gemTargetFilter: TidyIntegration.#buildGemFilterData(context)
+      }),
+      enabled: (context) => {
+        const item = TidyIntegration.#resolveItem(context);
+        return GemCriteria.matches(item);
+      },
+      onRender: (params) => {
+        const container = params.tabContentsElement ?? params.element;
+        container?.querySelectorAll?.("[data-tidy-section-key='sc-sockets-gem-target-filter']")
+          ?.forEach((node, idx) => {
+            if (idx > 0) node.remove();
+          });
+        TransferFilterUI.bindToSheet(params.app, container);
+      }
+    });
 
-    // Target the tab contents for Details directly (Quadrone).
-    const selector = ".tidy-tab-contents[data-tab='details']";
-
-    api.registerItemContent(
-      new HandlebarsContent({
-        path: `modules/${Constants.MODULE_ID}/templates/tidy/gem-target-filter.hbs`,
-        injectParams: {
-          selector,
-          position: "beforeend"
-        },
-        layout: api.constants?.SHEET_LAYOUTS?.ALL ?? "all",
-        getData: (context) => TidyIntegration.#buildGemFilterData(context),
-        enabled: (context) => {
-          const item = TidyIntegration.#resolveItem(context);
-          return GemCriteria.matches(item);
-        },
-        renderScheme: "handlebars",
-        onRender: (params) => {
-          TransferFilterUI.bindToSheet(params.app, params.element);
-        }
-      })
-    );
+    tab.includeAsDefaultTab = true;
+    tab.types = new Set([Constants.ITEM_TYPE_LOOT]);
+    api.registerItemTab(tab);
+    TidyIntegration.#forceDefaultLootTabs(api, tab.tabId);
   }
 
   static #registerActorBadges(api) {
@@ -151,7 +177,7 @@ export class TidyIntegration {
       return;
     }
 
-    const tabIds = ["activities", "effects"];
+    const tabIds = ["activities", "effects", TidyIntegration.#gemFilterTabId];
     const buildOptions = () => ({
       includeAsDefault: true,
       tabCondition: {
@@ -212,7 +238,11 @@ export class TidyIntegration {
     })();
 
     const desired = [];
-    const ensureIds = new Set(isGem ? ["activities", "effects"] : []);
+    const ensureIds = new Set([
+      "description",
+      "details",
+      ...(isGem ? ["activities", "effects", TidyIntegration.#gemFilterTabId] : [])
+    ]);
 
     for (const id of baseList) {
       if (!desired.includes(id)) {
@@ -229,7 +259,7 @@ export class TidyIntegration {
 
     if (!isGem) {
       // Remove Activities/Effects when leaving gem subtype.
-      const filtered = desired.filter((id) => !["activities", "effects"].includes(id));
+      const filtered = desired.filter((id) => !["activities", "effects", TidyIntegration.#gemFilterTabId].includes(id));
       desired.length = 0;
       desired.push(...filtered);
     }
@@ -250,7 +280,7 @@ export class TidyIntegration {
 
     await item.setFlag("tidy5e-sheet", "tab-configuration", nextConfig);
     if (sheet?.render) {
-      sheet.render(false);
+      sheet.render(true);
     }
   }
 
@@ -277,71 +307,6 @@ export class TidyIntegration {
         cssClass: ""
       }
     });
-  }
-
-  static async #ensureGemFilterRendered(sheet, root, attempt = 0) {
-    try {
-      const item = sheet?.item;
-      if (!GemCriteria.matches(item)) {
-        return;
-      }
-
-      const existing = root?.querySelector?.("[data-tidy-section-key='sc-sockets-gem-target-filter']");
-      if (existing) {
-        return;
-      }
-
-      const partSelector = ".tidy-tab-contents[data-tab='details']";
-      const candidates = [
-        () => root?.querySelector?.(partSelector),
-        () => root?.querySelector?.("[data-tidy-sheet-part='item-sheet-details']"),
-        () => root?.querySelector?.("section.tidy-tab-contents[data-tab='details']"),
-        () => root?.querySelector?.(".tidy-tab-contents[data-tab='details']"),
-        () => root?.querySelector?.(".tab[data-tab='details'][data-group]"),
-        () => root?.querySelector?.("[data-tab='details']"),
-        () => root
-      ];
-
-      let target = null;
-      for (const getter of candidates) {
-        target = getter();
-        if (target) break;
-      }
-      if (!target) {
-        if (attempt < 3) {
-          setTimeout(() => TidyIntegration.#ensureGemFilterRendered(sheet, root, attempt + 1), 50);
-        }
-        return;
-      }
-
-      const data = TidyIntegration.#buildGemFilterData({ item, sheet, appId: sheet?.appId });
-      const renderFn = globalThis?.foundry?.applications?.handlebars?.renderTemplate ?? globalThis.renderTemplate;
-      const render = async () => {
-        const html = await renderFn(
-          `modules/${Constants.MODULE_ID}/templates/tidy/gem-target-filter.hbs`,
-          { gemTargetFilter: data }
-        );
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = html;
-        const content = wrapper.firstElementChild;
-        if (content) {
-          target.appendChild(content);
-          TransferFilterUI.bindToSheet(sheet, content);
-        }
-      };
-
-      // Ensure we inject after Tidy finishes its own layout pass.
-      const schedule = () => {
-        if (typeof requestAnimationFrame === "function") {
-          requestAnimationFrame(() => render());
-        } else {
-          setTimeout(() => render(), 0);
-        }
-      };
-      schedule();
-    } catch (err) {
-      console.error(`[${Constants.MODULE_ID}] Failed to inject gem filter into Tidy sheet`, err);
-    }
   }
 
   static #buildSocketTabData(context) {
