@@ -14,7 +14,10 @@ export class GemActivityStore {
     if (!item) return;
     const { activities, uses } = item.system ?? {};
     if (!GemActivityStore.#hasEntries(activities)) {
-      await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_ACTIVITY_STASH);
+      const existing = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_ACTIVITY_STASH);
+      if (!existing) {
+        await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_ACTIVITY_STASH);
+      }
       return;
     }
 
