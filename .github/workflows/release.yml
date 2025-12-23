@@ -24,9 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write   # Required to create tags, commits, releases
+      pull-requests: read   # Needed to read merged PRs via gh
 
     env:
-      GH_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }}  # PAT with 'repo' scope
+      GH_TOKEN: ${{ github.token }}  # Default GitHub token
 
     steps:
       # --- STEP 1: Checkout repository ---
@@ -69,7 +70,7 @@ jobs:
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.2
         with:
-          github_token: ${{ secrets.CI_WORKFLOWS_TOKEN }}
+          github_token: ${{ github.token }}
           default_bump: ${{ env.BUMP_TYPE }}
 
       # --- STEP 5: Update module.json manifest ---
@@ -88,7 +89,7 @@ jobs:
       # --- STEP 5B: Commit and push manifest update ---
       - name: Commit module manifest update
         env:
-          GH_TOKEN: ${{ secrets.CI_WORKFLOWS_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -135,7 +136,7 @@ jobs:
           bodyFile: CHANGELOG.md
           allowUpdates: true
           artifacts: "./module.json, ./${{ env.MODULE_ID }}.zip, ./CHANGELOG.md"
-          token: ${{ secrets.CI_WORKFLOWS_TOKEN }}
+          token: ${{ github.token }}
 
       # --- STEP 10: Publish release to Foundry ---
       - name: Publish to Foundry Package API
