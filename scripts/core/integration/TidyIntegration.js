@@ -16,6 +16,9 @@ export class TidyIntegration {
   static #gemExtension = null;
   static #socketExtension = null;
   static #gemFilterTabId = `${Constants.MODULE_ID}-tidy-gem-filter`;
+  static #isTidyActive() {
+    return Boolean(game?.modules?.get?.("tidy5e-sheet")?.active);
+  }
 
   /**
    * Registers hooks to integrate with tidy5e sheet once its API is available.
@@ -221,6 +224,10 @@ export class TidyIntegration {
   }
 
   static async #syncTabConfiguration(item, sheet) {
+    if (!TidyIntegration.#isTidyActive()) {
+      return;
+    }
+
     const isGem = GemCriteria.matches(item);
 
     const runtime = TidyIntegration.#api?.runtime?.ItemSheetQuadroneRuntime;
