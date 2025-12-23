@@ -29,6 +29,31 @@
         "Equipment": "Equipment"
       }
     },
+    "GemDetails": {
+      "TabLabel": "+Details",
+      "SelectLabel": "Additional Details",
+      "Hint": "Choose how this gem should be categorized.",
+      "TypeFieldset": "Details Type",
+      "Options": {
+        "None": "None",
+        "Weapons": "Weapons",
+        "Equipment": "Equipment"
+      },
+      "ExtraDamage": {
+        "Label": "Extra Damage",
+        "Hint": "Add one or more extra damage entries applied when this gem is socketed into weapons.",
+        "Damage": "Damage",
+        "Type": "Type",
+        "Add": "Add damage",
+        "Remove": "Remove",
+        "Clear": "Clear all",
+        "Fields": {
+          "Number": "Number",
+          "Die": "Die",
+          "Bonus": "Bonus"
+        }
+      }
+    },
     "Tooltips": {
       "RemoveGem": "Remove the gem from this socket.",
       "DeleteSocket": "Delete this slot from the item.",

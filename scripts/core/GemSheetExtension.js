@@ -2,10 +2,13 @@ import { Constants } from "./Constants.js";
 import { SheetExtension } from "./SheetExtension.js";
 import { GemCriteria } from "../domain/gems/GemCriteria.js";
 import { GemTargetFilterBuilder } from "../domain/gems/GemTargetFilterBuilder.js";
+import { GemDetailsBuilder } from "../domain/gems/GemDetailsBuilder.js";
 
 export class GemSheetExtension extends SheetExtension {
 
   static #activitiesPatched = false;
+  static DETAILS_TAB_ID = "sc-sockets-gem-details";
+  static DETAILS_PART_ID = "sc-sockets-gem-details-part";
 
   #criteria;
   #condition;
@@ -37,6 +40,7 @@ export class GemSheetExtension extends SheetExtension {
 
   applyChanges() {
     this.updateTabCondition("effects", this.#condition, { mode: "or" });
+    this.#registerGemDetailsTab();
     this.#registerGemTargetFilter();
     const Sheet = this.sheetClass;
     const activityTab = Array.isArray(Sheet.TABS)
@@ -99,6 +103,35 @@ export class GemSheetExtension extends SheetExtension {
     });
   }
 
+  /**
+   * Produces the context consumed by the gem details template.
+   * @param {ItemSheet} sheet
+   * @param {Object} [options]
+   * @param {string} [options.partId]
+   * @param {string} [options.tab=GemSheetExtension.DETAILS_TAB_ID]
+   * @param {string} [options.group="primary"]
+   * @returns {object}
+   */
+  buildGemDetailsContext(sheet, {
+    partId,
+    tab = GemSheetExtension.DETAILS_TAB_ID,
+    group = "primary"
+  } = {}) {
+    const item = sheet?.item ?? null;
+    const isActive = partId ? this.#isPartActive(sheet, partId, tab) : false;
+
+    return GemDetailsBuilder.buildContext(item, {
+      editable: sheet?.isEditable ?? undefined,
+      selectId: partId ? `${partId}-select` : undefined,
+      part: partId ? {
+        id: partId,
+        tab,
+        group,
+        cssClass: isActive ? "active" : ""
+      } : undefined
+    });
+  }
+
   #registerGemTargetFilter() {
     const partId = "sc-sockets-gem-target-filter";
     this.addPart({
@@ -113,6 +146,27 @@ export class GemSheetExtension extends SheetExtension {
         gemTargetFilter: filter
       };
     });
+  }
+
+  #registerGemDetailsTab() {
+    const tabId = GemSheetExtension.DETAILS_TAB_ID;
+    const partId = GemSheetExtension.DETAILS_PART_ID;
+
+    this.addTab({
+      tab: tabId,
+      label: Constants.localize("SCSockets.GemDetails.TabLabel", "+Details"),
+      condition: this.#condition
+    });
+
+    this.addPart({
+      id: partId,
+      tab: tabId,
+      template: `modules/${this.moduleId}/templates/gem-details-tab.hbs`
+    });
+
+    this.addContext(partId, (sheet) => ({
+      gemDetails: this.buildGemDetailsContext(sheet, { partId, tab: tabId })
+    }));
   }
 
   #resolveCondition(criteria) {

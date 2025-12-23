@@ -29,6 +29,31 @@
         "Equipment": "Equipamentos"
       }
     },
+    "GemDetails": {
+      "TabLabel": "+Detalhes",
+      "SelectLabel": "Detalhes adicionais",
+      "Hint": "Escolha como esta gema deve ser categorizada.",
+      "TypeFieldset": "Tipo de detalhe",
+      "Options": {
+        "None": "Nenhum",
+        "Weapons": "Armas",
+        "Equipment": "Equipamentos"
+      },
+      "ExtraDamage": {
+        "Label": "Dano extra",
+        "Hint": "Adicione um ou mais danos extras aplicados quando esta gema for encaixada em armas.",
+        "Damage": "Dano",
+        "Type": "Tipo",
+        "Add": "Adicionar dano",
+        "Remove": "Remover",
+        "Clear": "Limpar tudo",
+        "Fields": {
+          "Number": "Quantidade",
+          "Die": "Dado",
+          "Bonus": "Bônus"
+        }
+      }
+    },
     "Tooltips": {
       "RemoveGem": "Remover a gema deste soquete.",
       "DeleteSocket": "Excluir este soquete do item.",

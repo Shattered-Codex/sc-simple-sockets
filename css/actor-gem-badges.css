@@ -180,3 +180,107 @@ body.sc-sockets-target-cursor * {
 .form-group.custom-subtypes {
     margin: 18px 0px;
 }
+
+/* Gem Details tab */
+
+.sc-sockets-gem-damage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  border-top: 1px solid var(--color-border-light-tertiary, rgba(255, 255, 255, 0.08));
+  padding-top: 0.45rem;
+}
+
+.sc-sockets-gem-damage h4.form-header {
+  margin: 0;
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.sc-sockets-gem-damage-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.sc-sockets-gem-damage-row {
+  background: transparent;
+  border: 1px solid var(--color-border-light-tertiary, rgba(255, 255, 255, 0.08));
+  border-radius: 5px;
+  padding: 0.4rem 0.45rem;
+  display: grid;
+  gap: 0.15rem 0.25rem;
+}
+
+.sc-sockets-gem-damage-row-top {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  gap: 0.2rem;
+  align-items: end;
+}
+
+.sc-sockets-gem-damage-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-light-heading, #dcdcdc);
+  margin-bottom: 0.05rem;
+}
+
+.sc-sockets-gem-damage-row input[type="number"] {
+  width: 100%;
+  text-align: center;
+}
+
+.sc-sockets-gem-damage-row select {
+  width: 100%;
+  min-width: 88px;
+}
+
+.sc-sockets-gem-damage-row-bottom {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.15rem;
+}
+
+.sc-sockets-gem-damage-remove {
+  justify-self: end;
+  height: 26px;
+  padding: 0 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.sc-sockets-gem-damage-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  margin: 0.2rem 0rem;
+}
+
+.sc-sockets-gem-damage-actions .sc-sockets-gem-damage-add,
+.sc-sockets-gem-damage-actions .sc-sockets-gem-damage-clear {
+  height: 28px;
+  padding: 0 0.8rem;
+  font-size: 0.9rem;
+  min-width: 110px;
+}
+
+@media (max-width: 640px) {
+  .sc-sockets-gem-damage-row-top {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Ensure gem details only show when the tab is active */
+[data-application-part="sc-sockets-gem-details-part"]:not(.active),
+.tab.sc-sockets-gem-details-part:not(.active),
+[data-tidy-section-key="sc-sockets-gem-details"]:not(.active),
+.tidy-tab-contents.sc-sockets-gem-details-tab:not(.active),
+[data-tab="sc-simple-sockets-tidy-gem-details"]:not(.active) {
+  display: none !important;
+}

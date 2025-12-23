@@ -11,6 +11,7 @@ import { TransferFilterUI } from "./core/ui/TransferFilterUI.js";
 import { SocketTooltipUI } from "./core/ui/SocketTooltipUI.js";
 import { MacroAPI } from "./core/api/MacroAPI.js";
 import { TidyIntegration } from "./core/integration/TidyIntegration.js";
+import { GemDetailsUI } from "./core/ui/GemDetailsUI.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -40,6 +41,7 @@ Hooks.once("setup", () => {
   ItemActivityBadges.activate();
   TransferFilterUI.activate();
   SocketTooltipUI.activate();
+  GemDetailsUI.activate();
 
 });
 
