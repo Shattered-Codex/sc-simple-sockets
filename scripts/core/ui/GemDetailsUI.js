@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
+import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 
 export class GemDetailsUI {
   static #handler = null;
@@ -30,12 +31,34 @@ export class GemDetailsUI {
     const root = GemDetailsUI.#rootOf(html ?? sheet?.element);
     if (!root) return;
 
+    GemDetailsUI.#bindFormSubmit(root, sheet);
+
     const container = root.querySelector(GemDetailsUI.SELECTOR);
     if (!container) return;
 
     if (container.dataset.scSocketsGemDetailsBound === "true") {
       return;
     }
+
+    container.addEventListener("change", async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement)) {
+        return;
+      }
+      const name = target.name ?? "";
+      if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_DETAIL_TYPE}`)) {
+        event.preventDefault();
+        const value = target.value;
+        await sheet?.item?.setFlag?.(Constants.MODULE_ID, Constants.FLAG_GEM_DETAIL_TYPE, value);
+        if (value !== "weapons") {
+          await GemDetailsUI.#writeEntries(sheet.item, []);
+        }
+      }
+
+      // Persist damage rows on any change within the damage container.
+      const current = GemDetailsUI.#readEntries(container, sheet.item) ?? [];
+      await GemDetailsUI.#writeEntries(sheet.item, current);
+    });
 
     container.addEventListener("click", async (event) => {
       const target = event.target instanceof HTMLElement ? event.target.closest("[data-action]") : null;
@@ -94,6 +117,21 @@ export class GemDetailsUI {
     await GemDetailsUI.#writeEntries(sheet.item, []);
   }
 
+  static #bindFormSubmit(root, sheet) {
+    const form = root?.querySelector?.("form") ?? root?.closest?.("form");
+    if (!form) return;
+    if (form.dataset.scSocketsGemDetailsSubmitBound === "true") {
+      return;
+    }
+    form.addEventListener("submit", async () => {
+      const container = root.querySelector(GemDetailsUI.SELECTOR);
+      if (!container || !sheet?.item) return;
+      const current = GemDetailsUI.#readEntries(container, sheet.item) ?? [];
+      await GemDetailsUI.#writeEntries(sheet.item, current);
+    });
+    form.dataset.scSocketsGemDetailsSubmitBound = "true";
+  }
+
   static #readDefaults(container) {
     const number = Number(container?.dataset?.defaultNumber ?? 1);
     const bonus = Number(container?.dataset?.defaultBonus ?? 0);
@@ -133,11 +171,8 @@ export class GemDetailsUI {
   }
 
   static #cloneFlagEntries(item) {
-    const raw = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_GEM_DAMAGE);
-    if (!Array.isArray(raw)) {
-      return [];
-    }
-    return foundry.utils.deepClone(raw);
+    const normalized = GemDetailsBuilder.getNormalizedDamageEntries(item);
+    return foundry.utils.deepClone(normalized);
   }
 
   static async #writeEntries(item, entries) {

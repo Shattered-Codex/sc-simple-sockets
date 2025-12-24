@@ -93,15 +93,9 @@ export class GemDetailsBuilder {
   static #buildDamageContext(item, { include = false } = {}) {
     const dieOptions = this.#buildDieOptions();
     const damageTypeOptions = this.#buildDamageTypeOptions();
-    const allowedDice = new Set(dieOptions.map((opt) => opt.value));
-    const allowedTypes = new Set(damageTypeOptions.map((opt) => opt.value));
-    const defaults = this.#getDefaultDamageEntry({
-      dieOptions,
-      damageTypeOptions
-    });
-    const stored = include ? this.#getStoredDamage(item) : [];
+    const defaults = this.#getDefaultDamageEntry({ dieOptions, damageTypeOptions });
     const entries = include
-      ? this.#normalizeDamageEntries(stored, { defaults, allowedDice, allowedTypes })
+      ? this.getNormalizedDamageEntries(item, { dieOptions, damageTypeOptions, defaults })
       : [];
 
     const buildEntry = (entry) => ({
@@ -125,6 +119,37 @@ export class GemDetailsBuilder {
       damageTypeOptions,
       defaults
     };
+  }
+
+  /**
+   * Reads and normalizes stored gem damage entries from a gem document or raw data.
+   * @param {Item|object|null} source
+   * @param {Object} [options]
+   * @param {Array} [options.dieOptions]
+   * @param {Array} [options.damageTypeOptions]
+   * @param {Object} [options.defaults]
+   * @returns {Array}
+   */
+  static getNormalizedDamageEntries(source, {
+    dieOptions,
+    damageTypeOptions,
+    defaults
+  } = {}) {
+    const dice = dieOptions ?? this.#buildDieOptions();
+    const types = damageTypeOptions ?? this.#buildDamageTypeOptions();
+    const fallbackDefaults = defaults ?? this.#getDefaultDamageEntry({
+      dieOptions: dice,
+      damageTypeOptions: types
+    });
+    const allowedDice = new Set(dice.map((opt) => opt.value));
+    const allowedTypes = new Set(types.map((opt) => opt.value));
+    const stored = this.#getStoredDamage(source);
+
+    return this.#normalizeDamageEntries(stored, {
+      defaults: fallbackDefaults,
+      allowedDice,
+      allowedTypes
+    });
   }
 
   static #buildDieOptions() {
@@ -173,7 +198,23 @@ export class GemDetailsBuilder {
 
   static #getStoredDamage(item) {
     const raw = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_GEM_DAMAGE);
-    return Array.isArray(raw) ? raw : [];
+    const flags = item?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_DAMAGE];
+    const source = raw ?? flags ?? item?._source?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_DAMAGE];
+
+    if (Array.isArray(source)) {
+      return source;
+    }
+
+    if (source && typeof source === "object") {
+      // Convert a plain object with numeric keys into an array.
+      const entries = Object.entries(source)
+        .filter(([key]) => /^\d+$/.test(key))
+        .sort(([a], [b]) => Number(a) - Number(b))
+        .map(([, val]) => val);
+      return entries;
+    }
+
+    return [];
   }
 
   static #normalizeDamageEntries(entries, { defaults, allowedDice, allowedTypes }) {

@@ -12,6 +12,7 @@ import { SocketTooltipUI } from "./core/ui/SocketTooltipUI.js";
 import { MacroAPI } from "./core/api/MacroAPI.js";
 import { TidyIntegration } from "./core/integration/TidyIntegration.js";
 import { GemDetailsUI } from "./core/ui/GemDetailsUI.js";
+import { GemDamageService } from "./domain/gems/GemDamageService.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -43,6 +44,10 @@ Hooks.once("setup", () => {
   SocketTooltipUI.activate();
   GemDetailsUI.activate();
 
+});
+
+Hooks.once("ready", () => {
+  GemDamageService.activate();
 });
 
 Hooks.on("updateItem", async (item, changes) => {
