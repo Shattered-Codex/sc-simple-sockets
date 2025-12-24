@@ -284,3 +284,47 @@ body.sc-sockets-target-cursor * {
 [data-tab="sc-simple-sockets-tidy-gem-details"]:not(.active) {
   display: none !important;
 }
+
+.sc-sockets-gem-box {
+  padding: 0;
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.sc-sockets-gem-fieldset {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  padding: 0.45rem 0.5rem 0.5rem 0.5rem;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.sc-sockets-gem-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  padding: 0 0.3rem;
+  color: var(--color-text-light-heading, #f0f0f0);
+}
+
+.sc-sockets-gem-legend .sc-sockets-gem-box__img {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.sc-sockets-gem-box__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sc-sockets-gem-box__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}

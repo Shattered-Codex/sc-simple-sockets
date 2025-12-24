@@ -90,12 +90,24 @@
           "Add": "Adicionar subtipo",
           "Remove": "Remover"
         }
+      },
+      "GemRollLayout": {
+        "Name": "Layout de dano das gemas no diálogo",
+        "Hint": "Ative o layout agrupado por gema no diálogo de configuração de dano."
       }
-    },
-    "Dialogs": {
-      "DeleteSocket": {
-        "Title": "Excluir soquete",
-        "Message": "Tem certeza de que deseja excluir este soquete?",
+    }
+  },
+  "Notifications": {
+    "Reloading": "Recarregando..."
+  },
+  "RollLayout": {
+    "BaseDamage": "Dano Base",
+    "GemEffects": "Efeitos da Gema"
+  },
+  "Dialogs": {
+    "DeleteSocket": {
+      "Title": "Excluir soquete",
+      "Message": "Tem certeza de que deseja excluir este soquete?",
         "Warning": "Esta ação não pode ser desfeita.",
         "Hint": "Segure Shift para pular esta confirmação."
       },

@@ -90,7 +90,18 @@
           "Add": "Add subtype",
           "Remove": "Remove"
         }
+      },
+      "GemRollLayout": {
+        "Name": "Gem damage layout in roll dialog",
+        "Hint": "Enable the grouped-by-gem layout in the damage roll configuration dialog."
       }
+    },
+    "Notifications": {
+      "Reloading": "Reloading..."
+    },
+    "RollLayout": {
+      "BaseDamage": "Base Damage",
+      "GemEffects": "Gem Effects"
     },
     "Dialogs": {
       "DeleteSocket": {

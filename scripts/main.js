@@ -13,6 +13,7 @@ import { MacroAPI } from "./core/api/MacroAPI.js";
 import { TidyIntegration } from "./core/integration/TidyIntegration.js";
 import { GemDetailsUI } from "./core/ui/GemDetailsUI.js";
 import { GemDamageService } from "./domain/gems/GemDamageService.js";
+import { DamageRollGemLayout } from "./core/ui/DamageRollGemLayout.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -48,6 +49,8 @@ Hooks.once("setup", () => {
 
 Hooks.once("ready", () => {
   GemDamageService.activate();
+  const mode = ModuleSettings.shouldUseGemRollLayout() ? "gem" : "type";
+  DamageRollGemLayout.activate({ mode });
 });
 
 Hooks.on("updateItem", async (item, changes) => {

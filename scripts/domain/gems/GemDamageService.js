@@ -4,6 +4,7 @@ import { GemDetailsBuilder } from "./GemDetailsBuilder.js";
 
 export class GemDamageService {
   static #handler = null;
+  static META_KEY = "gemDamage";
 
   static activate() {
     if (GemDamageService.#handler) {
@@ -31,7 +32,7 @@ export class GemDamageService {
   }
 
   static #applyGemDamage(config) {
-    const item = GemDamageService.#extractItem(config);
+    const item = GemDamageService.extractItem(config);
     if (!item || item.type !== "weapon") {
       return;
     }
@@ -42,22 +43,12 @@ export class GemDamageService {
     }
 
     const baseRoll = rolls[0];
-    const entries = GemDamageService.#collectGemDamage(item);
+    const entries = GemDamageService.collectGemDamage(item);
     if (!entries.length) {
       return;
     }
 
     for (const entry of entries) {
-      const target = entry.type
-        ? GemDamageService.#findRollForType(rolls, entry.type)
-        : baseRoll;
-
-      if (target) {
-        target.parts ??= [];
-        target.parts.push(entry.formula);
-        continue;
-      }
-
       const baseOptions = baseRoll.options ?? {};
       const properties = Array.isArray(baseOptions.properties)
         ? [...baseOptions.properties]
@@ -68,44 +59,64 @@ export class GemDamageService {
           ? [...baseOptions.types]
           : [];
 
+      const options = {
+        ...baseOptions,
+        properties,
+        type: entry.type ?? baseOptions.type,
+        types
+      };
+
+      GemDamageService.addMetadata(options, entry);
+
       rolls.push({
         data: baseRoll.data,
         parts: [entry.formula],
-        options: {
-          ...baseOptions,
-          properties,
-          type: entry.type ?? baseOptions.type,
-          types
-        }
+        options
       });
     }
   }
 
-  static #collectGemDamage(item) {
+  static collectGemDamage(item) {
     const slots = SocketStore.peekSlots(item);
     if (!Array.isArray(slots) || !slots.length) {
       return [];
     }
 
     const entries = [];
-    for (const slot of slots) {
-      const gem = GemDamageService.#resolveGemSource(slot);
-      if (!gem) continue;
+    for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
+      const slot = slots[slotIndex];
+      const gem = GemDamageService.resolveGemSource(slot);
+      if (!gem) {
+        continue;
+      }
 
-      const detailType = GemDamageService.#readFlag(gem, Constants.FLAG_GEM_DETAIL_TYPE);
-      if (detailType !== "weapons") continue;
+      const detailType = GemDamageService.readFlag(gem, Constants.FLAG_GEM_DETAIL_TYPE);
+      if (detailType !== "weapons") {
+        continue;
+      }
 
       const normalized = GemDetailsBuilder.getNormalizedDamageEntries(gem);
       for (const entry of normalized) {
-        const formula = GemDamageService.#buildFormula(entry);
-        if (!formula) continue;
-        entries.push({ ...entry, formula });
+        const formula = GemDamageService.buildFormula(entry);
+        if (!formula) {
+          continue;
+        }
+        entries.push({
+          ...entry,
+          formula,
+          source: {
+            name: gem.name ?? slot?.name,
+            img: gem.img ?? slot?.img,
+            slot: slot?._slot ?? slotIndex,
+            uuid: gem.uuid ?? slot?.gem?.uuid ?? slot?._gemData?.uuid
+          }
+        });
       }
     }
     return entries;
   }
 
-  static #resolveGemSource(slot) {
+  static resolveGemSource(slot) {
     if (!slot) {
       return null;
     }
@@ -124,7 +135,7 @@ export class GemDamageService {
     return null;
   }
 
-  static #readFlag(source, key) {
+  static readFlag(source, key) {
     if (!source) {
       return null;
     }
@@ -134,7 +145,7 @@ export class GemDamageService {
     return source?.flags?.[Constants.MODULE_ID]?.[key] ?? null;
   }
 
-  static #buildFormula(entry) {
+  static buildFormula(entry) {
     const number = Math.max(0, Number(entry?.number ?? 0));
     const die = typeof entry?.die === "string" ? entry.die.toLowerCase() : "";
     const bonus = Number(entry?.bonus ?? 0);
@@ -157,24 +168,28 @@ export class GemDamageService {
     return formula;
   }
 
-  static #findRollForType(rolls, damageType) {
-    if (!damageType) {
-      return null;
+  static addMetadata(options, entry) {
+    if (!entry) return options;
+    const source = entry.source ?? {};
+    const meta = {
+      gemName: source.name ?? Constants.localize("SCSockets.GemDetails.ExtraDamage.Label", "Gem"),
+      gemImg: source.img ?? Constants.SOCKET_SLOT_IMG,
+      formula: entry.formula,
+      type: entry.type,
+      slot: source.slot,
+      gemUuid: source.uuid
+    };
+
+    const opts = options ?? {};
+    opts[Constants.MODULE_ID] ??= {};
+    if (!Array.isArray(opts[Constants.MODULE_ID][GemDamageService.META_KEY])) {
+      opts[Constants.MODULE_ID][GemDamageService.META_KEY] = [];
     }
-    return rolls.find((roll) => {
-      const { options } = roll ?? {};
-      const types = options?.types;
-      if (Array.isArray(types) && types.includes(damageType)) {
-        return true;
-      }
-      if (typeof options?.type === "string" && options.type === damageType) {
-        return true;
-      }
-      return false;
-    }) ?? null;
+    opts[Constants.MODULE_ID][GemDamageService.META_KEY].push(meta);
+    return opts;
   }
 
-  static #extractItem(config) {
+  static extractItem(config) {
     return config?.subject?.item ?? config?.item ?? null;
   }
 }

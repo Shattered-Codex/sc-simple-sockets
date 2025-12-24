@@ -5,6 +5,7 @@ export class ModuleSettings {
   static SETTING_EDIT_SOCKET = "editSocketPermission";
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
+  static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
   static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
   static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
   static SETTING_CUSTOM_LOOT_SUBTYPES = Constants.SETTING_CUSTOM_LOOT_SUBTYPES;
@@ -16,6 +17,7 @@ export class ModuleSettings {
     this.#registerEditSocketPermission();
     this.#registerMaxSockets();
     this.#registerDeleteOnRemoval();
+    this.#registerGemRollLayoutSetting();
     await this.#registerLootSubtypeSettings();
   }
 
@@ -40,6 +42,10 @@ export class ModuleSettings {
     return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE);
   }
 
+  static shouldUseGemRollLayout() {
+    return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT) ?? true;
+  }
+
   static getGemLootSubtypes() {
     const raw = game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_LOOT_SUBTYPES);
     if (!Array.isArray(raw)) {
@@ -60,6 +66,27 @@ export class ModuleSettings {
       cleaned.push(Constants.ITEM_SUBTYPE_GEM);
     }
     return cleaned;
+  }
+
+  #registerGemRollLayoutSetting() {
+    const name = Constants.localize("SCSockets.Settings.GemRollLayout.Name", "Gem damage layout in roll dialog");
+    const hint = Constants.localize(
+      "SCSockets.Settings.GemRollLayout.Hint",
+      "Enable the grouped-by-gem layout in the damage roll configuration dialog."
+    );
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT, {
+      name,
+      hint,
+      scope: "client",
+      config: true,
+      type: Boolean,
+      default: true,
+      onChange: () => {
+        window?.ui?.notifications?.info?.(`${Constants.localize("SCSockets.Settings.GemRollLayout.Name")}: ${Constants.localize("SCSockets.Notifications.Reloading", "Reloading...")}`);
+        window.location.reload();
+      }
+    });
   }
 
   static async setGemLootSubtypes(subtypes = []) {
