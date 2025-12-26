@@ -41,6 +41,14 @@
   gap: 0.25rem;
 }
 
+/* Keep gem details row layout consistent even with Quadrone theme flex overrides */
+.tidy5e-sheet .sc-sockets-gem-damage-row .form-group > * {
+  flex: 0 1 auto;
+}
+.tidy5e-sheet .sc-sockets-gem-damage-row .form-group.sc-sockets-gem-damage-remove > * {
+  flex: 0 0 auto;
+}
+
 .sc-sockets-expandable {
   display: block;
 }

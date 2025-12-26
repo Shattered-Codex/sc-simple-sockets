@@ -51,8 +51,14 @@
         "Fields": {
           "Number": "Number",
           "Die": "Die",
-          "Bonus": "Bonus"
-        }
+          "Bonus": "Bonus",
+          "Activity": "When to apply"
+        },
+        "ActivityHint": "Choose when this extra damage applies. Any action: always. Attack only: only on attack-type activities."
+      },
+      "ExtraDamageActivity": {
+        "Any": "Any action",
+        "Attack": "Attack only"
       },
       "CritDamage": {
         "Label": "Critical-Only Damage",

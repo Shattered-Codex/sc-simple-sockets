@@ -77,8 +77,8 @@
           <div class="sc-sockets-gem-damage" data-sc-sockets="gem-damage">
             <div class="sc-sockets-gem-damage-rows">
               {{#each details.damage.entries as |entry i|}}
-                <div class="form-group sc-sockets-gem-damage-row split-group" data-index="{{i}}">
-                  <div class="form-fields sc-sockets-gem-damage-row-top">
+                <div class="form-group sc-sockets-gem-damage-row" data-index="{{i}}">
+                  <div class="form-fields sc-sockets-gem-damage-row-top split-group">
                     <div class="form-group label-top">
                       <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Number" }}</label>
                       <div class="form-fields">
@@ -121,13 +121,36 @@
                         </select>
                       </div>
                     </div>
-                    <button type="button"
-                            class="sc-sockets-gem-damage-remove"
-                            data-action="removeGemDamage"
-                            data-index="{{i}}"
-                            data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.Remove' }}">
-                      <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="form-group label-top">
+                      <label>&nbsp;</label>
+                      <div class="form-fields">
+                        <button type="button"
+                                class="sc-sockets-gem-damage-remove"
+                                data-action="removeGemDamage"
+                                data-index="{{i}}"
+                                data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.Remove' }}">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-fields sc-sockets-gem-damage-row-bottom sc-sockets-gem-damage-row-activity">
+                    <div class="form-group label-top">
+                      <label>
+                        {{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Activity" }}
+                        <i class="fa-solid fa-circle-info"
+                           data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.ActivityHint' }}"></i>
+                      </label>
+                      <div class="form-fields">
+                        <select name="{{../details.damage.namePrefix}}.{{i}}.activity">
+                          {{#each entry.activityOptions as |opt|}}
+                            <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>
+                              {{opt.label}}
+                            </option>
+                          {{/each}}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
               {{/each}}

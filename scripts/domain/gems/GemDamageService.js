@@ -53,6 +53,7 @@ export class GemDamageService {
     if (!item || item.type !== "weapon") {
       return;
     }
+    const activityType = GemDamageService.#extractActivityType(config);
 
     const rolls = Array.isArray(config?.rolls) ? config.rolls : [];
     if (!rolls.length) {
@@ -60,7 +61,7 @@ export class GemDamageService {
     }
 
     const baseRoll = rolls[0];
-    const entries = GemDamageService.collectGemDamage(item);
+    const entries = GemDamageService.collectGemDamage(item, { activityType });
     if (!entries.length) {
       return;
     }
@@ -92,7 +93,7 @@ export class GemDamageService {
     }
   }
 
-  static collectGemDamage(item, { flag = Constants.FLAG_GEM_DAMAGE } = {}) {
+  static collectGemDamage(item, { flag = Constants.FLAG_GEM_DAMAGE, activityType } = {}) {
     const slots = SocketStore.peekSlots(item);
     if (!Array.isArray(slots) || !slots.length) {
       return [];
@@ -108,6 +109,9 @@ export class GemDamageService {
 
       const normalized = GemDetailsBuilder.getNormalizedDamageEntries(gem, { flag });
       for (const entry of normalized) {
+        if (!GemDamageService.#matchesActivity(entry, activityType)) {
+          continue;
+        }
         const formula = GemDamageService.buildFormula(entry);
         if (!formula) {
           continue;
@@ -125,6 +129,16 @@ export class GemDamageService {
       }
     }
     return entries;
+  }
+
+  static #matchesActivity(entry, activityType) {
+    if (!entry || !entry.activity || entry.activity === "any") {
+      return true;
+    }
+    if (!activityType) {
+      return entry.activity === "any";
+    }
+    return entry.activity === activityType;
   }
 
   static resolveGemSource(slot) {
@@ -203,6 +217,17 @@ export class GemDamageService {
 
   static extractItem(config) {
     return config?.subject?.item ?? config?.item ?? null;
+  }
+
+  static #extractActivityType(config) {
+    const activityType = config?.subject?.type
+      ?? config?.item?.system?.type
+      ?? config?.action
+      ?? config?.options?.action
+      ?? config?.item?.system?.actionType;
+    return typeof activityType === "string"
+      ? activityType.toLowerCase()
+      : null;
   }
 
   static #applyCritMultiplier(config) {

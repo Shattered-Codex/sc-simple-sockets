@@ -67,6 +67,7 @@ export class GemDetailsBuilder {
   static #buildDamageContext(item, { include = false, flag = Constants.FLAG_GEM_DAMAGE } = {}) {
     const dieOptions = this.#buildDieOptions();
     const damageTypeOptions = this.#buildDamageTypeOptions();
+    const activityOptions = this.#buildActivityOptions();
     const defaults = this.#getDefaultDamageEntry({ dieOptions, damageTypeOptions });
     const entries = include
       ? this.getNormalizedDamageEntries(item, { dieOptions, damageTypeOptions, defaults, flag })
@@ -81,6 +82,10 @@ export class GemDetailsBuilder {
       damageTypeOptions: damageTypeOptions.map((opt) => ({
         ...opt,
         selected: opt.value === entry.type
+      })),
+      activityOptions: activityOptions.map((opt) => ({
+        ...opt,
+        selected: opt.value === entry.activity
       }))
     });
 
@@ -91,6 +96,7 @@ export class GemDetailsBuilder {
       entries: displayEntries,
       dieOptions,
       damageTypeOptions,
+      activityOptions,
       defaults
     };
   }
@@ -118,12 +124,14 @@ export class GemDetailsBuilder {
     });
     const allowedDice = new Set(dice.map((opt) => opt.value));
     const allowedTypes = new Set(types.map((opt) => opt.value));
+    const allowedActivities = new Set(["any", "attack"]);
     const stored = this.#getStoredDamage(source, flag);
 
     return this.#normalizeDamageEntries(stored, {
       defaults: fallbackDefaults,
       allowedDice,
-      allowedTypes
+      allowedTypes,
+      allowedActivities
     });
   }
 
@@ -131,11 +139,14 @@ export class GemDetailsBuilder {
     const denominations = CONFIG?.Dice?.DamageRoll?.denominations ??
       CONFIG?.Dice?.d20?.denominations ??
       ["d4", "d6", "d8", "d10", "d12", "d20"];
-    const unique = Array.from(new Set(denominations.map((d) => String(d).toLowerCase())));
-    return unique.map((value) => ({
+    const unique = Array.from(new Set(denominations.map((d) => String(d).toLowerCase()))).filter(Boolean);
+    const options = unique.map((value) => ({
       value,
       label: value.toUpperCase()
     }));
+    // Allow a blank entry.
+    options.unshift({ value: "", label: "" });
+    return options;
   }
 
   static #buildDamageTypeOptions() {
@@ -192,16 +203,16 @@ export class GemDetailsBuilder {
     return [];
   }
 
-  static #normalizeDamageEntries(entries, { defaults, allowedDice, allowedTypes }) {
+  static #normalizeDamageEntries(entries, { defaults, allowedDice, allowedTypes, allowedActivities }) {
     if (!Array.isArray(entries)) {
       return [];
     }
     return entries
-      .map((entry) => this.#normalizeDamageEntry(entry, { defaults, allowedDice, allowedTypes }))
+      .map((entry) => this.#normalizeDamageEntry(entry, { defaults, allowedDice, allowedTypes, allowedActivities }))
       .filter(Boolean);
   }
 
-  static #normalizeDamageEntry(entry, { defaults, allowedDice, allowedTypes }) {
+  static #normalizeDamageEntry(entry, { defaults, allowedDice, allowedTypes, allowedActivities }) {
     if (!entry || typeof entry !== "object") {
       return null;
     }
@@ -213,24 +224,36 @@ export class GemDetailsBuilder {
     const type = typeof entry.type === "string" && allowedTypes.has(entry.type)
       ? entry.type
       : defaults.type;
+    const activity = typeof entry.activity === "string" && allowedActivities?.has(entry.activity)
+      ? entry.activity
+      : "any";
 
     return {
       number: Number.isFinite(number) ? number : defaults.number,
       die,
       bonus: Number.isFinite(bonus) ? bonus : defaults.bonus,
-      type
+      type,
+      activity
     };
   }
 
   static #getDefaultDamageEntry({ dieOptions, damageTypeOptions }) {
-    const die = dieOptions?.[0]?.value ?? "d6";
+    const die = dieOptions?.find?.((opt) => opt.value)?.value ?? "d6";
     const type = damageTypeOptions?.[0]?.value ?? "";
     return {
       number: 1,
       die,
       bonus: 0,
-      type
+      type,
+      activity: "any"
     };
+  }
+
+  static #buildActivityOptions() {
+    return [
+      { value: "any", label: Constants.localize("SCSockets.GemDetails.ExtraDamageActivity.Any", "Any action") },
+      { value: "attack", label: Constants.localize("SCSockets.GemDetails.ExtraDamageActivity.Attack", "Attack only") }
+    ];
   }
 
   static #buildCritThresholdContext(item, { include = false } = {}) {

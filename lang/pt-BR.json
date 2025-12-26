@@ -51,8 +51,14 @@
         "Fields": {
           "Number": "Quantidade",
           "Die": "Dado",
-          "Bonus": "Bônus"
-        }
+          "Bonus": "Bônus",
+          "Activity": "Quando aplicar"
+        },
+        "ActivityHint": "Escolha quando este dano extra se aplica. Qualquer ação: sempre. Apenas ataque: somente em atividades do tipo ataque."
+      },
+      "ExtraDamageActivity": {
+        "Any": "Qualquer ação",
+        "Attack": "Apenas ataque"
       },
       "CritDamage": {
         "Label": "Dano só no crítico",

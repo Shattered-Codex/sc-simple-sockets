@@ -182,11 +182,13 @@ export class GemDetailsUI {
       const die = row.querySelector('select[name$=".die"]')?.value ?? "";
       const bonus = Number(row.querySelector('input[name$=".bonus"]')?.value ?? 0);
       const type = row.querySelector('select[name$=".type"]')?.value ?? "";
+      const activity = row.querySelector('select[name$=".activity"]')?.value ?? "any";
       entries.push({
         number: Number.isFinite(number) ? number : 0,
         die,
         bonus: Number.isFinite(bonus) ? bonus : 0,
-        type
+        type,
+        activity
       });
     }
     return entries;
@@ -207,7 +209,8 @@ export class GemDetailsUI {
       return prev.number === entry.number &&
         prev.die === entry.die &&
         prev.bonus === entry.bonus &&
-        prev.type === entry.type;
+        prev.type === entry.type &&
+        prev.activity === entry.activity;
     });
     if (sameContent) return;
 
