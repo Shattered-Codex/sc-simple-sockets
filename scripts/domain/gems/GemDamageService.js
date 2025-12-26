@@ -60,12 +60,7 @@ export class GemDamageService {
     }
 
     const baseRoll = rolls[0];
-    const entries = [
-      ...GemDamageService.collectGemDamage(item),
-      ...(GemDamageService.#isCriticalAction(config, baseRoll, { strict: true })
-        ? GemDamageService.collectGemDamage(item, { flag: Constants.FLAG_GEM_CRIT_DAMAGE, criticalOnly: true })
-        : [])
-    ];
+    const entries = GemDamageService.collectGemDamage(item);
     if (!entries.length) {
       return;
     }

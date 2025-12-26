@@ -9,7 +9,6 @@ export class Constants {
   static FLAG_GEM_ALLOWED_TYPES = "gemAllowedTypes";
   static FLAG_GEM_DETAIL_TYPE = "gemDetailType";
   static FLAG_GEM_DAMAGE = "gemDamage";
-  static FLAG_GEM_CRIT_DAMAGE = "gemCritDamage";
   static FLAG_GEM_CRIT_THRESHOLD = "gemCritThreshold";
   static FLAG_GEM_CRIT_MULTIPLIER = "gemCritMultiplier";
   static FLAG_GEM_ATTACK_BONUS = "gemAttackBonus";
@@ -18,7 +17,6 @@ export class Constants {
     gemAllowedTypes: "gemAllowedTypes",
     gemDetailType: "gemDetailType",
     gemDamage: "gemDamage",
-    gemCritDamage: "gemCritDamage",
     gemCritThreshold: "gemCritThreshold",
     gemCritMultiplier: "gemCritMultiplier",
     gemAttackBonus: "gemAttackBonus"

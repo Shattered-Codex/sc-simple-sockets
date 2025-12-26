@@ -31,10 +31,6 @@ export class GemDetailsBuilder {
     const value = this.#normalizeValue(this.#getStoredValue(item));
     const showWeaponDetails = value === "weapons";
     const damage = this.#buildDamageContext(item, { include: showWeaponDetails });
-    const critDamage = this.#buildDamageContext(item, {
-      include: showWeaponDetails,
-      flag: Constants.FLAG_GEM_CRIT_DAMAGE
-    });
     const critThreshold = this.#buildCritThresholdContext(item, { include: showWeaponDetails });
     const critMultiplier = this.#buildCritMultiplierContext(item, { include: showWeaponDetails });
     const attackBonus = this.#buildAttackBonusContext(item, { include: showWeaponDetails });
@@ -63,7 +59,6 @@ export class GemDetailsBuilder {
       options: this.#buildOptions(value),
       showWeaponDetails,
       damage,
-      critDamage,
       critThreshold,
       critMultiplier,
       attackBonus
@@ -279,7 +274,7 @@ export class GemDetailsBuilder {
       label: Constants.localize("SCSockets.GemDetails.CritThreshold.Label", "Critical Threshold"),
       hint: Constants.localize(
         "SCSockets.GemDetails.CritThreshold.Hint",
-        "Lowest d20 result that counts as a critical hit for this gem. Leave blank for no change."
+        "Lowest d20 result that counts as a critical hit for this gem. If multiple gems adjust this, the lowest value is used. Leave blank for no change."
       )
     };
   }
@@ -310,7 +305,7 @@ export class GemDetailsBuilder {
       label: Constants.localize("SCSockets.GemDetails.CritMultiplier.Label", "Critical Multiplier"),
       hint: Constants.localize(
         "SCSockets.GemDetails.CritMultiplier.Hint",
-        "Multiply critical damage by this value when this gem is socketed. Leave blank to use the normal multiplier."
+        "Multiply critical damage by this value when this gem is socketed. If multiple gems set this, the highest value is used. Leave blank to use the normal multiplier."
       )
     };
   }
@@ -341,7 +336,7 @@ export class GemDetailsBuilder {
       label: Constants.localize("SCSockets.GemDetails.AttackBonus.Label", "Attack Bonus"),
       hint: Constants.localize(
         "SCSockets.GemDetails.AttackBonus.Hint",
-        "Flat bonus added to attack rolls when this gem is socketed. Leave blank for none."
+        "Flat bonus added to attack rolls when this gem is socketed. Bonuses from multiple gems stack. Leave blank for none."
       )
     };
   }

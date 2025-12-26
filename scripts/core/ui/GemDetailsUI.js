@@ -6,7 +6,6 @@ export class GemDetailsUI {
   static #handler = null;
   static SELECTOR = '[data-sc-sockets="gem-details-container"]';
   static DAMAGE_SECTION_SELECTOR = '[data-sc-sockets="gem-details"]';
-  static CRIT_DAMAGE_SECTION_SELECTOR = '[data-sc-sockets="gem-crit-details"]';
 
   static activate() {
     if (GemDetailsUI.#handler) {
@@ -108,26 +107,6 @@ export class GemDetailsUI {
           await GemDetailsUI.#handleRemoveDamage(sheet, target, {
             sectionSelector: GemDetailsUI.DAMAGE_SECTION_SELECTOR,
             flag: Constants.FLAG_GEM_DAMAGE
-          });
-          break;
-        case "addGemCritDamage":
-          event.preventDefault();
-          await GemDetailsUI.#handleAddDamage(sheet, container, {
-            sectionSelector: GemDetailsUI.CRIT_DAMAGE_SECTION_SELECTOR,
-            flag: Constants.FLAG_GEM_CRIT_DAMAGE
-          });
-          break;
-        case "clearGemCritDamage":
-          event.preventDefault();
-          await GemDetailsUI.#handleClearDamage(sheet, {
-            flag: Constants.FLAG_GEM_CRIT_DAMAGE
-          });
-          break;
-        case "removeGemCritDamage":
-          event.preventDefault();
-          await GemDetailsUI.#handleRemoveDamage(sheet, target, {
-            sectionSelector: GemDetailsUI.CRIT_DAMAGE_SECTION_SELECTOR,
-            flag: Constants.FLAG_GEM_CRIT_DAMAGE
           });
           break;
         default:
@@ -266,15 +245,8 @@ export class GemDetailsUI {
           flag: Constants.FLAG_GEM_DAMAGE
         }) ?? [])
       : [];
-    const critEntries = keep
-      ? (GemDetailsUI.#readEntries(container, item, {
-          sectionSelector: GemDetailsUI.CRIT_DAMAGE_SECTION_SELECTOR,
-          flag: Constants.FLAG_GEM_CRIT_DAMAGE
-        }) ?? [])
-      : [];
 
     await GemDetailsUI.#writeEntries(item, baseEntries, Constants.FLAG_GEM_DAMAGE);
-    await GemDetailsUI.#writeEntries(item, critEntries, Constants.FLAG_GEM_CRIT_DAMAGE);
   }
 
   static async #persistCritThreshold(item, rawValue, container) {

@@ -59,15 +59,15 @@
       },
       "CritThreshold": {
         "Label": "Critical Threshold",
-        "Hint": "Lowest d20 result that counts as a critical hit for attacks with this gem socketed. Leave blank to use the base weapon value."
+        "Hint": "Lowest d20 result that counts as a critical hit for attacks with this gem socketed. If multiple gems adjust crit, the lowest value is used. Leave blank to use the base weapon value."
       },
       "CritMultiplier": {
         "Label": "Critical Multiplier",
-        "Hint": "Multiply critical damage by this value when this gem is socketed. Leave blank to keep the default multiplier."
+        "Hint": "Multiply critical damage by this value when this gem is socketed. If multiple gems set this, the highest value is used. Leave blank to keep the default multiplier."
       },
       "AttackBonus": {
         "Label": "Attack Bonus",
-        "Hint": "Flat bonus added to attack rolls when this gem is socketed. Leave blank for none."
+        "Hint": "Flat bonus added to attack rolls when this gem is socketed. Bonuses from multiple gems stack. Leave blank for none."
       }
     },
     "Tooltips": {
