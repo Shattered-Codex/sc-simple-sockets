@@ -279,10 +279,15 @@ body.sc-sockets-target-cursor * {
 /* Ensure gem details only show when the tab is active */
 [data-application-part="sc-sockets-gem-details-part"]:not(.active),
 .tab.sc-sockets-gem-details-part:not(.active),
-[data-tidy-section-key="sc-sockets-gem-details"]:not(.active),
-.tidy-tab-contents.sc-sockets-gem-details-tab:not(.active),
-[data-tab="sc-simple-sockets-tidy-gem-details"]:not(.active) {
+[data-tidy-section-key="sc-sockets-gem-details"]:not(.active) {
   display: none !important;
+}
+
+/* Tidy handles tab visibility on the container; keep the inner parts visible there. */
+.tidy-tab-contents.sc-sockets-gem-details-tab [data-application-part="sc-sockets-gem-details-part"],
+.tidy-tab-contents.sc-sockets-gem-details-tab .tab.sc-sockets-gem-details-part,
+.tidy-tab-contents.sc-sockets-gem-details-tab [data-tidy-section-key="sc-sockets-gem-details"] {
+  display: block !important;
 }
 
 .sc-sockets-gem-box {
