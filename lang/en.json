@@ -53,6 +53,10 @@
           "Bonus": "Bonus"
         }
       },
+      "CritDamage": {
+        "Label": "Critical-Only Damage",
+        "Hint": "Damage that only applies when this gem is socketed and you roll critical damage (button or crit action)."
+      },
       "CritThreshold": {
         "Label": "Critical Threshold",
         "Hint": "Lowest d20 result that counts as a critical hit for attacks with this gem socketed. Leave blank to use the base weapon value."
@@ -60,6 +64,10 @@
       "CritMultiplier": {
         "Label": "Critical Multiplier",
         "Hint": "Multiply critical damage by this value when this gem is socketed. Leave blank to keep the default multiplier."
+      },
+      "AttackBonus": {
+        "Label": "Attack Bonus",
+        "Hint": "Flat bonus added to attack rolls when this gem is socketed. Leave blank for none."
       }
     },
     "Tooltips": {

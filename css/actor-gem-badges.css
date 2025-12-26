@@ -333,3 +333,11 @@ body.sc-sockets-target-cursor * {
   flex-direction: column;
   gap: 0.1rem;
 }
+
+/* Critical/attack controls row on gem details */
+.sc-sockets-gem-critical-row {
+  margin-top: 0.6rem;
+  margin-bottom: 0.65rem;
+  gap: 0.65rem;
+  align-items: flex-start;
+}

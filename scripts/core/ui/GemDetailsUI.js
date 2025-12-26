@@ -6,6 +6,7 @@ export class GemDetailsUI {
   static #handler = null;
   static SELECTOR = '[data-sc-sockets="gem-details-container"]';
   static DAMAGE_SECTION_SELECTOR = '[data-sc-sockets="gem-details"]';
+  static CRIT_DAMAGE_SECTION_SELECTOR = '[data-sc-sockets="gem-crit-details"]';
 
   static activate() {
     if (GemDetailsUI.#handler) {
@@ -55,6 +56,7 @@ export class GemDetailsUI {
         if (value !== "weapons") {
           await GemDetailsUI.#persistCritThreshold(sheet?.item, undefined);
           await GemDetailsUI.#persistCritMultiplier(sheet?.item, undefined);
+          await GemDetailsUI.#persistAttackBonus(sheet?.item, undefined);
         }
         return;
       }
@@ -68,6 +70,12 @@ export class GemDetailsUI {
       if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_CRIT_MULTIPLIER}`)) {
         event.preventDefault();
         await GemDetailsUI.#persistCritMultiplier(sheet?.item, target.value);
+        return;
+      }
+
+      if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_ATTACK_BONUS}`)) {
+        event.preventDefault();
+        await GemDetailsUI.#persistAttackBonus(sheet?.item, target.value);
         return;
       }
 
@@ -100,6 +108,26 @@ export class GemDetailsUI {
           await GemDetailsUI.#handleRemoveDamage(sheet, target, {
             sectionSelector: GemDetailsUI.DAMAGE_SECTION_SELECTOR,
             flag: Constants.FLAG_GEM_DAMAGE
+          });
+          break;
+        case "addGemCritDamage":
+          event.preventDefault();
+          await GemDetailsUI.#handleAddDamage(sheet, container, {
+            sectionSelector: GemDetailsUI.CRIT_DAMAGE_SECTION_SELECTOR,
+            flag: Constants.FLAG_GEM_CRIT_DAMAGE
+          });
+          break;
+        case "clearGemCritDamage":
+          event.preventDefault();
+          await GemDetailsUI.#handleClearDamage(sheet, {
+            flag: Constants.FLAG_GEM_CRIT_DAMAGE
+          });
+          break;
+        case "removeGemCritDamage":
+          event.preventDefault();
+          await GemDetailsUI.#handleRemoveDamage(sheet, target, {
+            sectionSelector: GemDetailsUI.CRIT_DAMAGE_SECTION_SELECTOR,
+            flag: Constants.FLAG_GEM_CRIT_DAMAGE
           });
           break;
         default:
@@ -153,6 +181,7 @@ export class GemDetailsUI {
       await GemDetailsUI.#persistDamageFlags(container, sheet.item);
       await GemDetailsUI.#persistCritThreshold(sheet?.item, undefined, container);
       await GemDetailsUI.#persistCritMultiplier(sheet?.item, undefined, container);
+      await GemDetailsUI.#persistAttackBonus(sheet?.item, undefined, container);
     });
     form.dataset.scSocketsGemDetailsSubmitBound = "true";
   }
@@ -237,8 +266,15 @@ export class GemDetailsUI {
           flag: Constants.FLAG_GEM_DAMAGE
         }) ?? [])
       : [];
+    const critEntries = keep
+      ? (GemDetailsUI.#readEntries(container, item, {
+          sectionSelector: GemDetailsUI.CRIT_DAMAGE_SECTION_SELECTOR,
+          flag: Constants.FLAG_GEM_CRIT_DAMAGE
+        }) ?? [])
+      : [];
 
     await GemDetailsUI.#writeEntries(item, baseEntries, Constants.FLAG_GEM_DAMAGE);
+    await GemDetailsUI.#writeEntries(item, critEntries, Constants.FLAG_GEM_CRIT_DAMAGE);
   }
 
   static async #persistCritThreshold(item, rawValue, container) {
@@ -271,6 +307,21 @@ export class GemDetailsUI {
     }
     value = Math.max(Math.floor(value), 1);
     await item.setFlag(Constants.MODULE_ID, Constants.FLAG_GEM_CRIT_MULTIPLIER, value);
+  }
+
+  static async #persistAttackBonus(item, rawValue) {
+    if (!item) return;
+    const str = typeof rawValue === "string" ? rawValue.trim() : rawValue;
+    if (str === "" || str === null || str === undefined) {
+      await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_ATTACK_BONUS);
+      return;
+    }
+    const value = Number(str);
+    if (!Number.isFinite(value)) {
+      await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_ATTACK_BONUS);
+      return;
+    }
+    await item.setFlag(Constants.MODULE_ID, Constants.FLAG_GEM_ATTACK_BONUS, Math.floor(value));
   }
 
   static #rootOf(html) {

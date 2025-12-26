@@ -41,6 +41,7 @@ export class GemDamageService {
 
   static #onPreRollAttack(config) {
     try {
+      GemDamageService.#applyAttackBonus(config);
       GemDamageService.#applyCritThreshold(config);
     } catch (error) {
       console.error(`[${Constants.MODULE_ID}] apply crit threshold failed:`, error);
@@ -59,7 +60,12 @@ export class GemDamageService {
     }
 
     const baseRoll = rolls[0];
-    const entries = GemDamageService.collectGemDamage(item);
+    const entries = [
+      ...GemDamageService.collectGemDamage(item),
+      ...(GemDamageService.#isCriticalAction(config, baseRoll, { strict: true })
+        ? GemDamageService.collectGemDamage(item, { flag: Constants.FLAG_GEM_CRIT_DAMAGE, criticalOnly: true })
+        : [])
+    ];
     if (!entries.length) {
       return;
     }
@@ -192,7 +198,8 @@ export class GemDamageService {
       formula: entry.formula,
       type: entry.type,
       slot: source.slot,
-      gemUuid: source.uuid
+      gemUuid: source.uuid,
+      criticalOnly: entry.criticalOnly === true
     };
 
     const opts = options ?? {};
@@ -220,7 +227,7 @@ export class GemDamageService {
 
     const rolls = Array.isArray(config?.rolls) ? config.rolls : [];
     for (const roll of rolls) {
-      const isCrit = GemDamageService.#isCriticalAction(config, roll);
+      const isCrit = GemDamageService.#isCriticalAction(config, roll, { strict: true });
       if (!isCrit) {
         continue;
       }
@@ -235,7 +242,7 @@ export class GemDamageService {
     }
 
     // Also update the shared config so downstream merges see the multiplier.
-    config.isCritical ||= GemDamageService.#isCriticalAction(config, rolls[0]);
+    config.isCritical ||= GemDamageService.#isCriticalAction(config, rolls[0], { strict: true });
     config.options ??= {};
     config.options.isCritical ??= config.isCritical;
     config.critical ??= {};
@@ -307,10 +314,11 @@ export class GemDamageService {
     return best;
   }
 
-  static #isCriticalAction(config, baseRoll) {
+  static #isCriticalAction(config, baseRoll, { strict = false } = {}) {
     const action = config?.action ?? config?.options?.action;
     if (action === "normal") return false;
     if (action === "critical") return true;
+    if (strict) return false;
     if (config?.isCritical === true) return true;
     if (config?.options?.isCritical === true) return true;
     if (baseRoll?.options?.isCritical === true) return true;
@@ -338,5 +346,44 @@ export class GemDamageService {
     }
 
     return best;
+  }
+
+  static #applyAttackBonus(config) {
+    const item = GemDamageService.extractItem(config);
+    if (!item || item.type !== "weapon") {
+      return;
+    }
+    const total = GemDamageService.#collectAttackBonus(item);
+    if (!total) {
+      return;
+    }
+
+    const rolls = Array.isArray(config?.rolls) ? config.rolls : [];
+    for (const roll of rolls) {
+      roll.parts ??= [];
+      roll.parts.push(total);
+    }
+  }
+
+  static #collectAttackBonus(item) {
+    const slots = SocketStore.peekSlots(item);
+    if (!Array.isArray(slots) || !slots.length) {
+      return 0;
+    }
+    let sum = 0;
+
+    for (const slot of slots) {
+      const gem = GemDamageService.resolveGemSource(slot);
+      if (!gem) continue;
+      const detailType = GemDamageService.readFlag(gem, Constants.FLAG_GEM_DETAIL_TYPE);
+      if (detailType !== "weapons") continue;
+
+      const raw = GemDamageService.readFlag(gem, Constants.FLAG_GEM_ATTACK_BONUS);
+      const value = Number(raw);
+      if (!Number.isFinite(value)) continue;
+      sum += Math.floor(value);
+    }
+
+    return sum;
   }
 }

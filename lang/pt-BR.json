@@ -53,6 +53,10 @@
           "Bonus": "Bônus"
         }
       },
+      "CritDamage": {
+        "Label": "Dano só no crítico",
+        "Hint": "Dano que só se aplica quando esta gema está encaixada e você rola dano crítico (botão ou ação de crítico)."
+      },
       "CritThreshold": {
         "Label": "Limite de crítico",
         "Hint": "Menor resultado no d20 que conta como crítico para ataques com esta gema encaixada. Deixe em branco para usar o valor base da arma."
@@ -60,6 +64,10 @@
       "CritMultiplier": {
         "Label": "Multiplicador de crítico",
         "Hint": "Multiplica o dano crítico por esse valor quando esta gema estiver encaixada. Deixe em branco para manter o multiplicador padrão."
+      },
+      "AttackBonus": {
+        "Label": "Bônus de ataque",
+        "Hint": "Bônus fixo adicionado às rolagens de ataque quando esta gema está encaixada. Deixe em branco para nenhum."
       }
     },
     "Tooltips": {

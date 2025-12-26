@@ -31,8 +31,13 @@ export class GemDetailsBuilder {
     const value = this.#normalizeValue(this.#getStoredValue(item));
     const showWeaponDetails = value === "weapons";
     const damage = this.#buildDamageContext(item, { include: showWeaponDetails });
+    const critDamage = this.#buildDamageContext(item, {
+      include: showWeaponDetails,
+      flag: Constants.FLAG_GEM_CRIT_DAMAGE
+    });
     const critThreshold = this.#buildCritThresholdContext(item, { include: showWeaponDetails });
     const critMultiplier = this.#buildCritMultiplierContext(item, { include: showWeaponDetails });
+    const attackBonus = this.#buildAttackBonusContext(item, { include: showWeaponDetails });
     const canEdit = Boolean(
       isGem && (
         (editable ?? true) ||
@@ -58,8 +63,10 @@ export class GemDetailsBuilder {
       options: this.#buildOptions(value),
       showWeaponDetails,
       damage,
+      critDamage,
       critThreshold,
-      critMultiplier
+      critMultiplier,
+      attackBonus
     };
 
     if (part) {
@@ -323,5 +330,35 @@ export class GemDetailsBuilder {
     if (!Number.isFinite(num)) return null;
     const normalized = Math.max(Math.floor(num), 1);
     return normalized;
+  }
+
+  static #buildAttackBonusContext(item, { include = false } = {}) {
+    const stored = include ? GemDetailsBuilder.#getStoredAttackBonus(item) : null;
+    const value = GemDetailsBuilder.#normalizeAttackBonus(stored);
+    return {
+      value: value ?? "",
+      name: `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_ATTACK_BONUS}`,
+      label: Constants.localize("SCSockets.GemDetails.AttackBonus.Label", "Attack Bonus"),
+      hint: Constants.localize(
+        "SCSockets.GemDetails.AttackBonus.Hint",
+        "Flat bonus added to attack rolls when this gem is socketed. Leave blank for none."
+      )
+    };
+  }
+
+  static #getStoredAttackBonus(item) {
+    const raw = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_GEM_ATTACK_BONUS);
+    const flags = item?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_ATTACK_BONUS];
+    const source = raw ?? flags ?? item?._source?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_ATTACK_BONUS];
+    return source;
+  }
+
+  static #normalizeAttackBonus(value) {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const num = Number(value);
+    if (!Number.isFinite(num)) return null;
+    return Math.floor(num);
   }
 }
