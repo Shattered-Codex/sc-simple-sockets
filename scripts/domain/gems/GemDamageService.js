@@ -106,11 +106,6 @@ export class GemDamageService {
         continue;
       }
 
-      const detailType = GemDamageService.readFlag(gem, Constants.FLAG_GEM_DETAIL_TYPE);
-      if (detailType !== "weapons") {
-        continue;
-      }
-
       const normalized = GemDetailsBuilder.getNormalizedDamageEntries(gem, { flag });
       for (const entry of normalized) {
         const formula = GemDamageService.buildFormula(entry);
@@ -296,8 +291,6 @@ export class GemDamageService {
     for (const slot of slots) {
       const gem = GemDamageService.resolveGemSource(slot);
       if (!gem) continue;
-      const detailType = GemDamageService.readFlag(gem, Constants.FLAG_GEM_DETAIL_TYPE);
-      if (detailType !== "weapons") continue;
 
       const raw = GemDamageService.readFlag(gem, Constants.FLAG_GEM_CRIT_THRESHOLD);
       const value = Number(raw);
@@ -330,8 +323,6 @@ export class GemDamageService {
     for (const slot of slots) {
       const gem = GemDamageService.resolveGemSource(slot);
       if (!gem) continue;
-      const detailType = GemDamageService.readFlag(gem, Constants.FLAG_GEM_DETAIL_TYPE);
-      if (detailType !== "weapons") continue;
 
       const raw = GemDamageService.readFlag(gem, Constants.FLAG_GEM_CRIT_MULTIPLIER);
       const value = Number(raw);
@@ -370,8 +361,6 @@ export class GemDamageService {
     for (const slot of slots) {
       const gem = GemDamageService.resolveGemSource(slot);
       if (!gem) continue;
-      const detailType = GemDamageService.readFlag(gem, Constants.FLAG_GEM_DETAIL_TYPE);
-      if (detailType !== "weapons") continue;
 
       const raw = GemDamageService.readFlag(gem, Constants.FLAG_GEM_ATTACK_BONUS);
       const value = Number(raw);

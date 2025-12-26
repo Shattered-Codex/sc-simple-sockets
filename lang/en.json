@@ -34,6 +34,7 @@
       "SelectLabel": "Additional Details",
       "Hint": "Choose how this gem should be categorized.",
       "TypeFieldset": "Details Type",
+      "Disclaimer": "Use the fields below to adjust only the attacks made with the weapon that holds this gem. Active Effects applied to the actor affect every attack with any weapon. For armor and shields, use the gem's standard Active Effects on the item.",
       "Options": {
         "None": "None",
         "Weapons": "Weapons",

@@ -2,13 +2,6 @@ import { Constants } from "../../core/Constants.js";
 import { GemCriteria } from "./GemCriteria.js";
 
 export class GemDetailsBuilder {
-  static #DEFAULT_VALUE = "none";
-  static #VALID_VALUES = new Set([
-    GemDetailsBuilder.#DEFAULT_VALUE,
-    "weapons",
-    "equipment"
-  ]);
-
   /**
    * Builds the context consumed by the gem details tab template.
    * @param {Item|null} item
@@ -28,8 +21,8 @@ export class GemDetailsBuilder {
     includeHints = true
   } = {}) {
     const isGem = GemCriteria.matches(item);
-    const value = this.#normalizeValue(this.#getStoredValue(item));
-    const showWeaponDetails = value === "weapons";
+    const value = "weapons";
+    const showWeaponDetails = true;
     const damage = this.#buildDamageContext(item, { include: showWeaponDetails });
     const critThreshold = this.#buildCritThresholdContext(item, { include: showWeaponDetails });
     const critMultiplier = this.#buildCritMultiplierContext(item, { include: showWeaponDetails });
@@ -56,7 +49,7 @@ export class GemDetailsBuilder {
       selectId: selectId ?? `${Constants.MODULE_ID}-gem-details-select`,
       selectName: selectName ?? `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_DETAIL_TYPE}`,
       value,
-      options: this.#buildOptions(value),
+      options: [],
       showWeaponDetails,
       damage,
       critThreshold,
@@ -69,31 +62,6 @@ export class GemDetailsBuilder {
     }
 
     return context;
-  }
-
-  static #getStoredValue(item) {
-    const raw = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_GEM_DETAIL_TYPE);
-    return typeof raw === "string" ? raw : null;
-  }
-
-  static #normalizeValue(value) {
-    if (typeof value === "string" && GemDetailsBuilder.#VALID_VALUES.has(value)) {
-      return value;
-    }
-    return GemDetailsBuilder.#DEFAULT_VALUE;
-  }
-
-  static #buildOptions(selectedValue) {
-    const options = [
-      { value: GemDetailsBuilder.#DEFAULT_VALUE, label: Constants.localize("SCSockets.GemDetails.Options.None", "None") },
-      { value: "weapons", label: Constants.localize("SCSockets.GemDetails.Options.Weapons", "Weapons") },
-      { value: "equipment", label: Constants.localize("SCSockets.GemDetails.Options.Equipment", "Equipment") }
-    ];
-
-    return options.map((opt) => ({
-      ...opt,
-      selected: opt.value === selectedValue
-    }));
   }
 
   static #buildDamageContext(item, { include = false, flag = Constants.FLAG_GEM_DAMAGE } = {}) {

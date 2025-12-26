@@ -6,24 +6,12 @@
   {{#if details.isGem}}
 
     <div class="sc-sockets-gem-details-container" data-sc-sockets="gem-details-container">
-      <fieldset class="form-group sc-sockets-gem-details-type">
-        <legend class="form-header">{{ localize "SCSockets.GemDetails.TypeFieldset" }}</legend>
-        <div class="form-fields">
-          <select id="{{details.selectId}}"
-                  name="{{details.selectName}}">
-            {{#each details.options as |option|}}
-              <option value="{{option.value}}" {{#if option.selected}}selected{{/if}}>
-                {{option.label}}
-              </option>
-            {{/each}}
-          </select>
-        </div>
-        {{#if details.hint}}
-          <p class="hint">{{details.hint}}</p>
-        {{/if}}
-      </fieldset>
+      <div class="sc-sockets-gem-details-disclaimer-icon"
+           data-tooltip="{{ localize 'SCSockets.GemDetails.Disclaimer' }}"
+           aria-label="{{ localize 'SCSockets.GemDetails.Disclaimer' }}">
+        <i class="fa-solid fa-circle-info"></i>
+      </div>
 
-      {{#if details.showWeaponDetails}}
         <div class="form-group split-group sc-sockets-gem-critical-row">
           <fieldset class="form-group sc-sockets-gem-crit-threshold">
             <legend class="form-header">{{ localize "SCSockets.GemDetails.CritThreshold.Label" }}</legend>
@@ -159,7 +147,6 @@
             </div>
           </div>
         </fieldset>
-      {{/if}}
     </div>
   {{/if}}
 </section>

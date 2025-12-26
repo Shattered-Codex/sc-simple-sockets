@@ -34,6 +34,7 @@
       "SelectLabel": "Detalhes adicionais",
       "Hint": "Escolha como esta gema deve ser categorizada.",
       "TypeFieldset": "Tipo de detalhe",
+      "Disclaimer": "Use os campos abaixo para ajustar apenas ataques feitos com a arma que contém esta gema. Active Effects aplicados à ficha do ator afetam todos os ataques com qualquer arma. Para armaduras e escudos, use os Active Effects padrão da gema no item.",
       "Options": {
         "None": "Nenhum",
         "Weapons": "Armas",

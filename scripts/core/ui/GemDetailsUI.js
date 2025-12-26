@@ -47,19 +47,6 @@ export class GemDetailsUI {
         return;
       }
       const name = target.name ?? "";
-      if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_DETAIL_TYPE}`)) {
-        event.preventDefault();
-        const value = target.value;
-        await sheet?.item?.setFlag?.(Constants.MODULE_ID, Constants.FLAG_GEM_DETAIL_TYPE, value);
-        await GemDetailsUI.#persistDamageFlags(container, sheet.item, value === "weapons");
-        if (value !== "weapons") {
-          await GemDetailsUI.#persistCritThreshold(sheet?.item, undefined);
-          await GemDetailsUI.#persistCritMultiplier(sheet?.item, undefined);
-          await GemDetailsUI.#persistAttackBonus(sheet?.item, undefined);
-        }
-        return;
-      }
-
       if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_CRIT_THRESHOLD}`)) {
         event.preventDefault();
         await GemDetailsUI.#persistCritThreshold(sheet?.item, target.value);
