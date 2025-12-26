@@ -3,31 +3,47 @@ import { SocketStore } from "../../core/SocketStore.js";
 import { GemDetailsBuilder } from "./GemDetailsBuilder.js";
 
 export class GemDamageService {
-  static #handler = null;
+  static #damageHandler = null;
+  static #attackHandler = null;
   static META_KEY = "gemDamage";
 
   static activate() {
-    if (GemDamageService.#handler) {
-      return;
+    if (!GemDamageService.#damageHandler) {
+      GemDamageService.#damageHandler = (config) => GemDamageService.#onPreRollDamage(config);
+      Hooks.on("dnd5e.preRollDamageV2", GemDamageService.#damageHandler);
     }
 
-    GemDamageService.#handler = (config) => GemDamageService.#onPreRollDamage(config);
-    Hooks.on("dnd5e.preRollDamageV2", GemDamageService.#handler);
+    if (!GemDamageService.#attackHandler) {
+      GemDamageService.#attackHandler = (config) => GemDamageService.#onPreRollAttack(config);
+      Hooks.on("dnd5e.preRollAttackV2", GemDamageService.#attackHandler);
+    }
   }
 
   static deactivate() {
-    if (!GemDamageService.#handler) {
-      return;
+    if (GemDamageService.#damageHandler) {
+      Hooks.off("dnd5e.preRollDamageV2", GemDamageService.#damageHandler);
+      GemDamageService.#damageHandler = null;
     }
-    Hooks.off("dnd5e.preRollDamageV2", GemDamageService.#handler);
-    GemDamageService.#handler = null;
+    if (GemDamageService.#attackHandler) {
+      Hooks.off("dnd5e.preRollAttackV2", GemDamageService.#attackHandler);
+      GemDamageService.#attackHandler = null;
+    }
   }
 
   static #onPreRollDamage(config) {
     try {
+      GemDamageService.#applyCritMultiplier(config);
       GemDamageService.#applyGemDamage(config);
     } catch (error) {
       console.error(`[${Constants.MODULE_ID}] apply gem damage failed:`, error);
+    }
+  }
+
+  static #onPreRollAttack(config) {
+    try {
+      GemDamageService.#applyCritThreshold(config);
+    } catch (error) {
+      console.error(`[${Constants.MODULE_ID}] apply crit threshold failed:`, error);
     }
   }
 
@@ -65,7 +81,6 @@ export class GemDamageService {
         type: entry.type ?? baseOptions.type,
         types
       };
-
       GemDamageService.addMetadata(options, entry);
 
       rolls.push({
@@ -76,7 +91,7 @@ export class GemDamageService {
     }
   }
 
-  static collectGemDamage(item) {
+  static collectGemDamage(item, { flag = Constants.FLAG_GEM_DAMAGE } = {}) {
     const slots = SocketStore.peekSlots(item);
     if (!Array.isArray(slots) || !slots.length) {
       return [];
@@ -95,7 +110,7 @@ export class GemDamageService {
         continue;
       }
 
-      const normalized = GemDetailsBuilder.getNormalizedDamageEntries(gem);
+      const normalized = GemDetailsBuilder.getNormalizedDamageEntries(gem, { flag });
       for (const entry of normalized) {
         const formula = GemDamageService.buildFormula(entry);
         if (!formula) {
@@ -191,5 +206,137 @@ export class GemDamageService {
 
   static extractItem(config) {
     return config?.subject?.item ?? config?.item ?? null;
+  }
+
+  static #applyCritMultiplier(config) {
+    const item = GemDamageService.extractItem(config);
+    if (!item || item.type !== "weapon") {
+      return;
+    }
+    const multiplier = GemDamageService.#collectCritMultiplier(item);
+    if (!multiplier) {
+      return;
+    }
+
+    const rolls = Array.isArray(config?.rolls) ? config.rolls : [];
+    for (const roll of rolls) {
+      const isCrit = GemDamageService.#isCriticalAction(config, roll);
+      if (!isCrit) {
+        continue;
+      }
+      // Ensure the roll is treated as critical so the multiplier applies to base damage.
+      roll.options ??= {};
+      roll.options.isCritical = true;
+      roll.options.critical ??= {};
+      roll.options.critical.multiplier = Math.max(
+        Number.isFinite(roll.options.critical.multiplier) ? roll.options.critical.multiplier : 2,
+        multiplier
+      );
+    }
+
+    // Also update the shared config so downstream merges see the multiplier.
+    config.isCritical ||= GemDamageService.#isCriticalAction(config, rolls[0]);
+    config.options ??= {};
+    config.options.isCritical ??= config.isCritical;
+    config.critical ??= {};
+    config.critical.multiplier = Math.max(
+      Number.isFinite(config.critical.multiplier) ? config.critical.multiplier : 2,
+      multiplier
+    );
+    config.options.critical ??= {};
+    config.options.critical.multiplier = Math.max(
+      Number.isFinite(config.options.critical.multiplier) ? config.options.critical.multiplier : 2,
+      multiplier
+    );
+  }
+
+  static #applyCritThreshold(config) {
+    const item = GemDamageService.extractItem(config);
+    if (!item || item.type !== "weapon") {
+      return;
+    }
+
+    const threshold = GemDamageService.#collectCritThreshold(item);
+    if (!threshold) {
+      return;
+    }
+
+    const rolls = Array.isArray(config?.rolls) ? config.rolls : [];
+    for (const roll of rolls) {
+      roll.options ??= {};
+      const current = Number.isFinite(roll.options.criticalSuccess)
+        ? roll.options.criticalSuccess
+        : 20;
+      roll.options.criticalSuccess = Math.min(current, threshold);
+      if (roll.options.criticalSuccess < 1) {
+        roll.options.criticalSuccess = 1;
+      }
+    }
+
+    if (config?.options) {
+      const current = Number.isFinite(config.options.criticalSuccess)
+        ? config.options.criticalSuccess
+        : 20;
+      config.options.criticalSuccess = Math.min(current, threshold);
+      if (config.options.criticalSuccess < 1) {
+        config.options.criticalSuccess = 1;
+      }
+    }
+  }
+
+  static #collectCritThreshold(item) {
+    const slots = SocketStore.peekSlots(item);
+    if (!Array.isArray(slots) || !slots.length) {
+      return null;
+    }
+    let best = null;
+
+    for (const slot of slots) {
+      const gem = GemDamageService.resolveGemSource(slot);
+      if (!gem) continue;
+      const detailType = GemDamageService.readFlag(gem, Constants.FLAG_GEM_DETAIL_TYPE);
+      if (detailType !== "weapons") continue;
+
+      const raw = GemDamageService.readFlag(gem, Constants.FLAG_GEM_CRIT_THRESHOLD);
+      const value = Number(raw);
+      if (!Number.isFinite(value) || value <= 0) continue;
+      const clamped = Math.min(Math.max(Math.floor(value), 1), 20);
+      best = best === null ? clamped : Math.min(best, clamped);
+    }
+
+    return best;
+  }
+
+  static #isCriticalAction(config, baseRoll) {
+    const action = config?.action ?? config?.options?.action;
+    if (action === "normal") return false;
+    if (action === "critical") return true;
+    if (config?.isCritical === true) return true;
+    if (config?.options?.isCritical === true) return true;
+    if (baseRoll?.options?.isCritical === true) return true;
+    return false;
+  }
+
+  static #collectCritMultiplier(item) {
+    const slots = SocketStore.peekSlots(item);
+    if (!Array.isArray(slots) || !slots.length) {
+      return null;
+    }
+    let best = null;
+
+    for (const slot of slots) {
+      const gem = GemDamageService.resolveGemSource(slot);
+      if (!gem) continue;
+      const detailType = GemDamageService.readFlag(gem, Constants.FLAG_GEM_DETAIL_TYPE);
+      if (detailType !== "weapons") continue;
+
+      const raw = GemDamageService.readFlag(gem, Constants.FLAG_GEM_CRIT_MULTIPLIER);
+      const value = Number(raw);
+      if (!Number.isFinite(value)) continue;
+      const normalized = Math.max(Math.floor(value), 1);
+      best = best === null ? normalized : Math.max(best, normalized);
+    }
+
+    return best;
   }
 }

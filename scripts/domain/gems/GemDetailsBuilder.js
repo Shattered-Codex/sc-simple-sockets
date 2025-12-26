@@ -31,6 +31,8 @@ export class GemDetailsBuilder {
     const value = this.#normalizeValue(this.#getStoredValue(item));
     const showWeaponDetails = value === "weapons";
     const damage = this.#buildDamageContext(item, { include: showWeaponDetails });
+    const critThreshold = this.#buildCritThresholdContext(item, { include: showWeaponDetails });
+    const critMultiplier = this.#buildCritMultiplierContext(item, { include: showWeaponDetails });
     const canEdit = Boolean(
       isGem && (
         (editable ?? true) ||
@@ -55,7 +57,9 @@ export class GemDetailsBuilder {
       value,
       options: this.#buildOptions(value),
       showWeaponDetails,
-      damage
+      damage,
+      critThreshold,
+      critMultiplier
     };
 
     if (part) {
@@ -90,12 +94,12 @@ export class GemDetailsBuilder {
     }));
   }
 
-  static #buildDamageContext(item, { include = false } = {}) {
+  static #buildDamageContext(item, { include = false, flag = Constants.FLAG_GEM_DAMAGE } = {}) {
     const dieOptions = this.#buildDieOptions();
     const damageTypeOptions = this.#buildDamageTypeOptions();
     const defaults = this.#getDefaultDamageEntry({ dieOptions, damageTypeOptions });
     const entries = include
-      ? this.getNormalizedDamageEntries(item, { dieOptions, damageTypeOptions, defaults })
+      ? this.getNormalizedDamageEntries(item, { dieOptions, damageTypeOptions, defaults, flag })
       : [];
 
     const buildEntry = (entry) => ({
@@ -113,7 +117,7 @@ export class GemDetailsBuilder {
     const displayEntries = entries.map(buildEntry);
 
     return {
-      namePrefix: `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_DAMAGE}`,
+      namePrefix: `flags.${Constants.MODULE_ID}.${flag}`,
       entries: displayEntries,
       dieOptions,
       damageTypeOptions,
@@ -133,7 +137,8 @@ export class GemDetailsBuilder {
   static getNormalizedDamageEntries(source, {
     dieOptions,
     damageTypeOptions,
-    defaults
+    defaults,
+    flag = Constants.FLAG_GEM_DAMAGE
   } = {}) {
     const dice = dieOptions ?? this.#buildDieOptions();
     const types = damageTypeOptions ?? this.#buildDamageTypeOptions();
@@ -143,7 +148,7 @@ export class GemDetailsBuilder {
     });
     const allowedDice = new Set(dice.map((opt) => opt.value));
     const allowedTypes = new Set(types.map((opt) => opt.value));
-    const stored = this.#getStoredDamage(source);
+    const stored = this.#getStoredDamage(source, flag);
 
     return this.#normalizeDamageEntries(stored, {
       defaults: fallbackDefaults,
@@ -196,10 +201,10 @@ export class GemDetailsBuilder {
     return "";
   }
 
-  static #getStoredDamage(item) {
-    const raw = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_GEM_DAMAGE);
-    const flags = item?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_DAMAGE];
-    const source = raw ?? flags ?? item?._source?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_DAMAGE];
+  static #getStoredDamage(item, flag = Constants.FLAG_GEM_DAMAGE) {
+    const raw = item?.getFlag?.(Constants.MODULE_ID, flag);
+    const flags = item?.flags?.[Constants.MODULE_ID]?.[flag];
+    const source = raw ?? flags ?? item?._source?.flags?.[Constants.MODULE_ID]?.[flag];
 
     if (Array.isArray(source)) {
       return source;
@@ -256,5 +261,67 @@ export class GemDetailsBuilder {
       bonus: 0,
       type
     };
+  }
+
+  static #buildCritThresholdContext(item, { include = false } = {}) {
+    const stored = include ? GemDetailsBuilder.#getStoredCritThreshold(item) : null;
+    const value = GemDetailsBuilder.#normalizeCritThreshold(stored);
+    return {
+      value: value ?? "",
+      name: `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_CRIT_THRESHOLD}`,
+      label: Constants.localize("SCSockets.GemDetails.CritThreshold.Label", "Critical Threshold"),
+      hint: Constants.localize(
+        "SCSockets.GemDetails.CritThreshold.Hint",
+        "Lowest d20 result that counts as a critical hit for this gem. Leave blank for no change."
+      )
+    };
+  }
+
+  static #getStoredCritThreshold(item) {
+    const raw = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_GEM_CRIT_THRESHOLD);
+    const flags = item?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_CRIT_THRESHOLD];
+    const source = raw ?? flags ?? item?._source?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_CRIT_THRESHOLD];
+    return source;
+  }
+
+  static #normalizeCritThreshold(value) {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const num = Number(value);
+    if (!Number.isFinite(num) || num <= 0) return null;
+    const clamped = Math.min(Math.max(Math.floor(num), 1), 20);
+    return clamped;
+  }
+
+  static #buildCritMultiplierContext(item, { include = false } = {}) {
+    const stored = include ? GemDetailsBuilder.#getStoredCritMultiplier(item) : null;
+    const value = GemDetailsBuilder.#normalizeCritMultiplier(stored);
+    return {
+      value: value ?? "",
+      name: `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_CRIT_MULTIPLIER}`,
+      label: Constants.localize("SCSockets.GemDetails.CritMultiplier.Label", "Critical Multiplier"),
+      hint: Constants.localize(
+        "SCSockets.GemDetails.CritMultiplier.Hint",
+        "Multiply critical damage by this value when this gem is socketed. Leave blank to use the normal multiplier."
+      )
+    };
+  }
+
+  static #getStoredCritMultiplier(item) {
+    const raw = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_GEM_CRIT_MULTIPLIER);
+    const flags = item?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_CRIT_MULTIPLIER];
+    const source = raw ?? flags ?? item?._source?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_GEM_CRIT_MULTIPLIER];
+    return source;
+  }
+
+  static #normalizeCritMultiplier(value) {
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+    const num = Number(value);
+    if (!Number.isFinite(num)) return null;
+    const normalized = Math.max(Math.floor(num), 1);
+    return normalized;
   }
 }

@@ -52,6 +52,14 @@
           "Die": "Die",
           "Bonus": "Bonus"
         }
+      },
+      "CritThreshold": {
+        "Label": "Critical Threshold",
+        "Hint": "Lowest d20 result that counts as a critical hit for attacks with this gem socketed. Leave blank to use the base weapon value."
+      },
+      "CritMultiplier": {
+        "Label": "Critical Multiplier",
+        "Hint": "Multiply critical damage by this value when this gem is socketed. Leave blank to keep the default multiplier."
       }
     },
     "Tooltips": {

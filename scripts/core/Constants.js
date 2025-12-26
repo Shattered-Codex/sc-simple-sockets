@@ -9,11 +9,15 @@ export class Constants {
   static FLAG_GEM_ALLOWED_TYPES = "gemAllowedTypes";
   static FLAG_GEM_DETAIL_TYPE = "gemDetailType";
   static FLAG_GEM_DAMAGE = "gemDamage";
+  static FLAG_GEM_CRIT_THRESHOLD = "gemCritThreshold";
+  static FLAG_GEM_CRIT_MULTIPLIER = "gemCritMultiplier";
   static FLAGS = {
     sockets: "sockets",
     gemAllowedTypes: "gemAllowedTypes",
     gemDetailType: "gemDetailType",
-    gemDamage: "gemDamage"
+    gemDamage: "gemDamage",
+    gemCritThreshold: "gemCritThreshold",
+    gemCritMultiplier: "gemCritMultiplier"
   };
   static GEM_ALLOWED_TYPES_ALL = "*";
   static SOCKET_SLOT_IMG = `modules/${this.MODULE_ID}/assets/imgs/socket-slot.webp`;
