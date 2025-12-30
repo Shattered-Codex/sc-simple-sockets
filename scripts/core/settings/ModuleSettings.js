@@ -6,6 +6,7 @@ export class ModuleSettings {
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
+  static SETTING_SUPPORT_CARD = "supportCardDisabled";
   static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
   static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
   static SETTING_CUSTOM_LOOT_SUBTYPES = Constants.SETTING_CUSTOM_LOOT_SUBTYPES;
@@ -14,6 +15,7 @@ export class ModuleSettings {
   }
 
   async register() {
+    this.#registerSupportCardSetting();
     this.#registerEditSocketPermission();
     this.#registerMaxSockets();
     this.#registerDeleteOnRemoval();
@@ -162,6 +164,23 @@ export class ModuleSettings {
     const normalized = key.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
     if (!normalized.length) return "Custom";
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  #registerSupportCardSetting() {
+    const name = Constants.localize("SCSockets.Settings.SupportCard.Name", "Support Chat Card - disable");
+    const hint = Constants.localize(
+      "SCSockets.Settings.SupportCard.Hint",
+      "If enabled, the support chat card will not show on startup."
+    );
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_CARD, {
+      name,
+      hint,
+      scope: "world",
+      config: true,
+      type: Boolean,
+      default: false
+    });
   }
 
   #registerEditSocketPermission() {

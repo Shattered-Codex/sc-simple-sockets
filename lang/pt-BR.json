@@ -117,7 +117,17 @@
       "GemRollLayout": {
         "Name": "Layout de dano das gemas no diálogo",
         "Hint": "Ative o layout agrupado por gema no diálogo de configuração de dano."
+      },
+      "SupportCard": {
+        "Name": "Card de apoio - desativar",
+        "Hint": "Se ativado, o card de apoio não aparecerá na inicialização."
       }
+    },
+    "SupportCard": {
+      "Intro": "Apoie-nos no Patreon para continuarmos criando.",
+      "Exclusive": "Vamos seguir adicionando novas gemas e itens ao módulo exclusivo <strong>SC - More Gems</strong> todo mês, e também criar outros módulos exclusivos Shattered Codex pelo caminho.",
+      "Link": "Patreon",
+      "Footer": "Este card do chat será exibido apenas uma vez. Reative nas configurações se precisar."
     }
   },
   "Notifications": {
