@@ -28,6 +28,19 @@ export class Constants {
   static SETTING_CUSTOM_LOOT_SUBTYPES = "customLootSubtypes";
 
   static localize(key, fallback = key) {
-    return game?.i18n?.localize?.(key) ?? fallback ?? key;
+    const i18n = game?.i18n;
+    const localized = typeof i18n?.localize === "function" ? i18n.localize(key) : undefined;
+    const hasTranslation = typeof i18n?.has === "function" ? i18n.has(key, { strict: true }) : false;
+
+    if (hasTranslation && localized && localized !== key) {
+      return localized;
+    }
+
+    // If the translation is missing, fall back to the provided default instead of showing the raw key.
+    if (localized && localized !== key) {
+      return localized;
+    }
+
+    return fallback ?? key;
   }
 }

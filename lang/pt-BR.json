@@ -141,13 +141,12 @@
     "DeleteSocket": {
       "Title": "Excluir soquete",
       "Message": "Tem certeza de que deseja excluir este soquete?",
-        "Warning": "Esta ação não pode ser desfeita.",
-        "Hint": "Segure Shift para pular esta confirmação."
-      },
-      "RemoveGem": {
-        "Title": "Remover gema",
-        "Message": "Tem certeza de que deseja remover a gema deste slot?"
-      }
+      "Warning": "Esta ação não pode ser desfeita.",
+      "Hint": "Segure Shift para pular esta confirmação."
+    },
+    "RemoveGem": {
+      "Title": "Remover gema",
+      "Message": "Tem certeza de que deseja remover a gema deste slot?"
     },
     "Macro": {
       "AddSocket": {
