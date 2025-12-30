@@ -29,6 +29,54 @@
         "Equipment": "Equipment"
       }
     },
+    "GemDetails": {
+      "TabLabel": "+Details",
+      "SelectLabel": "Additional Details",
+      "Hint": "Choose how this gem should be categorized.",
+      "TypeFieldset": "Details Type",
+      "Disclaimer": "Use the fields below to adjust only the attacks made with the weapon that holds this gem. Active Effects applied to the actor affect every attack with any weapon. For armor and shields, use the gem's standard Active Effects on the item.",
+      "Options": {
+        "None": "None",
+        "Weapons": "Weapons",
+        "Equipment": "Equipment"
+      },
+      "ExtraDamage": {
+        "Label": "Extra Damage",
+        "Hint": "Add one or more extra damage entries applied when this gem is socketed into weapons.",
+        "Damage": "Damage",
+        "Type": "Type",
+        "Add": "Add damage",
+        "Remove": "Remove",
+        "Clear": "Clear all",
+        "Fields": {
+          "Number": "Number",
+          "Die": "Die",
+          "Bonus": "Bonus",
+          "Activity": "When to apply"
+        },
+        "ActivityHint": "Choose when this extra damage applies. Any action: always. Attack only: only on attack-type activities."
+      },
+      "ExtraDamageActivity": {
+        "Any": "Any action",
+        "Attack": "Attack only"
+      },
+      "CritDamage": {
+        "Label": "Critical-Only Damage",
+        "Hint": "Damage that only applies when this gem is socketed and you roll critical damage (button or crit action)."
+      },
+      "CritThreshold": {
+        "Label": "Critical Threshold",
+        "Hint": "Lowest d20 result that counts as a critical hit for attacks with this gem socketed. If multiple gems adjust crit, the lowest value is used. Leave blank to use the base weapon value."
+      },
+      "CritMultiplier": {
+        "Label": "Critical Multiplier",
+        "Hint": "Multiply critical damage by this value when this gem is socketed. If multiple gems set this, the highest value is used. Leave blank to keep the default multiplier."
+      },
+      "AttackBonus": {
+        "Label": "Attack Bonus",
+        "Hint": "Flat bonus added to attack rolls when this gem is socketed. Bonuses from multiple gems stack. Leave blank for none."
+      }
+    },
     "Tooltips": {
       "RemoveGem": "Remove the gem from this socket.",
       "DeleteSocket": "Delete this slot from the item.",
@@ -65,7 +113,28 @@
           "Add": "Add subtype",
           "Remove": "Remove"
         }
+      },
+      "GemRollLayout": {
+        "Name": "Gem damage layout in roll dialog",
+        "Hint": "Enable the grouped-by-gem layout in the damage roll configuration dialog."
+      },
+      "SupportCard": {
+        "Name": "Support chat card - disable",
+        "Hint": "If enabled, the support chat card will not show on startup."
       }
+    },
+    "SupportCard": {
+      "Intro": "Support us on Patreon to help us keep creating.",
+      "Exclusive": "We'll keep adding new gems and items to the exclusive <strong>SC - More Gems</strong> module every month, and build more Shattered Codex exclusive modules along the way.",
+      "Link": "Patreon",
+      "Footer": "This chat card will only be shown once. Enable it again in the settings if needed."
+    },
+    "Notifications": {
+      "Reloading": "Reloading..."
+    },
+    "RollLayout": {
+      "BaseDamage": "Base Damage",
+      "GemEffects": "Gem Effects"
     },
     "Dialogs": {
       "DeleteSocket": {

@@ -29,6 +29,54 @@
         "Equipment": "Equipamentos"
       }
     },
+    "GemDetails": {
+      "TabLabel": "+Detalhes",
+      "SelectLabel": "Detalhes adicionais",
+      "Hint": "Escolha como esta gema deve ser categorizada.",
+      "TypeFieldset": "Tipo de detalhe",
+      "Disclaimer": "Use os campos abaixo para ajustar apenas ataques feitos com a arma que contém esta gema. Active Effects aplicados à ficha do ator afetam todos os ataques com qualquer arma. Para armaduras e escudos, use os Active Effects padrão da gema no item.",
+      "Options": {
+        "None": "Nenhum",
+        "Weapons": "Armas",
+        "Equipment": "Equipamentos"
+      },
+      "ExtraDamage": {
+        "Label": "Dano extra",
+        "Hint": "Adicione um ou mais danos extras aplicados quando esta gema for encaixada em armas.",
+        "Damage": "Dano",
+        "Type": "Tipo",
+        "Add": "Adicionar dano",
+        "Remove": "Remover",
+        "Clear": "Limpar tudo",
+        "Fields": {
+          "Number": "Quantidade",
+          "Die": "Dado",
+          "Bonus": "Bônus",
+          "Activity": "Quando aplicar"
+        },
+        "ActivityHint": "Escolha quando este dano extra se aplica. Qualquer ação: sempre. Apenas ataque: somente em atividades do tipo ataque."
+      },
+      "ExtraDamageActivity": {
+        "Any": "Qualquer ação",
+        "Attack": "Apenas ataque"
+      },
+      "CritDamage": {
+        "Label": "Dano só no crítico",
+        "Hint": "Dano que só se aplica quando esta gema está encaixada e você rola dano crítico (botão ou ação de crítico)."
+      },
+      "CritThreshold": {
+        "Label": "Limite de crítico",
+        "Hint": "Menor resultado no d20 que conta como crítico para ataques com esta gema encaixada. Se várias gemas ajustarem o crítico, usa-se o menor valor. Deixe em branco para usar o valor base da arma."
+      },
+      "CritMultiplier": {
+        "Label": "Multiplicador de crítico",
+        "Hint": "Multiplica o dano crítico por esse valor quando esta gema estiver encaixada. Se várias gemas definirem isso, usa-se o maior valor. Deixe em branco para manter o multiplicador padrão."
+      },
+      "AttackBonus": {
+        "Label": "Bônus de ataque",
+        "Hint": "Bônus fixo adicionado às rolagens de ataque quando esta gema está encaixada. Bônus de várias gemas se somam. Deixe em branco para nenhum."
+      }
+    },
     "Tooltips": {
       "RemoveGem": "Remover a gema deste soquete.",
       "DeleteSocket": "Excluir este soquete do item.",
@@ -65,19 +113,40 @@
           "Add": "Adicionar subtipo",
           "Remove": "Remover"
         }
+      },
+      "GemRollLayout": {
+        "Name": "Layout de dano das gemas no diálogo",
+        "Hint": "Ative o layout agrupado por gema no diálogo de configuração de dano."
+      },
+      "SupportCard": {
+        "Name": "Card de apoio - desativar",
+        "Hint": "Se ativado, o card de apoio não aparecerá na inicialização."
       }
     },
-    "Dialogs": {
-      "DeleteSocket": {
-        "Title": "Excluir soquete",
-        "Message": "Tem certeza de que deseja excluir este soquete?",
-        "Warning": "Esta ação não pode ser desfeita.",
-        "Hint": "Segure Shift para pular esta confirmação."
-      },
-      "RemoveGem": {
-        "Title": "Remover gema",
-        "Message": "Tem certeza de que deseja remover a gema deste slot?"
-      }
+    "SupportCard": {
+      "Intro": "Apoie-nos no Patreon para continuarmos criando.",
+      "Exclusive": "Vamos seguir adicionando novas gemas e itens ao módulo exclusivo <strong>SC - More Gems</strong> todo mês, e também criar outros módulos exclusivos Shattered Codex pelo caminho.",
+      "Link": "Patreon",
+      "Footer": "Este card do chat será exibido apenas uma vez. Reative nas configurações se precisar."
+    }
+  },
+  "Notifications": {
+    "Reloading": "Recarregando..."
+  },
+  "RollLayout": {
+    "BaseDamage": "Dano Base",
+    "GemEffects": "Efeitos da Gema"
+  },
+  "Dialogs": {
+    "DeleteSocket": {
+      "Title": "Excluir soquete",
+      "Message": "Tem certeza de que deseja excluir este soquete?",
+      "Warning": "Esta ação não pode ser desfeita.",
+      "Hint": "Segure Shift para pular esta confirmação."
+    },
+    "RemoveGem": {
+      "Title": "Remover gema",
+      "Message": "Tem certeza de que deseja remover a gema deste slot?"
     },
     "Macro": {
       "AddSocket": {

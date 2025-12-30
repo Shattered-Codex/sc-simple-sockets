@@ -1,0 +1,176 @@
+{{#with gemDetails as |details|}}
+<section class="tab sc-sockets-gem-details {{details.part.cssClass}}"
+         data-tab="{{details.part.tab}}"
+         data-group="{{details.part.group}}"
+         data-application-part="{{details.part.id}}">
+  {{#if details.isGem}}
+
+    <div class="sc-sockets-gem-details-container" data-sc-sockets="gem-details-container">
+      <div class="sc-sockets-gem-details-disclaimer-icon"
+           data-tooltip="{{ localize 'SCSockets.GemDetails.Disclaimer' }}"
+           aria-label="{{ localize 'SCSockets.GemDetails.Disclaimer' }}">
+        <i class="fa-solid fa-circle-info"></i>
+      </div>
+
+        <div class="form-group split-group sc-sockets-gem-critical-row">
+          <fieldset class="form-group sc-sockets-gem-crit-threshold">
+            <legend class="form-header">{{ localize "SCSockets.GemDetails.CritThreshold.Label" }}</legend>
+            <div class="form-group label-top">
+              <label>
+                {{ localize "SCSockets.GemDetails.CritThreshold.Label" }}
+                {{#if details.critThreshold.hint}}
+                  <i class="fa-solid fa-circle-info" data-tooltip="{{details.critThreshold.hint}}"></i>
+                {{/if}}
+              </label>
+              <div class="form-fields">
+                <input type="number"
+                       name="{{details.critThreshold.name}}"
+                       value="{{details.critThreshold.value}}">
+              </div>
+            </div>
+        </fieldset>
+
+          <fieldset class="form-group sc-sockets-gem-crit-multiplier">
+            <legend class="form-header">{{ localize "SCSockets.GemDetails.CritMultiplier.Label" }}</legend>
+            <div class="form-group label-top">
+              <label>
+                {{ localize "SCSockets.GemDetails.CritMultiplier.Label" }}
+                {{#if details.critMultiplier.hint}}
+                  <i class="fa-solid fa-circle-info" data-tooltip="{{details.critMultiplier.hint}}"></i>
+                {{/if}}
+              </label>
+              <div class="form-fields">
+                <input type="number"
+                       name="{{details.critMultiplier.name}}"
+                       value="{{details.critMultiplier.value}}">
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-group sc-sockets-gem-attack-bonus">
+            <legend class="form-header">{{ localize "SCSockets.GemDetails.AttackBonus.Label" }}</legend>
+            <div class="form-group label-top">
+              <label>
+                {{ localize "SCSockets.GemDetails.AttackBonus.Label" }}
+                {{#if details.attackBonus.hint}}
+                  <i class="fa-solid fa-circle-info" data-tooltip="{{details.attackBonus.hint}}"></i>
+                {{/if}}
+              </label>
+              <div class="form-fields">
+                <input type="number"
+                       name="{{details.attackBonus.name}}"
+                       value="{{details.attackBonus.value}}">
+              </div>
+            </div>
+          </fieldset>
+        </div>
+
+        <fieldset class="form-group sc-sockets-gem-details"
+                  data-sc-sockets="gem-details"
+                  data-default-number="{{details.damage.defaults.number}}"
+                  data-default-die="{{details.damage.defaults.die}}"
+                  data-default-bonus="{{details.damage.defaults.bonus}}"
+                  data-default-type="{{details.damage.defaults.type}}">
+          <legend class="form-header">{{ localize "SCSockets.GemDetails.ExtraDamage.Label" }}</legend>
+          <p class="hint">{{ localize "SCSockets.GemDetails.ExtraDamage.Hint" }}</p>
+
+          <div class="sc-sockets-gem-damage" data-sc-sockets="gem-damage">
+            <div class="sc-sockets-gem-damage-rows">
+              {{#each details.damage.entries as |entry i|}}
+                <div class="form-group sc-sockets-gem-damage-row" data-index="{{i}}">
+                  <div class="form-fields sc-sockets-gem-damage-row-top split-group">
+                    <div class="form-group label-top">
+                      <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Number" }}</label>
+                      <div class="form-fields">
+                        <input type="number"
+                               name="{{../details.damage.namePrefix}}.{{i}}.number"
+                               value="{{entry.number}}"
+                               min="0">
+                      </div>
+                    </div>
+                    <div class="form-group label-top">
+                      <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Die" }}</label>
+                      <div class="form-fields">
+                        <select name="{{../details.damage.namePrefix}}.{{i}}.die">
+                          {{#each entry.dieOptions as |opt|}}
+                            <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>
+                              {{opt.label}}
+                            </option>
+                          {{/each}}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group label-top">
+                      <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Bonus" }}</label>
+                      <div class="form-fields">
+                        <input type="number"
+                               name="{{../details.damage.namePrefix}}.{{i}}.bonus"
+                               value="{{entry.bonus}}"
+                               step="1">
+                      </div>
+                    </div>
+                    <div class="form-group label-top">
+                      <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Type" }}</label>
+                      <div class="form-fields">
+                        <select name="{{../details.damage.namePrefix}}.{{i}}.type">
+                          {{#each entry.damageTypeOptions as |opt|}}
+                            <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>
+                              {{opt.label}}
+                            </option>
+                          {{/each}}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="form-group label-top">
+                      <label>&nbsp;</label>
+                      <div class="form-fields">
+                        <button type="button"
+                                class="sc-sockets-gem-damage-remove"
+                                data-action="removeGemDamage"
+                                data-index="{{i}}"
+                                data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.Remove' }}">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="form-fields sc-sockets-gem-damage-row-bottom sc-sockets-gem-damage-row-activity">
+                    <div class="form-group label-top">
+                      <label>
+                        {{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Activity" }}
+                        <i class="fa-solid fa-circle-info"
+                           data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.ActivityHint' }}"></i>
+                      </label>
+                      <div class="form-fields">
+                        <select name="{{../details.damage.namePrefix}}.{{i}}.activity">
+                          {{#each entry.activityOptions as |opt|}}
+                            <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>
+                              {{opt.label}}
+                            </option>
+                          {{/each}}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {{/each}}
+            </div>
+
+            <div class="sc-sockets-gem-damage-actions">
+              <button type="button"
+                      class="sc-sockets-gem-damage-add"
+                      data-action="addGemDamage">
+                {{ localize "SCSockets.GemDetails.ExtraDamage.Add" }}
+              </button>
+              <button type="button"
+                      class="sc-sockets-gem-damage-clear"
+                      data-action="clearGemDamage">
+                {{ localize "SCSockets.GemDetails.ExtraDamage.Clear" }}
+              </button>
+            </div>
+          </div>
+        </fieldset>
+    </div>
+  {{/if}}
+</section>
+{{/with}}

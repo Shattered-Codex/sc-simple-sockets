@@ -1,7 +1,9 @@
 import { Constants } from "../Constants.js";
 import { GemTargetFilterBuilder } from "../../domain/gems/GemTargetFilterBuilder.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
+import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { TransferFilterUI } from "../ui/TransferFilterUI.js";
+import { GemDetailsUI } from "../ui/GemDetailsUI.js";
 import { SocketTooltipUI } from "../ui/SocketTooltipUI.js";
 import { DragHelper } from "../../helpers/DragHelper.js";
 import { SocketService } from "../services/SocketService.js";
@@ -16,6 +18,7 @@ export class TidyIntegration {
   static #gemExtension = null;
   static #socketExtension = null;
   static #gemFilterTabId = `${Constants.MODULE_ID}-tidy-gem-filter`;
+  static #gemDetailsTabId = `${Constants.MODULE_ID}-tidy-gem-details`;
   static #isTidyActive() {
     return Boolean(game?.modules?.get?.("tidy5e-sheet")?.active);
   }
@@ -81,6 +84,7 @@ export class TidyIntegration {
     TidyIntegration.#api = api;
     TidyIntegration.#registerGemFilter(api);
     TidyIntegration.#registerGemFilterTab(api);
+    TidyIntegration.#registerGemDetailsTab(api);
     TidyIntegration.#registerSocketTab(api);
     TidyIntegration.#registerActorBadges(api);
     TidyIntegration.#associateExistingTabs(api);
@@ -114,6 +118,35 @@ export class TidyIntegration {
             if (idx > 0) node.remove();
           });
         TransferFilterUI.bindToSheet(params.app, container);
+      }
+    });
+
+    tab.includeAsDefaultTab = true;
+    tab.types = new Set([Constants.ITEM_TYPE_LOOT]);
+    api.registerItemTab(tab);
+    TidyIntegration.#forceDefaultLootTabs(api, tab.tabId);
+  }
+
+  static #registerGemDetailsTab(api) {
+    const HandlebarsTab = api.models?.HandlebarsTab;
+    if (!HandlebarsTab) {
+      return;
+    }
+
+    const tab = new HandlebarsTab({
+      tabId: TidyIntegration.#gemDetailsTabId,
+      title: Constants.localize("SCSockets.GemDetails.TabLabel", "+Details"),
+      path: `modules/${Constants.MODULE_ID}/templates/tidy/gem-details-tab.hbs`,
+      getData: (context) => ({
+        gemDetails: TidyIntegration.#buildGemDetailsData(context)
+      }),
+      enabled: (context) => {
+        const item = TidyIntegration.#resolveItem(context);
+        return GemCriteria.matches(item);
+      },
+      onRender: (params) => {
+        const container = params.tabContentsElement ?? params.element;
+        GemDetailsUI.bindToSheet(params.app, container);
       }
     });
 
@@ -180,7 +213,12 @@ export class TidyIntegration {
       return;
     }
 
-    const tabIds = ["activities", "effects", TidyIntegration.#gemFilterTabId];
+    const tabIds = [
+      "activities",
+      "effects",
+      TidyIntegration.#gemFilterTabId,
+      TidyIntegration.#gemDetailsTabId
+    ];
     const buildOptions = () => ({
       includeAsDefault: true,
       tabCondition: {
@@ -248,7 +286,12 @@ export class TidyIntegration {
     const ensureIds = new Set([
       "description",
       "details",
-      ...(isGem ? ["activities", "effects", TidyIntegration.#gemFilterTabId] : [])
+      ...(isGem ? [
+        "activities",
+        "effects",
+        TidyIntegration.#gemFilterTabId,
+        TidyIntegration.#gemDetailsTabId
+      ] : [])
     ]);
 
     for (const id of baseList) {
@@ -266,7 +309,12 @@ export class TidyIntegration {
 
     if (!isGem) {
       // Remove Activities/Effects when leaving gem subtype.
-      const filtered = desired.filter((id) => !["activities", "effects", TidyIntegration.#gemFilterTabId].includes(id));
+      const filtered = desired.filter((id) => ![
+        "activities",
+        "effects",
+        TidyIntegration.#gemFilterTabId,
+        TidyIntegration.#gemDetailsTabId
+      ].includes(id));
       desired.length = 0;
       desired.push(...filtered);
     }
@@ -310,6 +358,33 @@ export class TidyIntegration {
       part: {
         id: partId,
         tab: "details",
+        group: "primary",
+        cssClass: ""
+      }
+    });
+  }
+
+  static #buildGemDetailsData(context) {
+    const item = TidyIntegration.#resolveItem(context);
+    const editable = Boolean(
+      (
+        (context?.editable ?? context?.isEditable ?? context?.sheet?.isEditable ?? context?.app?.isEditable) ??
+        true
+      ) ||
+      item?.sheet?.isEditable ||
+      item?.isOwner ||
+      item?.parent?.isOwner
+    );
+
+    const baseId = context?.appId ?? context?.app?.appId ?? Constants.MODULE_ID;
+    const partId = `${Constants.MODULE_ID}-sc-sockets-gem-details`;
+
+    return GemDetailsBuilder.buildContext(item, {
+      editable,
+      selectId: `${baseId}-gem-details-select`,
+      part: {
+        id: partId,
+        tab: TidyIntegration.#gemDetailsTabId,
         group: "primary",
         cssClass: ""
       }
