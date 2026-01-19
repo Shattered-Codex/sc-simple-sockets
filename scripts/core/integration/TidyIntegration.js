@@ -4,6 +4,7 @@ import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { TransferFilterUI } from "../ui/TransferFilterUI.js";
 import { GemDetailsUI } from "../ui/GemDetailsUI.js";
+import { TidySocketDescriptionsUI } from "../ui/TidySocketDescriptionsUI.js";
 import { SocketTooltipUI } from "../ui/SocketTooltipUI.js";
 import { DragHelper } from "../../helpers/DragHelper.js";
 import { SocketService } from "../services/SocketService.js";
@@ -87,6 +88,8 @@ export class TidyIntegration {
     TidyIntegration.#registerGemDetailsTab(api);
     TidyIntegration.#registerSocketTab(api);
     TidyIntegration.#registerActorBadges(api);
+    TidyIntegration.#registerSocketDescriptions(api);
+    TidyIntegration.#registerSocketDescriptionContext();
     TidyIntegration.#associateExistingTabs(api);
   }
 
@@ -171,6 +174,66 @@ export class TidyIntegration {
         }
       })
     );
+  }
+
+  static #registerSocketDescriptions(api) {
+    const HtmlContent = api.models?.HtmlContent;
+    if (!HtmlContent) {
+      return;
+    }
+
+    api.registerItemContent(
+      new HtmlContent({
+        html: `<div class="sc-sockets-tidy-socket-descriptions-slot" data-sc-sockets="tidy-socket-descriptions-slot"></div>`,
+        renderScheme: "force",
+        injectParams: {
+          selector: ".tidy-tab.description .item-descriptions",
+          position: "beforeend"
+        },
+        onContentReady: (params) => {
+          const item = params.app?.item ?? params.app?.document ?? null;
+          TidySocketDescriptionsUI.renderInto(params.element, item, params.app);
+        }
+      })
+    );
+  }
+
+  static #registerSocketDescriptionContext() {
+    Hooks.on("tidy5e-sheet.prepareSheetContext", (document, app, context) => {
+      if (document?.documentName !== "Item") {
+        return;
+      }
+      if (!context || !Array.isArray(context.itemDescriptions)) {
+        return;
+      }
+      const item = document;
+      if (!GemCriteria.matches(item)) {
+        return;
+      }
+
+      const field = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_DESCRIPTION}`;
+      const raw = foundry?.utils?.getProperty?.(item, field) ?? "";
+      const hasContent = String(raw ?? "").trim().length > 0;
+      if (!item.isOwner && !hasContent) {
+        return;
+      }
+
+      const entry = {
+        enriched: raw ?? "",
+        content: raw ?? "",
+        field,
+        label: Constants.localize("SCSockets.SocketDescription.Label", "Socket Description")
+      };
+
+      const existing = context.itemDescriptions.findIndex((desc) => desc?.field === field);
+      if (existing >= 0) {
+        context.itemDescriptions.splice(existing, 1, entry);
+        return;
+      }
+
+      const insertIndex = context.itemDescriptions.length ? 1 : 0;
+      context.itemDescriptions.splice(insertIndex, 0, entry);
+    });
   }
 
   static #registerSocketTab(api) {
