@@ -388,8 +388,9 @@ static #scheduleInjection(target) {
 
     const getProperty = globalThis?.foundry?.utils?.getProperty;
     const description = getProperty?.(slot, "_gemData.system.description.value");
-    if (description && typeof TextEditor?.stripHTML === "function") {
-      const plain = TextEditor.stripHTML(description)?.trim();
+    const textEditor = Constants.getTextEditor();
+    if (description && typeof textEditor?.stripHTML === "function") {
+      const plain = textEditor.stripHTML(description)?.trim();
       if (plain) {
         return {
           type: "text",

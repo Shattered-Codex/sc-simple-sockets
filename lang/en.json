@@ -77,6 +77,13 @@
         "Hint": "Flat bonus added to attack rolls when this gem is socketed. Bonuses from multiple gems stack. Leave blank for none."
       }
     },
+    "SocketDescription": {
+      "Label": "Socket Description"
+    },
+    "SocketDescriptions": {
+      "Label": "Socket Descriptions",
+      "SendToChat": "Send to Chat"
+    },
     "Tooltips": {
       "RemoveGem": "Remove the gem from this socket.",
       "DeleteSocket": "Delete this slot from the item.",

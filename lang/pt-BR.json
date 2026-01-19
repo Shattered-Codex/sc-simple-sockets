@@ -77,6 +77,13 @@
         "Hint": "Bônus fixo adicionado às rolagens de ataque quando esta gema está encaixada. Bônus de várias gemas se somam. Deixe em branco para nenhum."
       }
     },
+    "SocketDescription": {
+      "Label": "Descrição do Socket"
+    },
+    "SocketDescriptions": {
+      "Label": "Descrições dos Sockets",
+      "SendToChat": "Enviar para o chat"
+    },
     "Tooltips": {
       "RemoveGem": "Remover a gema deste soquete.",
       "DeleteSocket": "Excluir este soquete do item.",

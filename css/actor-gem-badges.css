@@ -51,6 +51,7 @@
 .tidy5e-sheet .sc-sockets-badges.sc-sockets-badges-inline,
 .tidy5e-sheet.quadrone .sc-sockets-badges.sc-sockets-badges-inline {
   margin: 0;
+  margin-bottom: 4px;
 }
 
 .tidy5e-sheet .sc-sockets-name-with-badges,
@@ -196,6 +197,81 @@ body.sc-sockets-target-cursor * {
   font-size: 0.92rem;
   text-transform: uppercase;
   letter-spacing: 0.02em;
+}
+
+/* Socket descriptions on item sheets */
+.sc-sockets-socket-descriptions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.sc-sockets-socket-description {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.sc-sockets-socket-description:first-child {
+  margin-top: 0.5rem;
+}
+
+.sc-sockets-socket-description img {
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.sc-sockets-socket-description-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.sc-sockets-socket-description-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.sc-sockets-socket-description-title {
+  font-weight: 700;
+}
+
+.sc-sockets-socket-description-chat {
+  font-size: 0.85rem;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+}
+
+.sc-sockets-socket-description-text p {
+  margin: 0 0 0.3rem;
+}
+
+.sc-sockets-socket-description-host {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.sc-sockets-socket-description-host img {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.sc-sockets-socket-description-host-title {
+  font-weight: 700;
 }
 
 .sc-sockets-gem-damage-rows {

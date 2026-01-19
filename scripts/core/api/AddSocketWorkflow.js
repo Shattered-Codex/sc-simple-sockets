@@ -9,7 +9,10 @@ export const DEFAULT_OPTIONS = {
   notifications: true
 };
 
-const escapeHtml = (str) => foundry.utils?.escapeHtml?.(str) ?? TextEditor?.escapeHTML?.(str) ?? str;
+const escapeHtml = (str) => {
+  const textEditor = Constants.getTextEditor();
+  return foundry.utils?.escapeHtml?.(str) ?? textEditor?.escapeHTML?.(str) ?? str;
+};
 
 const isSocketable = (item) => {
   const type = item?.type ?? item?.system?.type?.value;

@@ -12,6 +12,8 @@ import { SocketTooltipUI } from "./core/ui/SocketTooltipUI.js";
 import { MacroAPI } from "./core/api/MacroAPI.js";
 import { TidyIntegration } from "./core/integration/TidyIntegration.js";
 import { GemDetailsUI } from "./core/ui/GemDetailsUI.js";
+import { GemSocketDescriptionUI } from "./core/ui/GemSocketDescriptionUI.js";
+import { SocketDescriptionsUI } from "./core/ui/SocketDescriptionsUI.js";
 import { GemDamageService } from "./domain/gems/GemDamageService.js";
 import { DamageRollGemLayout } from "./core/ui/DamageRollGemLayout.js";
 
@@ -44,6 +46,8 @@ Hooks.once("setup", () => {
   TransferFilterUI.activate();
   SocketTooltipUI.activate();
   GemDetailsUI.activate();
+  GemSocketDescriptionUI.activate();
+  SocketDescriptionsUI.activate();
 
 });
 

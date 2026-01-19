@@ -12,6 +12,7 @@ export class Constants {
   static FLAG_GEM_CRIT_THRESHOLD = "gemCritThreshold";
   static FLAG_GEM_CRIT_MULTIPLIER = "gemCritMultiplier";
   static FLAG_GEM_ATTACK_BONUS = "gemAttackBonus";
+  static FLAG_SOCKET_DESCRIPTION = "socketDescription";
   static FLAGS = {
     sockets: "sockets",
     gemAllowedTypes: "gemAllowedTypes",
@@ -19,13 +20,20 @@ export class Constants {
     gemDamage: "gemDamage",
     gemCritThreshold: "gemCritThreshold",
     gemCritMultiplier: "gemCritMultiplier",
-    gemAttackBonus: "gemAttackBonus"
+    gemAttackBonus: "gemAttackBonus",
+    socketDescription: "socketDescription"
   };
   static GEM_ALLOWED_TYPES_ALL = "*";
   static SOCKET_SLOT_IMG = `modules/${this.MODULE_ID}/assets/imgs/socket-slot.webp`;
   static SETTING_GEM_LOOT_SUBTYPES = "gemLootSubtypes";
   static SETTING_LOOT_SUBTYPE_MENU = "gemLootSubtypeSettings";
   static SETTING_CUSTOM_LOOT_SUBTYPES = "customLootSubtypes";
+
+  static getTextEditor() {
+    return foundry?.applications?.ux?.TextEditor?.implementation
+      ?? foundry?.applications?.ux?.TextEditor
+      ?? null;
+  }
 
   static localize(key, fallback = key) {
     const i18n = game?.i18n;
