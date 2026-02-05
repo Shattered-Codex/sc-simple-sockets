@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { SupportMenu } from "./SupportMenu.js";
 
 export class ModuleSettings {
   static SETTING_GEM_BADGES = "gemBadgesEnabled";
@@ -7,6 +8,7 @@ export class ModuleSettings {
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
   static SETTING_SUPPORT_CARD = "supportCardDisabled";
+  static SETTING_SUPPORT_MENU = "supportMenu";
   static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
   static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
   static SETTING_CUSTOM_LOOT_SUBTYPES = Constants.SETTING_CUSTOM_LOOT_SUBTYPES;
@@ -15,6 +17,7 @@ export class ModuleSettings {
   }
 
   async register() {
+    this.#registerSupportMenu();
     this.#registerSupportCardSetting();
     this.#registerEditSocketPermission();
     this.#registerMaxSockets();
@@ -180,6 +183,28 @@ export class ModuleSettings {
       config: true,
       type: Boolean,
       default: false
+    });
+  }
+
+  #registerSupportMenu() {
+    const name = Constants.localize("SCSockets.Settings.SupportMenu.Name", "Support the developer");
+    const label = Constants.localize("SCSockets.Settings.SupportMenu.Label", "Patreon support");
+    const hint = Constants.localize(
+      "SCSockets.Settings.SupportMenu.Hint",
+      "Get access to SC - More Gems with 50+ gems, and more every month."
+    );
+
+    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_MENU, {
+      name,
+      label,
+      hint,
+      icon: "fas fa-heart",
+      type: SupportMenu,
+      restricted: true
+    });
+
+    Hooks.on("renderSettingsConfig", (_app, html) => {
+      SupportMenu.bindSettingsButton(html);
     });
   }
 

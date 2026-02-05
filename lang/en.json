@@ -128,6 +128,11 @@
       "SupportCard": {
         "Name": "Support chat card - disable",
         "Hint": "If enabled, the support chat card will not show on startup."
+      },
+      "SupportMenu": {
+        "Name": "Support the developer",
+        "Label": "Patreon support",
+        "Hint": "Get access to SC - More Gems with 50+ gems, and more every month."
       }
     },
     "SupportCard": {
