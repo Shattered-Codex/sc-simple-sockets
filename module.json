@@ -2,6 +2,12 @@
     "id": "sc-simple-sockets",
     "title": "SC - Simple Sockets",
     "version": "1.1.8",
+    "media": [
+        {
+            "type": "setup",
+            "url": "modules/sc-simple-sockets/assets/imgs/cover.webp"
+        }
+    ],
     "compatibility": {
         "minimum": "13",
         "verified": "13"
@@ -67,6 +73,13 @@
         }
     ],
     "relationships": {
+        "requires": [
+            {
+                "id": "dnd5e",
+                "type": "system",
+                "compatibility": {}
+            }
+        ],
         "recommends": [
             {
                 "id": "lib-wrapper",

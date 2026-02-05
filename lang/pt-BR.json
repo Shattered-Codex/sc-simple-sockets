@@ -128,6 +128,11 @@
       "SupportCard": {
         "Name": "Card de apoio - desativar",
         "Hint": "Se ativado, o card de apoio não aparecerá na inicialização."
+      },
+      "SupportMenu": {
+        "Name": "Apoie o desenvolvedor",
+        "Label": "Apoiar no Patreon",
+        "Hint": "Tenha acesso ao SC - More Gems com mais de 50 gemas, e todo mês chegam novas."
       }
     },
     "SupportCard": {
