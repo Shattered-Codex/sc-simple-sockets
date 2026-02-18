@@ -88,7 +88,7 @@ export class TidySocketDescriptionsUI {
     return section;
   }
 
-  static async renderInto(target, item) {
+  static async renderInto(target, item, app = null) {
     const root = target?.closest
       ? (target.closest(".item-descriptions") ?? target.closest(".tidy-tab.description") ?? target)
       : target;
@@ -125,6 +125,14 @@ export class TidySocketDescriptionsUI {
     }
 
     TidySocketDescriptionsUI.#bindActions(section);
+
+    Hooks.callAll(Constants.HOOK_TIDY_SOCKET_DESCRIPTIONS_RENDERED, {
+      app,
+      item,
+      root,
+      section,
+      target,
+    });
 
     // No-op: keep the original node to avoid removing the sheet root.
   }
