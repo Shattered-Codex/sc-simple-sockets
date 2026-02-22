@@ -1,0 +1,70 @@
+<section class="sc-sockets-settings-app standard-form" data-application-part="form">
+  <div class="sc-sockets-settings-content">
+    <div class="sc-sockets-settings-card">
+      <div class="form-group custom-subtypes gem-custom-subtype-manager">
+        <div class="custom-subtypes-header">
+          <div>
+            <h4>{{strings.custom.heading}}</h4>
+            <p class="notes">{{strings.custom.hint}}</p>
+          </div>
+        </div>
+        <div class="gem-custom-subtype-manager-scrollable">
+          <ul
+            class="gem-custom-subtype-manager-list"
+            data-custom-subtypes
+            data-placeholder-key="{{strings.custom.keyPlaceholder}}"
+            data-placeholder-label="{{strings.custom.labelPlaceholder}}"
+            data-remove-label="{{strings.custom.remove}}"
+            data-key-label="{{strings.custom.keyLabel}}"
+            data-display-label="{{strings.custom.labelLabel}}"
+          >
+            {{#each customSubtypes}}
+              <li class="gem-custom-subtype-row" data-subtype-row data-index="{{@index}}">
+                <div class="gem-custom-subtype-fields">
+                  <div class="form-group">
+                    <label>{{../strings.custom.keyLabel}}</label>
+                    <div class="form-fields">
+                      <input
+                        type="text"
+                        name="customSubtypes.{{@index}}.key"
+                        value="{{this.key}}"
+                        placeholder="{{../strings.custom.keyPlaceholder}}"
+                        data-custom-field="key"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>{{../strings.custom.labelLabel}}</label>
+                    <div class="form-fields">
+                      <input
+                        type="text"
+                        name="customSubtypes.{{@index}}.label"
+                        value="{{this.label}}"
+                        placeholder="{{../strings.custom.labelPlaceholder}}"
+                        data-custom-field="label"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost gem-custom-subtype-remove" data-action="removeCustomSubtype">
+                  {{../strings.custom.remove}}
+                </button>
+              </li>
+            {{/each}}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="form-footer sc-sockets-settings-footer button-row">
+    <button type="button" class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost" data-action="addCustomSubtype">
+      <i class="fas fa-plus"></i> {{strings.custom.add}}
+    </button>
+    <button type="submit" class="dialog-button ok sc-sockets-settings-btn sc-sockets-settings-btn--primary" data-save-button>
+      <i class="fas fa-floppy-disk"></i> <span class="save-label">{{strings.submit}}</span>
+    </button>
+  </footer>
+</section>

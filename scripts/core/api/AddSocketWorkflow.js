@@ -15,8 +15,7 @@ const escapeHtml = (str) => {
 };
 
 const isSocketable = (item) => {
-  const type = item?.type ?? item?.system?.type?.value;
-  return ["weapon", "equipment"].includes(type);
+  return ModuleSettings.isItemSocketableByType(item);
 };
 
 const canEditItem = (item) => game.user.isGM || item?.isOwner;

@@ -5,7 +5,7 @@ const { ApplicationV2 } = api;
 if (!ApplicationV2) {
   throw new Error(`${Constants.MODULE_ID}: ApplicationV2 is required to render SupportMenu.`);
 }
-const PATREON_URL = "https://www.patreon.com/c/shatteredcodex";
+const PATREON_URL = "https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=foundry_module&utm_campaign=support_button";
 const SUPPORT_MENU_KEY = `${Constants.MODULE_ID}.supportMenu`;
 
 export class SupportMenu extends ApplicationV2 {
@@ -47,6 +47,7 @@ export class SupportMenu extends ApplicationV2 {
         ? candidate
         : candidate.querySelector("button");
       if (!button) continue;
+      button.classList.add("scsockets-support-button");
       if (button.dataset.scSocketsSupportBound === "true") continue;
       button.dataset.scSocketsSupportBound = "true";
       button.addEventListener("click", (event) => {

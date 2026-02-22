@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://www.patreon.com/cw/shatteredcodex">
+  <a href="https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme">
     <img src="https://i.imgur.com/9kf3oWy.png" alt="Shattered Codex" width="200" height="200" />
   </a>
 </p>
@@ -9,7 +9,7 @@
 ![Foundry VTT 13+](https://img.shields.io/badge/Foundry%20VTT-13%2B-orange?logo=foundry-vtt&logoColor=white)
 ![System: dnd5e](https://img.shields.io/badge/System-dnd5e-blue)
 [![libWrapper Recommended](https://img.shields.io/badge/libWrapper-Recommended-8A2BE2)](https://github.com/ruipin/fvtt-lib-wrapper)
-[![Support on Patreon](https://img.shields.io/badge/Patreon-Shattered%20Codex-FF424D?logo=patreon&logoColor=white)](https://www.patreon.com/c/shatteredcodex)
+[![Support on Patreon](https://img.shields.io/badge/Patreon-Shattered%20Codex-FF424D?logo=patreon&logoColor=white)](https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme)
 ![Forks][forks-shield]
 ![Downloads](https://img.shields.io/github/downloads/Shattered-Codex/sc-simple-sockets/total)
 
@@ -63,6 +63,52 @@ All settings live under **Configure Settings > Module Settings > SC - Simple Soc
 - **Maximum Number of Sockets per Item** – world-wide cap; set to `-1` for unlimited slots.
 - **Delete Gem on Removal** – toggle whether removing a gem destroys it or sends it back to the actor's inventory.
 - **Configure Gem Loot Subtypes** – opens a management dialog where you choose which loot subtypes count as gems and define custom entries. Custom subtypes are added to the dnd5e loot type dropdown automatically.
+
+## API & Hooks
+
+The module exposes a runtime API at:
+
+`game.modules.get("sc-simple-sockets").api`
+
+### Sockets API
+
+```js
+const api = game.modules.get("sc-simple-sockets")?.api?.sockets;
+
+// Accepts an Item document or an item UUID.
+const gems = await api.getItemGems(itemOrUuid);
+const slots = await api.getItemSlots(itemOrUuid);
+```
+
+- `getItemGems(itemOrUuid, { includeSnapshots = false })` → returns only slots containing gems.
+- `getItemSlots(itemOrUuid, { includeSnapshots = false })` → returns all slots with `hasGem`, `slotIndex`, and slot data.
+- When `includeSnapshots` is `false` (default), `_gemData` is omitted from the payload.
+
+### Hooks
+
+- `sc-simple-sockets.socketAdded`
+- `sc-simple-sockets.socketRemoved`
+
+Both hooks receive:
+
+```js
+{
+  item, itemId, itemUuid,
+  actor, actorId,
+  slotIndex,
+  slot,
+  totalSlots,
+  userId
+}
+```
+
+Example:
+
+```js
+Hooks.on("sc-simple-sockets.socketAdded", (payload) => {
+  console.log("Socket added:", payload.item?.name, payload.slotIndex);
+});
+```
 
 ## Creating Custom Gems
 

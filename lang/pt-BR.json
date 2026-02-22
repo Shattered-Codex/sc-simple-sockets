@@ -15,7 +15,8 @@
       "GemIncompatible": "Esse item não é compatível com este soquete.",
       "GemUnsocketed": "Gema removida do soquete.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
-      "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada."
+      "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada.",
+      "HostNotSocketable": "Este tipo de item não pode receber soquetes."
     },
     "Effects": {
       "DefaultName": "Efeito de Gema"
@@ -34,7 +35,7 @@
       "SelectLabel": "Detalhes adicionais",
       "Hint": "Escolha como esta gema deve ser categorizada.",
       "TypeFieldset": "Tipo de detalhe",
-      "Disclaimer": "Use os campos abaixo para ajustar apenas ataques feitos com a arma que contém esta gema. Active Effects aplicados à ficha do ator afetam todos os ataques com qualquer arma. Para armaduras e escudos, use os Active Effects padrão da gema no item.",
+      "Disclaimer": "Use os campos abaixo para ajustar ataques e dano feitos com o item que contém esta gema (incluindo magias). Active Effects aplicados à ficha do ator afetam globalmente todos os ataques elegíveis. Para armaduras e escudos, use os Active Effects padrão da gema no item.",
       "Options": {
         "None": "Nenhum",
         "Weapons": "Armas",
@@ -42,7 +43,7 @@
       },
       "ExtraDamage": {
         "Label": "Dano extra",
-        "Hint": "Adicione um ou mais danos extras aplicados quando esta gema for encaixada em armas.",
+        "Hint": "Adicione um ou mais danos extras aplicados quando esta gema for encaixada em armas ou magias.",
         "Damage": "Dano",
         "Type": "Tipo",
         "Add": "Adicionar dano",
@@ -54,11 +55,12 @@
           "Bonus": "Bônus",
           "Activity": "Quando aplicar"
         },
-        "ActivityHint": "Escolha quando este dano extra se aplica. Qualquer ação: sempre. Apenas ataque: somente em atividades do tipo ataque."
+        "ActivityHint": "Escolha quando este dano extra se aplica. Qualquer ação: sempre. Apenas ataque: somente em atividades do tipo ataque. Apenas magia: somente quando encaixada em um item do tipo magia."
       },
       "ExtraDamageActivity": {
         "Any": "Qualquer ação",
-        "Attack": "Apenas ataque"
+        "Attack": "Apenas ataque",
+        "Spell": "Apenas magia"
       },
       "CritDamage": {
         "Label": "Dano só no crítico",
@@ -66,7 +68,7 @@
       },
       "CritThreshold": {
         "Label": "Limite de crítico",
-        "Hint": "Menor resultado no d20 que conta como crítico para ataques com esta gema encaixada. Se várias gemas ajustarem o crítico, usa-se o menor valor. Deixe em branco para usar o valor base da arma."
+        "Hint": "Menor resultado no d20 que conta como crítico para rolagens de ataque com esta gema encaixada. Se várias gemas ajustarem o crítico, usa-se o menor valor. Deixe em branco para usar o valor padrão."
       },
       "CritMultiplier": {
         "Label": "Multiplicador de crítico",
@@ -94,6 +96,17 @@
         "Name": "Permissão para editar soquetes",
         "Hint": "Cargo mínimo necessário para adicionar ou remover soquetes de itens."
       },
+      "SocketableItemTypes": {
+        "Name": "Tipos de item socketáveis",
+        "Label": "Configurar tipos de item socketáveis",
+        "Hint": "Escolha quais tipos de item podem receber soquetes.",
+        "Title": "Tipos de item socketáveis",
+        "SelectLabel": "Tipos de item que podem receber soquetes",
+        "SelectHint": "Escolha um ou mais tipos de item.",
+        "Save": "Salvar",
+        "Reset": "Restaurar padrões",
+        "UnsavedChanges": "Você tem alterações não salvas."
+      },
       "MaxSockets": {
         "Name": "Número máximo de soquetes por item",
         "Hint": "Número máximo de soquetes que um item pode ter. Use -1 para ilimitado."
@@ -110,6 +123,24 @@
         "SelectLabel": "Subtipos de loot considerados gemas",
         "SelectHint": "Itens com esses subtipos de loot serão tratados como gemas.",
         "Save": "Salvar",
+        "UnsavedChanges": "Você tem alterações não salvas.",
+        "Selection": {
+          "Name": "Subtipos de loot que são gemas",
+          "Label": "Configurar subtipos de loot para gemas",
+          "Hint": "Selecione quais subtipos de loot contam como gemas.",
+          "Title": "Configurações de subtipos de loot",
+          "SelectLabel": "Subtipos de loot considerados gemas",
+          "SelectHint": "Itens com esses subtipos de loot serão tratados como gemas.",
+          "Save": "Salvar",
+          "Reset": "Restaurar padrões"
+        },
+        "CustomMenu": {
+          "Name": "Subtipos de loot personalizados",
+          "Label": "Configurar subtipos de loot personalizados",
+          "Hint": "Adicione chaves e rótulos de subtipos de loot personalizados que podem ser usados como gemas.",
+          "Title": "Subtipos de loot personalizados",
+          "Save": "Salvar"
+        },
         "Custom": {
           "Heading": "Subtipos de loot personalizados",
           "Hint": "Adicione novos identificadores e rótulos de subtipos de loot disponíveis para gemas.",
@@ -132,12 +163,12 @@
       "SupportMenu": {
         "Name": "Apoie o desenvolvedor",
         "Label": "Apoiar no Patreon",
-        "Hint": "Tenha acesso ao SC - More Gems com mais de 50 gemas, e todo mês chegam novas."
+        "Hint": "Tenha acesso ao SC - More Gems com mais de 70 gemas e novidades todo mês. Também estamos criando o SC - Setforge para você montar sets de itens."
       }
     },
     "SupportCard": {
       "Intro": "Apoie-nos no Patreon para continuarmos criando.",
-      "Exclusive": "Vamos seguir adicionando novas gemas e itens ao módulo exclusivo <strong>SC - More Gems</strong> todo mês, e também criar outros módulos exclusivos Shattered Codex pelo caminho.",
+      "Exclusive": "Tenha acesso ao módulo exclusivo <strong>SC - More Gems</strong> com mais de 70 gemas e atualizações mensais. Também estamos criando o <strong>SC - Setforge</strong> para você montar sets de itens.",
       "Link": "Patreon",
       "Footer": "Este card do chat será exibido apenas uma vez. Reative nas configurações se precisar."
     }

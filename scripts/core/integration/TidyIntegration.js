@@ -10,6 +10,7 @@ import { DragHelper } from "../../helpers/DragHelper.js";
 import { SocketService } from "../services/SocketService.js";
 import { DialogHelper } from "../../helpers/DialogHelper.js";
 import { ActorGemBadges } from "../ui/ActorGemBadges.js";
+import { ModuleSettings } from "../settings/ModuleSettings.js";
 
 /**
  * Handles registering integrations with the Tidy5e sheet module when available.
@@ -463,9 +464,13 @@ export class TidyIntegration {
       item?.sheet?.isEditable ??
       false
     );
+    const canManageSockets = editable && ModuleSettings.canAddOrRemoveSocket(game.user);
+    const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(item);
 
     return {
       editable,
+      canManageSockets,
+      canAddSocketSlot,
       dataEditable: editable ? "true" : "false",
       sockets: SocketService.getSlots(item)
     };
