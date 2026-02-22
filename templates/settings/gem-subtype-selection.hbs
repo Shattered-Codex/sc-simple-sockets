@@ -1,0 +1,39 @@
+<section class="sc-sockets-settings-app standard-form" data-application-part="form">
+  <div class="sc-sockets-settings-content">
+    <div class="sc-sockets-settings-card">
+      <div class="form-group section-heading">
+        <div>
+          <h4>{{strings.selectLabel}}</h4>
+          <p class="notes">{{strings.selectHint}}</p>
+        </div>
+        <div class="gem-subtype-options-grid" role="group" aria-label="{{strings.selectLabel}}">
+          {{#each subtypeColumns}}
+            <div class="gem-subtype-options-column">
+              {{#each this}}
+                <label class="gem-subtype-option">
+                  <input
+                    type="checkbox"
+                    name="subtypes.{{this.value}}"
+                    value="{{this.value}}"
+                    data-subtype-value="{{this.value}}"
+                    {{#if this.selected}}checked{{/if}}
+                  />
+                  <span>{{this.label}}</span>
+                </label>
+              {{/each}}
+            </div>
+          {{/each}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="form-footer sc-sockets-settings-footer button-row">
+    <button type="button" class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost" data-action="resetDefaults">
+      <i class="fas fa-rotate-left"></i> {{strings.reset}}
+    </button>
+    <button type="submit" class="dialog-button ok sc-sockets-settings-btn sc-sockets-settings-btn--primary" data-save-button>
+      <i class="fas fa-floppy-disk"></i> <span class="save-label">{{strings.submit}}</span>
+    </button>
+  </footer>
+</section>

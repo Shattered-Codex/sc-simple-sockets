@@ -1,4 +1,5 @@
 import { Constants } from "../../core/Constants.js";
+import { ModuleSettings } from "../../core/settings/ModuleSettings.js";
 import { GemCriteria } from "./GemCriteria.js";
 
 /**
@@ -8,6 +9,7 @@ export class GemTargetFilterBuilder {
   static #optionsCache = null;
   static #cacheLang = null;
   static #cacheConfig = null;
+  static #cacheTypeKey = null;
 
   /**
    * Builds the full context object consumed by the gem target filter template.
@@ -87,7 +89,9 @@ export class GemTargetFilterBuilder {
   static buildGemTargetOptions() {
     const lang = game?.i18n?.lang ?? "en";
     const configRef = CONFIG?.DND5E ?? null;
-    if (this.#optionsCache && this.#cacheLang === lang && this.#cacheConfig === configRef) {
+    const configuredTypes = ModuleSettings.getSocketableItemTypes();
+    const typeKey = configuredTypes.join("|");
+    if (this.#optionsCache && this.#cacheLang === lang && this.#cacheConfig === configRef && this.#cacheTypeKey === typeKey) {
       return this.#optionsCache;
     }
 
@@ -102,40 +106,52 @@ export class GemTargetFilterBuilder {
     if (!dnd5e) {
       this.#cacheLang = lang;
       this.#cacheConfig = configRef;
+      this.#cacheTypeKey = typeKey;
       this.#optionsCache = options;
       return this.#optionsCache;
     }
 
-    const groups = [
-      {
-        label: Constants.localize("SCSockets.GemTargetTypes.Groups.Weapons", "Weapons"),
-        entries: this.normalizeCollection(dnd5e.weaponTypes),
-        prefix: "weapon"
-      },
-      {
-        label: Constants.localize("SCSockets.GemTargetTypes.Groups.Equipment", "Equipment"),
-        entries: this.normalizeCollection(dnd5e.equipmentTypes),
-        prefix: "equipment"
-      }
-    ];
+    const typeLabelMap = new Map(
+      ModuleSettings.getAvailableSocketableItemTypes().map((entry) => [entry.value, entry.label])
+    );
 
-    for (const group of groups) {
-      if (!group.entries.length) {
+    for (const type of configuredTypes) {
+      const normalizedType = String(type ?? "").trim().toLowerCase();
+      if (!normalizedType.length) {
         continue;
       }
+
+      const subtypeEntries = this.#resolveSubtypeEntries(dnd5e, normalizedType);
+      if (subtypeEntries.length) {
+        const groupLabel = this.#resolveGroupLabel(normalizedType, typeLabelMap.get(normalizedType));
+        options.push({
+          label: groupLabel,
+          options: [
+            {
+              value: normalizedType,
+              label: groupLabel,
+              isGroup: true,
+              groupType: normalizedType
+            },
+            ...subtypeEntries.map((entry) => ({
+              value: `${normalizedType}:${entry.key}`,
+              label: entry.label,
+              groupChildOf: normalizedType
+            }))
+          ]
+        });
+        continue;
+      }
+
       options.push({
-        label: group.label,
-        options: group.entries
-          .map(([key, value]) => ({
-            value: `${group.prefix}:${key}`,
-            label: this.localizeConfigLabel(value, key)
-          }))
-          .sort((a, b) => a.label.localeCompare(b.label, game?.i18n?.lang ?? undefined))
+        value: normalizedType,
+        label: typeLabelMap.get(normalizedType) ?? this.formatFallbackLabel(normalizedType)
       });
     }
 
     this.#cacheLang = lang;
     this.#cacheConfig = configRef;
+    this.#cacheTypeKey = typeKey;
     this.#optionsCache = options;
     return this.#optionsCache;
   }
@@ -151,20 +167,130 @@ export class GemTargetFilterBuilder {
       return [];
     }
     return options.map((entry) => {
-      if (entry?.options) {
+      if (Array.isArray(entry?.options)) {
         return {
           ...entry,
-          options: entry.options.map((opt) => ({
-            ...opt,
-            selected: !!selectedMap?.[opt.value]
-          }))
+          options: entry.options.map((option) => {
+            const groupType = String(option?.groupType ?? option?.groupChildOf ?? "").toLowerCase();
+            if (option?.isGroup && groupType.length) {
+              return {
+                ...option,
+                selected: !!selectedMap?.[groupType]
+              };
+            }
+            if (option?.groupChildOf && groupType.length) {
+              return {
+                ...option,
+                selected: !!selectedMap?.[option.value] || !!selectedMap?.[groupType]
+              };
+            }
+            return {
+              ...option,
+              selected: !!selectedMap?.[option?.value]
+            };
+          })
         };
       }
+
       return {
         ...entry,
         selected: !!selectedMap?.[entry?.value]
       };
     });
+  }
+
+  static #resolveSubtypeEntries(dnd5e, type) {
+    const normalizedType = String(type ?? "").trim().toLowerCase();
+    if (normalizedType === "container") {
+      return [];
+    }
+
+    const typeLabel = this.formatFallbackLabel(normalizedType).toLowerCase();
+    const collection = this.#resolveSubtypeCollection(dnd5e, type);
+    const entries = this.normalizeCollection(collection)
+      .map(([key, value]) => ({
+        key: String(key ?? "").trim(),
+        label: String(this.localizeConfigLabel(value, key) ?? "").trim()
+      }))
+      .filter((entry) => entry.key.length && entry.label.length)
+      .filter((entry) => {
+        if (!normalizedType.length) return true;
+        const keyLower = entry.key.toLowerCase();
+        const labelLower = entry.label.toLowerCase();
+
+        // Keep only semantic subtype keys (slug/camelCase), skipping technical ids.
+        if (!this.#looksLikeSemanticSubtypeKey(entry.key)) {
+          return false;
+        }
+
+        // Ignore duplicate "parent-as-child" entries (e.g. Container -> Container).
+        if (keyLower === normalizedType && labelLower === typeLabel) {
+          return false;
+        }
+
+        // Ignore opaque/generated ids that leak into config collections.
+        if (this.#looksLikeOpaqueSubtypeToken(entry.key) && this.#looksLikeOpaqueSubtypeToken(entry.label)) {
+          return false;
+        }
+        if (entry.label === entry.key && this.#looksLikeOpaqueSubtypeToken(entry.label)) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => a.label.localeCompare(b.label, game?.i18n?.lang ?? undefined));
+
+    return entries;
+  }
+
+  static #resolveSubtypeCollection(dnd5e, type) {
+    if (!dnd5e || !type) return null;
+    const candidates = [
+      `${type}Types`,
+      `${type.replace(/s$/, "")}Types`
+    ];
+
+    for (const key of candidates) {
+      const collection = dnd5e?.[key];
+      if (collection) return collection;
+    }
+
+    return null;
+  }
+
+  static #resolveGroupLabel(type, fallbackLabel) {
+    if (type === "weapon") {
+      return Constants.localize("SCSockets.GemTargetTypes.Groups.Weapons", "Weapons");
+    }
+    if (type === "equipment") {
+      return Constants.localize("SCSockets.GemTargetTypes.Groups.Equipment", "Equipment");
+    }
+    return fallbackLabel ?? this.formatFallbackLabel(type);
+  }
+
+  static #looksLikeOpaqueSubtypeToken(value) {
+    const token = String(value ?? "").trim();
+    if (!token.length) return false;
+    if (!/^[A-Za-z0-9_-]+$/.test(token)) return false;
+    if (token.length < 12) return false;
+    if (/[\s.]/.test(token)) return false;
+
+    const compact = token.replace(/[-_]/g, "");
+    const hasLower = /[a-z]/.test(compact);
+    const hasUpper = /[A-Z]/.test(compact);
+    const hasDigit = /\d/.test(compact);
+
+    return (hasLower && hasUpper && hasDigit) || (hasLower && hasUpper && compact.length >= 16);
+  }
+
+  static #looksLikeSemanticSubtypeKey(value) {
+    const token = String(value ?? "").trim();
+    if (!token.length) return false;
+    if (token.length > 48) return false;
+    if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(token)) return false;
+    if (!/^[a-z]/.test(token)) return false;
+    if (this.#looksLikeOpaqueSubtypeToken(token)) return false;
+    return true;
   }
 
   /**

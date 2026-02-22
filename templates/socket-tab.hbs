@@ -8,10 +8,12 @@
         <h3 class="item-name socket-name">{{ localize "SCSockets.TabLabel" }}</h3>
         <div class="item-header socket-source">{{ localize "SCSockets.ColumnSlot" }}</div>
         <div class="item-header item-controls socket-controls">
+          {{#if canAddSocketSlot}}
           <a class="socket-control item-control always-interactive" data-action="addSocketSlot" data-tooltip
             aria-label="{{ localize 'SCSockets.ActionAdd' }}">
             <i class="fas fa-plus"></i> {{ localize "SCSockets.ActionAdd" }}
           </a>
+          {{/if}}
         </div>
       </div>
 
@@ -47,6 +49,8 @@
               data-tooltip-direction="LEFT">
               <i class="fas fa-circle-xmark"></i>
             </a>
+            {{/if}}
+            {{#if ../canManageSockets}}
             <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{i}}" data-tooltip
               aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}"
               data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"

@@ -9,6 +9,15 @@ import { ModuleSettings } from "../settings/ModuleSettings.js";
 
 export class SocketService {
   static async addGem(hostItem, idx, source) {
+    if (!SocketService.#canUseSocketsOnHost(hostItem)) {
+      return ui.notifications?.warn?.(
+        Constants.localize(
+          "SCSockets.Notifications.HostNotSocketable",
+          "This item type cannot receive sockets."
+        )
+      );
+    }
+
     const slots = SocketStore.getSlots(hostItem);
 
     if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
@@ -53,6 +62,12 @@ export class SocketService {
       );
     }
 
+    const previousSlot = slots[idx] ?? {};
+    const shouldReturnReplacedGem = Boolean(previousSlot?.gem) && !ModuleSettings.shouldDeleteGemOnRemoval();
+    const replacedGemSnapshot = shouldReturnReplacedGem
+      ? foundry.utils.deepClone(previousSlot?._gemData ?? null)
+      : null;
+
     await EffectService.removeGemEffects(hostItem, idx);
     await ActivityTransferService.removeForSlot(hostItem, idx);
 
@@ -63,6 +78,14 @@ export class SocketService {
     await EffectService.applyGemEffects(hostItem, idx, gemItem);
     await ActivityTransferService.applyFromGem(hostItem, idx, gemItem);
     await InventoryService.consumeOne(gemItem);
+
+    if (shouldReturnReplacedGem) {
+      try {
+        await InventoryService.returnOne(hostItem, replacedGemSnapshot);
+      } catch (error) {
+        console.warn(`[${Constants.MODULE_ID}] failed to return replaced gem to inventory:`, error);
+      }
+    }
   }
 
   static async removeGem(hostItem, idx) {
@@ -94,6 +117,16 @@ export class SocketService {
   static async addSlot(hostItem, options = {}) {
     const { bypassPermission = false } = options;
 
+    if (!SocketService.#isHostTypeSocketable(hostItem)) {
+      ui.notifications?.warn?.(
+        Constants.localize(
+          "SCSockets.Notifications.HostNotSocketable",
+          "This item type cannot receive sockets."
+        )
+      );
+      return;
+    }
+
     if (!bypassPermission && !ModuleSettings.canAddOrRemoveSocket()) {
       return;
     }
@@ -105,14 +138,34 @@ export class SocketService {
       );
       return;
     }
-    return SocketStore.addSlot(hostItem, SocketSlot.makeDefault());
+    const slot = SocketSlot.makeDefault();
+    const createdIndex = currentSlots.length;
+    const result = await SocketStore.addSlot(hostItem, slot);
+    SocketService.#emitSocketAdded(hostItem, {
+      slotIndex: createdIndex,
+      slot,
+      totalSlots: createdIndex + 1
+    });
+    return result;
   }
 
   static async removeSlot(hostItem, idx) {
     if (!ModuleSettings.canAddOrRemoveSocket()) {
       return;
     }
-    return SocketStore.removeSlot(hostItem, idx);
+    const currentSlots = SocketStore.getSlots(hostItem);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= currentSlots.length) {
+      return;
+    }
+
+    const removedSlot = foundry.utils.deepClone(currentSlots[idx] ?? null);
+    const result = await SocketStore.removeSlot(hostItem, idx);
+    SocketService.#emitSocketRemoved(hostItem, {
+      slotIndex: idx,
+      slot: removedSlot,
+      totalSlots: Math.max(currentSlots.length - 1, 0)
+    });
+    return result;
   }
 
   static getSlots(hostItem) {
@@ -165,6 +218,42 @@ export class SocketService {
     }
 
     return Array.from(keys);
+  }
+
+  static #canUseSocketsOnHost(hostItem) {
+    return ModuleSettings.isItemSocketable(hostItem);
+  }
+
+  static #isHostTypeSocketable(hostItem) {
+    return ModuleSettings.isItemSocketableByType(hostItem);
+  }
+
+  static #emitSocketAdded(hostItem, { slotIndex, slot, totalSlots }) {
+    Hooks.callAll(Constants.HOOK_SOCKET_ADDED, {
+      item: hostItem ?? null,
+      itemId: hostItem?.id ?? null,
+      itemUuid: hostItem?.uuid ?? null,
+      actor: hostItem?.actor ?? null,
+      actorId: hostItem?.actor?.id ?? null,
+      slotIndex: Number.isInteger(slotIndex) ? slotIndex : null,
+      slot: foundry.utils.deepClone(slot ?? null),
+      totalSlots: Number.isInteger(totalSlots) ? totalSlots : null,
+      userId: game.userId ?? game.user?.id ?? null
+    });
+  }
+
+  static #emitSocketRemoved(hostItem, { slotIndex, slot, totalSlots }) {
+    Hooks.callAll(Constants.HOOK_SOCKET_REMOVED, {
+      item: hostItem ?? null,
+      itemId: hostItem?.id ?? null,
+      itemUuid: hostItem?.uuid ?? null,
+      actor: hostItem?.actor ?? null,
+      actorId: hostItem?.actor?.id ?? null,
+      slotIndex: Number.isInteger(slotIndex) ? slotIndex : null,
+      slot: foundry.utils.deepClone(slot ?? null),
+      totalSlots: Number.isInteger(totalSlots) ? totalSlots : null,
+      userId: game.userId ?? game.user?.id ?? null
+    });
   }
 
 }

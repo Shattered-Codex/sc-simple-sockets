@@ -15,7 +15,8 @@
       "GemIncompatible": "That item is not compatible with this socket.",
       "GemUnsocketed": "Gem unsocketed.",
       "MaxReached": "Maximum number of sockets reached.",
-      "GemRequiresSocket": "This gem must be socketed before it can be used."
+      "GemRequiresSocket": "This gem must be socketed before it can be used.",
+      "HostNotSocketable": "This item type cannot receive sockets."
     },
     "Effects": {
       "DefaultName": "Gem Effect"
@@ -34,7 +35,7 @@
       "SelectLabel": "Additional Details",
       "Hint": "Choose how this gem should be categorized.",
       "TypeFieldset": "Details Type",
-      "Disclaimer": "Use the fields below to adjust only the attacks made with the weapon that holds this gem. Active Effects applied to the actor affect every attack with any weapon. For armor and shields, use the gem's standard Active Effects on the item.",
+      "Disclaimer": "Use the fields below to adjust attacks and damage made with the item that holds this gem (including spells). Active Effects applied to the actor affect all eligible attacks globally. For armor and shields, use the gem's standard Active Effects on the item.",
       "Options": {
         "None": "None",
         "Weapons": "Weapons",
@@ -42,7 +43,7 @@
       },
       "ExtraDamage": {
         "Label": "Extra Damage",
-        "Hint": "Add one or more extra damage entries applied when this gem is socketed into weapons.",
+        "Hint": "Add one or more extra damage entries applied when this gem is socketed into weapons or spells.",
         "Damage": "Damage",
         "Type": "Type",
         "Add": "Add damage",
@@ -54,11 +55,12 @@
           "Bonus": "Bonus",
           "Activity": "When to apply"
         },
-        "ActivityHint": "Choose when this extra damage applies. Any action: always. Attack only: only on attack-type activities."
+        "ActivityHint": "Choose when this extra damage applies. Any action: always. Attack only: only on attack-type activities. Spell only: only when socketed into a spell item."
       },
       "ExtraDamageActivity": {
         "Any": "Any action",
-        "Attack": "Attack only"
+        "Attack": "Attack only",
+        "Spell": "Spell only"
       },
       "CritDamage": {
         "Label": "Critical-Only Damage",
@@ -66,7 +68,7 @@
       },
       "CritThreshold": {
         "Label": "Critical Threshold",
-        "Hint": "Lowest d20 result that counts as a critical hit for attacks with this gem socketed. If multiple gems adjust crit, the lowest value is used. Leave blank to use the base weapon value."
+        "Hint": "Lowest d20 result that counts as a critical hit for attack rolls with this gem socketed. If multiple gems adjust crit, the lowest value is used. Leave blank to use the default value."
       },
       "CritMultiplier": {
         "Label": "Critical Multiplier",
@@ -94,6 +96,17 @@
         "Name": "Edit Socket Permission",
         "Hint": "The minimum role required to add or remove sockets from items."
       },
+      "SocketableItemTypes": {
+        "Name": "Socketable Item Types",
+        "Label": "Configure Socketable Item Types",
+        "Hint": "Choose which item types can receive sockets.",
+        "Title": "Socketable Item Types",
+        "SelectLabel": "Item types that can receive sockets",
+        "SelectHint": "Choose one or more item types.",
+        "Save": "Save",
+        "Reset": "Reset Defaults",
+        "UnsavedChanges": "You have unsaved changes."
+      },
       "MaxSockets": {
         "Name": "Maximum Number of Sockets per Item",
         "Hint": "Maximum number of sockets an item can have. Use -1 for unlimited."
@@ -110,6 +123,24 @@
         "SelectLabel": "Loot subtypes considered gems",
         "SelectHint": "Items with these loot subtypes will be treated as gems.",
         "Save": "Save",
+        "UnsavedChanges": "You have unsaved changes.",
+        "Selection": {
+          "Name": "Gem Loot Subtypes",
+          "Label": "Configure Gem Loot Subtypes",
+          "Hint": "Select which loot subtypes count as gems.",
+          "Title": "Gem Loot Subtype Settings",
+          "SelectLabel": "Loot subtypes considered gems",
+          "SelectHint": "Items with these loot subtypes will be treated as gems.",
+          "Save": "Save",
+          "Reset": "Reset defaults"
+        },
+        "CustomMenu": {
+          "Name": "Custom Loot Subtypes",
+          "Label": "Configure Custom Loot Subtypes",
+          "Hint": "Add custom loot subtype keys and labels that can be used as gems.",
+          "Title": "Custom Loot Subtypes",
+          "Save": "Save"
+        },
         "Custom": {
           "Heading": "Custom loot subtypes",
           "Hint": "Add new loot subtype keys and labels that will be available for gems.",
@@ -132,12 +163,12 @@
       "SupportMenu": {
         "Name": "Support the developer",
         "Label": "Patreon support",
-        "Hint": "Get access to SC - More Gems with 50+ gems, and more every month."
+        "Hint": "Get access to SC - More Gems with 70+ gems, and more every month. We are also building SC - Setforge to create item sets."
       }
     },
     "SupportCard": {
       "Intro": "Support us on Patreon to help us keep creating.",
-      "Exclusive": "We'll keep adding new gems and items to the exclusive <strong>SC - More Gems</strong> module every month, and build more Shattered Codex exclusive modules along the way.",
+      "Exclusive": "Get access to the exclusive <strong>SC - More Gems</strong> module with 70+ gems and monthly updates. We are also building <strong>SC - Setforge</strong> so you can create item sets.",
       "Link": "Patreon",
       "Footer": "This chat card will only be shown once. Enable it again in the settings if needed."
     },

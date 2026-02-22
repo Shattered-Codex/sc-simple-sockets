@@ -18,7 +18,12 @@
             {{#if entry.options}}
               <optgroup label="{{entry.label}}">
                 {{#each entry.options as |option|}}
-                  <option value="{{option.value}}" {{#if option.selected}}selected{{/if}}>
+                  <option
+                    value="{{option.value}}"
+                    {{#if option.selected}}selected{{/if}}
+                    {{#if option.isGroup}}data-group-option="true" data-group-type="{{option.groupType}}"{{/if}}
+                    {{#if option.groupChildOf}}data-group-child-of="{{option.groupChildOf}}"{{/if}}
+                  >
                     {{option.label}}
                   </option>
                 {{/each}}

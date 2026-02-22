@@ -50,7 +50,7 @@ export class GemDamageService {
 
   static #applyGemDamage(config) {
     const item = GemDamageService.extractItem(config);
-    if (!item || item.type !== "weapon") {
+    if (!item || !GemDamageService.#supportsGemDamageItem(item)) {
       return;
     }
     const activityType = GemDamageService.#extractActivityType(config);
@@ -93,6 +93,11 @@ export class GemDamageService {
     }
   }
 
+  static #supportsGemDamageItem(item) {
+    const type = String(item?.type ?? "").trim().toLowerCase();
+    return type === "weapon" || type === "spell";
+  }
+
   static collectGemDamage(item, { flag = Constants.FLAG_GEM_DAMAGE, activityType } = {}) {
     const slots = SocketStore.peekSlots(item);
     if (!Array.isArray(slots) || !slots.length) {
@@ -109,7 +114,7 @@ export class GemDamageService {
 
       const normalized = GemDetailsBuilder.getNormalizedDamageEntries(gem, { flag });
       for (const entry of normalized) {
-        if (!GemDamageService.#matchesActivity(entry, activityType)) {
+        if (!GemDamageService.#matchesActivity(entry, activityType, item)) {
           continue;
         }
         const formula = GemDamageService.buildFormula(entry);
@@ -131,9 +136,12 @@ export class GemDamageService {
     return entries;
   }
 
-  static #matchesActivity(entry, activityType) {
+  static #matchesActivity(entry, activityType, item) {
     if (!entry || !entry.activity || entry.activity === "any") {
       return true;
+    }
+    if (entry.activity === "spell") {
+      return String(item?.type ?? "").trim().toLowerCase() === "spell";
     }
     if (!activityType) {
       return entry.activity === "any";
@@ -232,7 +240,7 @@ export class GemDamageService {
 
   static #applyCritMultiplier(config) {
     const item = GemDamageService.extractItem(config);
-    if (!item || item.type !== "weapon") {
+    if (!item || !GemDamageService.#supportsGemDamageItem(item)) {
       return;
     }
     const multiplier = GemDamageService.#collectCritMultiplier(item);
@@ -274,7 +282,7 @@ export class GemDamageService {
 
   static #applyCritThreshold(config) {
     const item = GemDamageService.extractItem(config);
-    if (!item || item.type !== "weapon") {
+    if (!item || !GemDamageService.#supportsGemDamageItem(item)) {
       return;
     }
 
@@ -361,7 +369,7 @@ export class GemDamageService {
 
   static #applyAttackBonus(config) {
     const item = GemDamageService.extractItem(config);
-    if (!item || item.type !== "weapon") {
+    if (!item || !GemDamageService.#supportsGemDamageItem(item)) {
       return;
     }
     const total = GemDamageService.#collectAttackBonus(item);

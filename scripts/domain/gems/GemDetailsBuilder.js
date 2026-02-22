@@ -124,7 +124,7 @@ export class GemDetailsBuilder {
     });
     const allowedDice = new Set(dice.map((opt) => opt.value));
     const allowedTypes = new Set(types.map((opt) => opt.value));
-    const allowedActivities = new Set(["any", "attack"]);
+    const allowedActivities = new Set(["any", "attack", "spell"]);
     const stored = this.#getStoredDamage(source, flag);
 
     return this.#normalizeDamageEntries(stored, {
@@ -252,7 +252,8 @@ export class GemDetailsBuilder {
   static #buildActivityOptions() {
     return [
       { value: "any", label: Constants.localize("SCSockets.GemDetails.ExtraDamageActivity.Any", "Any action") },
-      { value: "attack", label: Constants.localize("SCSockets.GemDetails.ExtraDamageActivity.Attack", "Attack only") }
+      { value: "attack", label: Constants.localize("SCSockets.GemDetails.ExtraDamageActivity.Attack", "Attack only") },
+      { value: "spell", label: Constants.localize("SCSockets.GemDetails.ExtraDamageActivity.Spell", "Spell only") }
     ];
   }
 

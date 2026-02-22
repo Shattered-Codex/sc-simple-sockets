@@ -7,6 +7,18 @@ export class SocketDescriptionsUI {
   static DESCRIPTION_TARGET = "system.description.value";
   static EXPAND_ID = "sc-sockets.socket-descriptions";
 
+  static #escapeHtml(value) {
+    const text = String(value ?? "");
+    if (typeof foundry?.utils?.escapeHTML === "function") {
+      return foundry.utils.escapeHTML(text);
+    }
+    const textEditor = Constants.getTextEditor();
+    if (typeof textEditor?.escapeHTML === "function") {
+      return textEditor.escapeHTML(text);
+    }
+    return text;
+  }
+
   static activate() {
     if (SocketDescriptionsUI.#handler) {
       return;
@@ -125,17 +137,18 @@ export class SocketDescriptionsUI {
       "SCSockets.SocketDescriptions.SendToChat",
       "Send to Chat"
     );
+    const escapedSendLabel = SocketDescriptionsUI.#escapeHtml(sendLabel);
     const rows = entries.map((entry) => `
       <div class="sc-sockets-socket-description">
-        <img src="${entry.img}" alt="${entry.name}">
+        <img src="${SocketDescriptionsUI.#escapeHtml(entry.img)}" alt="${SocketDescriptionsUI.#escapeHtml(entry.name)}">
         <div class="sc-sockets-socket-description-body">
           <div class="sc-sockets-socket-description-header">
-            <strong class="sc-sockets-socket-description-title">${entry.name}</strong>
+            <strong class="sc-sockets-socket-description-title">${SocketDescriptionsUI.#escapeHtml(entry.name)}</strong>
             <button type="button"
                     class="unbutton control-button always-interactive sc-sockets-socket-description-chat"
                     data-action="sendSocketDescription"
-                    data-tooltip="${sendLabel}"
-                    aria-label="${sendLabel}">
+                    data-tooltip="${escapedSendLabel}"
+                    aria-label="${escapedSendLabel}">
               <i class="fas fa-comment-dots" inert></i>
             </button>
           </div>
@@ -146,7 +159,7 @@ export class SocketDescriptionsUI {
 
     card.innerHTML = `
       <div class="header">
-        <span>${label}</span>
+        <span>${SocketDescriptionsUI.#escapeHtml(label)}</span>
       </div>
       <div class="details collapsible-content">
         <div class="editor editor-content wrapper">
@@ -189,11 +202,15 @@ export class SocketDescriptionsUI {
 
       const hostName = card.dataset.scSocketsHostName ?? item?.name ?? "";
       const hostImg = card.dataset.scSocketsHostImg ?? item?.img ?? "";
+      const safeHostName = SocketDescriptionsUI.#escapeHtml(hostName);
+      const safeHostImg = SocketDescriptionsUI.#escapeHtml(hostImg);
+      const safeImgSrc = SocketDescriptionsUI.#escapeHtml(imgSrc);
+      const safeTitle = SocketDescriptionsUI.#escapeHtml(title);
       const hostHeader = hostName || hostImg
         ? `
           <div class="sc-sockets-socket-description-host">
-            ${hostImg ? `<img src="${hostImg}" alt="${hostName}">` : ""}
-            <strong class="sc-sockets-socket-description-host-title">${hostName}</strong>
+            ${hostImg ? `<img src="${safeHostImg}" alt="${safeHostName}">` : ""}
+            <strong class="sc-sockets-socket-description-host-title">${safeHostName}</strong>
           </div>
         `
         : "";
@@ -202,10 +219,10 @@ export class SocketDescriptionsUI {
         <div class="sc-sockets-socket-description-chat-card">
           ${hostHeader}
           <div class="sc-sockets-socket-description">
-            <img src="${imgSrc}" alt="${title}">
+            <img src="${safeImgSrc}" alt="${safeTitle}">
             <div class="sc-sockets-socket-description-body">
               <div class="sc-sockets-socket-description-header">
-                <strong class="sc-sockets-socket-description-title">${title}</strong>
+                <strong class="sc-sockets-socket-description-title">${safeTitle}</strong>
               </div>
               <div class="sc-sockets-socket-description-text">${description}</div>
             </div>

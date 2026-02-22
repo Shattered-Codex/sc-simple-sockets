@@ -3,6 +3,7 @@ import { SheetExtension } from "./SheetExtension.js";
 import { DialogHelper } from "../helpers/DialogHelper.js";
 import { DragHelper } from "../helpers/DragHelper.js";
 import { SocketService } from "./services/SocketService.js";
+import { ModuleSettings } from "./settings/ModuleSettings.js";
 
 export class ItemSocketExtension extends SheetExtension {
   static TAB_ID = "sockets";
@@ -22,7 +23,7 @@ export class ItemSocketExtension extends SheetExtension {
     });
   }
 
-  #isSockeable = this.makeItemCondition({ types: ["weapon", "equipment"] });
+  #isSockeable = (item) => ModuleSettings.isItemSocketable(item);
 
   /**
    * Checks if an item can receive sockets.
@@ -48,10 +49,14 @@ export class ItemSocketExtension extends SheetExtension {
     partId = ItemSocketExtension.PART_ID
   } = {}) {
     const editable = !!sheet?.isEditable;
+    const canManageSockets = editable && ModuleSettings.canAddOrRemoveSocket(game.user);
+    const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(sheet?.item);
     const item = sheet?.item ?? null;
     const sockets = SocketService.getSlots(item);
     const context = {
       editable,
+      canManageSockets,
+      canAddSocketSlot,
       dataEditable: editable ? "true" : "false",
       sockets
     };

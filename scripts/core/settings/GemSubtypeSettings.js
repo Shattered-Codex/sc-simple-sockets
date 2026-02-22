@@ -19,17 +19,19 @@ function handleFormSubmit(event, form, formData) {
 export class GemSubtypeSettings extends BaseApplication {
   #inputListener;
   #root = null;
+  #dirtyBaseline = "";
 
   static DEFAULT_OPTIONS = foundry.utils.mergeObject(
     foundry.utils.deepClone(super.DEFAULT_OPTIONS ?? {}),
     {
       id: `${Constants.MODULE_ID}-gem-subtype-settings`,
       tag: "form",
-      classes: ["sc-sockets", "gem-subtype-settings"],
-      position: { width: 520 },
+      classes: ["sc-sockets", "sc-sockets-settings-theme", "gem-subtype-settings"],
+      position: { width: 980, height: 560 },
       window: {
         title: Constants.localize("SCSockets.Settings.GemLootSubtypes.Title", "Gem Loot Subtype Settings"),
-        icon: "fas fa-gem"
+        icon: "fas fa-gem",
+        contentClasses: ["sc-sockets-settings-theme"]
       },
       form: {
         handler: handleFormSubmit,
@@ -47,7 +49,9 @@ export class GemSubtypeSettings extends BaseApplication {
           if (!row) return;
           row.remove();
           this.#reindexCustomSubtypeRows();
-          this.#syncSelectOptions();
+          this.#syncSubtypeOptions();
+          this.#applyLayoutBounds();
+          this.#updateSaveDirtyState();
         }
       }
     },
@@ -75,11 +79,23 @@ export class GemSubtypeSettings extends BaseApplication {
 
   async _processSubmitData(_event, formData) {
     await this.#processSubmission(formData);
+    this.#dirtyBaseline = this.#buildSnapshot();
+    this.#setSaveDirtyState(false);
     return {};
   }
 
   async _updateObject(_event, formData) {
     await this.#processSubmission(formData);
+    this.#dirtyBaseline = this.#buildSnapshot();
+    this.#setSaveDirtyState(false);
+  }
+
+  render(...args) {
+    const rendered = super.render(...args);
+    Promise.resolve(rendered).then(() => {
+      window.requestAnimationFrame(() => this.#applyLayoutBounds());
+    });
+    return rendered;
   }
 
   activateListeners(html) {
@@ -128,18 +144,19 @@ export class GemSubtypeSettings extends BaseApplication {
     }
 
     options.sort((a, b) => a.label.localeCompare(b.label, game?.i18n?.lang ?? undefined));
-    const selectSize = Math.min(Math.max(options.length + 2, 8), 18);
+    const midpoint = Math.ceil(options.length / 2);
+    const subtypeColumns = [
+      options.slice(0, midpoint),
+      options.slice(midpoint)
+    ];
 
     return {
       formId,
-      selectId: `${formId}-subtypes`,
-      selectSize,
-      availableSubtypes: options,
+      subtypeColumns,
       customSubtypes: customSubtypes.map((entry) => ({
         key: entry.key,
         label: entry.label
       })),
-      selectedSubtypes: Array.from(selectedSet),
       strings: {
         subtypeSelect: Constants.localize(
           "SCSockets.Settings.GemLootSubtypes.SelectLabel",
@@ -193,29 +210,40 @@ export class GemSubtypeSettings extends BaseApplication {
     const root = this.element;
     if (!root) return;
     root.addEventListener("input", this.#inputListener);
+    root.addEventListener("change", this.#inputListener);
     this.#root = root;
-    this.#syncSelectOptions(root);
+    this.#syncSubtypeOptions(root);
+    this.#dirtyBaseline = this.#buildSnapshot(root);
+    this.#setSaveDirtyState(false, root);
   }
 
   #unbindRoot() {
     const root = this.#root;
     if (!root) return;
     root.removeEventListener("input", this.#inputListener);
+    root.removeEventListener("change", this.#inputListener);
+  }
+
+  #applyLayoutBounds() {
+    const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 1280;
+    const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 900;
+    const maxWidth = Math.max(760, viewportWidth - 48);
+    const targetWidth = Math.max(760, Math.min(980, maxWidth));
+    const maxHeight = Math.max(440, viewportHeight - 48);
+    const app = this.element?.querySelector?.(".sc-sockets-settings-app");
+    const naturalHeight = (app?.scrollHeight ?? 520) + 72;
+    const targetHeight = Math.max(500, Math.min(760, maxHeight, naturalHeight));
+    this.setPosition?.({ width: targetWidth, height: targetHeight });
   }
 
   async #processSubmission(formData) {
     const expanded = foundry.utils.expandObject(formData?.object ?? {});
     const object = expanded ?? {};
 
-    const rawSubtypes = object.subtypes;
-    const allowed = Array.isArray(rawSubtypes)
-      ? rawSubtypes
-      : (typeof rawSubtypes === "string" && rawSubtypes.length ? [rawSubtypes] : []);
-    const cleanedAllowed = Array.from(new Set(
-      allowed
-        .map((value) => (typeof value === "string" ? value.trim() : ""))
-        .filter((value) => value.length)
-    ));
+    const selectedFromUI = this.#collectSelectedSubtypeValues();
+    const cleanedAllowed = selectedFromUI.length
+      ? selectedFromUI
+      : GemSubtypeSettings.#extractSubtypeSelection(object.subtypes ?? object.subtypeChoices);
 
     const custom = GemSubtypeSettings.#extractCustomSubtypeEntries(object.customSubtypes);
 
@@ -238,6 +266,98 @@ export class GemSubtypeSettings extends BaseApplication {
       entries.push({ key, label });
     }
     return entries;
+  }
+
+  static #extractSubtypeSelection(raw) {
+    if (Array.isArray(raw)) {
+      return GemSubtypeSettings.#normalizeSubtypeValues(raw);
+    }
+    if (typeof raw === "string") {
+      return GemSubtypeSettings.#normalizeSubtypeValues([raw]);
+    }
+    if (!raw || typeof raw !== "object") {
+      return [];
+    }
+
+    const selected = Object.entries(raw)
+      .filter(([, value]) => value === true || value === "true" || value === "on" || value === 1 || value === "1")
+      .map(([key]) => key);
+    return GemSubtypeSettings.#normalizeSubtypeValues(selected);
+  }
+
+  static #normalizeSubtypeValues(values) {
+    const cleaned = [];
+    const seen = new Set();
+    for (const value of values) {
+      const normalized = String(value ?? "").trim();
+      if (!normalized.length) continue;
+      const lower = normalized.toLowerCase();
+      if (seen.has(lower)) continue;
+      seen.add(lower);
+      cleaned.push(normalized);
+    }
+    return cleaned;
+  }
+
+  #collectSelectedSubtypeValues(root = this.#root ?? this.element) {
+    if (!root) return [];
+    const checked = root.querySelectorAll("[data-subtype-choice]:checked");
+    return GemSubtypeSettings.#normalizeSubtypeValues(
+      Array.from(checked).map((input) => input.dataset.typeValue ?? input.value ?? "")
+    );
+  }
+
+  #collectCustomSubtypeEntries(root = this.#root ?? this.element) {
+    if (!root) return [];
+    const rows = root.querySelectorAll("[data-subtype-row]");
+    const seen = new Set();
+    const entries = [];
+
+    for (const row of rows) {
+      const key = String(row.querySelector('input[data-custom-field="key"]')?.value ?? "").trim();
+      if (!key.length) continue;
+      const lower = key.toLowerCase();
+      if (seen.has(lower)) continue;
+      seen.add(lower);
+
+      const labelField = row.querySelector('input[data-custom-field="label"]');
+      const labelValue = String(labelField?.value ?? "").trim();
+      const label = labelValue.length ? labelValue : ModuleSettings.formatSubtypeLabel(key);
+      entries.push({ key: lower, label });
+    }
+
+    entries.sort((a, b) => a.key.localeCompare(b.key, game?.i18n?.lang ?? undefined));
+    return entries;
+  }
+
+  #buildSnapshot(root = this.#root ?? this.element) {
+    const selected = this.#collectSelectedSubtypeValues(root)
+      .map((value) => value.toLowerCase())
+      .sort((a, b) => a.localeCompare(b, game?.i18n?.lang ?? undefined));
+    const custom = this.#collectCustomSubtypeEntries(root);
+    return JSON.stringify({ selected, custom });
+  }
+
+  #updateSaveDirtyState(root = this.#root ?? this.element) {
+    const dirty = this.#buildSnapshot(root) !== this.#dirtyBaseline;
+    this.#setSaveDirtyState(dirty, root);
+  }
+
+  #setSaveDirtyState(dirty, root = this.#root ?? this.element) {
+    const button = root?.querySelector?.("[data-save-button]");
+    if (!button) return;
+    button.classList.toggle("is-dirty", !!dirty);
+    const tooltip = Constants.localize(
+      "SCSockets.Settings.GemLootSubtypes.UnsavedChanges",
+      "You have unsaved changes."
+    );
+    if (dirty) {
+      button.title = tooltip;
+      button.dataset.tooltip = tooltip;
+      return;
+    }
+    button.removeAttribute("title");
+    delete button.dataset.tooltip;
   }
 
   #addCustomSubtypeRow({ key = "", label = "" } = {}) {
@@ -271,7 +391,7 @@ export class GemSubtypeSettings extends BaseApplication {
                autocomplete="off" />
       </td>
       <td class="actions">
-        <button type="button" class="dialog-button" data-action="removeCustomSubtype">
+        <button type="button" class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost" data-action="removeCustomSubtype">
           ${foundry.utils.escapeHTML(removeLabel)}
         </button>
       </td>
@@ -281,13 +401,16 @@ export class GemSubtypeSettings extends BaseApplication {
     this.#reindexCustomSubtypeRows();
     const keyInput = row.querySelector('input[data-custom-field="key"]');
     keyInput?.focus?.();
-    this.#syncSelectOptions(root);
+    this.#syncSubtypeOptions(root);
+    this.#applyLayoutBounds();
+    this.#updateSaveDirtyState(root);
   }
 
   #handleInput(event) {
     if (event.target?.matches?.('[data-custom-field]')) {
-      this.#syncSelectOptions();
+      this.#syncSubtypeOptions();
     }
+    this.#updateSaveDirtyState();
   }
 
   _onClickAction(event, target) {
@@ -304,7 +427,9 @@ export class GemSubtypeSettings extends BaseApplication {
       if (!row) return;
       row.remove();
       this.#reindexCustomSubtypeRows();
-      this.#syncSelectOptions();
+      this.#syncSubtypeOptions();
+      this.#applyLayoutBounds();
+      this.#updateSaveDirtyState();
       return;
     }
 
@@ -324,10 +449,33 @@ export class GemSubtypeSettings extends BaseApplication {
     });
   }
 
-  #syncSelectOptions(root = this.#root ?? this.element) {
+  #syncSubtypeOptions(root = this.#root ?? this.element) {
     if (!root) return;
-    const select = root.querySelector(`select[name="subtypes"]`);
-    if (!select) return;
+    const container = root.querySelector("[data-subtype-options]");
+    if (!container) return;
+
+    const checkedSet = new Set(
+      Array.from(container.querySelectorAll("[data-subtype-choice]:checked"))
+        .map((input) => String(input.dataset.typeValue ?? input.value ?? "").trim().toLowerCase())
+        .filter((value) => value.length)
+    );
+
+    const baseMap = new Map();
+    for (const option of container.querySelectorAll("[data-subtype-option]")) {
+      if (option.dataset.custom === "true") continue;
+      const input = option.querySelector("input[data-subtype-choice]");
+      const label = option.querySelector("span");
+      const value = String(input?.dataset?.typeValue ?? input?.value ?? "").trim();
+      if (!value.length) continue;
+      const lower = value.toLowerCase();
+      if (baseMap.has(lower)) continue;
+      baseMap.set(lower, {
+        value,
+        lower,
+        label: String(label?.textContent ?? ModuleSettings.formatSubtypeLabel(value)).trim(),
+        isCustom: false
+      });
+    }
 
     const rows = root.querySelectorAll("[data-subtype-row]");
     const entries = [];
@@ -339,40 +487,54 @@ export class GemSubtypeSettings extends BaseApplication {
         ? labelField.value.trim()
         : ModuleSettings.formatSubtypeLabel(key);
       entries.push({
-        key,
+        value: key,
         lower: key.toLowerCase(),
-        label
+        label,
+        isCustom: true
       });
     }
 
-    const options = Array.from(select.querySelectorAll("option"));
-    for (const option of options) {
-      if (option.dataset.custom === "true") {
-        const lower = option.value.toLowerCase();
-        if (!entries.some((entry) => entry.lower === lower)) {
-          if (option.selected) option.selected = false;
-          option.remove();
-        }
-      }
-    }
-
-    const optionMap = new Map(Array.from(select.options).map((opt) => [opt.value.toLowerCase(), opt]));
     for (const entry of entries) {
-      const existing = optionMap.get(entry.lower);
-      if (existing) {
-        existing.dataset.custom = "true";
-        existing.textContent = entry.label;
-        continue;
-      }
-      const option = document.createElement("option");
-      option.value = entry.key;
-      option.textContent = entry.label;
-      option.dataset.custom = "true";
-      select.append(option);
-      optionMap.set(entry.lower, option);
+      baseMap.set(entry.lower, entry);
     }
 
-    const size = Math.min(Math.max(select.options.length, 6), 16);
-    select.size = size;
+    const options = Array.from(baseMap.values())
+      .sort((a, b) => a.label.localeCompare(b.label, game?.i18n?.lang ?? undefined));
+    const midpoint = Math.ceil(options.length / 2);
+    const columns = [
+      options.slice(0, midpoint),
+      options.slice(midpoint)
+    ];
+
+    container.replaceChildren();
+    for (const columnEntries of columns) {
+      const column = document.createElement("div");
+      column.className = "gem-subtype-options-column";
+
+      for (const entry of columnEntries) {
+        const option = document.createElement("label");
+        option.className = "gem-subtype-option";
+        option.dataset.subtypeOption = "";
+        if (entry.isCustom) {
+          option.dataset.custom = "true";
+        }
+
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.name = "subtypeChoices";
+        input.value = entry.value;
+        input.dataset.subtypeChoice = "";
+        input.dataset.typeValue = entry.value;
+        input.checked = checkedSet.has(entry.lower);
+
+        const label = document.createElement("span");
+        label.textContent = entry.label;
+
+        option.append(input, label);
+        column.append(option);
+      }
+
+      container.append(column);
+    }
   }
 }

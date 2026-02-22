@@ -1,6 +1,8 @@
 export class Constants {
   static MODULE_ID = "sc-simple-sockets";
   static HOOK_TIDY_SOCKET_DESCRIPTIONS_RENDERED = "sc-simple-sockets.tidySocketDescriptionsRendered";
+  static HOOK_SOCKET_ADDED = "sc-simple-sockets.socketAdded";
+  static HOOK_SOCKET_REMOVED = "sc-simple-sockets.socketRemoved";
   static ITEM_TYPE_LOOT = "loot";
   static ITEM_SUBTYPE_GEM = "gem";
   static FLAG_STASH = "stashedEffects";

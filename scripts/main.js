@@ -10,6 +10,7 @@ import { ItemActivityBadges } from "./core/ui/ItemActivityBadges.js";
 import { TransferFilterUI } from "./core/ui/TransferFilterUI.js";
 import { SocketTooltipUI } from "./core/ui/SocketTooltipUI.js";
 import { MacroAPI } from "./core/api/MacroAPI.js";
+import { SocketAPI } from "./core/api/SocketAPI.js";
 import { TidyIntegration } from "./core/integration/TidyIntegration.js";
 import { GemDetailsUI } from "./core/ui/GemDetailsUI.js";
 import { GemSocketDescriptionUI } from "./core/ui/GemSocketDescriptionUI.js";
@@ -17,10 +18,13 @@ import { SocketDescriptionsUI } from "./core/ui/SocketDescriptionsUI.js";
 import { GemDamageService } from "./domain/gems/GemDamageService.js";
 import { DamageRollGemLayout } from "./core/ui/DamageRollGemLayout.js";
 
+const PATREON_SUPPORT_CARD_URL = "https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=foundry_module&utm_campaign=support_card";
+
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
 const lifecycle = new GemLifecycleService();
 MacroAPI.register();
+SocketAPI.register();
 TidyIntegration.register({
   gemSheetExtension: gemSheet,
   itemSocketExtension: itemSocketSheet
@@ -51,11 +55,12 @@ Hooks.once("setup", () => {
 
 });
 
-Hooks.once("ready", () => {
+Hooks.once("ready", async () => {
   GemDamageService.activate();
   const mode = ModuleSettings.shouldUseGemRollLayout() ? "gem" : "type";
   DamageRollGemLayout.activate({ mode });
-  void maybeShowSupportCard();
+  await ModuleSettings.suppressSupportCardOnModuleUpdate();
+  await maybeShowSupportCard();
 });
 
 Hooks.on("updateItem", async (item, changes) => {
@@ -98,7 +103,7 @@ function buildSupportCard() {
   );
   const exclusive = Constants.localize(
     "SCSockets.SupportCard.Exclusive",
-    "There you can find the exclusive module <strong>SC - More Gems</strong>, with new gems and items every month."
+    "There you can find the exclusive module <strong>SC - More Gems</strong> with 70+ gems and monthly updates. We are also building <strong>SC - Setforge</strong> so you can create item sets."
   );
   const footer = Constants.localize(
     "SCSockets.SupportCard.Footer",
@@ -110,7 +115,7 @@ function buildSupportCard() {
     <div style="padding: 5px;">
       <div style="color: #e7e7e7; padding: 10px; background-color: #212121; border: 3px solid #18c26a; border-radius: 10px;">
         <p style="text-align: center;">
-          <a href="https://www.patreon.com/c/shatteredcodex" target="_blank" rel="noopener">
+          <a href="${PATREON_SUPPORT_CARD_URL}" target="_blank" rel="noopener">
             <img src="modules/sc-simple-sockets/assets/imgs/shattered-codex.png" alt="Shattered Codex" style="display: block; margin: 0 auto;">
           </a>
         </p>
@@ -119,7 +124,7 @@ function buildSupportCard() {
           <p style="text-align: justify;">${intro}</p>
           <p style="text-align: justify;">${exclusive}</p>
           <p style="text-align: center; line-height: 150%;">
-            <a href="https://www.patreon.com/c/shatteredcodex" target="_blank" rel="noopener">${patreonLabel}</a>
+            <a href="${PATREON_SUPPORT_CARD_URL}" target="_blank" rel="noopener">${patreonLabel}</a>
           </p>
         </div>
         <hr>

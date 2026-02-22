@@ -9,7 +9,7 @@
     </div>
 
     <div class="tidy-table-header-cell tidy-table-actions" data-tidy-sheet-part="table-header-cell">
-      {{#if editable}}
+      {{#if canAddSocketSlot}}
         <a class="tidy-table-button"
            data-action="addSocketSlot"
            data-tooltip="{{ localize 'SCSockets.ActionAdd' }}"
@@ -47,6 +47,8 @@
                        aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}">
                       <i class="fas fa-circle-xmark"></i>
                     </a>
+                  {{/if}}
+                  {{#if ../canManageSockets}}
                     <a class="tidy-table-button"
                        data-action="removeSocketSlot"
                        data-index="{{i}}"

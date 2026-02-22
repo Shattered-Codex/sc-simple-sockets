@@ -4,6 +4,18 @@ import { SocketStore } from "../SocketStore.js";
 export class TidySocketDescriptionsUI {
   static SELECTOR = '[data-sc-sockets="socket-descriptions-tidy"]';
 
+  static #escapeHtml(value) {
+    const text = String(value ?? "");
+    if (typeof foundry?.utils?.escapeHTML === "function") {
+      return foundry.utils.escapeHTML(text);
+    }
+    const textEditor = Constants.getTextEditor();
+    if (typeof textEditor?.escapeHTML === "function") {
+      return textEditor.escapeHTML(text);
+    }
+    return text;
+  }
+
   static async #buildEntries(item, slots) {
     const getProperty = foundry?.utils?.getProperty;
     const textEditor = Constants.getTextEditor();
@@ -42,17 +54,18 @@ export class TidySocketDescriptionsUI {
       "SCSockets.SocketDescriptions.SendToChat",
       "Send to Chat"
     );
+    const escapedSendLabel = TidySocketDescriptionsUI.#escapeHtml(sendLabel);
     const rows = entries.map((entry) => `
       <div class="sc-sockets-socket-description">
-        <img src="${entry.img}" alt="${entry.name}">
+        <img src="${TidySocketDescriptionsUI.#escapeHtml(entry.img)}" alt="${TidySocketDescriptionsUI.#escapeHtml(entry.name)}">
         <div class="sc-sockets-socket-description-body">
           <div class="sc-sockets-socket-description-header">
-            <strong class="sc-sockets-socket-description-title">${entry.name}</strong>
+            <strong class="sc-sockets-socket-description-title">${TidySocketDescriptionsUI.#escapeHtml(entry.name)}</strong>
             <button type="button"
                     class="unbutton control-button always-interactive sc-sockets-socket-description-chat"
                     data-action="sendSocketDescription"
-                    data-tooltip="${sendLabel}"
-                    aria-label="${sendLabel}">
+                    data-tooltip="${escapedSendLabel}"
+                    aria-label="${escapedSendLabel}">
               <i class="fas fa-comment-dots" inert></i>
             </button>
           </div>
@@ -64,7 +77,7 @@ export class TidySocketDescriptionsUI {
     section.innerHTML = `
       <header>
         <a class="title">
-          ${label}
+          ${TidySocketDescriptionsUI.#escapeHtml(label)}
           <i class="fas fa-angle-right fa-fw expand-indicator expanded"></i>
         </a>
         <div role="presentation" class="gold-header-underline"></div>
@@ -161,11 +174,15 @@ export class TidySocketDescriptionsUI {
 
         const hostName = section.dataset.scSocketsHostName ?? "";
         const hostImg = section.dataset.scSocketsHostImg ?? "";
+        const safeHostName = TidySocketDescriptionsUI.#escapeHtml(hostName);
+        const safeHostImg = TidySocketDescriptionsUI.#escapeHtml(hostImg);
+        const safeImgSrc = TidySocketDescriptionsUI.#escapeHtml(imgSrc);
+        const safeTitle = TidySocketDescriptionsUI.#escapeHtml(title);
         const hostHeader = hostName || hostImg
           ? `
             <div class="sc-sockets-socket-description-host">
-              ${hostImg ? `<img src="${hostImg}" alt="${hostName}">` : ""}
-              <strong class="sc-sockets-socket-description-host-title">${hostName}</strong>
+              ${hostImg ? `<img src="${safeHostImg}" alt="${safeHostName}">` : ""}
+              <strong class="sc-sockets-socket-description-host-title">${safeHostName}</strong>
             </div>
           `
           : "";
@@ -174,10 +191,10 @@ export class TidySocketDescriptionsUI {
           <div class="sc-sockets-socket-description-chat-card">
             ${hostHeader}
             <div class="sc-sockets-socket-description">
-              <img src="${imgSrc}" alt="${title}">
+              <img src="${safeImgSrc}" alt="${safeTitle}">
               <div class="sc-sockets-socket-description-body">
                 <div class="sc-sockets-socket-description-header">
-                  <strong class="sc-sockets-socket-description-title">${title}</strong>
+                  <strong class="sc-sockets-socket-description-title">${safeTitle}</strong>
                 </div>
                 <div class="sc-sockets-socket-description-text">${description}</div>
               </div>
