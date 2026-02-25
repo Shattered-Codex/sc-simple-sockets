@@ -144,12 +144,25 @@ export class GemDetailsUI {
     form.addEventListener("submit", async () => {
       const container = root.querySelector(GemDetailsUI.SELECTOR);
       if (!container || !sheet?.item) return;
+      const critThresholdValue = GemDetailsUI.#readGemFlagInputValue(container, Constants.FLAG_GEM_CRIT_THRESHOLD);
+      const critMultiplierValue = GemDetailsUI.#readGemFlagInputValue(container, Constants.FLAG_GEM_CRIT_MULTIPLIER);
+      const attackBonusValue = GemDetailsUI.#readGemFlagInputValue(container, Constants.FLAG_GEM_ATTACK_BONUS);
       await GemDetailsUI.#persistDamageFlags(container, sheet.item);
-      await GemDetailsUI.#persistCritThreshold(sheet?.item, undefined, container);
-      await GemDetailsUI.#persistCritMultiplier(sheet?.item, undefined, container);
-      await GemDetailsUI.#persistAttackBonus(sheet?.item, undefined, container);
+      await GemDetailsUI.#persistCritThreshold(sheet?.item, critThresholdValue);
+      await GemDetailsUI.#persistCritMultiplier(sheet?.item, critMultiplierValue);
+      await GemDetailsUI.#persistAttackBonus(sheet?.item, attackBonusValue);
     });
     form.dataset.scSocketsGemDetailsSubmitBound = "true";
+  }
+
+  static #readGemFlagInputValue(container, flag) {
+    if (!container || !flag) return undefined;
+    const name = `flags.${Constants.MODULE_ID}.${flag}`;
+    const field = container.querySelector(`[name="${name}"]`);
+    if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)) {
+      return undefined;
+    }
+    return field.value;
   }
 
   static #readDefaults(container) {
@@ -239,8 +252,11 @@ export class GemDetailsUI {
     await GemDetailsUI.#writeEntries(item, baseEntries, Constants.FLAG_GEM_DAMAGE);
   }
 
-  static async #persistCritThreshold(item, rawValue, container) {
+  static async #persistCritThreshold(item, rawValue) {
     if (!item) return;
+    if (rawValue === undefined) {
+      return;
+    }
     const str = typeof rawValue === "string" ? rawValue.trim() : rawValue;
     if (str === "" || str === null || str === undefined) {
       await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_CRIT_THRESHOLD);
@@ -257,6 +273,9 @@ export class GemDetailsUI {
 
   static async #persistCritMultiplier(item, rawValue) {
     if (!item) return;
+    if (rawValue === undefined) {
+      return;
+    }
     const str = typeof rawValue === "string" ? rawValue.trim() : rawValue;
     if (str === "" || str === null || str === undefined) {
       await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_CRIT_MULTIPLIER);
@@ -273,6 +292,9 @@ export class GemDetailsUI {
 
   static async #persistAttackBonus(item, rawValue) {
     if (!item) return;
+    if (rawValue === undefined) {
+      return;
+    }
     const str = typeof rawValue === "string" ? rawValue.trim() : rawValue;
     if (str === "" || str === null || str === undefined) {
       await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_ATTACK_BONUS);
