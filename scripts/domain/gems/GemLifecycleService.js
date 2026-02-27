@@ -1,3 +1,4 @@
+import { Constants } from "../../core/Constants.js";
 import { GemCriteria } from "./GemCriteria.js";
 import { GemActivityStore } from "./GemActivityStore.js";
 import { GemEffectStore } from "./GemEffectStore.js";
@@ -11,12 +12,20 @@ export class GemLifecycleService {
     this.effectStore = effectStore;
   }
 
-  async handleItemUpdated(item, changes) {
+  async handleItemUpdated(item, changes, options = {}) {
     if (!GemCriteria.hasTypeUpdate(changes)) {
       return;
     }
 
-    if (!GemCriteria.matches(item)) {
+    const transition = options?.[Constants.MODULE_ID]?.gemTransition ?? null;
+    const wasGem = transition?.wasGem ?? GemCriteria.matches(item);
+    const isGem = GemCriteria.matches(item);
+
+    if (!wasGem && !isGem) {
+      return;
+    }
+
+    if (!isGem) {
       await this.activityStore.stash(item);
       await this.activityStore.removeAll(item);
       await this.effectStore.stash(item);
@@ -26,6 +35,25 @@ export class GemLifecycleService {
 
     await this.activityStore.restore(item);
     await this.effectStore.restore(item);
+  }
+
+  handlePreUpdate(item, changes, options = {}) {
+    if (!GemCriteria.hasTypeUpdate(changes)) {
+      return;
+    }
+
+    const previous = item?.toObject?.() ?? item;
+    const next = foundry.utils.mergeObject(
+      foundry.utils.deepClone(previous),
+      foundry.utils.deepClone(changes),
+      { inplace: false }
+    );
+
+    options[Constants.MODULE_ID] ??= {};
+    options[Constants.MODULE_ID].gemTransition = {
+      wasGem: GemCriteria.matches(previous),
+      willBeGem: GemCriteria.matches(next)
+    };
   }
 
   handlePreCreate(item, data) {
