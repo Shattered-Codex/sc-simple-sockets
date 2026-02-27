@@ -63,9 +63,17 @@ Hooks.once("ready", async () => {
   await maybeShowSupportCard();
 });
 
-Hooks.on("updateItem", async (item, changes) => {
+Hooks.on("preUpdateItem", (item, changes, options) => {
   try {
-    await lifecycle.handleItemUpdated(item, changes);
+    lifecycle.handlePreUpdate(item, changes, options);
+  } catch (e) {
+    console.error(`[${Constants.MODULE_ID}] handlePreUpdate failed:`, e);
+  }
+});
+
+Hooks.on("updateItem", async (item, changes, options) => {
+  try {
+    await lifecycle.handleItemUpdated(item, changes, options);
   } catch (e) {
     console.error(`[${Constants.MODULE_ID}] handleItemUpdated failed:`, e);
   }
