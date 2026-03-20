@@ -170,6 +170,25 @@
         "Name": "Apoie o desenvolvedor",
         "Label": "Apoiar no Patreon",
         "Hint": "Tenha acesso ao SC - More Gems com mais de 70 gemas e novidades todo mês. Também estamos criando o SC - Setforge para você montar sets de itens."
+      },
+      "SocketBehaviorMenu": {
+        "Name": "Configurações de soquetes",
+        "Label": "Configurar soquetes",
+        "Hint": "Abre uma janela dedicada para permissões, limites, comportamento das gemas e opções de layout.",
+        "Description": "Gerencie permissões, limites e comportamento visual dos soquetes em um só lugar.",
+        "Saved": "Configurações de soquetes salvas.",
+        "Save": "Salvar e fechar",
+        "Cancel": "Cancelar",
+        "Sections": {
+          "Rules": "Regras de soquetes",
+          "RulesHint": "Controle quem pode editar soquetes e como as gemas se comportam ao serem encaixadas ou removidas.",
+          "Display": "Exibição",
+          "DisplayHint": "Ajuste como o dano das gemas e a aba de soquetes são apresentados na interface."
+        }
+      },
+      "HideSupportCard": {
+        "Name": "Ocultar mensagem automática de suporte até a próxima atualização",
+        "Hint": "Depois que o card de suporte aparecer uma vez para a versão atual, esta opção é marcada automaticamente. Desmarque se quiser que o card apareça sempre que o mundo carregar."
       }
     },
     "SupportCard": {

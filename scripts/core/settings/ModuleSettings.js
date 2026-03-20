@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { SocketBehaviorSettingsLauncher } from "./SocketBehaviorSettingsLauncher.js";
 import { SupportMenu } from "./SupportMenu.js";
 
 export class ModuleSettings {
@@ -14,7 +15,10 @@ export class ModuleSettings {
   static SETTING_SOCKET_TAB_LAYOUT = "socketTabLayout";
   static SETTING_SOCKETABLE_ITEM_TYPES = "socketableItemTypes";
   static SETTING_SOCKETABLE_ITEM_TYPES_MENU = "socketableItemTypesSettings";
+  static SETTING_SOCKET_BEHAVIOR_MENU = "socketBehaviorSettings";
   static SETTING_SUPPORT_MENU = "supportMenu";
+  static SETTING_HIDE_SUPPORT_CARD = "hideSupportCardUntilNextUpdate";
+  static SETTING_SUPPORT_CARD_VERSION = "supportCardAcknowledgedVersion";
   static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
   static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
   static SETTING_CUSTOM_LOOT_SUBTYPES = Constants.SETTING_CUSTOM_LOOT_SUBTYPES;
@@ -26,6 +30,7 @@ export class ModuleSettings {
   async register() {
     ModuleSettings.#registerRuntimeHooks();
     this.#registerSupportMenu();
+    this.#registerSocketBehaviorMenu();
     this.#registerEditSocketPermission();
     await this.#registerSocketableItemTypeSettings();
     this.#registerMaxSockets();
@@ -33,6 +38,7 @@ export class ModuleSettings {
     this.#registerGemRollLayoutSetting();
     this.#registerSocketTabLayoutSetting();
     await this.#registerLootSubtypeSettings();
+    this.#registerSupportCardSettings();
   }
 
   static canAddOrRemoveSocket(user = game.user) {
@@ -156,6 +162,17 @@ export class ModuleSettings {
     return ModuleSettings.getSocketTabLayout() === ModuleSettings.SOCKET_TAB_LAYOUT_GRID;
   }
 
+  static getEditSocketPermissionChoices() {
+    const roleEntries = Object.entries(CONST?.USER_ROLES ?? {})
+      .filter(([, level]) => Number.isFinite(level))
+      .sort((a, b) => a[1] - b[1]);
+
+    return roleEntries.reduce((acc, [name, level]) => {
+      acc[level] = ModuleSettings.#roleLabel(name);
+      return acc;
+    }, {});
+  }
+
   static #registerRuntimeHooks() {
     if (ModuleSettings.#runtimeHooksRegistered) {
       return;
@@ -237,7 +254,7 @@ export class ModuleSettings {
       name,
       hint,
       scope: "client",
-      config: true,
+      config: false,
       type: Boolean,
       default: true,
       onChange: async (value) => {
@@ -259,7 +276,7 @@ export class ModuleSettings {
       name,
       hint,
       scope: "world",
-      config: true,
+      config: false,
       type: String,
       choices: {
         [ModuleSettings.SOCKET_TAB_LAYOUT_LIST]: Constants.localize(
@@ -478,25 +495,70 @@ export class ModuleSettings {
     });
   }
 
+  #registerSocketBehaviorMenu() {
+    const name = Constants.localize(
+      "SCSockets.Settings.SocketBehaviorMenu.Name",
+      "Socket settings"
+    );
+    const label = Constants.localize(
+      "SCSockets.Settings.SocketBehaviorMenu.Label",
+      "Configure socket settings"
+    );
+    const hint = Constants.localize(
+      "SCSockets.Settings.SocketBehaviorMenu.Hint",
+      "Open a dedicated window for socket permissions, limits, gem handling, and layout options."
+    );
+
+    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_BEHAVIOR_MENU, {
+      name,
+      label,
+      hint,
+      icon: "fas fa-gears",
+      type: SocketBehaviorSettingsLauncher,
+      restricted: true
+    });
+  }
+
+  #registerSupportCardSettings() {
+    const name = Constants.localize(
+      "SCSockets.Settings.HideSupportCard.Name",
+      "Hide automatic support message until next update"
+    );
+    const hint = Constants.localize(
+      "SCSockets.Settings.HideSupportCard.Hint",
+      "After the support card appears once for the current version, this option is checked automatically. Uncheck it if you want the card to appear whenever the world loads."
+    );
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_HIDE_SUPPORT_CARD, {
+      name,
+      hint,
+      scope: "client",
+      config: true,
+      type: Boolean,
+      default: false
+    });
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_CARD_VERSION, {
+      scope: "client",
+      config: false,
+      type: String,
+      default: ""
+    });
+  }
+
   #registerEditSocketPermission() {
-    const roleEntries = Object.entries(CONST?.USER_ROLES ?? {})
-      .filter(([, level]) => Number.isFinite(level))
-      .sort((a, b) => a[1] - b[1]);
-    const roleChoices = roleEntries.reduce((acc, [name, level]) => {
-      acc[level] = ModuleSettings.#roleLabel(name);
-      return acc;
-    }, {});
+    const roleChoices = ModuleSettings.getEditSocketPermissionChoices();
     const name = Constants.localize("SCSockets.Settings.EditPermission.Name", "Edit Socket Permission");
     const hint = Constants.localize(
       "SCSockets.Settings.EditPermission.Hint",
       "The minimum role required to add or remove sockets from items."
     );
 
-    game.settings.register(Constants.MODULE_ID, "editSocketPermission", {
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_EDIT_SOCKET, {
       name,
       hint,
       scope: "world",
-      config: true,
+      config: false,
       type: Number,
       choices: roleChoices,
       default: ModuleSettings.#defaultEditSocketRole(),
@@ -544,7 +606,7 @@ export class ModuleSettings {
       name,
       hint,
       scope: "world",
-      config: true,
+      config: false,
       type: Number,
       default: 6
     });
@@ -564,7 +626,7 @@ export class ModuleSettings {
       name,
       hint,
       scope: "world",
-      config: true,
+      config: false,
       type: Boolean,
       default: false
     });

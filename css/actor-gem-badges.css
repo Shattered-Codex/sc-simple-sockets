@@ -526,11 +526,89 @@ body.sc-sockets-target-cursor * {
   background: color-mix(in srgb, var(--sf-bg-card) 72%, #161f32 28%);
 }
 
+.socket-behavior-settings .sc-sockets-settings-content {
+  gap: 0.6rem;
+}
+
+.socket-behavior-settings .sc-sockets-settings-section-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.socket-behavior-settings .sc-sockets-settings-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.socket-behavior-settings .sc-sockets-settings-form-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.socket-behavior-settings .sc-sockets-settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(10rem, 16rem);
+  align-items: start;
+  gap: 0.9rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7082a7 18%);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sf-bg-card-soft) 88%, #121a2d 12%);
+}
+
+.socket-behavior-settings .sc-sockets-settings-row.is-checkbox {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.socket-behavior-settings .sc-sockets-settings-row-copy {
+  min-width: 0;
+}
+
+.socket-behavior-settings .sc-sockets-settings-row-name {
+  display: block;
+  color: var(--sf-text-strong);
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.socket-behavior-settings .sc-sockets-settings-control {
+  width: 100%;
+  min-height: 2.2rem;
+  padding: 0.35rem 0.55rem;
+  background: color-mix(in srgb, var(--sf-bg-card-soft) 88%, #0d1220 12%);
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 84%, #7a87a8 16%);
+  border-radius: 6px;
+  color: var(--sf-text-strong);
+}
+
+.socket-behavior-settings .sc-sockets-settings-control:focus-visible {
+  border-color: color-mix(in srgb, var(--sf-accent) 60%, #9cf2bf 40%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sf-accent) 40%, transparent 60%);
+}
+
+.socket-behavior-settings .sc-sockets-settings-checkbox {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.15rem;
+}
+
 @media (max-width: 740px) {
   .gem-subtype-selection-settings .gem-subtype-options-grid,
   .gem-subtype-settings .gem-subtype-options-grid,
   .socketable-item-types-settings .socketable-types-grid {
     grid-template-columns: 1fr;
+  }
+
+  .socket-behavior-settings .sc-sockets-settings-row,
+  .socket-behavior-settings .sc-sockets-settings-row.is-checkbox {
+    grid-template-columns: 1fr;
+  }
+
+  .socket-behavior-settings .sc-sockets-settings-checkbox {
+    margin-top: 0;
   }
 }
 

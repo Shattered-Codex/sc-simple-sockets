@@ -1,0 +1,68 @@
+<section class="sc-sockets-settings-app standard-form" data-application-part="form">
+  <div class="sc-sockets-settings-content">
+    <div class="sc-sockets-settings-card">
+      <div class="section-heading">
+        <div>
+          <h4>{{localize "SCSockets.Settings.SocketBehaviorMenu.Name"}}</h4>
+          <p class="notes">{{description}}</p>
+        </div>
+      </div>
+    </div>
+
+    {{#each sections}}
+      <div class="sc-sockets-settings-card sc-sockets-settings-section-card">
+        <div class="sc-sockets-settings-section-header">
+          <h4>{{this.title}}</h4>
+          <p class="notes">{{this.hint}}</p>
+        </div>
+
+        <div class="sc-sockets-settings-form-list">
+          {{#each this.fields}}
+            <label class="sc-sockets-settings-row {{#if this.isCheckbox}}is-checkbox{{/if}}">
+              <div class="sc-sockets-settings-row-copy">
+                <span class="sc-sockets-settings-row-name">{{this.name}}</span>
+                <p class="hint">{{this.hint}}</p>
+              </div>
+
+              {{#if this.isSelect}}
+                <select name="{{this.key}}" class="sc-sockets-settings-control">
+                  {{#each this.choices}}
+                    <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                  {{/each}}
+                </select>
+              {{/if}}
+
+              {{#if this.isNumber}}
+                <input
+                  type="number"
+                  name="{{this.key}}"
+                  class="sc-sockets-settings-control"
+                  step="1"
+                  value="{{this.value}}"
+                />
+              {{/if}}
+
+              {{#if this.isCheckbox}}
+                <input
+                  type="checkbox"
+                  name="{{this.key}}"
+                  class="sc-sockets-settings-checkbox"
+                  {{#if this.checked}}checked{{/if}}
+                />
+              {{/if}}
+            </label>
+          {{/each}}
+        </div>
+      </div>
+    {{/each}}
+  </div>
+
+  <footer class="form-footer sc-sockets-settings-footer button-row">
+    <button type="submit" class="dialog-button ok sc-sockets-settings-btn sc-sockets-settings-btn--primary">
+      <i class="fas fa-floppy-disk"></i> <span class="save-label">{{strings.submit}}</span>
+    </button>
+    <button type="button" class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost" data-action="close">
+      <i class="fas fa-xmark"></i> {{strings.cancel}}
+    </button>
+  </footer>
+</section>

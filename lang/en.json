@@ -170,6 +170,25 @@
         "Name": "Support the developer",
         "Label": "Patreon support",
         "Hint": "Get access to SC - More Gems with 70+ gems, and more every month. We are also building SC - Setforge to create item sets."
+      },
+      "SocketBehaviorMenu": {
+        "Name": "Socket settings",
+        "Label": "Configure socket settings",
+        "Hint": "Open a dedicated window for socket permissions, limits, gem handling, and layout options.",
+        "Description": "Manage socket permissions, limits, and display behavior in one place.",
+        "Saved": "Socket settings saved.",
+        "Save": "Save and Close",
+        "Cancel": "Cancel",
+        "Sections": {
+          "Rules": "Socket rules",
+          "RulesHint": "Control who can edit sockets and how gems behave when attached or removed.",
+          "Display": "Display",
+          "DisplayHint": "Adjust how gem damage and the socket tab are presented in the UI."
+        }
+      },
+      "HideSupportCard": {
+        "Name": "Hide automatic support message until next update",
+        "Hint": "After the support card appears once for the current version, this option is checked automatically. Uncheck it if you want the card to appear whenever the world loads."
       }
     },
     "SupportCard": {
