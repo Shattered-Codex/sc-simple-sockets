@@ -99,7 +99,6 @@ export class ActivityTransferService {
     if (!ids.size) return;
 
     const nextActivities = ActivityTransferService.#getActivityMap(hostItem);
-    let activitiesChanged = false;
     const updates = { [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`]: null };
     const collection = hostItem.system?.activities;
     for (const id of ids) {
@@ -108,10 +107,8 @@ export class ActivityTransferService {
         delete meta[id];
         continue;
       }
-      if (hasActivity) {
-        delete nextActivities[id];
-        activitiesChanged = true;
-      }
+
+      updates[`system.activities.-=${id}`] = null;
       const source = meta[id]?.sourceId;
       if (source) {
         const activity = collection.get?.(source);
@@ -123,9 +120,6 @@ export class ActivityTransferService {
           }
         }
       }
-    }
-    if (activitiesChanged) {
-      updates["system.activities"] = nextActivities;
     }
     await hostItem.update(updates);
   }

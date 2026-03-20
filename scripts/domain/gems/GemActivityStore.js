@@ -36,11 +36,17 @@ export class GemActivityStore {
       return;
     }
 
-    const update = { "system.activities": {} };
+    const update = {};
+    for (const activity of item.system?.activities ?? []) {
+      if (!activity?.id) continue;
+      update[`system.activities.-=${activity.id}`] = null;
+    }
     if (payload?.uses) {
       update["system.uses"] = GemActivityStore.#RESET_USES;
     }
-    await item.update(update);
+    if (Object.keys(update).length) {
+      await item.update(update);
+    }
   }
 
   static async restore(item, { clearAfter = true } = {}) {
