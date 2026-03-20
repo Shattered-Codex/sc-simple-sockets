@@ -17,6 +17,7 @@ import { GemSocketDescriptionUI } from "./core/ui/GemSocketDescriptionUI.js";
 import { SocketDescriptionsUI } from "./core/ui/SocketDescriptionsUI.js";
 import { GemDamageService } from "./domain/gems/GemDamageService.js";
 import { DamageRollGemLayout } from "./core/ui/DamageRollGemLayout.js";
+import { ActivityTransferService } from "./core/services/ActivityTransferService.js";
 
 const PATREON_SUPPORT_CARD_URL = "https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=foundry_module&utm_campaign=support_card";
 
@@ -74,6 +75,7 @@ Hooks.on("preUpdateItem", (item, changes, options) => {
 Hooks.on("updateItem", async (item, changes, options) => {
   try {
     await lifecycle.handleItemUpdated(item, changes, options);
+    await ActivityTransferService.reconcileDerivedActivities(item, changes, options);
   } catch (e) {
     console.error(`[${Constants.MODULE_ID}] handleItemUpdated failed:`, e);
   }

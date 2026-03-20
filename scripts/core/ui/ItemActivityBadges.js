@@ -88,6 +88,7 @@ export class ItemActivityBadges {
   static #buildActivityMap(item) {
     const data = item.getFlag(Constants.MODULE_ID, Constants.FLAG_SOCKET_ACTIVITIES) ?? {};
     const sockets = item.getFlag(Constants.MODULE_ID, SOCKET_FLAG) ?? [];
+    const activities = item.system?.activities;
     const map = new Map();
     for (const [slotKey, entry] of Object.entries(data)) {
       if (!entry) continue;
@@ -106,6 +107,24 @@ export class ItemActivityBadges {
         });
       }
     }
+
+    for (const activity of activities ?? []) {
+      if (!activity?.id || map.has(activity.id)) continue;
+
+      const sourceGem = activity?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_SOURCE_GEM];
+      if (!sourceGem) continue;
+
+      const slotKey = String(sourceGem.slot);
+      const socketInfo = Array.isArray(sockets) ? sockets[sourceGem.slot] : sockets?.[slotKey];
+      map.set(activity.id, {
+        slot: slotKey,
+        gemImg: socketInfo?.img ?? socketInfo?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
+        gemName: socketInfo?.gem?.name ?? socketInfo?.name ?? item.name,
+        activityName: activity.name ?? null,
+        sourceId: sourceGem.sourceId ?? null
+      });
+    }
+
     return map;
   }
 

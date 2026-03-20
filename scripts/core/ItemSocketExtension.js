@@ -66,7 +66,7 @@ export class ItemSocketExtension extends SheetExtension {
     }
 
     if (includeTab) {
-      const isActive = this.#isTabActive(sheet, partId);
+      const isActive = this.#isTabActive(sheet);
       context.tab = {
         id: ItemSocketExtension.TAB_ID,
         group: "primary",
@@ -172,13 +172,7 @@ export class ItemSocketExtension extends SheetExtension {
     );
   }
 
-  #isTabActive(sheet, partId) {
-    const node = sheet.element?.querySelector(
-      `[data-application-part="${partId}"]`
-    );
-    if (node?.classList.contains("active")) {
-      return true;
-    }
+  #isTabActive(sheet) {
     if (sheet.tabGroups?.primary === ItemSocketExtension.TAB_ID) {
       return true;
     }
