@@ -10,8 +10,6 @@ export class ModuleSettings {
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
   static SETTING_SOCKETABLE_ITEM_TYPES = "socketableItemTypes";
   static SETTING_SOCKETABLE_ITEM_TYPES_MENU = "socketableItemTypesSettings";
-  static SETTING_SUPPORT_CARD = "supportCardDisabled";
-  static SETTING_LAST_MODULE_VERSION = "lastModuleVersion";
   static SETTING_SUPPORT_MENU = "supportMenu";
   static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
   static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
@@ -23,8 +21,6 @@ export class ModuleSettings {
 
   async register() {
     this.#registerSupportMenu();
-    this.#registerSupportCardSetting();
-    this.#registerLastModuleVersionSetting();
     this.#registerEditSocketPermission();
     await this.#registerSocketableItemTypeSettings();
     this.#registerMaxSockets();
@@ -135,35 +131,6 @@ export class ModuleSettings {
 
   static shouldUseGemRollLayout() {
     return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT) ?? true;
-  }
-
-  static async suppressSupportCardOnModuleUpdate() {
-    if (!game.user?.isGM) {
-      return;
-    }
-
-    const module = game.modules?.get?.(Constants.MODULE_ID);
-    const currentVersion = String(module?.version ?? module?.data?.version ?? "").trim();
-    if (!currentVersion.length) {
-      return;
-    }
-
-    const lastVersion = String(
-      game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_LAST_MODULE_VERSION) ?? ""
-    ).trim();
-
-    const isUpdate = Boolean(lastVersion.length) && lastVersion !== currentVersion;
-    if (isUpdate) {
-      await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_CARD, true);
-    }
-
-    if (lastVersion !== currentVersion) {
-      await game.settings.set(
-        Constants.MODULE_ID,
-        ModuleSettings.SETTING_LAST_MODULE_VERSION,
-        currentVersion
-      );
-    }
   }
 
   static refreshOpenSheets({ item = true, actor = true } = {}) {
@@ -401,32 +368,6 @@ export class ModuleSettings {
 
     const normalized = key.toLowerCase().replace(/_/g, " ");
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-  }
-
-  #registerSupportCardSetting() {
-    const name = Constants.localize("SCSockets.Settings.SupportCard.Name", "Support Chat Card - disable");
-    const hint = Constants.localize(
-      "SCSockets.Settings.SupportCard.Hint",
-      "If enabled, the support chat card will not show on startup."
-    );
-
-    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_CARD, {
-      name,
-      hint,
-      scope: "world",
-      config: true,
-      type: Boolean,
-      default: false
-    });
-  }
-
-  #registerLastModuleVersionSetting() {
-    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_LAST_MODULE_VERSION, {
-      scope: "world",
-      config: false,
-      type: String,
-      default: ""
-    });
   }
 
   #registerSupportMenu() {

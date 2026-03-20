@@ -156,10 +156,6 @@
         "Name": "Gem damage layout in roll dialog",
         "Hint": "Enable the grouped-by-gem layout in the damage roll configuration dialog."
       },
-      "SupportCard": {
-        "Name": "Support chat card - disable",
-        "Hint": "If enabled, the support chat card will not show on startup."
-      },
       "SupportMenu": {
         "Name": "Support the developer",
         "Label": "Patreon support",
@@ -167,9 +163,13 @@
       }
     },
     "SupportCard": {
+      "Description": "Support my work and stay up to date with exclusive modules and development progress.",
       "Intro": "Support us on Patreon to help us keep creating.",
       "Exclusive": "Get access to the exclusive <strong>SC - More Gems</strong> module with 70+ gems and monthly updates. We are also building <strong>SC - Setforge</strong> so you can create item sets.",
+      "Issues": "Issues / Requests",
       "Link": "Patreon",
+      "PatreonModulesTitle": "Patreon modules",
+      "FreeModulesTitle": "Free modules",
       "Footer": "This chat card will only be shown once. Enable it again in the settings if needed."
     },
     "Notifications": {
