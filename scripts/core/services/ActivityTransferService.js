@@ -16,7 +16,7 @@ export class ActivityTransferService {
       return;
     }
 
-    const nextActivities = ActivityTransferService.#getActivityMap(hostItem);
+    const nextActivities = ActivityTransferService.#primeActivitySource(hostItem);
     const createdIds = [];
     const activityMeta = {};
     for (const activity of sourceActivities) {
@@ -76,6 +76,7 @@ export class ActivityTransferService {
       "system.activities": nextActivities,
       [flagPath]: flagPayload
     });
+    ActivityTransferService.#primeActivitySource(hostItem);
   }
 
   static async removeForSlot(hostItem, slotIndex) {
@@ -98,9 +99,10 @@ export class ActivityTransferService {
 
     if (!ids.size) return;
 
-    const nextActivities = ActivityTransferService.#getActivityMap(hostItem);
-    const updates = { [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`]: null };
+    const nextActivities = ActivityTransferService.#primeActivitySource(hostItem);
     const collection = hostItem.system?.activities;
+    let activitiesChanged = false;
+    const updates = { [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`]: null };
     for (const id of ids) {
       const hasActivity = Object.prototype.hasOwnProperty.call(nextActivities, id);
       if (!hasActivity && !collection?.has?.(id)) {
@@ -108,7 +110,10 @@ export class ActivityTransferService {
         continue;
       }
 
-      updates[`system.activities.-=${id}`] = null;
+      if (hasActivity) {
+        delete nextActivities[id];
+        activitiesChanged = true;
+      }
       const source = meta[id]?.sourceId;
       if (source) {
         const activity = collection.get?.(source);
@@ -121,6 +126,11 @@ export class ActivityTransferService {
         }
       }
     }
+
+    if (activitiesChanged) {
+      await ActivityTransferService.#replaceActivities(hostItem, nextActivities);
+    }
+
     await hostItem.update(updates);
   }
 
@@ -183,6 +193,21 @@ export class ActivityTransferService {
       Object.entries(foundry.utils.deepClone(activities))
         .filter(([, activity]) => ActivityTransferService.#isValidActivity(activity))
     );
+  }
+
+  static #primeActivitySource(item) {
+    const activities = ActivityTransferService.#getActivityMap(item);
+    if (item?.updateSource) {
+      item.updateSource({ "system.activities": activities });
+    }
+    return activities;
+  }
+
+  static async #replaceActivities(item, activities) {
+    const systemData = foundry.utils.deepClone(item?.toObject?.().system ?? {});
+    systemData.activities = foundry.utils.deepClone(activities ?? {});
+    await item.update({ system: systemData }, { diff: false, recursive: false });
+    ActivityTransferService.#primeActivitySource(item);
   }
 
   static #isValidActivity(activity) {
