@@ -4,6 +4,8 @@ import { DialogHelper } from "../helpers/DialogHelper.js";
 import { DragHelper } from "../helpers/DragHelper.js";
 import { SocketService } from "./services/SocketService.js";
 import { ModuleSettings } from "./settings/ModuleSettings.js";
+import { SocketGemSheetService } from "./services/SocketGemSheetService.js";
+import { buildSocketLayoutContext } from "./helpers/socketLayout.js";
 
 export class ItemSocketExtension extends SheetExtension {
   static TAB_ID = "sockets";
@@ -53,13 +55,12 @@ export class ItemSocketExtension extends SheetExtension {
     const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(sheet?.item);
     const item = sheet?.item ?? null;
     const sockets = SocketService.getSlots(item);
-    const context = {
+    const context = buildSocketLayoutContext(item, {
       editable,
       canManageSockets,
       canAddSocketSlot,
-      dataEditable: editable ? "true" : "false",
       sockets
-    };
+    });
 
     if (includePartId) {
       context.partId = partId;
@@ -149,6 +150,18 @@ export class ItemSocketExtension extends SheetExtension {
 
         await SocketService.removeGem(this.item, idx);
         this.sheet?.render();
+      },
+
+      async openGemFromSlot(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const idx = Number(target.dataset.index ?? target.closest("[data-index]")?.dataset.index);
+        if (!Number.isInteger(idx)) {
+          return;
+        }
+
+        await SocketGemSheetService.openFromHost(this.item, idx);
       }
     });
   }

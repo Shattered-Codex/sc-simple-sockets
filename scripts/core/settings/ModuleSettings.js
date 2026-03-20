@@ -3,11 +3,15 @@ import { SupportMenu } from "./SupportMenu.js";
 
 export class ModuleSettings {
   static #DISALLOWED_SOCKETABLE_TYPES = new Set(["container"]);
+  static #runtimeHooksRegistered = false;
+  static SOCKET_TAB_LAYOUT_LIST = "list";
+  static SOCKET_TAB_LAYOUT_GRID = "grid";
   static SETTING_GEM_BADGES = "gemBadgesEnabled";
   static SETTING_EDIT_SOCKET = "editSocketPermission";
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
+  static SETTING_SOCKET_TAB_LAYOUT = "socketTabLayout";
   static SETTING_SOCKETABLE_ITEM_TYPES = "socketableItemTypes";
   static SETTING_SOCKETABLE_ITEM_TYPES_MENU = "socketableItemTypesSettings";
   static SETTING_SUPPORT_MENU = "supportMenu";
@@ -20,12 +24,14 @@ export class ModuleSettings {
   }
 
   async register() {
+    ModuleSettings.#registerRuntimeHooks();
     this.#registerSupportMenu();
     this.#registerEditSocketPermission();
     await this.#registerSocketableItemTypeSettings();
     this.#registerMaxSockets();
     this.#registerDeleteOnRemoval();
     this.#registerGemRollLayoutSetting();
+    this.#registerSocketTabLayoutSetting();
     await this.#registerLootSubtypeSettings();
   }
 
@@ -133,9 +139,59 @@ export class ModuleSettings {
     return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT) ?? true;
   }
 
+  static getSocketTabLayout() {
+    const value = String(
+      game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_TAB_LAYOUT)
+      ?? ModuleSettings.SOCKET_TAB_LAYOUT_LIST
+    ).trim().toLowerCase();
+
+    if ([ModuleSettings.SOCKET_TAB_LAYOUT_LIST, ModuleSettings.SOCKET_TAB_LAYOUT_GRID].includes(value)) {
+      return value;
+    }
+
+    return ModuleSettings.SOCKET_TAB_LAYOUT_LIST;
+  }
+
+  static shouldUseSocketTabGridLayout() {
+    return ModuleSettings.getSocketTabLayout() === ModuleSettings.SOCKET_TAB_LAYOUT_GRID;
+  }
+
+  static #registerRuntimeHooks() {
+    if (ModuleSettings.#runtimeHooksRegistered) {
+      return;
+    }
+
+    Hooks.on("updateSetting", (setting) => {
+      if (setting?.key !== `${Constants.MODULE_ID}.${ModuleSettings.SETTING_SOCKET_TAB_LAYOUT}`) {
+        return;
+      }
+
+      ModuleSettings.refreshOpenSheets({ item: true, actor: false });
+    });
+
+    ModuleSettings.#runtimeHooksRegistered = true;
+  }
+
   static refreshOpenSheets({ item = true, actor = true } = {}) {
     const windows = Object.values(ui?.windows ?? {});
-    for (const app of windows) {
+    const applicationInstances = (() => {
+      const instances = foundry?.applications?.instances;
+      if (instances instanceof Map) {
+        return Array.from(instances.values());
+      }
+      if (Array.isArray(instances)) {
+        return instances;
+      }
+      if (instances && typeof instances === "object") {
+        return Object.values(instances);
+      }
+      return [];
+    })();
+
+    const seen = new Set();
+    for (const app of [...windows, ...applicationInstances]) {
+      if (!app || seen.has(app)) continue;
+      seen.add(app);
       if (!app?.rendered || typeof app.render !== "function") continue;
       const doc = app.document ?? app.object;
       const documentName = String(doc?.documentName ?? "").toLowerCase();
@@ -188,6 +244,36 @@ export class ModuleSettings {
         const { DamageRollGemLayout } = await import("../ui/DamageRollGemLayout.js");
         const mode = value ? "gem" : "type";
         DamageRollGemLayout.activate({ mode });
+      }
+    });
+  }
+
+  #registerSocketTabLayoutSetting() {
+    const name = Constants.localize("SCSockets.Settings.SocketTabLayout.Name", "Socket tab layout");
+    const hint = Constants.localize(
+      "SCSockets.Settings.SocketTabLayout.Hint",
+      "Choose how the sockets tab is displayed."
+    );
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_TAB_LAYOUT, {
+      name,
+      hint,
+      scope: "world",
+      config: true,
+      type: String,
+      choices: {
+        [ModuleSettings.SOCKET_TAB_LAYOUT_LIST]: Constants.localize(
+          "SCSockets.Settings.SocketTabLayout.Options.List",
+          "Default list"
+        ),
+        [ModuleSettings.SOCKET_TAB_LAYOUT_GRID]: Constants.localize(
+          "SCSockets.Settings.SocketTabLayout.Options.Grid",
+          "Grid"
+        )
+      },
+      default: ModuleSettings.SOCKET_TAB_LAYOUT_LIST,
+      onChange: () => {
+        ModuleSettings.refreshOpenSheets({ item: true, actor: false });
       }
     });
   }

@@ -5,6 +5,7 @@
     "ActionAdd": "Add",
     "ActionDelete": "Delete",
     "ActionRemoveGem": "Remove Gem",
+    "ActionOpenGem": "Open Gem",
     "EmptyList": "None",
     "SocketEmptyName": "Empty",
     "SocketEmptyTooltip": "Empty Slot",
@@ -14,6 +15,7 @@
       "OnlyGems": "Only socket-compatible items can be inserted.",
       "GemIncompatible": "That item is not compatible with this socket.",
       "GemUnsocketed": "Gem unsocketed.",
+      "CannotOpenGem": "Could not open the gem item.",
       "MaxReached": "Maximum number of sockets reached.",
       "GemRequiresSocket": "This gem must be socketed before it can be used.",
       "HostNotSocketable": "This item type cannot receive sockets."
@@ -155,6 +157,14 @@
       "GemRollLayout": {
         "Name": "Gem damage layout in roll dialog",
         "Hint": "Enable the grouped-by-gem layout in the damage roll configuration dialog."
+      },
+      "SocketTabLayout": {
+        "Name": "Socket tab layout",
+        "Hint": "Choose how the sockets tab is displayed.",
+        "Options": {
+          "List": "Default list",
+          "Grid": "Grid"
+        }
       },
       "SupportMenu": {
         "Name": "Support the developer",
