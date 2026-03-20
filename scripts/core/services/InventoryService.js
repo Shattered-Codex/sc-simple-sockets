@@ -2,6 +2,8 @@ import { Constants } from "../Constants.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 
 export class InventoryService {
+  static #ASCENDANT_ITEMS_MODULE_ID = "sc-ascendant-items";
+
   static #STACK_COMPARE_EXCLUDES = new Set([
     "_id",
     "_stats",
@@ -50,6 +52,10 @@ export class InventoryService {
   }
 
   static #canStackWithPayload(item, payload) {
+    if (InventoryService.#hasAscendantItemState(item) || InventoryService.#hasAscendantItemState(payload)) {
+      return false;
+    }
+
     const getProperty = foundry?.utils?.getProperty;
     const itemSourceId = typeof getProperty === "function"
       ? getProperty(item, "flags.core.sourceId")
@@ -73,6 +79,23 @@ export class InventoryService {
   static #buildStackFingerprint(source) {
     const normalized = InventoryService.#normalizeForStack(source, []);
     return JSON.stringify(normalized);
+  }
+
+  static #hasAscendantItemState(source) {
+    const getProperty = foundry?.utils?.getProperty;
+    const moduleId = InventoryService.#ASCENDANT_ITEMS_MODULE_ID;
+    const explicitEnabled = typeof getProperty === "function"
+      ? getProperty(source, `flags.${moduleId}.enabled`)
+      : source?.flags?.[moduleId]?.enabled;
+    const storedData = typeof getProperty === "function"
+      ? getProperty(source, `flags.${moduleId}.data`)
+      : source?.flags?.[moduleId]?.data;
+
+    if (typeof explicitEnabled === "boolean") {
+      return true;
+    }
+
+    return Boolean(storedData && typeof storedData === "object" && Object.keys(storedData).length);
   }
 
   static #normalizeForStack(value, path) {

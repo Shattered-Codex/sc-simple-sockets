@@ -1,4 +1,6 @@
-<section class="tidy-table sc-sockets-tidy" data-sc-sockets="tab" data-tidy-sheet-part="item-table" data-tidy-section-key="sc-sockets" data-sc-expanded="true">
+<section class="tidy-table sc-sockets-tidy sc-sockets-view {{socketTabLayoutClass}}" data-sc-sockets="tab"
+  data-tidy-sheet-part="item-table" data-tidy-section-key="sc-sockets" data-sc-expanded="true"
+  data-sc-sockets-layout="{{socketTabVariant}}">
   <header class="tidy-table-header-row theme-dark toggleable" data-tidy-sheet-part="table-header-row">
     <div class="tidy-table-header-cell header-label-cell primary" data-tidy-sheet-part="table-header-cell">
       <div class="button expand-button expanded" aria-hidden="true">
@@ -22,9 +24,53 @@
 
   <div class="expandable sc-sockets-expandable expanded">
     <div class="expandable-child-animation-wrapper">
-      <div class="item-table-body">
+      <div class="item-table-body sc-sockets-collection">
         {{#if sockets.length}}
-          {{#each sockets as |slot i|}}
+          {{#if useSocketGridLayout}}
+            {{#each sockets as |slot|}}
+            <div class="tidy-table-row-container socket sc-sockets-slot-card sc-sockets-slot-card--icon-only" data-index="{{slot.index}}"
+              data-dropzone="socket-slot" aria-hidden="false">
+              <div class="tidy-table-row tidy-table-row-v2 sc-sockets-slot-shell" data-tidy-table-row=""
+                data-tidy-sheet-part="table-row">
+                <div class="tidy-table-cell primary socket-name sc-sockets-slot-main" data-tidy-sheet-part="table-cell">
+                  <div class="sc-sockets-slot-visual" aria-label="{{slot.name}}">
+                    <img class="item-image sc-sockets-slot-frame" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+                    {{#if slot.hasGem}}
+                    <a class="sc-sockets-slot-link" data-action="openGemFromSlot" data-index="{{slot.index}}"
+                      draggable="false" aria-label="{{slot.gemName}}">
+                      <img class="item-image sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
+                    </a>
+                    {{/if}}
+                  </div>
+                </div>
+
+                <div class="tidy-table-cell tidy-table-actions sc-sockets-slot-actions" data-tidy-sheet-part="table-cell">
+                  {{#if slot.hasGem}}
+                    {{#if ../editable}}
+                    <a class="tidy-table-button sc-sockets-slot-action sc-sockets-slot-action--remove-gem"
+                       data-action="removeGemFromSlot"
+                       data-index="{{slot.index}}"
+                       data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
+                       aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}">
+                      <i class="fas fa-trash-can"></i>
+                    </a>
+                    {{/if}}
+                  {{/if}}
+                  {{#if ../canManageSockets}}
+                    <a class="tidy-table-button sc-sockets-slot-action sc-sockets-slot-action--remove-slot"
+                       data-action="removeSocketSlot"
+                       data-index="{{slot.index}}"
+                       data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"
+                       aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}">
+                      <i class="fas fa-circle-xmark"></i>
+                    </a>
+                  {{/if}}
+                </div>
+              </div>
+            </div>
+            {{/each}}
+          {{else}}
+            {{#each sockets as |slot i|}}
             <div class="tidy-table-row-container socket" data-index="{{i}}" data-dropzone="socket-slot" aria-hidden="false">
               <div class="tidy-table-row tidy-table-row-v2" data-tidy-table-row="" data-tidy-sheet-part="table-row">
                 <div class="tidy-table-cell primary" data-tidy-sheet-part="table-cell">
@@ -60,12 +106,13 @@
                 </div>
               </div>
             </div>
-          {{/each}}
+            {{/each}}
+          {{/if}}
         {{else}}
-          <div class="tidy-table-row-container socket empty">
-            <div class="tidy-table-row tidy-table-row-v2">
+          <div class="tidy-table-row-container socket empty sc-sockets-slot-card">
+            <div class="tidy-table-row tidy-table-row-v2 sc-sockets-slot-shell">
               <div class="tidy-table-cell" data-tidy-sheet-part="table-cell" colspan="2">
-                <div class="sc-sockets-tidy__empty"
+                <div class="sc-sockets-tidy__empty sc-sockets-empty-state"
                      data-dropzone="socket-slot"
                      aria-dropeffect="copy">
                   {{ localize "SCSockets.EmptyList" }}

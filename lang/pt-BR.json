@@ -5,6 +5,7 @@
     "ActionAdd": "Adicionar",
     "ActionDelete": "Excluir",
     "ActionRemoveGem": "Remover gema",
+    "ActionOpenGem": "Abrir gema",
     "EmptyList": "Nenhum",
     "SocketEmptyName": "Vazio",
     "SocketEmptyTooltip": "Slot vazio",
@@ -14,6 +15,7 @@
       "OnlyGems": "Somente itens compatíveis com soquetes podem ser encaixados.",
       "GemIncompatible": "Esse item não é compatível com este soquete.",
       "GemUnsocketed": "Gema removida do soquete.",
+      "CannotOpenGem": "Não foi possível abrir o item da gema.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada.",
       "HostNotSocketable": "Este tipo de item não pode receber soquetes."
@@ -156,9 +158,13 @@
         "Name": "Layout de dano das gemas no diálogo",
         "Hint": "Ative o layout agrupado por gema no diálogo de configuração de dano."
       },
-      "SupportCard": {
-        "Name": "Card de apoio - desativar",
-        "Hint": "Se ativado, o card de apoio não aparecerá na inicialização."
+      "SocketTabLayout": {
+        "Name": "Layout da aba de soquetes",
+        "Hint": "Escolha como a aba de soquetes será exibida.",
+        "Options": {
+          "List": "Lista padrão",
+          "Grid": "Grade"
+        }
       },
       "SupportMenu": {
         "Name": "Apoie o desenvolvedor",
@@ -167,9 +173,13 @@
       }
     },
     "SupportCard": {
+      "Description": "Apoie meu trabalho e acompanhe módulos exclusivos e o progresso do desenvolvimento.",
       "Intro": "Apoie-nos no Patreon para continuarmos criando.",
       "Exclusive": "Tenha acesso ao módulo exclusivo <strong>SC - More Gems</strong> com mais de 70 gemas e atualizações mensais. Também estamos criando o <strong>SC - Setforge</strong> para você montar sets de itens.",
+      "Issues": "Issues / Sugestões",
       "Link": "Patreon",
+      "PatreonModulesTitle": "Módulos do Patreon",
+      "FreeModulesTitle": "Módulos gratuitos",
       "Footer": "Este card do chat será exibido apenas uma vez. Reative nas configurações se precisar."
     }
   },

@@ -11,6 +11,8 @@ import { SocketService } from "../services/SocketService.js";
 import { DialogHelper } from "../../helpers/DialogHelper.js";
 import { ActorGemBadges } from "../ui/ActorGemBadges.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
+import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
+import { buildSocketLayoutContext } from "../helpers/socketLayout.js";
 
 /**
  * Handles registering integrations with the Tidy5e sheet module when available.
@@ -467,13 +469,12 @@ export class TidyIntegration {
     const canManageSockets = editable && ModuleSettings.canAddOrRemoveSocket(game.user);
     const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(item);
 
-    return {
+    return buildSocketLayoutContext(item, {
       editable,
       canManageSockets,
       canAddSocketSlot,
-      dataEditable: editable ? "true" : "false",
       sockets: SocketService.getSlots(item)
-    };
+    });
   }
 
   static #onSocketTabRender(params) {
@@ -529,6 +530,9 @@ export class TidyIntegration {
         case "removeGemFromSlot":
           await TidyIntegration.#handleRemoveGem(event, target, sheet);
           break;
+        case "openGemFromSlot":
+          await TidyIntegration.#handleOpenGem(event, target, sheet);
+          break;
         default:
           break;
       }
@@ -579,6 +583,18 @@ export class TidyIntegration {
 
     await SocketService.removeGem(sheet.item, idx);
     sheet.render();
+  }
+
+  static async #handleOpenGem(event, target, sheet) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const idx = TidyIntegration.#resolveIndex(target);
+    if (idx === null) {
+      return;
+    }
+
+    await SocketGemSheetService.openFromHost(sheet.item, idx);
   }
 
   static #resolveIndex(target) {

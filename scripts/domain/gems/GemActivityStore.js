@@ -12,18 +12,18 @@ export class GemActivityStore {
 
   static async stash(item) {
     if (!item) return;
-    const { activities, uses } = item.system ?? {};
+    const source = item.toObject();
+    const activities = GemActivityStore.#sanitizeActivities(source.system?.activities);
     if (!GemActivityStore.#hasEntries(activities)) {
       const existing = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_ACTIVITY_STASH);
-      if (!existing) {
+      if (existing) {
         await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_ACTIVITY_STASH);
       }
       return;
     }
 
-    const source = item.toObject();
     const payload = {
-      activities: foundry.utils.deepClone(source.system?.activities ?? {}),
+      activities,
       uses: foundry.utils.deepClone(source.system?.uses ?? {})
     };
     await item.setFlag(Constants.MODULE_ID, Constants.FLAG_ACTIVITY_STASH, payload);
@@ -36,11 +36,17 @@ export class GemActivityStore {
       return;
     }
 
-    const update = { "system.activities": {} };
+    const update = {};
+    for (const activity of item.system?.activities ?? []) {
+      if (!activity?.id) continue;
+      update[`system.activities.-=${activity.id}`] = null;
+    }
     if (payload?.uses) {
       update["system.uses"] = GemActivityStore.#RESET_USES;
     }
-    await item.update(update);
+    if (Object.keys(update).length) {
+      await item.update(update);
+    }
   }
 
   static async restore(item, { clearAfter = true } = {}) {
@@ -49,8 +55,9 @@ export class GemActivityStore {
     if (!payload) return;
 
     const update = {};
-    if (GemActivityStore.#hasEntries(payload.activities)) {
-      update["system.activities"] = payload.activities;
+    const activities = GemActivityStore.#sanitizeActivities(payload.activities);
+    if (GemActivityStore.#hasEntries(activities)) {
+      update["system.activities"] = activities;
     }
     if (payload.uses) {
       update["system.uses"] = payload.uses;
@@ -71,5 +78,20 @@ export class GemActivityStore {
     if (Array.isArray(collection)) return collection.length > 0;
     if (typeof collection === "object") return Object.keys(collection).length > 0;
     return false;
+  }
+
+  static #sanitizeActivities(activities) {
+    if (!activities || typeof activities !== "object" || Array.isArray(activities)) {
+      return {};
+    }
+
+    return Object.fromEntries(
+      Object.entries(foundry.utils.deepClone(activities)).filter(([, activity]) => (
+        activity
+        && typeof activity === "object"
+        && typeof activity.type === "string"
+        && activity.type.length
+      ))
+    );
   }
 }

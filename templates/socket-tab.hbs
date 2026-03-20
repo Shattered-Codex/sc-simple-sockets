@@ -1,10 +1,10 @@
-<section class="sockets tab {{tab.cssClass}}" data-tab="{{tab.id}}" data-group="{{tab.group}}"
-  data-application-part="{{partId}}">
+<section class="sockets tab sc-sockets-tab sc-sockets-view {{socketTabLayoutClass}} {{tab.cssClass}}" data-tab="{{tab.id}}"
+  data-group="{{tab.group}}" data-application-part="{{partId}}" data-sc-sockets-layout="{{socketTabVariant}}">
 
-  <section class="items-list sockets-list" data-item-list="sockets">
-    <div class="items-section card" data-socket-type="default">
+  <section class="items-list sockets-list sc-sockets-list" data-item-list="sockets">
+    <div class="items-section card sc-sockets-panel" data-socket-type="default">
 
-      <div class="items-header header">
+      <div class="items-header header sc-sockets-header">
         <h3 class="item-name socket-name">{{ localize "SCSockets.TabLabel" }}</h3>
         <div class="item-header socket-source">{{ localize "SCSockets.ColumnSlot" }}</div>
         <div class="item-header item-controls socket-controls">
@@ -18,53 +18,95 @@
       </div>
 
       {{#if sockets.length}}
-      <ol class="item-list unlist">
-        {{#each sockets as |slot i|}}
-        <li class="item flexrow socket-row" data-index="{{i}}" data-dropzone="socket-slot" aria-dropeffect="copy"
-          tabindex="0" role="button">
+        {{#if useSocketGridLayout}}
+        <ol class="item-list unlist sc-sockets-collection">
+          {{#each sockets as |slot|}}
+          <li class="item socket-row sc-sockets-slot-card sc-sockets-slot-card--icon-only" data-index="{{slot.index}}" data-dropzone="socket-slot"
+            aria-dropeffect="copy">
 
-          <!-- Column 1: name/icon -->
-          <div class="item-name socket-name">
-            <img class="item-image socket-icon" src="{{slot.img}}" alt="{{slot.name}}">
-            <div class="name name-stacked">
-              <span class="title">{{slot.name}}</span>
+            <div class="item-name socket-name sc-sockets-slot-main">
+              <div class="sc-sockets-slot-visual" aria-label="{{slot.name}}">
+                <img class="item-image socket-icon sc-sockets-slot-frame" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+                {{#if slot.hasGem}}
+                <a class="sc-sockets-slot-link" data-action="openGemFromSlot" data-index="{{slot.index}}"
+                  draggable="false" aria-label="{{slot.gemName}}">
+                  <img class="item-image socket-icon sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
+                </a>
+                {{/if}}
+              </div>
             </div>
-          </div>
 
-          <!-- Column 2: source -->
-          <div class="item-detail socket-source {{#unless slot.gem}}empty{{/unless}}">
-            {{#if slot.gem}}
-            {{slot.gem.name}}
-            {{else}}
-            &ndash;
-            {{/if}}
-          </div>
+            <div class="item-detail item-controls socket-controls sc-sockets-slot-actions">
+              {{#if slot.hasGem}}
+                {{#if ../editable}}
+                <a class="socket-control item-control sc-sockets-slot-action sc-sockets-slot-action--remove-gem"
+                  data-action="removeGemFromSlot" data-index="{{slot.index}}"
+                  aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}"
+                  data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
+                  data-tooltip-direction="LEFT">
+                  <i class="fas fa-trash-can"></i>
+                </a>
+                {{/if}}
+              {{/if}}
+              {{#if ../canManageSockets}}
+              <a class="socket-control item-control sc-sockets-slot-action sc-sockets-slot-action--remove-slot"
+                data-action="removeSocketSlot" data-index="{{slot.index}}" data-tooltip
+                aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}"
+                data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"
+                data-tooltip-direction="LEFT">
+                <i class="fas fa-circle-xmark"></i>
+              </a>
+              {{/if}}
+            </div>
+          </li>
+          {{/each}}
+        </ol>
+        {{else}}
+        <ol class="item-list unlist">
+          {{#each sockets as |slot i|}}
+          <li class="item flexrow socket-row" data-index="{{i}}" data-dropzone="socket-slot" aria-dropeffect="copy"
+            tabindex="0" role="button">
 
-          <!-- Column 3: controls -->
-          <div class="item-detail item-controls socket-controls">
-            {{#if ../editable}}
-            <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{i}}"
-              aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}"
-              data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
-              data-tooltip-direction="LEFT">
-              <i class="fas fa-circle-xmark"></i>
-            </a>
-            {{/if}}
-            {{#if ../canManageSockets}}
-            <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{i}}" data-tooltip
-              aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}"
-              data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"
-              data-tooltip-direction="LEFT">
-              <i class="fas fa-trash"></i>
-            </a>
-            {{/if}}
-          </div>
-        </li>
-        {{/each}}
-      </ol>
+            <div class="item-name socket-name">
+              <img class="item-image socket-icon" src="{{slot.img}}" alt="{{slot.name}}">
+              <div class="name name-stacked">
+                <span class="title">{{slot.name}}</span>
+              </div>
+            </div>
+
+            <div class="item-detail socket-source {{#unless slot.gem}}empty{{/unless}}">
+              {{#if slot.gem}}
+              {{slot.gem.name}}
+              {{else}}
+              &ndash;
+              {{/if}}
+            </div>
+
+            <div class="item-detail item-controls socket-controls">
+              {{#if ../editable}}
+              <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{i}}"
+                aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}"
+                data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
+                data-tooltip-direction="LEFT">
+                <i class="fas fa-circle-xmark"></i>
+              </a>
+              {{/if}}
+              {{#if ../canManageSockets}}
+              <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{i}}" data-tooltip
+                aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}"
+                data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"
+                data-tooltip-direction="LEFT">
+                <i class="fas fa-trash"></i>
+              </a>
+              {{/if}}
+            </div>
+          </li>
+          {{/each}}
+        </ol>
+        {{/if}}
       {{else}}
-      <ol class="item-list unlist">
-        <li class="notification info" data-dropzone="socket-slot" aria-dropeffect="copy">
+      <ol class="item-list unlist sc-sockets-collection">
+        <li class="notification info sc-sockets-empty-state" data-dropzone="socket-slot" aria-dropeffect="copy">
           {{ localize "SCSockets.EmptyList" }}
         </li>
       </ol>

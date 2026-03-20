@@ -3,15 +3,17 @@ import { SupportMenu } from "./SupportMenu.js";
 
 export class ModuleSettings {
   static #DISALLOWED_SOCKETABLE_TYPES = new Set(["container"]);
+  static #runtimeHooksRegistered = false;
+  static SOCKET_TAB_LAYOUT_LIST = "list";
+  static SOCKET_TAB_LAYOUT_GRID = "grid";
   static SETTING_GEM_BADGES = "gemBadgesEnabled";
   static SETTING_EDIT_SOCKET = "editSocketPermission";
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
+  static SETTING_SOCKET_TAB_LAYOUT = "socketTabLayout";
   static SETTING_SOCKETABLE_ITEM_TYPES = "socketableItemTypes";
   static SETTING_SOCKETABLE_ITEM_TYPES_MENU = "socketableItemTypesSettings";
-  static SETTING_SUPPORT_CARD = "supportCardDisabled";
-  static SETTING_LAST_MODULE_VERSION = "lastModuleVersion";
   static SETTING_SUPPORT_MENU = "supportMenu";
   static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
   static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
@@ -22,14 +24,14 @@ export class ModuleSettings {
   }
 
   async register() {
+    ModuleSettings.#registerRuntimeHooks();
     this.#registerSupportMenu();
-    this.#registerSupportCardSetting();
-    this.#registerLastModuleVersionSetting();
     this.#registerEditSocketPermission();
     await this.#registerSocketableItemTypeSettings();
     this.#registerMaxSockets();
     this.#registerDeleteOnRemoval();
     this.#registerGemRollLayoutSetting();
+    this.#registerSocketTabLayoutSetting();
     await this.#registerLootSubtypeSettings();
   }
 
@@ -137,38 +139,59 @@ export class ModuleSettings {
     return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT) ?? true;
   }
 
-  static async suppressSupportCardOnModuleUpdate() {
-    if (!game.user?.isGM) {
+  static getSocketTabLayout() {
+    const value = String(
+      game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_TAB_LAYOUT)
+      ?? ModuleSettings.SOCKET_TAB_LAYOUT_LIST
+    ).trim().toLowerCase();
+
+    if ([ModuleSettings.SOCKET_TAB_LAYOUT_LIST, ModuleSettings.SOCKET_TAB_LAYOUT_GRID].includes(value)) {
+      return value;
+    }
+
+    return ModuleSettings.SOCKET_TAB_LAYOUT_LIST;
+  }
+
+  static shouldUseSocketTabGridLayout() {
+    return ModuleSettings.getSocketTabLayout() === ModuleSettings.SOCKET_TAB_LAYOUT_GRID;
+  }
+
+  static #registerRuntimeHooks() {
+    if (ModuleSettings.#runtimeHooksRegistered) {
       return;
     }
 
-    const module = game.modules?.get?.(Constants.MODULE_ID);
-    const currentVersion = String(module?.version ?? module?.data?.version ?? "").trim();
-    if (!currentVersion.length) {
-      return;
-    }
+    Hooks.on("updateSetting", (setting) => {
+      if (setting?.key !== `${Constants.MODULE_ID}.${ModuleSettings.SETTING_SOCKET_TAB_LAYOUT}`) {
+        return;
+      }
 
-    const lastVersion = String(
-      game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_LAST_MODULE_VERSION) ?? ""
-    ).trim();
+      ModuleSettings.refreshOpenSheets({ item: true, actor: false });
+    });
 
-    const isUpdate = Boolean(lastVersion.length) && lastVersion !== currentVersion;
-    if (isUpdate) {
-      await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_CARD, true);
-    }
-
-    if (lastVersion !== currentVersion) {
-      await game.settings.set(
-        Constants.MODULE_ID,
-        ModuleSettings.SETTING_LAST_MODULE_VERSION,
-        currentVersion
-      );
-    }
+    ModuleSettings.#runtimeHooksRegistered = true;
   }
 
   static refreshOpenSheets({ item = true, actor = true } = {}) {
     const windows = Object.values(ui?.windows ?? {});
-    for (const app of windows) {
+    const applicationInstances = (() => {
+      const instances = foundry?.applications?.instances;
+      if (instances instanceof Map) {
+        return Array.from(instances.values());
+      }
+      if (Array.isArray(instances)) {
+        return instances;
+      }
+      if (instances && typeof instances === "object") {
+        return Object.values(instances);
+      }
+      return [];
+    })();
+
+    const seen = new Set();
+    for (const app of [...windows, ...applicationInstances]) {
+      if (!app || seen.has(app)) continue;
+      seen.add(app);
       if (!app?.rendered || typeof app.render !== "function") continue;
       const doc = app.document ?? app.object;
       const documentName = String(doc?.documentName ?? "").toLowerCase();
@@ -221,6 +244,36 @@ export class ModuleSettings {
         const { DamageRollGemLayout } = await import("../ui/DamageRollGemLayout.js");
         const mode = value ? "gem" : "type";
         DamageRollGemLayout.activate({ mode });
+      }
+    });
+  }
+
+  #registerSocketTabLayoutSetting() {
+    const name = Constants.localize("SCSockets.Settings.SocketTabLayout.Name", "Socket tab layout");
+    const hint = Constants.localize(
+      "SCSockets.Settings.SocketTabLayout.Hint",
+      "Choose how the sockets tab is displayed."
+    );
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_TAB_LAYOUT, {
+      name,
+      hint,
+      scope: "world",
+      config: true,
+      type: String,
+      choices: {
+        [ModuleSettings.SOCKET_TAB_LAYOUT_LIST]: Constants.localize(
+          "SCSockets.Settings.SocketTabLayout.Options.List",
+          "Default list"
+        ),
+        [ModuleSettings.SOCKET_TAB_LAYOUT_GRID]: Constants.localize(
+          "SCSockets.Settings.SocketTabLayout.Options.Grid",
+          "Grid"
+        )
+      },
+      default: ModuleSettings.SOCKET_TAB_LAYOUT_LIST,
+      onChange: () => {
+        ModuleSettings.refreshOpenSheets({ item: true, actor: false });
       }
     });
   }
@@ -401,32 +454,6 @@ export class ModuleSettings {
 
     const normalized = key.toLowerCase().replace(/_/g, " ");
     return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-  }
-
-  #registerSupportCardSetting() {
-    const name = Constants.localize("SCSockets.Settings.SupportCard.Name", "Support Chat Card - disable");
-    const hint = Constants.localize(
-      "SCSockets.Settings.SupportCard.Hint",
-      "If enabled, the support chat card will not show on startup."
-    );
-
-    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_CARD, {
-      name,
-      hint,
-      scope: "world",
-      config: true,
-      type: Boolean,
-      default: false
-    });
-  }
-
-  #registerLastModuleVersionSetting() {
-    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_LAST_MODULE_VERSION, {
-      scope: "world",
-      config: false,
-      type: String,
-      default: ""
-    });
   }
 
   #registerSupportMenu() {

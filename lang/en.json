@@ -5,6 +5,7 @@
     "ActionAdd": "Add",
     "ActionDelete": "Delete",
     "ActionRemoveGem": "Remove Gem",
+    "ActionOpenGem": "Open Gem",
     "EmptyList": "None",
     "SocketEmptyName": "Empty",
     "SocketEmptyTooltip": "Empty Slot",
@@ -14,6 +15,7 @@
       "OnlyGems": "Only socket-compatible items can be inserted.",
       "GemIncompatible": "That item is not compatible with this socket.",
       "GemUnsocketed": "Gem unsocketed.",
+      "CannotOpenGem": "Could not open the gem item.",
       "MaxReached": "Maximum number of sockets reached.",
       "GemRequiresSocket": "This gem must be socketed before it can be used.",
       "HostNotSocketable": "This item type cannot receive sockets."
@@ -156,9 +158,13 @@
         "Name": "Gem damage layout in roll dialog",
         "Hint": "Enable the grouped-by-gem layout in the damage roll configuration dialog."
       },
-      "SupportCard": {
-        "Name": "Support chat card - disable",
-        "Hint": "If enabled, the support chat card will not show on startup."
+      "SocketTabLayout": {
+        "Name": "Socket tab layout",
+        "Hint": "Choose how the sockets tab is displayed.",
+        "Options": {
+          "List": "Default list",
+          "Grid": "Grid"
+        }
       },
       "SupportMenu": {
         "Name": "Support the developer",
@@ -167,9 +173,13 @@
       }
     },
     "SupportCard": {
+      "Description": "Support my work and stay up to date with exclusive modules and development progress.",
       "Intro": "Support us on Patreon to help us keep creating.",
       "Exclusive": "Get access to the exclusive <strong>SC - More Gems</strong> module with 70+ gems and monthly updates. We are also building <strong>SC - Setforge</strong> so you can create item sets.",
+      "Issues": "Issues / Requests",
       "Link": "Patreon",
+      "PatreonModulesTitle": "Patreon modules",
+      "FreeModulesTitle": "Free modules",
       "Footer": "This chat card will only be shown once. Enable it again in the settings if needed."
     },
     "Notifications": {

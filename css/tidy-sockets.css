@@ -2,6 +2,45 @@
   position: relative;
 }
 
+.sc-sockets-view {
+  --sc-sockets-slot-icon-size: 2.5rem;
+  --sc-sockets-slot-radius: 8px;
+}
+
+.sc-sockets-slot-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sc-sockets-slot-icon-size);
+  height: var(--sc-sockets-slot-icon-size);
+  flex: 0 0 var(--sc-sockets-slot-icon-size);
+  border-radius: var(--sc-sockets-slot-radius);
+  overflow: hidden;
+}
+
+.sc-sockets-slot-link.content-link,
+.sc-sockets-slot-name-link.content-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: none;
+}
+
+.sc-sockets-slot-link.content-link:hover,
+.sc-sockets-slot-name-link.content-link:hover {
+  text-decoration: none;
+}
+
+.sc-sockets-slot-link .item-image,
+.sc-sockets-slot-link--static .item-image {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
 .sc-sockets-tidy .socket-icon-wrapper {
   display: inline-flex;
   align-items: center;
@@ -16,6 +55,11 @@
   height: 100%;
   border-radius: 4px;
   object-fit: cover;
+}
+
+.sc-sockets-tidy .socket-icon-wrapper .sc-sockets-slot-link {
+  width: 100%;
+  height: 100%;
 }
 
 .sc-sockets-tidy .tidy-table-cell.primary .item-name {
@@ -76,4 +120,310 @@
 
 .sc-sockets-tidy__empty {
   margin: 0.5rem auto;
+}
+
+.sc-sockets-empty-state {
+  grid-column: 1 / -1;
+}
+
+.sc-sockets-slot-source .content-link {
+  color: inherit;
+}
+
+.sc-sockets-slot-source.empty {
+  color: var(--color-text-muted, rgba(0, 0, 0, 0.6));
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] {
+  --sc-sockets-slot-icon-size: 4.5rem;
+  --sc-sockets-slot-radius: 18px;
+  --sc-sockets-cauldron-surface: linear-gradient(180deg, rgba(62, 37, 20, 0.98), rgba(27, 17, 11, 0.98));
+  --sc-sockets-cauldron-border: rgba(222, 177, 103, 0.34);
+  --sc-sockets-cauldron-glow: rgba(246, 196, 104, 0.16);
+  --sc-sockets-cauldron-text: rgba(248, 234, 204, 0.96);
+  --sc-sockets-cauldron-muted: rgba(227, 198, 148, 0.72);
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-collection,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-collection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0.5rem 0 0;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tab .sc-sockets-slot-card,
+.sc-sockets-tab[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-card,
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-card,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-card {
+  position: relative;
+  width: 5.25rem;
+  min-width: 5.25rem;
+  min-height: 5.25rem;
+  height: 5.25rem;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tab .sc-sockets-slot-card,
+.sc-sockets-tab[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-card {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-shell,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-shell {
+  position: relative;
+  display: block;
+  min-height: 5.25rem;
+  height: 5.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-main,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-main {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tab .sc-sockets-slot-main .name,
+.sc-sockets-tab[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-main .name,
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-main .item-name,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-main .item-name {
+  display: none;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-main .cell-text,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-main .cell-text {
+  display: none;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .tidy-table-row-container.socket .tidy-table-row,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .tidy-table-row-container.socket .tidy-table-row {
+  display: block;
+  grid-template-columns: none;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .tidy-table-row-container.socket .tidy-table-row > .tidy-table-cell.primary,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .tidy-table-row-container.socket .tidy-table-row > .tidy-table-cell.primary {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-visual,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-visual {
+  position: relative;
+  width: 4.5rem;
+  height: 4.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tidy5e-sheet.quadrone .sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .tidy-table-row .item-image.sc-sockets-slot-frame {
+  width: 4.5rem !important;
+  height: 4.5rem !important;
+  min-width: 4.5rem !important;
+  min-height: 4.5rem !important;
+  max-width: 4.5rem !important;
+  max-height: 4.5rem !important;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-frame,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-frame {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-link,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-link {
+  position: absolute;
+  inset: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-gem,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-gem {
+  width: 3.1rem;
+  height: 3.1rem;
+  object-fit: cover;
+  border-radius: 0.85rem;
+  margin: 0;
+}
+
+.tidy5e-sheet.quadrone .sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .tidy-table-row .item-image.sc-sockets-slot-gem {
+  width: 3.1rem !important;
+  height: 3.1rem !important;
+  min-width: 3.1rem !important;
+  min-height: 3.1rem !important;
+  max-width: 3.1rem !important;
+  max-height: 3.1rem !important;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-link.content-link,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-link.content-link,
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-link[data-action="openGemFromSlot"],
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-link[data-action="openGemFromSlot"] {
+  transition: none;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-link.content-link:hover,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-link.content-link:hover,
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-link[data-action="openGemFromSlot"]:hover,
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-link[data-action="openGemFromSlot"]:focus-visible,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-link[data-action="openGemFromSlot"]:hover,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-link[data-action="openGemFromSlot"]:focus-visible {
+  transform: none;
+  border-color: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-source,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-source {
+  display: none;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-name-link,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-name-link {
+  color: inherit;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-actions,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-actions {
+  position: static;
+  display: contents;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .tidy-table-row-container.socket .tidy-table-row > .tidy-table-cell.tidy-table-actions,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .tidy-table-row-container.socket .tidy-table-row > .tidy-table-cell.tidy-table-actions {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-action,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action {
+  position: absolute;
+  z-index: 1;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action {
+  position: absolute !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(151, 161, 184, 0.88);
+  box-shadow: none;
+  pointer-events: auto;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action:hover,
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action:focus-visible,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action:hover,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action:focus-visible {
+  color: rgba(214, 221, 236, 0.98);
+  background: transparent;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action i,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action i {
+  font-size: 0.82rem;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-action--remove-gem,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--remove-gem {
+  top: 0.05rem;
+  right: -0.05rem;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action--remove-gem,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--remove-gem {
+  top: 0.05rem !important;
+  right: -0.05rem !important;
+  bottom: auto !important;
+  left: auto !important;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-action--remove-slot,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--remove-slot {
+  right: -0.05rem;
+  bottom: 0.05rem;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action--remove-slot,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--remove-slot {
+  top: auto !important;
+  right: -0.05rem !important;
+  bottom: 0.05rem !important;
+  left: auto !important;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-empty-state,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-empty-state {
+  width: 100%;
+  border: 1px dashed rgba(224, 184, 104, 0.35);
+  border-radius: 18px;
+  padding: 1.25rem;
+  text-align: center;
+  font-style: italic;
+  color: var(--sc-sockets-cauldron-muted);
+  background:
+    radial-gradient(circle at top, rgba(255, 220, 153, 0.08), transparent 58%),
+    rgba(45, 27, 16, 0.72);
+}
+
+@media (max-width: 680px) {
+  .sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-collection,
+  .sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-collection {
+    gap: 0.55rem;
+  }
 }
