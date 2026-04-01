@@ -47,14 +47,24 @@
         <p class="notes">{{strings.conditionHint}}</p>
       </div>
 
-      <label class="socket-slot-config-field">
-        <textarea
-          name="slotConfig.condition"
-          class="sc-sockets-settings-control socket-slot-config-code"
-          rows="10"
-          placeholder="{{strings.conditionPlaceholder}}"
-          {{#unless editable}}disabled{{/unless}}>{{condition}}</textarea>
-      </label>
+      <div class="socket-slot-config-field socket-slot-config-field--code">
+        {{#if editable}}
+          <code-mirror
+            name="slotConfig.condition"
+            language="javascript"
+            indent="2"
+            class="socket-slot-config-code"
+            aria-label="{{strings.conditionLabel}}"
+          >{{condition}}</code-mirror>
+        {{else}}
+          <textarea
+            name="slotConfig.condition"
+            class="sc-sockets-settings-control socket-slot-config-code socket-slot-config-code--readonly"
+            rows="10"
+            placeholder="{{strings.conditionPlaceholder}}"
+            disabled>{{condition}}</textarea>
+        {{/if}}
+      </div>
     </div>
 
     <div class="sc-sockets-settings-card sc-sockets-settings-section-card">

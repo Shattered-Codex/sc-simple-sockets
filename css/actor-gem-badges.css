@@ -654,7 +654,7 @@ body.sc-sockets-target-cursor * {
 .socket-slot-config-app .socket-slot-config-gem-summary img {
   width: 2.8rem;
   height: 2.8rem;
-  border-radius: 8px;
+  /* border-radius: 8px; */
   object-fit: cover;
 }
 
@@ -675,6 +675,10 @@ body.sc-sockets-target-cursor * {
   min-width: 0;
 }
 
+.socket-slot-config-app .socket-slot-config-field--code {
+  min-width: 0;
+}
+
 .socket-slot-config-app .socket-slot-config-preview-card {
   display: flex;
   flex-direction: column;
@@ -691,6 +695,52 @@ body.sc-sockets-target-cursor * {
 .socket-slot-config-app .socket-slot-config-code {
   font-family: var(--font-monospace, "Monaco", "Consolas", monospace);
   font-size: 0.85rem;
+}
+
+.socket-slot-config-app code-mirror.socket-slot-config-code {
+  display: block;
+  height: 13.5rem;
+  max-height: 13.5rem;
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7a87a8 18%);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sf-panel-bg, #221f26) 92%, #4a394f 8%);
+  overflow: hidden;
+}
+
+.socket-slot-config-app code-mirror.socket-slot-config-code .cm-editor {
+  height: 100%;
+  max-height: 100%;
+  background: transparent;
+  color: var(--sf-text-strong);
+  overflow: hidden;
+}
+
+.socket-slot-config-app code-mirror.socket-slot-config-code .cm-scroller {
+  height: 100%;
+  max-height: 100%;
+  padding: 0.2rem 0;
+  font-family: var(--font-monospace, "Monaco", "Consolas", monospace);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.socket-slot-config-app code-mirror.socket-slot-config-code .cm-content,
+.socket-slot-config-app code-mirror.socket-slot-config-code .cm-line {
+  color: var(--sf-text-strong);
+  caret-color: var(--sf-text-strong);
+}
+
+.socket-slot-config-app code-mirror.socket-slot-config-code .cm-gutters {
+  background: color-mix(in srgb, var(--sf-bg-card-soft) 92%, #121a2d 8%);
+  border-right: 1px solid color-mix(in srgb, var(--sf-border-soft) 84%, #7a87a8 16%);
+  color: var(--sf-text-dim);
+}
+
+.socket-slot-config-app textarea.socket-slot-config-code--readonly {
+  width: 100%;
+  min-height: 13.5rem;
+  resize: vertical;
+  line-height: 1.45;
 }
 
 .socket-slot-config-app prose-mirror.socket-slot-config-description-editor {
