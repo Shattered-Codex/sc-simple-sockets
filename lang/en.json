@@ -18,7 +18,9 @@
       "CannotOpenGem": "Could not open the gem item.",
       "MaxReached": "Maximum number of sockets reached.",
       "GemRequiresSocket": "This gem must be socketed before it can be used.",
-      "HostNotSocketable": "This item type cannot receive sockets."
+      "HostNotSocketable": "This item type cannot receive sockets.",
+      "SocketConditionFailed": "That gem does not meet this socket's requirements.",
+      "SocketConditionError": "This socket condition could not be evaluated."
     },
     "Effects": {
       "DefaultName": "Gem Effect"
@@ -84,6 +86,38 @@
     "SocketDescription": {
       "Label": "Socket Description"
     },
+    "SocketSlotConfig": {
+      "Title": "Socket Slot Settings",
+      "Subtitle": "Configure rules, description, and tint for this slot.",
+      "SlotLabel": "Slot",
+      "HostLabel": "Host item",
+      "InspectGem": "Inspect Gem",
+      "InspectHint": "Opens the socketed gem in read-only mode.",
+      "NoGem": "No gem is currently socketed in this slot.",
+      "Save": "Save and Close",
+      "Cancel": "Cancel",
+      "Saved": "Slot settings saved.",
+      "Condition": {
+        "Label": "Slot condition",
+        "Hint": "Use JavaScript. Available variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
+        "Placeholder": "Example: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';"
+      },
+      "Description": {
+        "Label": "Slot description",
+        "Hint": "Shown in Socket Descriptions while the slot is empty. When a gem is added, the gem description takes over."
+      },
+      "Color": {
+        "Label": "Slot color",
+        "Hint": "Applied only to the empty socket frame.",
+        "Preview": "Preview",
+        "HexLabel": "Hex",
+        "PickerLabel": "Color picker",
+        "Clear": "Clear"
+      },
+      "Validation": {
+        "InvalidCondition": "The slot condition has invalid code."
+      }
+    },
     "SocketDescriptions": {
       "Label": "Socket Descriptions",
       "SendToChat": "Send to Chat"
@@ -91,7 +125,9 @@
     "Tooltips": {
       "RemoveGem": "Remove the gem from this socket.",
       "DeleteSocket": "Delete this slot from the item.",
-      "DeleteSlotLabel": "Delete slot"
+      "DeleteSlotLabel": "Delete slot",
+      "ConfigureSlot": "Configure this slot.",
+      "ConfigureSlotLabel": "Configure slot"
     },
     "Settings": {
       "EditPermission": {

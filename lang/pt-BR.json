@@ -18,7 +18,9 @@
       "CannotOpenGem": "Não foi possível abrir o item da gema.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada.",
-      "HostNotSocketable": "Este tipo de item não pode receber soquetes."
+      "HostNotSocketable": "Este tipo de item não pode receber soquetes.",
+      "SocketConditionFailed": "Essa gema não atende aos requisitos deste slot.",
+      "SocketConditionError": "A condição deste slot não pôde ser avaliada."
     },
     "Effects": {
       "DefaultName": "Efeito de Gema"
@@ -84,6 +86,38 @@
     "SocketDescription": {
       "Label": "Descrição do Socket"
     },
+    "SocketSlotConfig": {
+      "Title": "Configurações do Slot",
+      "Subtitle": "Configure regras, descrição e cor deste slot.",
+      "SlotLabel": "Slot",
+      "HostLabel": "Item base",
+      "InspectGem": "Inspecionar gema",
+      "InspectHint": "Abre a gema encaixada em modo somente leitura.",
+      "NoGem": "Nenhuma gema está encaixada neste slot no momento.",
+      "Save": "Salvar e fechar",
+      "Cancel": "Cancelar",
+      "Saved": "Configurações do slot salvas.",
+      "Condition": {
+        "Label": "Condição do slot",
+        "Hint": "Use JavaScript. Variáveis disponíveis: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
+        "Placeholder": "Exemplo: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';"
+      },
+      "Description": {
+        "Label": "Descrição do slot",
+        "Hint": "Aparece em Descrições dos Sockets enquanto o slot estiver vazio. Quando uma gema for adicionada, a descrição da gema assume esse espaço."
+      },
+      "Color": {
+        "Label": "Cor do slot",
+        "Hint": "Aplicada apenas ao frame do socket vazio.",
+        "Preview": "Pré-visualização",
+        "HexLabel": "Hex",
+        "PickerLabel": "Seletor de cor",
+        "Clear": "Limpar"
+      },
+      "Validation": {
+        "InvalidCondition": "A condição do slot contém código inválido."
+      }
+    },
     "SocketDescriptions": {
       "Label": "Descrições dos Sockets",
       "SendToChat": "Enviar para o chat"
@@ -91,7 +125,9 @@
     "Tooltips": {
       "RemoveGem": "Remover a gema deste soquete.",
       "DeleteSocket": "Excluir este soquete do item.",
-      "DeleteSlotLabel": "Excluir soquete"
+      "DeleteSlotLabel": "Excluir soquete",
+      "ConfigureSlot": "Configurar este slot.",
+      "ConfigureSlotLabel": "Configurar slot"
     },
     "Settings": {
       "EditPermission": {

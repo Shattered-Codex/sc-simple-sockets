@@ -23,20 +23,37 @@
 .sc-sockets-badges .gem img {
   width: 20px;
   height: 20px;
-  border-radius: 2px;
+  /* border-radius: 2px; */
   object-fit: cover;
 }
 
 .sc-sockets-badges .gem.empty img {
-  opacity: 0.55;
+  opacity: 0.85;
   filter: grayscale(1);
 }
 
 .sc-sockets-badges-block .gem,
 .sc-sockets-badges-inline .gem {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.sc-sockets-badges .gem.has-slot-tint::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* border-radius: 2px; */
+  background: var(--sc-sockets-slot-color, transparent);
+  mix-blend-mode: color;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sc-sockets-badges .gem.has-slot-tint img.is-tinted {
+  filter: grayscale(1) brightness(0.86) contrast(1.06);
 }
 
 .tidy5e-sheet .sc-sockets-badges,
@@ -68,6 +85,11 @@
 .tidy5e-sheet.quadrone .sc-sockets-badges .gem img {
   width: 18px;
   height: 18px;
+}
+
+.tidy5e-sheet .sc-sockets-badges .gem.has-slot-tint::after,
+.tidy5e-sheet.quadrone .sc-sockets-badges .gem.has-slot-tint::after {
+  border-radius: 2px;
 }
 
 .tidy5e-sheet .cell-text .sc-sockets-badges,
@@ -595,6 +617,152 @@ body.sc-sockets-target-cursor * {
   margin-top: 0.15rem;
 }
 
+.socket-slot-config-app .sc-sockets-settings-content {
+  gap: 0.65rem;
+}
+
+.socket-slot-config-app .socket-slot-config-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.socket-slot-config-app .socket-slot-config-summary-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7082a7 18%);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--sf-bg-card-soft) 90%, #121a2d 10%);
+}
+
+.socket-slot-config-app .socket-slot-config-summary-label {
+  color: var(--sf-text-muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.socket-slot-config-app .socket-slot-config-gem-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.socket-slot-config-app .socket-slot-config-gem-summary img {
+  width: 2.8rem;
+  height: 2.8rem;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.socket-slot-config-app .socket-slot-config-gem-copy {
+  min-width: 0;
+}
+
+.socket-slot-config-app .socket-slot-config-gem-copy strong {
+  display: block;
+  color: var(--sf-text-strong);
+}
+
+.socket-slot-config-app .socket-slot-config-field {
+  display: block;
+}
+
+.socket-slot-config-app .socket-slot-config-field--editor {
+  min-width: 0;
+}
+
+.socket-slot-config-app .socket-slot-config-preview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.socket-slot-config-app textarea.sc-sockets-settings-control {
+  width: 100%;
+  min-height: 0;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.socket-slot-config-app .socket-slot-config-code {
+  font-family: var(--font-monospace, "Monaco", "Consolas", monospace);
+  font-size: 0.85rem;
+}
+
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor {
+  min-height: 14rem;
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7a87a8 18%);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sf-panel-bg, #221f26) 92%, #4a394f 8%);
+  overflow: hidden;
+  color: var(--sf-text-strong);
+  caret-color: var(--sf-text-strong);
+}
+
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .editor-content {
+  min-height: 14rem;
+  padding: 0.85rem 0.95rem;
+  line-height: 1.5;
+  color: var(--sf-text-strong);
+  caret-color: var(--sf-text-strong);
+}
+
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .editor-content,
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .editor-content p,
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .editor-content li,
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .editor-content span,
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .editor-content strong,
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .editor-content em,
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .editor-content code,
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .ProseMirror {
+  color: var(--sf-text-strong);
+  caret-color: var(--sf-text-strong);
+}
+
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .editor-content a,
+.socket-slot-config-app prose-mirror.socket-slot-config-description-editor .ProseMirror a {
+  color: color-mix(in srgb, var(--sf-accent) 78%, white 22%);
+}
+
+.socket-slot-config-app .socket-slot-config-description-preview {
+  min-height: 14rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7a87a8 18%);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sf-panel-bg, #221f26) 92%, #4a394f 8%);
+}
+
+.socket-slot-config-app .socket-slot-config-color-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.socket-slot-config-app .socket-slot-config-color-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.socket-slot-config-app .socket-slot-config-color-field span {
+  color: var(--sf-text-strong);
+  font-weight: 600;
+}
+
+.socket-slot-config-app .socket-slot-config-color-picker {
+  width: 3.4rem;
+  height: 2.5rem;
+  padding: 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 84%, #7a87a8 16%);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--sf-bg-card-soft) 88%, #0d1220 12%);
+}
+
 @media (max-width: 740px) {
   .gem-subtype-selection-settings .gem-subtype-options-grid,
   .gem-subtype-settings .gem-subtype-options-grid,
@@ -603,7 +771,10 @@ body.sc-sockets-target-cursor * {
   }
 
   .socket-behavior-settings .sc-sockets-settings-row,
-  .socket-behavior-settings .sc-sockets-settings-row.is-checkbox {
+  .socket-behavior-settings .sc-sockets-settings-row.is-checkbox,
+  .socket-slot-config-app .socket-slot-config-summary-grid,
+  .socket-slot-config-app .socket-slot-config-color-row,
+  .socket-slot-config-app .socket-slot-config-gem-summary {
     grid-template-columns: 1fr;
   }
 
@@ -730,8 +901,29 @@ body.sc-sockets-target-cursor * {
 .sc-sockets-socket-description img {
   width: 34px;
   height: 34px;
-  border-radius: 4px;
+  /* border-radius: 4px; */
   object-fit: cover;
+}
+
+.sc-sockets-socket-description-icon {
+  position: relative;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+}
+
+.sc-sockets-socket-description-icon.has-slot-tint::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--sc-sockets-slot-color);
+  mix-blend-mode: color;
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.sc-sockets-socket-description-icon.has-slot-tint img {
+  filter: grayscale(1) brightness(0.82) contrast(1.08);
 }
 
 .sc-sockets-socket-description-body {

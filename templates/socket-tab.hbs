@@ -25,12 +25,19 @@
             aria-dropeffect="copy">
 
             <div class="item-name socket-name sc-sockets-slot-main">
-              <div class="sc-sockets-slot-visual" aria-label="{{slot.name}}">
-                <img class="item-image socket-icon sc-sockets-slot-frame" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+              <div class="sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
+                <img class="item-image socket-icon sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
                 {{#if slot.hasGem}}
-                <a class="sc-sockets-slot-link" data-action="openGemFromSlot" data-index="{{slot.index}}"
-                  draggable="false" aria-label="{{slot.gemName}}">
-                  <img class="item-image socket-icon sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
+                <img class="item-image socket-icon sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
+                {{/if}}
+                {{#if ../canConfigureSlots}}
+                <a class="sc-sockets-slot-edit-hit" data-action="openSocketSlotConfig" data-index="{{slot.index}}"
+                  draggable="false" aria-label="{{ localize 'SCSockets.Tooltips.ConfigureSlotLabel' }}"
+                  data-tooltip="{{ localize 'SCSockets.Tooltips.ConfigureSlot' }}"
+                  data-tooltip-direction="LEFT">
+                  <span class="sc-sockets-slot-edit-badge">
+                    <i class="fas fa-pen"></i>
+                  </span>
                 </a>
                 {{/if}}
               </div>
@@ -64,11 +71,25 @@
         {{else}}
         <ol class="item-list unlist">
           {{#each sockets as |slot i|}}
-          <li class="item flexrow socket-row" data-index="{{i}}" data-dropzone="socket-slot" aria-dropeffect="copy"
-            tabindex="0" role="button">
+          <li class="item flexrow socket-row" data-index="{{i}}" data-dropzone="socket-slot" aria-dropeffect="copy">
 
-            <div class="item-name socket-name">
-              <img class="item-image socket-icon" src="{{slot.img}}" alt="{{slot.name}}">
+            <div class="item-name socket-name sc-sockets-slot-main">
+              <div class="socket-icon-wrapper sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
+                <img class="item-image socket-icon sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+                {{#if slot.hasGem}}
+                <img class="item-image socket-icon sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
+                {{/if}}
+                {{#if ../canConfigureSlots}}
+                <a class="sc-sockets-slot-edit-hit" data-action="openSocketSlotConfig" data-index="{{slot.index}}"
+                  draggable="false" aria-label="{{ localize 'SCSockets.Tooltips.ConfigureSlotLabel' }}"
+                  data-tooltip="{{ localize 'SCSockets.Tooltips.ConfigureSlot' }}"
+                  data-tooltip-direction="LEFT">
+                  <span class="sc-sockets-slot-edit-badge">
+                    <i class="fas fa-pen"></i>
+                  </span>
+                </a>
+                {{/if}}
+              </div>
               <div class="name name-stacked">
                 <span class="title">{{slot.name}}</span>
               </div>
@@ -83,6 +104,14 @@
             </div>
 
             <div class="item-detail item-controls socket-controls">
+              {{#if ../canConfigureSlots}}
+              <a class="socket-control item-control" data-action="openSocketSlotConfig" data-index="{{i}}"
+                aria-label="{{ localize 'SCSockets.Tooltips.ConfigureSlotLabel' }}"
+                data-tooltip="{{ localize 'SCSockets.Tooltips.ConfigureSlot' }}"
+                data-tooltip-direction="LEFT">
+                <i class="fas fa-pen-to-square"></i>
+              </a>
+              {{/if}}
               {{#if ../editable}}
               <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{i}}"
                 aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}"

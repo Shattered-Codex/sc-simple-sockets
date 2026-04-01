@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { getSlotConfig, normalizeSlotConfig } from "../helpers/socketSlotConfig.js";
 
 export class SocketSlot {
   
@@ -7,7 +8,8 @@ export class SocketSlot {
     return {
       gem: null,
       img: Constants.SOCKET_SLOT_IMG,
-      name
+      name,
+      slotConfig: normalizeSlotConfig()
     };
   }
 
@@ -19,6 +21,7 @@ export class SocketSlot {
 
     return {
       ...(prev ?? this.makeDefault()),
+      slotConfig: getSlotConfig(prev),
       gem: {
         uuid: gemItem.uuid,
         sourceUuid,
@@ -30,6 +33,23 @@ export class SocketSlot {
       _srcGemId: gemItem.id,
       _gemData: gemSnap,
       _slot: slotIndex
+    };
+  }
+
+  static clearGem(prev, slotIndex) {
+    const base = this.makeDefault();
+    return {
+      ...base,
+      slotConfig: getSlotConfig(prev),
+      _slot: Number.isInteger(slotIndex) ? slotIndex : prev?._slot ?? null
+    };
+  }
+
+  static applyConfig(prev, config, slotIndex) {
+    return {
+      ...(prev ?? this.makeDefault()),
+      slotConfig: normalizeSlotConfig(config),
+      _slot: Number.isInteger(slotIndex) ? slotIndex : prev?._slot ?? null
     };
   }
 }

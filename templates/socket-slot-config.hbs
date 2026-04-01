@@ -1,0 +1,151 @@
+<section class="sc-sockets-settings-app socket-slot-config-layout standard-form" data-application-part="form">
+  <div class="sc-sockets-settings-content">
+    <div class="sc-sockets-settings-card socket-slot-config-summary">
+      <div class="section-heading">
+        <div>
+          <h4>{{strings.slotLabel}} {{slotNumber}}</h4>
+          <p class="notes">{{strings.subtitle}}</p>
+        </div>
+      </div>
+
+      <div class="socket-slot-config-summary-grid">
+        <div class="socket-slot-config-summary-row">
+          <span class="socket-slot-config-summary-label">{{strings.hostLabel}}</span>
+          <strong>{{hostItemName}}</strong>
+        </div>
+        <div class="socket-slot-config-summary-row">
+          <span class="socket-slot-config-summary-label">{{strings.slotLabel}}</span>
+          <strong>{{slotName}}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="sc-sockets-settings-card socket-slot-config-gem-card">
+      <div class="sc-sockets-settings-section-header">
+        <h4>{{localize "SCSockets.ActionOpenGem"}}</h4>
+      </div>
+
+      {{#if canInspectGem}}
+        <div class="socket-slot-config-gem-summary">
+          <img src="{{gemImg}}" alt="{{gemName}}">
+          <div class="socket-slot-config-gem-copy">
+            <strong>{{gemName}}</strong>
+            <p class="hint">{{localize "SCSockets.SocketSlotConfig.InspectHint"}}</p>
+          </div>
+          <button type="button" class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost" data-action="inspectGem">
+            <i class="fas fa-magnifying-glass"></i> {{strings.inspectGem}}
+          </button>
+        </div>
+      {{else}}
+        <p class="notes">{{strings.noGem}}</p>
+      {{/if}}
+    </div>
+
+    <div class="sc-sockets-settings-card sc-sockets-settings-section-card">
+      <div class="sc-sockets-settings-section-header">
+        <h4>{{strings.conditionLabel}}</h4>
+        <p class="notes">{{strings.conditionHint}}</p>
+      </div>
+
+      <label class="socket-slot-config-field">
+        <textarea
+          name="slotConfig.condition"
+          class="sc-sockets-settings-control socket-slot-config-code"
+          rows="10"
+          placeholder="{{strings.conditionPlaceholder}}"
+          {{#unless editable}}disabled{{/unless}}>{{condition}}</textarea>
+      </label>
+    </div>
+
+    <div class="sc-sockets-settings-card sc-sockets-settings-section-card">
+      <div class="sc-sockets-settings-section-header">
+        <h4>{{strings.descriptionLabel}}</h4>
+        <p class="notes">{{strings.descriptionHint}}</p>
+      </div>
+
+      <div class="socket-slot-config-field socket-slot-config-field--editor">
+        {{#if editable}}
+          <prose-mirror
+            name="slotConfig.description"
+            value="{{description}}"
+            document-uuid="{{hostItemUuid}}"
+            class="socket-slot-config-description-editor"
+            compact
+          >{{{descriptionEnriched}}}</prose-mirror>
+        {{else}}
+          <div class="editor editor-content socket-slot-config-description-preview">
+            {{{descriptionEnriched}}}
+          </div>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="sc-sockets-settings-card sc-sockets-settings-section-card">
+      <div class="sc-sockets-settings-section-header">
+        <h4>{{strings.colorLabel}}</h4>
+        <p class="notes">{{strings.colorHint}}</p>
+      </div>
+
+      <div class="socket-slot-config-preview-card">
+        <span class="socket-slot-config-summary-label">{{strings.previewLabel}}</span>
+        <div class="socket-slot-config-preview-wrap">
+          <div
+            class="sc-sockets-slot-visual {{#if previewHasTint}}has-slot-tint{{/if}}"
+            data-slot-color-preview
+            {{#if previewStyle}}style="{{previewStyle}}"{{/if}}
+            aria-label="{{strings.previewLabel}}"
+          >
+            <img class="item-image socket-icon sc-sockets-slot-frame {{#if previewHasTint}}is-tinted{{/if}}" src="{{slotFrameImg}}" alt="{{strings.previewLabel}}">
+          </div>
+        </div>
+      </div>
+
+      <div class="socket-slot-config-color-row">
+        <label class="socket-slot-config-color-field">
+          <span>{{strings.colorHexLabel}}</span>
+          <input
+            type="text"
+            name="slotConfig.colorHex"
+            class="sc-sockets-settings-control"
+            value="{{color}}"
+            placeholder="#D4AF37"
+            inputmode="text"
+            autocomplete="off"
+            {{#unless editable}}disabled{{/unless}}
+          />
+        </label>
+
+        <label class="socket-slot-config-color-field socket-slot-config-color-field--picker">
+          <span>{{strings.colorPickerLabel}}</span>
+          <input
+            type="color"
+            name="slotConfig.colorPicker"
+            class="socket-slot-config-color-picker"
+            value="{{colorPickerValue}}"
+            {{#unless editable}}disabled{{/unless}}
+          />
+        </label>
+
+        <button
+          type="button"
+          class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost"
+          data-action="clearColor"
+          {{#unless editable}}disabled{{/unless}}
+        >
+          <i class="fas fa-eraser"></i> {{strings.clearColor}}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="form-footer sc-sockets-settings-footer button-row">
+    {{#if editable}}
+      <button type="submit" class="dialog-button ok sc-sockets-settings-btn sc-sockets-settings-btn--primary">
+        <i class="fas fa-floppy-disk"></i> <span class="save-label">{{strings.save}}</span>
+      </button>
+    {{/if}}
+    <button type="button" class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost" data-action="close">
+      <i class="fas fa-xmark"></i> {{strings.cancel}}
+    </button>
+  </footer>
+</section>

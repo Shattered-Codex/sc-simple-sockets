@@ -7,6 +7,119 @@
   --sc-sockets-slot-radius: 8px;
 }
 
+.sc-sockets-slot-visual {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sc-sockets-slot-icon-size);
+  height: var(--sc-sockets-slot-icon-size);
+  flex: 0 0 var(--sc-sockets-slot-icon-size);
+  border-radius: var(--sc-sockets-slot-radius);
+}
+
+.sc-sockets-slot-visual.has-slot-tint::after {
+  content: "";
+  position: absolute;
+  /* inset: 0; */
+  background: var(--sc-sockets-slot-color, transparent);
+  mix-blend-mode: color;
+  pointer-events: none;
+  z-index: 1;
+  width: inherit;
+  height: inherit;
+}
+
+.sc-sockets-slot-frame {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: contain;
+}
+
+.sc-sockets-slot-frame.is-tinted {
+  filter: grayscale(1) brightness(0.86) contrast(1.06);
+}
+
+.sc-sockets-slot-gem {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: cover;
+  /* border-radius: inherit; */
+  z-index: 2;
+}
+
+.sc-sockets-slot-edit-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+  text-decoration: none;
+  transition: background 0.16s ease;
+}
+
+.sc-sockets-slot-edit-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: rgba(10, 16, 28, 0.82);
+  color: rgba(242, 247, 255, 0.95);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.38);
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.sc-sockets-slot-edit-hit:hover,
+.sc-sockets-slot-edit-hit:focus-visible {
+  background: rgba(10, 16, 28, 0.14);
+  text-decoration: none;
+}
+
+.sc-sockets-slot-visual:hover .sc-sockets-slot-edit-badge,
+.sc-sockets-slot-edit-hit:focus-visible .sc-sockets-slot-edit-badge {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sc-sockets-slot-action--configure-slot {
+  color: var(--color-text-accent, inherit);
+}
+
+.socket-slot-config-app .socket-slot-config-preview-card {
+  align-items: center;
+}
+
+.socket-slot-config-app .socket-slot-config-preview-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7082a7 18%);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 58%),
+    color-mix(in srgb, var(--sf-bg-card-soft) 90%, #0b1020 10%);
+}
+
+.socket-slot-config-app .socket-slot-config-preview-wrap .sc-sockets-slot-visual {
+  --sc-sockets-slot-icon-size: 4.25rem;
+  --sc-sockets-slot-radius: 16px;
+}
+
 .sc-sockets-slot-link {
   display: inline-flex;
   align-items: center;
@@ -43,10 +156,6 @@
 
 .sc-sockets-tidy .socket-icon-wrapper {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
   margin-right: 0.5rem;
 }
 
@@ -57,9 +166,34 @@
   object-fit: cover;
 }
 
+.sc-sockets-tidy .socket-icon-wrapper .item-image.sc-sockets-slot-frame {
+  border-radius: 0;
+  object-fit: contain;
+}
+
+.sc-sockets-tidy .socket-icon-wrapper .item-image.sc-sockets-slot-gem {
+  position: absolute;
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--sc-sockets-slot-icon-size) * 0.72);
+  height: calc(var(--sc-sockets-slot-icon-size) * 0.72);
+  margin: 0;
+  transform: translate(-50%, -50%);
+  /* border-radius: 6px; */
+  object-fit: cover;
+}
+
 .sc-sockets-tidy .socket-icon-wrapper .sc-sockets-slot-link {
   width: 100%;
   height: 100%;
+}
+
+.sc-sockets-tab .socket-row .socket-name,
+.sc-sockets-tidy .tidy-table-cell.primary.sc-sockets-slot-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .sc-sockets-tidy .tidy-table-cell.primary .item-name {
@@ -276,11 +410,20 @@
 
 .sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-gem,
 .sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-gem {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  inset: auto;
   width: 3.1rem;
   height: 3.1rem;
   object-fit: cover;
-  border-radius: 0.85rem;
   margin: 0;
+  /* transform: translate(-50%, -50%); */
+}
+
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-gem {
+  border-radius: 0.85rem;
 }
 
 .tidy5e-sheet.quadrone .sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .tidy-table-row .item-image.sc-sockets-slot-gem {
@@ -399,12 +542,26 @@
   bottom: 0.05rem;
 }
 
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-action--configure-slot,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--configure-slot {
+  top: 0.05rem;
+  left: -0.05rem;
+}
+
 .sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action--remove-slot,
 .sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--remove-slot {
   top: auto !important;
   right: -0.05rem !important;
   bottom: 0.05rem !important;
   left: auto !important;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action--configure-slot,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--configure-slot {
+  top: 0.05rem !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: -0.05rem !important;
 }
 
 .sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-empty-state,

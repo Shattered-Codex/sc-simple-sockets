@@ -33,12 +33,18 @@
               <div class="tidy-table-row tidy-table-row-v2 sc-sockets-slot-shell" data-tidy-table-row=""
                 data-tidy-sheet-part="table-row">
                 <div class="tidy-table-cell primary socket-name sc-sockets-slot-main" data-tidy-sheet-part="table-cell">
-                  <div class="sc-sockets-slot-visual" aria-label="{{slot.name}}">
-                    <img class="item-image sc-sockets-slot-frame" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+                  <div class="sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
+                    <img class="item-image sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
                     {{#if slot.hasGem}}
-                    <a class="sc-sockets-slot-link" data-action="openGemFromSlot" data-index="{{slot.index}}"
-                      draggable="false" aria-label="{{slot.gemName}}">
-                      <img class="item-image sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
+                    <img class="item-image sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
+                    {{/if}}
+                    {{#if ../canConfigureSlots}}
+                    <a class="sc-sockets-slot-edit-hit" data-action="openSocketSlotConfig" data-index="{{slot.index}}"
+                      draggable="false" aria-label="{{ localize 'SCSockets.Tooltips.ConfigureSlotLabel' }}"
+                      data-tooltip="{{ localize 'SCSockets.Tooltips.ConfigureSlot' }}">
+                      <span class="sc-sockets-slot-edit-badge">
+                        <i class="fas fa-pen"></i>
+                      </span>
                     </a>
                     {{/if}}
                   </div>
@@ -73,9 +79,21 @@
             {{#each sockets as |slot i|}}
             <div class="tidy-table-row-container socket" data-index="{{i}}" data-dropzone="socket-slot" aria-hidden="false">
               <div class="tidy-table-row tidy-table-row-v2" data-tidy-table-row="" data-tidy-sheet-part="table-row">
-                <div class="tidy-table-cell primary" data-tidy-sheet-part="table-cell">
-                  <div class="tidy-table-row-use-button socket-icon-wrapper">
-                    <img class="item-image" src="{{slot.img}}" alt="{{slot.name}}">
+                <div class="tidy-table-cell primary sc-sockets-slot-main" data-tidy-sheet-part="table-cell">
+                  <div class="tidy-table-row-use-button socket-icon-wrapper sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
+                    <img class="item-image sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+                    {{#if slot.hasGem}}
+                    <img class="item-image sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
+                    {{/if}}
+                    {{#if ../canConfigureSlots}}
+                    <a class="sc-sockets-slot-edit-hit" data-action="openSocketSlotConfig" data-index="{{slot.index}}"
+                      draggable="false" aria-label="{{ localize 'SCSockets.Tooltips.ConfigureSlotLabel' }}"
+                      data-tooltip="{{ localize 'SCSockets.Tooltips.ConfigureSlot' }}">
+                      <span class="sc-sockets-slot-edit-badge">
+                        <i class="fas fa-pen"></i>
+                      </span>
+                    </a>
+                    {{/if}}
                   </div>
                   <div class="item-name">
                     <span class="cell-text">
@@ -85,6 +103,15 @@
                 </div>
 
                 <div class="tidy-table-cell tidy-table-actions" data-tidy-sheet-part="table-cell">
+                  {{#if ../canConfigureSlots}}
+                    <a class="tidy-table-button"
+                       data-action="openSocketSlotConfig"
+                       data-index="{{i}}"
+                       data-tooltip="{{ localize 'SCSockets.Tooltips.ConfigureSlot' }}"
+                       aria-label="{{ localize 'SCSockets.Tooltips.ConfigureSlotLabel' }}">
+                      <i class="fas fa-pen-to-square"></i>
+                    </a>
+                  {{/if}}
                   {{#if ../editable}}
                     <a class="tidy-table-button"
                        data-action="removeGemFromSlot"

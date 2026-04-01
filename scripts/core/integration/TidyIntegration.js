@@ -13,6 +13,7 @@ import { ActorGemBadges } from "../ui/ActorGemBadges.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
 import { buildSocketLayoutContext } from "../helpers/socketLayout.js";
+import { SocketSlotConfigApp } from "../ui/SocketSlotConfigApp.js";
 
 /**
  * Handles registering integrations with the Tidy5e sheet module when available.
@@ -533,6 +534,9 @@ export class TidyIntegration {
         case "openGemFromSlot":
           await TidyIntegration.#handleOpenGem(event, target, sheet);
           break;
+        case "openSocketSlotConfig":
+          await TidyIntegration.#handleOpenSocketSlotConfig(event, target, sheet);
+          break;
         default:
           break;
       }
@@ -595,6 +599,21 @@ export class TidyIntegration {
     }
 
     await SocketGemSheetService.openFromHost(sheet.item, idx);
+  }
+
+  static async #handleOpenSocketSlotConfig(event, target, sheet) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const idx = TidyIntegration.#resolveIndex(target);
+    if (idx === null) {
+      return;
+    }
+
+    SocketSlotConfigApp.open(sheet.item, idx, {
+      parentApp: sheet,
+      editable: sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
+    });
   }
 
   static #resolveIndex(target) {

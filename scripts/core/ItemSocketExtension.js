@@ -6,6 +6,7 @@ import { SocketService } from "./services/SocketService.js";
 import { ModuleSettings } from "./settings/ModuleSettings.js";
 import { SocketGemSheetService } from "./services/SocketGemSheetService.js";
 import { buildSocketLayoutContext } from "./helpers/socketLayout.js";
+import { SocketSlotConfigApp } from "./ui/SocketSlotConfigApp.js";
 
 export class ItemSocketExtension extends SheetExtension {
   static TAB_ID = "sockets";
@@ -162,6 +163,21 @@ export class ItemSocketExtension extends SheetExtension {
         }
 
         await SocketGemSheetService.openFromHost(this.item, idx);
+      },
+
+      async openSocketSlotConfig(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const idx = Number(target.dataset.index ?? target.closest("[data-index]")?.dataset.index);
+        if (!Number.isInteger(idx)) {
+          return;
+        }
+
+        SocketSlotConfigApp.open(this.item, idx, {
+          parentApp: this.sheet,
+          editable: this.sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
+        });
       }
     });
   }
