@@ -114,7 +114,10 @@ export class SocketGemSheetService {
         { editable: false },
         { inplace: false }
       );
-      const inspectSheet = new SheetClass(document, options);
+      const inspectSheet = this.#createSheetInstance(SheetClass, document, options);
+      if (!inspectSheet) {
+        return false;
+      }
       this.#makeSheetReadOnly(inspectSheet);
       inspectSheet.render(true);
       return true;
@@ -136,6 +139,23 @@ export class SocketGemSheetService {
       });
     } catch (error) {
       console.warn(`[${Constants.MODULE_ID}] failed to override sheet editability`, error);
+    }
+  }
+
+  static #createSheetInstance(SheetClass, document, options) {
+    try {
+      return new SheetClass({
+        ...options,
+        document
+      });
+    } catch (error) {
+      try {
+        return new SheetClass(document, options);
+      } catch {
+      }
+
+      console.warn(`[${Constants.MODULE_ID}] failed to create gem sheet instance`, error);
+      return null;
     }
   }
 }

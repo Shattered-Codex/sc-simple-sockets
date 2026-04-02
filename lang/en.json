@@ -86,6 +86,12 @@
     "SocketDescription": {
       "Label": "Socket Description"
     },
+    "ItemDetails": {
+      "CustomDetailsHeading": "Custom Details",
+      "EnableSocketTab": "Enable Socket Tab",
+      "EnableSocketTabHint": "Show the Sockets tab on this item when the global display setting is disabled.",
+      "EnableSocketTabLockedHint": "Items that already have sockets keep this option enabled until all sockets are removed."
+    },
     "SocketSlotConfig": {
       "Title": "Socket Slot Settings",
       "Subtitle": "Configure rules, description, and tint for this slot.",
@@ -207,6 +213,10 @@
           "List": "Default list",
           "Grid": "Grid"
         }
+      },
+      "EnableSocketTabForAllItems": {
+        "Name": "Enable Socket Tab on all items",
+        "Hint": "If enabled, the Sockets tab appears on every socketable item. If disabled, it must be enabled per item in Details."
       },
       "SupportMenu": {
         "Name": "Support the developer",

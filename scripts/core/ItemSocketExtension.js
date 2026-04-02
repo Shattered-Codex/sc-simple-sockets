@@ -11,6 +11,7 @@ import { SocketSlotConfigApp } from "./ui/SocketSlotConfigApp.js";
 export class ItemSocketExtension extends SheetExtension {
   static TAB_ID = "sockets";
   static PART_ID = "item-sockets-part";
+  static DETAILS_TOGGLE_PART_ID = "sc-sockets-item-toggle-part";
 
   constructor() {
     super(dnd5e.applications.item.ItemSheet5e);
@@ -19,6 +20,7 @@ export class ItemSocketExtension extends SheetExtension {
   applyChanges() {
     this.#registerTab();
     this.#registerPart();
+    this.#registerDetailsToggleInline();
     this.#registerContext();
     this.#registerActions();
     Hooks.on("renderItemSheet5e", (sheet) => {
@@ -26,7 +28,7 @@ export class ItemSocketExtension extends SheetExtension {
     });
   }
 
-  #isSockeable = (item) => ModuleSettings.isItemSocketable(item);
+  #isSockeable = (item) => ModuleSettings.isItemSocketTabVisible(item);
 
   /**
    * Checks if an item can receive sockets.
@@ -79,6 +81,58 @@ export class ItemSocketExtension extends SheetExtension {
     return context;
   }
 
+  buildItemSocketTabToggleContext(sheet, {
+    includePart = true,
+    partId = ItemSocketExtension.DETAILS_TOGGLE_PART_ID,
+    tab = "details",
+    group = "primary"
+  } = {}) {
+    const item = sheet?.item ?? null;
+    const hasSockets = ModuleSettings.itemHasSockets(item);
+    const locked = ModuleSettings.isItemSocketTabToggleLocked(item);
+    const checked = hasSockets || ModuleSettings.isItemSocketTabEnabledByFlag(item);
+    const visible = ModuleSettings.isItemSocketTabToggleVisible(item);
+    const context = {
+      visible,
+      heading: Constants.localize(
+        "SCSockets.ItemDetails.CustomDetailsHeading",
+        "Custom Details"
+      ),
+      label: Constants.localize(
+        "SCSockets.ItemDetails.EnableSocketTab",
+        "Enable Socket Tab"
+      ),
+      hint: Constants.localize(
+        "SCSockets.ItemDetails.EnableSocketTabHint",
+        "Show the Sockets tab on this item when the global display setting is disabled."
+      ),
+      lockHint: locked
+        ? Constants.localize(
+          "SCSockets.ItemDetails.EnableSocketTabLockedHint",
+          "Items that already have sockets keep this option enabled until all sockets are removed."
+        )
+        : "",
+      name: ModuleSettings.getItemSocketTabFieldName(),
+      inputId: partId ? `${partId}-checkbox` : `${Constants.MODULE_ID}-item-socket-toggle`,
+      checked,
+      disabled: locked
+    };
+
+    const tooltipLines = [context.hint, context.lockHint].filter((value) => String(value ?? "").trim().length);
+    context.tooltip = tooltipLines.join("\n");
+
+    if (includePart) {
+      context.part = {
+        id: partId,
+        tab,
+        group,
+        cssClass: this.#isPartActive(sheet, partId, tab) ? "active" : ""
+      };
+    }
+
+    return context;
+  }
+
   #registerTab() {
     this.addTab({
       tab: ItemSocketExtension.TAB_ID,
@@ -92,6 +146,31 @@ export class ItemSocketExtension extends SheetExtension {
       id: ItemSocketExtension.PART_ID,
       tab: ItemSocketExtension.TAB_ID,
       template: `modules/${this.moduleId}/templates/socket-tab.hbs`
+    });
+  }
+
+  #registerDetailsToggleInline() {
+    const templatePath = `modules/${this.moduleId}/templates/item-socket-details-toggle.hbs`;
+    const partId = ItemSocketExtension.DETAILS_TOGGLE_PART_ID;
+
+    this.addContext("details", (sheet, context) => {
+      const toggle = this.buildItemSocketTabToggleContext(sheet, {
+        includePart: false,
+        partId
+      });
+
+      if (!toggle.visible) {
+        return;
+      }
+
+      context.parts = Array.isArray(context.parts) ? context.parts : [];
+      if (!context.parts.includes(templatePath)) {
+        context.parts.push(templatePath);
+      }
+
+      return {
+        socketTabToggle: toggle
+      };
     });
   }
 
@@ -206,6 +285,23 @@ export class ItemSocketExtension extends SheetExtension {
       return true;
     }
     if (sheet._activeTab?.primary === ItemSocketExtension.TAB_ID) {
+      return true;
+    }
+    return false;
+  }
+
+  #isPartActive(sheet, partId, tab) {
+    if (!sheet) {
+      return false;
+    }
+    const node = sheet.element?.querySelector?.(`[data-application-part="${partId}"]`);
+    if (node?.classList?.contains?.("active")) {
+      return true;
+    }
+    if (sheet.tabGroups?.primary === tab) {
+      return true;
+    }
+    if (sheet._activeTab?.primary === tab) {
       return true;
     }
     return false;

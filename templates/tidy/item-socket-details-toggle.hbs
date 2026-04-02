@@ -1,0 +1,28 @@
+{{~#with socketTabToggle as |toggle|~}}
+<fieldset class="sc-sockets-item-toggle-card sc-sockets-item-toggle-card--tidy"
+          data-sc-sockets-item-toggle-root
+          {{#unless toggle.visible}}hidden{{/unless}}>
+  <legend class="sc-sockets-item-toggle-heading">{{toggle.heading}}</legend>
+
+  <div class="form-group checkbox sc-sockets-item-toggle">
+    <label class="checkbox" for="{{toggle.inputId}}">
+      <dnd5e-checkbox id="{{toggle.inputId}}"
+                      class="always-interactive"
+                      name="{{toggle.name}}"
+                      data-dtype="Boolean"
+                      {{#if toggle.checked}}checked{{/if}}
+                      {{#if toggle.disabled}}disabled{{/if}}></dnd5e-checkbox>
+      <span>{{toggle.label}}</span>
+      {{#if toggle.tooltip}}
+        <i class="fa-solid fa-circle-info"
+           data-tooltip="{{toggle.tooltip}}"
+           aria-label="{{toggle.tooltip}}"></i>
+      {{/if}}
+    </label>
+  </div>
+
+  {{#if toggle.disabled}}
+    <input type="hidden" name="{{toggle.name}}" value="true" data-dtype="Boolean">
+  {{/if}}
+</fieldset>
+{{~/with~}}

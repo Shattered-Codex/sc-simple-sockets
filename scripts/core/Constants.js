@@ -16,6 +16,7 @@ export class Constants {
   static FLAG_GEM_CRIT_MULTIPLIER = "gemCritMultiplier";
   static FLAG_GEM_ATTACK_BONUS = "gemAttackBonus";
   static FLAG_SOCKET_DESCRIPTION = "socketDescription";
+  static FLAG_SOCKET_TAB_ENABLED = "socketTabEnabled";
   static FLAGS = {
     sockets: "sockets",
     gemAllowedTypes: "gemAllowedTypes",
@@ -24,7 +25,8 @@ export class Constants {
     gemCritThreshold: "gemCritThreshold",
     gemCritMultiplier: "gemCritMultiplier",
     gemAttackBonus: "gemAttackBonus",
-    socketDescription: "socketDescription"
+    socketDescription: "socketDescription",
+    socketTabEnabled: "socketTabEnabled"
   };
   static GEM_ALLOWED_TYPES_ALL = "*";
   static SOCKET_SLOT_IMG = `modules/${this.MODULE_ID}/assets/imgs/socket-slot.webp`;

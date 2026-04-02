@@ -86,6 +86,12 @@
     "SocketDescription": {
       "Label": "Descrição do Socket"
     },
+    "ItemDetails": {
+      "CustomDetailsHeading": "Detalhes personalizados",
+      "EnableSocketTab": "Ativar Socket Tab",
+      "EnableSocketTabHint": "Exibe a aba de soquetes neste item quando a configuração global de exibição estiver desativada.",
+      "EnableSocketTabLockedHint": "Itens que já possuem sockets mantêm essa opção ativada até que todos os sockets sejam removidos."
+    },
     "SocketSlotConfig": {
       "Title": "Configurações do Slot",
       "Subtitle": "Configure regras, descrição e cor deste slot.",
@@ -207,6 +213,10 @@
           "List": "Lista padrão",
           "Grid": "Grade"
         }
+      },
+      "EnableSocketTabForAllItems": {
+        "Name": "Ativar Socket Tab em todos os itens",
+        "Hint": "Se ativado, a aba de soquetes aparece em todos os itens socketáveis. Se desativado, ela precisa ser habilitada por item em Detalhes."
       },
       "SupportMenu": {
         "Name": "Apoie o desenvolvedor",

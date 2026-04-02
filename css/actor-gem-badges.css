@@ -567,7 +567,7 @@ body.sc-sockets-target-cursor * {
 .socket-behavior-settings .sc-sockets-settings-form-list {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0;
 }
 
 .socket-behavior-settings .sc-sockets-settings-row {
@@ -575,14 +575,22 @@ body.sc-sockets-target-cursor * {
   grid-template-columns: minmax(0, 1fr) minmax(10rem, 16rem);
   align-items: start;
   gap: 0.9rem;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7082a7 18%);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--sf-bg-card-soft) 88%, #121a2d 12%);
+  padding: 0.9rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7082a7 18%);
+  background: transparent;
 }
 
 .socket-behavior-settings .sc-sockets-settings-row.is-checkbox {
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.socket-behavior-settings .sc-sockets-settings-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.socket-behavior-settings .sc-sockets-settings-row:first-child {
+  padding-top: 0;
 }
 
 .socket-behavior-settings .sc-sockets-settings-row-copy {
@@ -615,6 +623,37 @@ body.sc-sockets-target-cursor * {
   width: 1rem;
   height: 1rem;
   margin-top: 0.15rem;
+}
+
+.sc-sockets-item-toggle-card {
+  margin-top: 0.75rem;
+}
+
+.sc-sockets-item-toggle {
+  margin: 0;
+}
+
+.sc-sockets-item-toggle .checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.sc-sockets-item-toggle .checkbox i {
+  color: var(--color-text-light-6, #8c8c8c);
+  cursor: help;
+}
+
+.socket-behavior-settings .sc-sockets-settings-section-card {
+  gap: 0.85rem;
+}
+
+.socket-behavior-settings .sc-sockets-settings-card:first-child {
+  padding-bottom: 0.8rem;
+}
+
+.sc-sockets-item-toggle .hint {
+  margin-top: 0.35rem;
 }
 
 .socket-slot-config-app .sc-sockets-settings-content {
