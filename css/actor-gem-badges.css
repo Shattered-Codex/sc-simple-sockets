@@ -621,10 +621,30 @@ body.sc-sockets-target-cursor * {
   gap: 0.65rem;
 }
 
-.socket-slot-config-app .socket-slot-config-summary-grid {
+.socket-slot-config-app .socket-slot-config-overview-card,
+.socket-slot-config-app .sc-sockets-settings-section-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.socket-slot-config-app .socket-slot-config-top-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.6rem;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.socket-slot-config-app .socket-slot-config-top-grid > .sc-sockets-settings-card {
+  height: 100%;
+}
+
+.socket-slot-config-app .socket-slot-config-overview-card--details {
+  justify-content: flex-start;
+}
+
+.socket-slot-config-app .socket-slot-config-overview-card--color {
+  justify-content: space-between;
 }
 
 .socket-slot-config-app .socket-slot-config-summary-row {
@@ -638,37 +658,175 @@ body.sc-sockets-target-cursor * {
 }
 
 .socket-slot-config-app .socket-slot-config-summary-label {
-  color: var(--sf-text-muted);
+  color: var(--sf-text-dim);
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.socket-slot-config-app .socket-slot-config-gem-summary {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.8rem;
+.socket-slot-config-app .socket-slot-config-item-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
 }
 
-.socket-slot-config-app .socket-slot-config-gem-summary img {
-  width: 2.8rem;
-  height: 2.8rem;
-  /* border-radius: 8px; */
-  object-fit: cover;
+.socket-slot-config-app .socket-slot-config-document-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7082a7 18%);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--sf-bg-card-soft) 90%, #121a2d 10%);
 }
 
-.socket-slot-config-app .socket-slot-config-gem-copy {
+.socket-slot-config-app .socket-slot-config-section-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.55rem;
+}
+
+.socket-slot-config-app .socket-slot-config-document-heading {
   min-width: 0;
 }
 
-.socket-slot-config-app .socket-slot-config-gem-copy strong {
+.socket-slot-config-app .socket-slot-config-document-heading strong {
   display: block;
+  margin-top: 0.1rem;
   color: var(--sf-text-strong);
+  line-height: 1.2;
+  word-break: break-word;
+}
+
+.socket-slot-config-app .socket-slot-config-document-body {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.socket-slot-config-app .socket-slot-config-document-body--empty {
+  min-height: 0;
+}
+
+.socket-slot-config-app .socket-slot-config-info {
+  flex: 0 0 auto;
+  margin-top: 0;
+  margin-left: auto;
+  color: color-mix(in srgb, var(--sf-text-dim) 82%, #cfd9f3 18%);
+  cursor: help;
+}
+
+.socket-slot-config-app .socket-slot-config-image-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem;
+  /* border: 1px solid color-mix(in srgb, var(--sf-border-soft) 84%, #6f7fa6 16%); */
+  /* border-radius: 10px; */
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 58%),
+    color-mix(in srgb, var(--sf-bg-card-soft) 88%, #0d1220 12%);
+  overflow: hidden;
+}
+
+.socket-slot-config-app .socket-slot-config-image-card--compact {
+  width: 3.45rem;
+  min-width: 3.45rem;
+  min-height: 3.45rem;
+  padding: 0.2rem;
+}
+
+.socket-slot-config-app .socket-slot-config-image-card--empty {
+  /* border-style: solid; */
+  background: color-mix(in srgb, var(--sf-bg-card-soft) 90%, #0d1220 10%);
+}
+
+.socket-slot-config-app .socket-slot-config-image-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  object-fit: cover;
+}
+
+.socket-slot-config-app .socket-slot-config-image-action {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  width: inherit;
+  height: 100% !important;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.16s ease;
+}
+
+.socket-slot-config-app .socket-slot-config-image-action i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: rgba(10, 16, 28, 0.82);
+  color: rgba(242, 247, 255, 0.95);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.38);
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.socket-slot-config-app .socket-slot-config-image-card:hover .socket-slot-config-image-action,
+.socket-slot-config-app .socket-slot-config-image-card:focus-within .socket-slot-config-image-action,
+.socket-slot-config-app .socket-slot-config-image-action:focus-visible {
+  background: rgba(10, 16, 28, 0.14);
+  text-decoration: none;
+}
+
+.socket-slot-config-app .socket-slot-config-image-card:hover .socket-slot-config-image-action i,
+.socket-slot-config-app .socket-slot-config-image-card:focus-within .socket-slot-config-image-action i,
+.socket-slot-config-app .socket-slot-config-image-action:focus-visible i {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .socket-slot-config-app .socket-slot-config-field {
   display: block;
+}
+
+.socket-slot-config-app .socket-slot-config-section-header-with-link {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.socket-slot-config-app .socket-slot-config-help-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 84%, #7082a7 16%);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--sf-accent) 72%, #f3f7ff 28%);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.socket-slot-config-app .socket-slot-config-help-link:hover,
+.socket-slot-config-app .socket-slot-config-help-link:focus-visible {
+  text-decoration: none;
+  background: color-mix(in srgb, var(--sf-accent) 12%, transparent 88%);
+  color: color-mix(in srgb, var(--sf-accent) 84%, #ffffff 16%);
 }
 
 .socket-slot-config-app .socket-slot-config-field--editor {
@@ -681,8 +839,7 @@ body.sc-sockets-target-cursor * {
 
 .socket-slot-config-app .socket-slot-config-preview-card {
   display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
+  justify-content: center;
 }
 
 .socket-slot-config-app textarea.sc-sockets-settings-control {
@@ -699,8 +856,7 @@ body.sc-sockets-target-cursor * {
 
 .socket-slot-config-app code-mirror.socket-slot-config-code {
   display: block;
-  height: 13.5rem;
-  max-height: 13.5rem;
+  min-height: 13.5rem;
   border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7a87a8 18%);
   border-radius: 10px;
   background: color-mix(in srgb, var(--sf-panel-bg, #221f26) 92%, #4a394f 8%);
@@ -709,7 +865,7 @@ body.sc-sockets-target-cursor * {
 
 .socket-slot-config-app code-mirror.socket-slot-config-code .cm-editor {
   height: 100%;
-  max-height: 100%;
+  min-height: 13.5rem;
   background: transparent;
   color: var(--sf-text-strong);
   overflow: hidden;
@@ -717,7 +873,7 @@ body.sc-sockets-target-cursor * {
 
 .socket-slot-config-app code-mirror.socket-slot-config-code .cm-scroller {
   height: 100%;
-  max-height: 100%;
+  min-height: 13.5rem;
   padding: 0.2rem 0;
   font-family: var(--font-monospace, "Monaco", "Consolas", monospace);
   overflow: auto;
@@ -788,7 +944,7 @@ body.sc-sockets-target-cursor * {
 
 .socket-slot-config-app .socket-slot-config-color-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.75rem;
   align-items: end;
 }
@@ -804,8 +960,18 @@ body.sc-sockets-target-cursor * {
   font-weight: 600;
 }
 
+.socket-slot-config-app .socket-slot-config-color-field--picker {
+  min-width: 5.2rem;
+}
+
+.socket-slot-config-app .socket-slot-config-color-actions {
+  display: flex;
+  align-items: end;
+  gap: 0.5rem;
+}
+
 .socket-slot-config-app .socket-slot-config-color-picker {
-  width: 3.4rem;
+  width: 100%;
   height: 2.5rem;
   padding: 0.2rem;
   border: 1px solid color-mix(in srgb, var(--sf-border-soft) 84%, #7a87a8 16%);
@@ -822,14 +988,28 @@ body.sc-sockets-target-cursor * {
 
   .socket-behavior-settings .sc-sockets-settings-row,
   .socket-behavior-settings .sc-sockets-settings-row.is-checkbox,
-  .socket-slot-config-app .socket-slot-config-summary-grid,
-  .socket-slot-config-app .socket-slot-config-color-row,
-  .socket-slot-config-app .socket-slot-config-gem-summary {
+  .socket-slot-config-app .socket-slot-config-top-grid,
+  .socket-slot-config-app .socket-slot-config-color-row {
     grid-template-columns: 1fr;
   }
 
   .socket-behavior-settings .sc-sockets-settings-checkbox {
     margin-top: 0;
+  }
+
+  .socket-slot-config-app .socket-slot-config-document-body {
+    align-items: start;
+  }
+
+  .socket-slot-config-app .socket-slot-config-section-header-with-link {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .socket-slot-config-app .socket-slot-config-image-card--compact {
+    width: 100%;
+    min-width: 0;
+    max-width: 4.5rem;
   }
 }
 

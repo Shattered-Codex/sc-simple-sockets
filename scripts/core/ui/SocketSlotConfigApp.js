@@ -32,14 +32,15 @@ export class SocketSlotConfigApp extends BaseApplication {
       id: `${Constants.MODULE_ID}-socket-slot-config`,
       tag: "form",
       classes: ["sc-sockets", "sc-sockets-settings-theme", "socket-slot-config-app"],
-      position: { width: 720, height: 660 },
+      position: { width: 840, height: 780 },
       window: {
         title: Constants.localize(
           "SCSockets.SocketSlotConfig.Title",
           "Socket Slot Settings"
         ),
         icon: "fas fa-pen-to-square",
-        contentClasses: ["sc-sockets-settings-theme"]
+        contentClasses: ["sc-sockets-settings-theme"],
+        resizable: true
       },
       form: {
         handler: handleFormSubmit,
@@ -160,11 +161,13 @@ export class SocketSlotConfigApp extends BaseApplication {
     return {
       editable: this.#editable,
       hostItemName: this.#hostItem?.name ?? "",
+      hostItemImg: this.#hostItem?.img ?? Constants.SOCKET_SLOT_IMG,
       hostItemUuid: this.#hostItem?.uuid ?? "",
+      canInspectHost: typeof this.#hostItem?.sheet?.render === "function",
       slotIndex: this.#slotIndex,
       slotNumber,
       slotName: slot?.name ?? Constants.localize("SCSockets.SocketEmptyName", "Empty"),
-      hasGem: Boolean(slot?.gem),
+      hasGem: Boolean(slot?.gem || slot?._gemData),
       gemName: slot?.gem?.name ?? slot?._gemData?.name ?? "",
       gemImg: slot?.gem?.img ?? slot?._gemData?.img ?? "",
       canInspectGem,
@@ -176,6 +179,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       previewHasTint: Boolean(slotConfig.color),
       previewStyle: slotConfig.color ? `--sc-sockets-slot-color:${slotConfig.color};` : "",
       slotFrameImg: Constants.SOCKET_SLOT_IMG,
+      conditionWikiUrl: `${Constants.MODULE_WIKI_URL}#slot-condition`,
       strings: {
         subtitle: Constants.localize(
           "SCSockets.SocketSlotConfig.Subtitle",
@@ -189,6 +193,14 @@ export class SocketSlotConfigApp extends BaseApplication {
           "SCSockets.SocketSlotConfig.HostLabel",
           "Host item"
         ),
+        gemLabel: Constants.localize(
+          "SCSockets.SocketSlotConfig.GemLabel",
+          "Socketed gem"
+        ),
+        slotNameLabel: Constants.localize(
+          "SCSockets.SocketSlotConfig.SlotNameLabel",
+          "Slot name"
+        ),
         conditionLabel: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Label",
           "Slot condition"
@@ -200,6 +212,10 @@ export class SocketSlotConfigApp extends BaseApplication {
         conditionPlaceholder: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Placeholder",
           "Example: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';"
+        ),
+        conditionWiki: Constants.localize(
+          "SCSockets.SocketSlotConfig.Condition.Wiki",
+          "Open wiki"
         ),
         descriptionLabel: Constants.localize(
           "SCSockets.SocketSlotConfig.Description.Label",
@@ -233,9 +249,21 @@ export class SocketSlotConfigApp extends BaseApplication {
           "SCSockets.SocketSlotConfig.Color.Clear",
           "Clear"
         ),
+        inspectHost: Constants.localize(
+          "SCSockets.SocketSlotConfig.InspectHost",
+          "Open Host Item"
+        ),
+        inspectHostHint: Constants.localize(
+          "SCSockets.SocketSlotConfig.InspectHostHint",
+          "Opens the host item sheet."
+        ),
         inspectGem: Constants.localize(
           "SCSockets.SocketSlotConfig.InspectGem",
           "Inspect Gem"
+        ),
+        emptySlot: Constants.localize(
+          "SCSockets.SocketSlotConfig.EmptySlot",
+          "Empty slot"
         ),
         noGem: Constants.localize(
           "SCSockets.SocketSlotConfig.NoGem",
@@ -323,6 +351,10 @@ export class SocketSlotConfigApp extends BaseApplication {
         event.preventDefault();
         void SocketGemSheetService.inspectFromHost(this.#hostItem, this.#slotIndex);
         break;
+      case "inspectHost":
+        event.preventDefault();
+        this.#hostItem?.sheet?.render?.(true);
+        break;
       default:
         break;
     }
@@ -394,12 +426,12 @@ export class SocketSlotConfigApp extends BaseApplication {
   #applyLayoutBounds() {
     const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 1280;
     const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 900;
-    const maxWidth = Math.max(640, viewportWidth - 48);
-    const targetWidth = Math.max(640, Math.min(720, maxWidth));
-    const maxHeight = Math.max(520, viewportHeight - 48);
+    const maxWidth = Math.max(760, viewportWidth - 48);
+    const targetWidth = Math.max(760, Math.min(920, maxWidth));
+    const maxHeight = Math.max(620, viewportHeight - 48);
     const app = this.element?.querySelector?.(".socket-slot-config-layout");
-    const naturalHeight = (app?.scrollHeight ?? 600) + 72;
-    const targetHeight = Math.max(560, Math.min(760, maxHeight, naturalHeight));
+    const naturalHeight = (app?.scrollHeight ?? 700) + 72;
+    const targetHeight = Math.max(680, Math.min(860, maxHeight, naturalHeight));
     this.setPosition?.({ width: targetWidth, height: targetHeight });
   }
 }

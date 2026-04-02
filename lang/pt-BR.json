@@ -90,9 +90,14 @@
       "Title": "Configurações do Slot",
       "Subtitle": "Configure regras, descrição e cor deste slot.",
       "SlotLabel": "Slot",
+      "SlotNameLabel": "Nome do slot",
       "HostLabel": "Item base",
+      "GemLabel": "Gema no slot",
+      "InspectHost": "Abrir item base",
+      "InspectHostHint": "Abre a ficha do item base.",
       "InspectGem": "Inspecionar gema",
       "InspectHint": "Abre a gema encaixada em modo somente leitura.",
+      "EmptySlot": "Empty slot",
       "NoGem": "Nenhuma gema está encaixada neste slot no momento.",
       "Save": "Salvar e fechar",
       "Cancel": "Cancelar",
@@ -100,7 +105,8 @@
       "Condition": {
         "Label": "Condição do slot",
         "Hint": "Use JavaScript. Variáveis disponíveis: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
-        "Placeholder": "Exemplo: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';"
+        "Placeholder": "Exemplo: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';",
+        "Wiki": "Abrir wiki"
       },
       "Description": {
         "Label": "Descrição do slot",

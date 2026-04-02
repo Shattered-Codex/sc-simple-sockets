@@ -90,9 +90,14 @@
       "Title": "Socket Slot Settings",
       "Subtitle": "Configure rules, description, and tint for this slot.",
       "SlotLabel": "Slot",
+      "SlotNameLabel": "Slot name",
       "HostLabel": "Host item",
+      "GemLabel": "Gem in slot",
+      "InspectHost": "Open Host Item",
+      "InspectHostHint": "Opens the host item sheet.",
       "InspectGem": "Inspect Gem",
       "InspectHint": "Opens the socketed gem in read-only mode.",
+      "EmptySlot": "Empty slot",
       "NoGem": "No gem is currently socketed in this slot.",
       "Save": "Save and Close",
       "Cancel": "Cancel",
@@ -100,7 +105,8 @@
       "Condition": {
         "Label": "Slot condition",
         "Hint": "Use JavaScript. Available variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
-        "Placeholder": "Example: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';"
+        "Placeholder": "Example: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';",
+        "Wiki": "Open wiki"
       },
       "Description": {
         "Label": "Slot description",
