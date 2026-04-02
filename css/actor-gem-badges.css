@@ -264,6 +264,17 @@ body.sc-sockets-target-cursor * {
   gap: 0.6rem;
 }
 
+.scsockets-docs-button i.fa-hat-wizard,
+.scsockets-docs-setting-row i.fa-hat-wizard {
+  color: #3cba54;
+}
+
+.scsockets-docs-button:hover i.fa-hat-wizard,
+.scsockets-docs-button:focus i.fa-hat-wizard {
+  color: #62d276;
+  text-shadow: 0 0 6px rgba(60, 186, 84, 0.35);
+}
+
 .sc-sockets-settings-card h4 {
   margin: 0;
   color: var(--sf-text-strong);

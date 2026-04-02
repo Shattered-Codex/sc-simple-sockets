@@ -221,7 +221,12 @@
       "SupportMenu": {
         "Name": "Support the developer",
         "Label": "Patreon support",
-        "Hint": "Get access to SC - More Gems with 70+ gems, and more every month. We are also building SC - Setforge to create item sets."
+        "Hint": "Get access to SC - More Gems with 120+ gems, and more every month. We are also building SC - Setforge to create item sets."
+      },
+      "DocumentationMenu": {
+        "Name": "Documentation",
+        "Label": "Open wiki",
+        "Hint": "Open the SC - Simple Sockets documentation wiki."
       },
       "SocketBehaviorMenu": {
         "Name": "Socket settings",
@@ -246,7 +251,7 @@
     "SupportCard": {
       "Description": "Support my work and stay up to date with exclusive modules and development progress.",
       "Intro": "Support us on Patreon to help us keep creating.",
-      "Exclusive": "Get access to the exclusive <strong>SC - More Gems</strong> module with 70+ gems and monthly updates. We are also building <strong>SC - Setforge</strong> so you can create item sets.",
+      "Exclusive": "Get access to the exclusive <strong>SC - More Gems</strong> module with 120+ gems and monthly updates. We are also building <strong>SC - Setforge</strong> so you can create item sets.",
       "Issues": "Issues / Requests",
       "Link": "Patreon",
       "PatreonModulesTitle": "Patreon modules",

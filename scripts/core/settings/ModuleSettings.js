@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { SocketBehaviorSettingsLauncher } from "./SocketBehaviorSettingsLauncher.js";
+import { DocumentationMenu } from "./DocumentationMenu.js";
 import { SupportMenu } from "./SupportMenu.js";
 
 export class ModuleSettings {
@@ -18,6 +19,7 @@ export class ModuleSettings {
   static SETTING_SOCKETABLE_ITEM_TYPES_MENU = "socketableItemTypesSettings";
   static SETTING_SOCKET_BEHAVIOR_MENU = "socketBehaviorSettings";
   static SETTING_SUPPORT_MENU = "supportMenu";
+  static SETTING_DOCUMENTATION_MENU = "docsMenu";
   static SETTING_HIDE_SUPPORT_CARD = "hideSupportCardUntilNextUpdate";
   static SETTING_SUPPORT_CARD_VERSION = "supportCardAcknowledgedVersion";
   static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
@@ -31,6 +33,7 @@ export class ModuleSettings {
   async register() {
     ModuleSettings.#registerRuntimeHooks();
     this.#registerSupportMenu();
+    this.#registerDocumentationMenu();
     this.#registerSocketBehaviorMenu();
     this.#registerEditSocketPermission();
     await this.#registerSocketableItemTypeSettings();
@@ -590,7 +593,7 @@ export class ModuleSettings {
     const label = Constants.localize("SCSockets.Settings.SupportMenu.Label", "Patreon support");
     const hint = Constants.localize(
       "SCSockets.Settings.SupportMenu.Hint",
-      "Get access to SC - More Gems with 70+ gems, and more every month. We are also building SC - Setforge to create item sets."
+      "Get access to SC - More Gems with 120+ gems, and more every month. We are also building SC - Setforge to create item sets."
     );
 
     game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_MENU, {
@@ -604,6 +607,28 @@ export class ModuleSettings {
 
     Hooks.on("renderSettingsConfig", (_app, html) => {
       SupportMenu.bindSettingsButton(html);
+    });
+  }
+
+  #registerDocumentationMenu() {
+    const name = Constants.localize("SCSockets.Settings.DocumentationMenu.Name", "Documentation");
+    const label = Constants.localize("SCSockets.Settings.DocumentationMenu.Label", "Open wiki");
+    const hint = Constants.localize(
+      "SCSockets.Settings.DocumentationMenu.Hint",
+      "Open the SC - Simple Sockets documentation wiki."
+    );
+
+    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_DOCUMENTATION_MENU, {
+      name,
+      label,
+      hint,
+      icon: "fas fa-hat-wizard",
+      type: DocumentationMenu,
+      restricted: true
+    });
+
+    Hooks.on("renderSettingsConfig", (_app, html) => {
+      DocumentationMenu.bindSettingsButton(html);
     });
   }
 

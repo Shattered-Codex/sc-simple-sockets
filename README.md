@@ -6,437 +6,569 @@
 
 # SC - Simple Sockets
 
-![Foundry VTT 13+](https://img.shields.io/badge/Foundry%20VTT-13%2B-orange?logo=foundry-vtt&logoColor=white)
-![System: dnd5e](https://img.shields.io/badge/System-dnd5e-blue)
-[![libWrapper Recommended](https://img.shields.io/badge/libWrapper-Recommended-8A2BE2)](https://github.com/ruipin/fvtt-lib-wrapper)
-[![Wiki](https://img.shields.io/badge/Wiki-SC%20Simple%20Sockets-1f6feb)](https://wiki.shattered-codex.com/modules/sc-simple-sockets)
-[![Support on Patreon](https://img.shields.io/badge/Patreon-Shattered%20Codex-FF424D?logo=patreon&logoColor=white)](https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme)
-![Forks][forks-shield]
-![Downloads](https://img.shields.io/github/downloads/Shattered-Codex/sc-simple-sockets/total)
+[![Wiki](https://img.shields.io/badge/Wiki-SC%20Simple%20Sockets-1f6feb?logo=bookstack&logoColor=white&style=for-the-badge)](https://wiki.shattered-codex.com/modules/sc-simple-sockets)
+[![Support on Patreon](https://img.shields.io/badge/Patreon-Shattered%20Codex-FF424D?logo=patreon&logoColor=white&style=for-the-badge)](https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme)
+![Foundry VTT 13+](https://img.shields.io/badge/Foundry%20VTT-13%2B-orange?logo=foundry-vtt&logoColor=white&style=for-the-badge)
+![System: dnd5e](https://img.shields.io/badge/System-dnd5e-blue?style=for-the-badge)
+[![libWrapper Recommended](https://img.shields.io/badge/libWrapper-Recommended-8A2BE2?style=for-the-badge)](https://github.com/ruipin/fvtt-lib-wrapper)
+![Downloads](https://img.shields.io/github/downloads/Shattered-Codex/sc-simple-sockets/total?style=for-the-badge)
+![Forks](https://img.shields.io/github/forks/Shattered-Codex/sc-simple-sockets.svg?style=for-the-badge)
 
+A lightweight module for adding sockets to **D&D 5e** items in **Foundry VTT**.
 
-Lightweight socketing for D&D 5e weapons and equipment. Add gem slots to items, drag and drop gem loot, and let the module move active effects and activities to the host item automatically. SC - Simple Sockets keeps your tables focused on play, not bookkeeping.
+With it, you can:
 
-[Request features or report issues](https://github.com/Shattered-Codex/sc-simple-sockets/issues)
+- add gem slots to weapons and equipment
+- drag gems into those slots
+- make the gem transfer effects and actions to the main item
+- show descriptions, icons, badges, and visual details without manual setup every time
+
+It is built to keep the workflow simple during play.
+
+[Report an issue or request a feature](https://github.com/Shattered-Codex/sc-simple-sockets/issues)  
 [Official Wiki](https://wiki.shattered-codex.com/modules/sc-simple-sockets)
 
 ---
 
+## Preview Image
+
+![Module overview image](https://i.imgur.com/xdOJCip.png)
+![Module overview image](https://i.imgur.com/ok1w56l.png)
+
+
+## What This Module Does
+
+The module works best when you understand these 3 parts:
+
+| Part | What it means | Example |
+| --- | --- | --- |
+| Host item | The item that will receive sockets | sword, armor, shield |
+| Gem | The item that goes into the socket | ruby, rune, shard, crystal |
+| Socket | The empty or filled slot inside the item | Slot 1, Slot 2, Slot 3 |
+
+
+Once a gem is inserted, the module can:
+
+- move the gem's **Active Effects** to the host item
+- move the gem's **Activities** to the host item
+- show which gems are equipped
+- show gem descriptions inside the host item sheet
+- return or delete the gem when it is removed, depending on your settings
+
+## Main Features
+
+- Adds a **Sockets** tab to supported item sheets.
+- Supports **list** and **grid** layouts.
+- Works with the default **dnd5e** sheet and **Tidy5e Sheet**.
+- Supports **drag and drop** gem socketing.
+- Automatically transfers **Active Effects** from the gem to the host item.
+- Automatically mirrors **Activities** from the gem to the host item.
+- Lets each gem restrict which items it can be used on.
+- Lets each socket have its own rule, description, and color.
+- Adds **Socket Descriptions** to the item sheet, with a button to send them to chat.
+- Shows visual badges in actor inventory and activity icons.
+- Includes a socket config window with gem inspection.
+- Lets you control which user roles can add or remove sockets.
+- Lets you set a maximum number of sockets per item.
+- Lets you choose whether removed gems are returned or deleted.
+- Supports custom loot subtypes so other item categories can behave like gems.
+- Exposes an API for macros and automations.
+- Includes ready-to-use gem compendium content.
+
+> **Want even more content?**  
+> If you want **120+ ready-to-use gems**, you can get the **SC - More Gems** module as a **Patreon supporter**.
+
+## Requirements
+
+- **Foundry VTT:** v13 or higher
+- **System:** dnd5e
+- **Recommended:** `libWrapper`
+
 ## Installation
 
-1. In Foundry's **Add-on Modules > Install Module** dialog, paste the manifest URL  
-   `https://github.com/Shattered-Codex/sc-simple-sockets/releases/latest/download/module.json`
-2. Install, then enable **SC - Simple Sockets** in your World's module list.
-3. (Optional) Install and activate [`libWrapper`](https://github.com/ruipin/fvtt-lib-wrapper) for safer compatibility with other modules.
+1. In Foundry, open **Add-on Modules > Install Module**.
+2. Paste this manifest URL:
 
-The module targets Foundry VTT v13+ with the official **dnd5e** system.
+```text
+https://github.com/Shattered-Codex/sc-simple-sockets/releases/latest/download/module.json
+```
 
-## Quick Start
+3. Install the module.
+4. Enable **SC - Simple Sockets** in your world.
+5. For better compatibility with other modules, also install and enable `libWrapper`.
 
-1. **Prepare a host item**. Open a socketable item and switch to the new **Sockets** tab.
-2. **Add slots**. Use `Add` to create one or more empty sockets.
-3. **Create or import gems**. Any **Loot** item whose subtype is configured as a gem can be socketed.
-4. **Configure the gem**. Optionally define allowed host item types, `Socket Description`, and `Additional Details`.
-5. **Socket the gem**. Drag a gem from an actor sheet, compendium, sidebar, or another supported source into an empty slot.
-6. **Configure the slot**. Click the slot edit control to add a slot-side condition, description, and color tint.
-7. **Unsocket when needed**. Remove the gem or the slot using the slot controls. Hold `Shift` to skip confirmation prompts.
 
-<<image suggestion>>
-<<image suggestion>>
-<<image suggestion>>
+## Recommended First Setup
 
-## Overview
+If this is your first time using the module, do this in order:
 
-SC - Simple Sockets adds a complete socket workflow for **dnd5e** items:
+1. Choose which item types can receive sockets.
+2. Choose which loot subtypes count as gems.
+3. Create or import a few gems.
+4. Define which items each gem can be used on.
+5. Add sockets to your items.
+6. Test by dragging a gem into a socket.
 
-- Host items gain a dedicated **Sockets** tab.
-- Gem items gain socket-specific configuration panels.
-- Socketed gems transfer their **Active Effects** to the host item.
-- Socketed gems mirror their **Activities** onto the host item.
-- Item sheets, actor inventory rows, activity rows, and description cards show socket state visually.
-- Tidy5e integration is built in, including the alternate layouts used by the module.
+## First Setup Image
 
-In practice, the module works with three document roles:
+Replace only the link below with your own image:
 
-| Role | What it is | What the module adds |
-| --- | --- | --- |
-| Host item | Usually a `weapon` or `equipment` item | Receives the **Sockets** tab and stores slots |
-| Gem item | A `loot` item whose subtype is treated as a gem | Gains gem-specific configuration and can be dropped into slots |
-| Socket slot | A per-item slot entry stored on the host item | May contain a gem and optional slot-side config |
 
-## Features
 
-- **Native sheet integration** – adds a first-class Sockets tab to the dnd5e item sheet and supports both Foundry VTT core and Application V2 layouts.
-- **Drag-and-drop socketing** – drop gem items directly into slots; invalid drops raise concise notifications.
-- **Automatic effect transfer** – gem active effects are moved onto the host item and marked for easy cleanup when the gem is removed.
-- **Activity mirroring** – gem activities (including uses) are cloned to the host item, so players can trigger gem powers without opening the gem document.
-- **Per-gem targeting rules** – restrict each gem to specific weapon or equipment subtypes so players only see valid sockets.
-- **Per-slot rules** – restrict each slot with its own JavaScript condition, description, and tint color.
-- **Visual indicators** – actor inventory lists show socket badges for equipped items, and item activity cards gain gem markers to show their source.
-- **Inventory-aware workflow** – gems are consumed or returned from the owning actor automatically, keeping quantities accurate.
-- **Tidy5e Sheet styling** – bundled CSS keeps the sockets list attractive and readable on the Tidy5e inventory layout.
+## How To Use It
 
-## How It Works
+### 1. Choose which items can receive sockets
 
-### 1. Host items
+![First setup example](https://i.imgur.com/rluTKbj.png)
 
-By default, host items are item types selected in **Socketable Item Types**. The default world selection is:
+By default, the module allows sockets on:
 
 - `weapon`
 - `equipment`
 
-If an item type is enabled as socketable, its sheet gains the **Sockets** tab and can store slots.
+That means weapons and equipment already work out of the box.
 
-### 2. Gem items
+You can change this in:
 
-By default, a gem is a **Loot** item with subtype `gem`. You can expand this through:
+**Configure Settings > Module Settings > SC - Simple Sockets**
+
+Look for:
+
+- **Socketable Item Types**
+
+Example:
+
+- If you want sockets only on weapons, leave only `weapon` selected.
+- If you want armor and shields too, keep `equipment` enabled.
+
+### 2. Decide what counts as a gem
+
+![First setup example](https://i.imgur.com/rluTKbj.png)
+![First setup example](https://i.imgur.com/lj24frK.png)
+
+By default, the module treats this as a gem:
+
+- an item of type **Loot**
+- with subtype **gem**
+
+You can change that in:
 
 - **Gem Loot Subtypes**
 - **Custom Loot Subtypes**
 
-When an item qualifies as a gem, the module exposes gem-side configuration such as:
+Example:
+
+| If you want to use... | Do this |
+| --- | --- |
+| Normal gems | Keep the subtype `gem` |
+| Runes | Create a custom subtype such as `rune` |
+| Fragments | Create a custom subtype such as `fragment` |
+
+### 3. Create or import gems
+
+You can:
+
+- use the compendium that already comes with the module
+- duplicate one of the ready-made gems
+- create a new gem by hand
+
+To create one manually:
+
+1. Create a **Loot** item.
+2. Choose a subtype that is accepted as a gem.
+3. Give it a name, image, and description.
+4. Add effects and activities if you want.
+5. Choose which items it can be used on.
+
+## Gem Sheet Image
+
+![Gem sheet example](https://i.imgur.com/NDWWcZW.png)
+![Gem sheet example](https://i.imgur.com/AyFNvzT.png)
+
+### 4. Choose where the gem can be used
+
+On the gem sheet, there is a section called:
 
 - **Allowed Item Types**
-- **Socket Description**
-- **Additional Details**
 
-### 3. Socketing flow
+![Gem sheet example](https://i.imgur.com/YMUEBk9.png)
 
-When a valid gem is dropped into a valid empty slot:
+This tells the module which host items can accept that gem.
 
-1. The module validates the gem against the gem-side allowed types.
-2. The module validates the gem against the slot-side condition, if one exists.
-3. The gem snapshot is stored in the slot.
-4. Active effects are transferred to the host item.
-5. Activities are mirrored to the host item.
-6. UI badges and descriptions update automatically.
+Examples:
 
-When a gem is removed:
-
-1. The transferred effects and mirrored activities are cleaned up.
-2. The gem is either returned to inventory or deleted, depending on settings.
-3. The slot configuration remains on the slot unless the slot itself is removed.
-
-### 4. Slot-side behavior
-
-Each slot can now have its own configuration, independent of the gem:
-
-- **Slot condition** – a JavaScript condition that must pass before a gem can be inserted.
-- **Slot description** – shown in **Socket Descriptions** while the slot is empty.
-- **Slot color** – tints the empty socket frame in supported UIs.
-
-If a gem is present in the slot:
-
-- The slot config window still opens from the slot.
-- The gem can be inspected from the slot config window in **read-only** mode.
-- The slot description is replaced by the gem's own `Socket Description`.
-- The tint is not applied to the gem image itself.
-
-## Layouts
-
-The module currently supports two socket-tab layouts plus Tidy integration:
-
-| Layout | Description |
+| Situation | How to set it |
 | --- | --- |
-| `Default list` | Vertical list layout with controls and metadata |
-| `Grid` | Compact grid-style socket presentation |
-| `Tidy5e / tidy 5e` | Integrated rendering inside Tidy5e item sheets, including the module's socket controls and descriptions |
+| The gem can be used on any supported item | Choose `All Types` |
+| The gem should work only on weapons | Choose the weapon group |
+| The gem should work only on specific subtypes | Choose the item type and subtype |
 
-The selected layout is controlled by **Socket tab layout** in the module settings.
+This prevents players from placing the wrong gem in the wrong item.
 
-## Item Sheet UI
+### 5. Add sockets to the host item
 
-### Sockets tab on host items
+Open the weapon or equipment sheet.
 
-Inside the **Sockets** tab, each slot can show:
+If the item is compatible, you will see the:
 
-- The empty socket frame or socketed gem image
-- A remove-gem button
-- A remove-slot button
-- A slot-config button
-- A hover pencil indicator for slot editing
+- **Sockets** tab
 
-The exact presentation depends on the selected layout, but the behavior is consistent across core and Tidy integrations.
+From there you can:
 
-### Socket Descriptions
+- add a new socket
+- remove a socket
+- remove a gem from a socket
+- open the socket config window
+- open the gem inside the socket
 
-The module injects a **Socket Descriptions** block into the item description area.
+If your world is set so the socket tab does not appear on every supported item, there is also a field in the item's **Details** tab:
 
-Behavior:
 
-- Empty slot with slot description: shows the empty socket icon and the slot description.
-- Filled slot with gem description: shows the gem icon and the gem `Socket Description`.
-- Slot tint: applied to the empty socket icon in supported views.
-- Chat button: sends the selected socket description card to chat.
+- **Enable Socket Tab**
 
-### Badges on actor sheets
+![Gem sheet example](https://i.imgur.com/eQROqfE.png)
+![Gem sheet example](https://i.imgur.com/0jvQXC7.png)
 
-Actor inventory rows display small socket badges for socketed items and empty sockets. Empty slot badges also respect the slot color when configured.
+That field turns the socket tab on for that specific item.
 
-## Configuring Gems
+## Sockets Tab Image
 
-### Allowed Item Types
 
-Every gem can define which host item types or subtypes are allowed.
+![Sockets tab example](https://i.imgur.com/g41AjAI.png)
 
-Use **Allowed Item Types** on the gem sheet to restrict a gem to:
+### 6. Drag the gem into the socket
 
-- All socketable item types
-- A whole host item type
-- Specific subtypes inside that type
+After setup:
 
-This is the **gem-side** validation rule. It stays active even if the slot also has its own condition.
+1. Open the host item.
+2. Go to the **Sockets** tab.
+3. Drag a gem into an empty socket.
 
-### Socket Description
+The module automatically checks:
 
-Every gem can define a `Socket Description`.
+- whether the item is really a valid gem
+- whether the gem can be used on that type of host item
+- whether the socket has any extra restriction
 
-This text appears in **Socket Descriptions** when:
+If everything is valid:
 
-- The gem is currently socketed in a host item
-- The slot contains that gem
+- the gem is inserted
+- effects are applied to the host item
+- activities are copied to the host item
+- visual details are updated
 
-This is separate from the host item's own description and separate from the slot-side description.
+### 7. Remove the gem when needed
+
+When you remove a gem, the module:
+
+- removes transferred effects
+- removes mirrored activities
+- returns the gem to inventory or deletes it, depending on your settings
+
+Tip:
+
+- hold `Shift` when removing a gem or socket to skip the confirmation prompt
+
+## Full Usage Example
+
+1. Create a sword.
+2. Add 2 sockets.
+3. Create a loot item with subtype `gem`.
+4. On the gem, allow it for weapons.
+5. Drag the gem into the sword.
+6. Watch the item gain the gem's effects and actions.
+
+## Detailed Features
+
+### Sockets tab on the item
+
+Inside the **Sockets** tab, each socket can show:
+
+- the empty socket image
+- the equipped gem image
+- the gem name
+- a remove gem button
+- a remove socket button
+- an edit socket button
+- a button to open the gem
+
+### List or grid layout
+
+You can choose between:
+
+| Layout | What it looks like |
+| --- | --- |
+| `Default list` | More detailed list view |
+| `Grid` | More compact visual view |
+
+![Module overview image](https://i.imgur.com/M6OZ5L3.png)
+![Module overview image](https://i.imgur.com/KWNJjWy.png)
+
+This changes only the look, not the rules.
+
+### Socket descriptions inside the item sheet
+
+![Module overview image](https://i.imgur.com/1A6L0yU.png)
+
+The module adds a block called:
+
+- **Socket Descriptions**
+
+It can show:
+
+- the empty socket description
+- the equipped gem description
+- the socket or gem icon
+- a button to send that description to chat
+
+Important rule:
+
+- if the socket is empty, the socket description is shown
+- if the socket has a gem, the gem description is shown instead
+
+### Badges on the actor inventory
+
+![Module overview image](https://i.imgur.com/sbgOY58.png)
+
+Items with sockets show visual badges in the actor inventory.
+
+These badges help you quickly see:
+
+- how many sockets the item has
+- which ones are filled
+- which ones are empty
+- whether an empty socket has a custom color
+
+### Badge on activities
+
+When an activity comes from a gem, the module adds a small badge with the gem image.
+
+That makes it easier to see:
+
+- which action belongs to the original item
+- which action came from a socketed gem
+
+![Module overview image](https://i.imgur.com/pQOiRzu.png)
+
+
+
+### Tidy5e integration
+
+The module works with:
+
+- the standard dnd5e item sheet
+- **Tidy5e Sheet**
+
 
 ### Additional Details
 
-The **Additional Details** section lets a gem define extra combat metadata used by the module's gem features.
+![Module overview image](https://i.imgur.com/8pNDRym.png)
 
-Current fields include:
+This section stores extra gem details.
+
+Right now it can include things such as:
+
+- extra damage
+- attack bonus
+- crit threshold
+- crit multiplier
+- relation to activity type
+
+In simple terms: this is where you place the more advanced combat details for the gem.
+
+## Example Gem Setup
+
+| Field | Simple example |
+| --- | --- |
+| Type | Loot |
+| Subtype | `gem` |
+| Allowed Item Types | weapons |
+| Socket Description | "Adds fire to the strike" |
+| Active Effects | extra damage bonus |
+| Activities | blast, ray, elemental strike |
+
+
+## Socket Settings
+
+Each socket can have its own configuration.
+
+This is important because it lets you create special sockets instead of making every slot behave the same way.
+
+### What each socket can store
+
+![Module overview image](https://i.imgur.com/LC2BIB0.png)
+![Module overview image](https://i.imgur.com/M8R4tJC.png)
+![Module overview image](https://i.imgur.com/Pu6TaKS.png)
+![Module overview image](https://i.imgur.com/Fy2bjZl.png)
 
 | Field | What it does |
 | --- | --- |
-| Extra damage rows | Adds configured damage packages to the gem |
-| `number` | Number of dice |
-| `die` | Die denomination such as `d4`, `d6`, `d8`, etc. |
-| `bonus` | Flat bonus added to that row |
-| `type` | dnd5e damage type |
-| `activity` | Scope for that row: `any`, `attack`, or `spell` |
-| Crit threshold | Optional threshold override used by gem logic |
-| Crit multiplier | Optional multiplier override used by gem logic |
-| Attack bonus | Optional attack bonus override used by gem logic |
+| `Slot condition` | Extra rule that accepts or blocks a gem |
+| `Slot description` | Text shown while the socket is empty |
+| `Slot color` | Color used for the empty socket |
+| `Inspect Gem` | Opens the gem currently inside that socket |
 
-### Creating Custom Gems
+### Slot description
 
-1. Create a new **Loot** item.
-2. Set its subtype to one of the configured gem subtypes.
-3. Add any **Active Effects** you want transferred to the host.
-4. Add any **Activities** you want mirrored to the host.
-5. Configure **Allowed Item Types**.
-6. Add a **Socket Description** if you want text shown in the host item.
-7. Optionally configure **Additional Details**.
+Good examples:
 
-If a gem temporarily stops matching gem criteria, the module preserves important gem data so you do not lose your setup.
+- "Accepts only frost gems"
+- "Ancient socket"
+- "Weakened slot"
 
-## Configuring Slots
+### Slot color
 
-Each slot has its own config window. This is opened from the slot edit control.
+The empty socket color can appear in:
 
-### Slot config fields
+- the Sockets tab
+- Tidy views
+- actor inventory badges
+- socket description entries
 
-| Field | What it does |
-| --- | --- |
-| `Slot condition` | JavaScript condition evaluated when a gem is dropped into the slot |
-| `Slot description` | Rich text shown in **Socket Descriptions** while the slot is empty |
-| `Slot color` | Hex color plus color picker used to tint the empty socket frame |
-| `Inspect Gem` | Opens the currently socketed gem in read-only mode |
+Important:
+
+- the color is for the **empty socket**
 
 ### Slot condition
 
-The slot condition is evaluated only for that slot. If the condition returns a falsy result, the gem cannot be socketed there.
+This is an advanced field.
 
-The field accepts either:
+If you do not like technical setup, you can ignore it.
 
-- A full body with `return`
-- A simple expression without `return`
+It is useful for extra rules such as:
 
-Examples:
+- only accept rare gems
+- only accept gems with a certain name
+- only accept gems in the first socket
+
+Ready-to-copy examples:
+
+Accept only gems with "Ruby" in the name:
 
 ```js
 return gem?.name?.includes("Ruby");
 ```
 
+Accept only rare gems:
+
 ```js
 getProperty(gem, "flags.world.rarity") === "rare"
 ```
+
+Accept only in the first socket of a character item:
 
 ```js
 slotIndex === 0 && actor?.type === "character"
 ```
 
-### Slot condition context parameters
-
-The slot condition currently receives the following values:
-
-| Parameter | Type | Description |
-| --- | --- | --- |
-| `actor` | `Actor \| null` | Owner actor of the host item, if any |
-| `deepClone` | `Function` | Shortcut to `foundry.utils.deepClone` |
-| `game` | `Game` | The current Foundry `game` object |
-| `gem` | `Item \| null` | Alias of `gemItem` |
-| `gemItem` | `Item \| null` | The gem being dropped |
-| `getProperty` | `Function` | Shortcut to `foundry.utils.getProperty` |
-| `hasProperty` | `Function` | Shortcut to `foundry.utils.hasProperty` |
-| `hostItem` | `Item \| null` | The item that owns the slot |
-| `item` | `Item \| null` | Alias of `hostItem` |
-| `moduleId` | `string` | The module id, currently `sc-simple-sockets` |
-| `slot` | `object \| null` | Deep-cloned snapshot of the slot before the drop |
-| `slotConfig` | `object` | Normalized slot configuration object |
-| `slotIndex` | `number \| null` | Zero-based slot index |
-| `source` | `object \| null` | Source drag/drop payload snapshot when available |
-| `user` | `User \| null` | Current user |
-
-Practical usage examples:
+Accept only fire gems:
 
 ```js
 return getProperty(gemItem, "flags.world.element") === "fire";
 ```
 
-```js
-return gem?.type === "loot" && hostItem?.type === "weapon";
-```
+If the rule is invalid or cannot be read, the module blocks the gem and shows a warning.
 
-```js
-return slotConfig.color === "#FF0000" && user?.isGM;
-```
+## Socket Configuration Image
 
-Notes:
+Replace only the link below with your own image:
 
-- If the field is blank, the slot accepts any gem that already passes the gem-side restrictions.
-- The function runs as async JavaScript, so keep it lightweight and deterministic.
-- A runtime error in the condition blocks the drop and shows a notification.
+![Socket configuration example](https://i.imgur.com/PXGNxG8.png)
 
-### Slot description
-
-`Slot description` is rich text and is used only while the slot is empty.
-
-When a gem is inserted:
-
-- The slot description is hidden for that slot.
-- The gem `Socket Description` takes over.
-
-### Slot color
-
-`Slot color` only affects the **empty** socket frame. The tint is used in:
-
-- The Sockets tab
-- Tidy socket views
-- Actor badge sockets
-- Socket Descriptions entries
+![Socket configuration example](https://i.imgur.com/NYEMiEx.png)
 
 ## Module Settings
 
-All settings live under **Configure Settings > Module Settings > SC - Simple Sockets**.
+All options are available in:
 
-### Main settings and menus
+**Configure Settings > Module Settings > SC - Simple Sockets**
 
-| Setting / Menu | Scope | Default | What it does |
-| --- | --- | --- | --- |
-| **Socket settings** | World menu | — | Opens the unified socket settings window |
-| **Edit Socket Permission** | World | `GM / Gamemaster` | Minimum role required to add or remove sockets |
-| **Maximum Number of Sockets per Item** | World | `6` | Max slot count per host item; use `-1` for unlimited |
-| **Delete Gem on Removal** | World | `false` | Deletes the gem instead of returning it to inventory |
-| **Gem damage layout in roll dialog** | Client | `true` | Enables the grouped-by-gem damage layout |
-| **Socket tab layout** | World | `Default list` | Chooses between list and grid socket layouts |
-| **Socketable Item Types** | World menu + stored array | `weapon`, `equipment` | Controls which item types may receive sockets |
-| **Gem Loot Subtypes** | World menu + stored array | `gem` | Selects which loot subtypes are treated as gems |
-| **Custom Loot Subtypes** | World menu + stored array | empty | Adds new custom loot subtype keys and labels |
-| **Support the developer / Patreon support** | World menu | — | Opens the support panel |
-| **Hide automatic support message until next update** | Client | `false` | Suppresses the versioned support card after it is shown |
+### Main options summary
 
-### Socket settings window
+| Setting | Default | What it does |
+| --- | --- | --- |
+| **Socket settings** | — | Opens the main module settings window |
+| **Enable Socket Tab on all items** | `true` | Shows the Sockets tab on all supported items |
+| **Edit Socket Permission** | GM | Defines who can add or remove sockets |
+| **Maximum Number of Sockets per Item** | `6` | Limits how many sockets each item can have |
+| **Delete Gem on Removal** | `false` | Decides whether the gem is returned or deleted |
+| **Gem damage layout in roll dialog** | `true` | Groups damage in the roll dialog by gem |
+| **Socket tab layout** | `Default list` | Chooses between list and grid |
+| **Socketable Item Types** | `weapon`, `equipment` | Defines which items can receive sockets |
+| **Gem Loot Subtypes** | `gem` | Defines which loot subtypes count as gems |
+| **Custom Loot Subtypes** | empty | Lets you create extra gem-like subtypes |
 
-The **Socket settings** menu groups the most important behavior options in one place:
+## Troubleshooting
 
-- **Socket rules**
-- **Display**
+### "I cannot drop the gem into the socket"
 
-Inside this window you can configure:
+Check:
 
-- Edit permission
-- Maximum sockets per item
-- Delete on removal
-- Gem damage roll layout
-- Socket tab layout
+1. whether the item is really **Loot**
+2. whether its subtype is marked as a gem subtype
+3. whether the gem allows that host item type
+4. whether the socket has an extra condition
 
-### Socketable Item Types
+### "The Sockets tab did not appear"
 
-Use **Configure Socketable Item Types** to decide which host item types can receive sockets.
+Check:
 
-Default selection:
+1. whether the item type is compatible
+2. whether the global tab setting is enabled
+3. if the global setting is off, whether **Enable Socket Tab** is turned on for that item
 
-- `weapon`
-- `equipment`
+### "The gem disappeared when I removed it"
 
-If a type is not selected here, items of that type will not receive the **Sockets** tab.
+That depends on:
 
-### Gem Loot Subtypes
+- **Delete Gem on Removal**
 
-Use **Configure Gem Loot Subtypes** to decide which loot subtypes count as gems.
+If that option is on, the gem is deleted when removed.
 
-Default selection:
+### "I want a more specific socket rule"
 
-- `gem`
+Use:
 
-This is useful when your table uses renamed or additional subtype categories.
+- **Slot condition**
 
-### Custom Loot Subtypes
+But this is optional and more advanced.
 
-Use **Configure Custom Loot Subtypes** to register extra loot subtype keys and labels.
+## For Macros and Automation
 
-Example:
+This section is optional.
 
-| Key | Label |
-| --- | --- |
-| `shard` | `Shard` |
-| `rune-fragment` | `Rune Fragment` |
+If you use macros, the module exposes an API at:
 
-After saving:
+```js
+game.modules.get("sc-simple-sockets").api
+```
 
-- The subtype becomes available in the dnd5e loot subtype dropdown.
-- It can be selected in **Gem Loot Subtypes**.
-- Items using it can behave as gems if selected.
-
-## API & Hooks
-
-The module exposes a runtime API at:
-
-`game.modules.get("sc-simple-sockets").api`
-
-### Sockets API
+### Socket functions
 
 ```js
 const api = game.modules.get("sc-simple-sockets")?.api?.sockets;
-
-// Accepts an Item document or an item UUID.
-const gems = await api.getItemGems(itemOrUuid);
-const slots = await api.getItemSlots(itemOrUuid);
 ```
 
-- `getItemGems(itemOrUuid, { includeSnapshots = false })` returns only slots containing gems.
-- `getItemSlots(itemOrUuid, { includeSnapshots = false })` returns all slots with `hasGem`, `slotIndex`, and slot data.
-- When `includeSnapshots` is `false` (default), `_gemData` is omitted from the payload.
-- Hook constants are exposed on the API as:
-  - `HOOK_SOCKET_ADDED`
-  - `HOOK_SOCKET_REMOVED`
+You can call:
 
-### Macro API
+- `getItemSlots(itemOrUuid)`
+- `getItemGems(itemOrUuid)`
+
+In simple terms:
+
+- one function lists all sockets on an item
+- the other lists only the gems currently socketed in that item
+
+### Macro functions
 
 ```js
 const macroApi = game.modules.get("sc-simple-sockets")?.api?.macro;
 ```
 
-Available methods:
+Available helpers:
 
-- `addSocketInteractive(options = {})`
-- `selectItemForSocket(options = {})`
-
-Current options:
-
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `renderSheet` | `boolean` | `true` | Used by the item-selection workflow defaults |
-| `notifications` | `boolean` | `true` | Shows or suppresses helper notifications during selection/workflow |
+- `addSocketInteractive()`
+- `selectItemForSocket()`
 
 Example:
 
@@ -446,135 +578,27 @@ await game.modules.get("sc-simple-sockets")?.api?.macro?.addSocketInteractive({
 });
 ```
 
-### API return shapes
+### Available hooks
 
-`getItemSlots(...)` returns:
-
-```js
-[
-  {
-    slotIndex: 0,
-    hasGem: true,
-    slot: {
-      name: "Empty",
-      img: "modules/sc-simple-sockets/assets/imgs/socket-slot.webp",
-      gem: { ... }
-    }
-  }
-]
-```
-
-`getItemGems(...)` returns:
-
-```js
-[
-  {
-    slotIndex: 0,
-    name: "Ruby Shard",
-    img: "path/to/image.webp",
-    uuid: "Item.xxx",
-    sourceUuid: "Compendium.xxx",
-    slot: { ... }
-  }
-]
-```
-
-### Hooks
+For automations, the module also triggers:
 
 - `sc-simple-sockets.socketAdded`
 - `sc-simple-sockets.socketRemoved`
 
-Both hooks receive:
-
-```js
-{
-  item, itemId, itemUuid,
-  actor, actorId,
-  slotIndex,
-  slot,
-  totalSlots,
-  userId
-}
-```
-
-Example:
-
-```js
-Hooks.on("sc-simple-sockets.socketAdded", (payload) => {
-  console.log("Socket added:", payload.item?.name, payload.slotIndex);
-});
-```
-
-## Compendium Content
-
-- `SC - Gems` — ready-to-use gem items demonstrating socket effects and activities. Import, duplicate, and tweak for your game.
-- `SC - Gems Macros` — macro support content shipped with the module pack list.
-
-If you want more ready-to-use gems and extra Shattered Codex module content, check the Patreon. Supporters can get access to **SC - More Gems**, which expands the gem library with prebuilt content:
-
-- Patreon: https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme
-- Wiki: https://wiki.shattered-codex.com/modules/sc-simple-sockets
-
-## Recommended Workflow
-
-1. Configure **Socketable Item Types** for the host items used in your world.
-2. Configure **Gem Loot Subtypes** and optionally **Custom Loot Subtypes**.
-3. Create or import gem items.
-4. On each gem, set:
-   - **Allowed Item Types**
-   - **Socket Description**
-   - **Additional Details**, if needed
-5. On each host item, add slots.
-6. On special slots, configure:
-   - **Slot condition**
-   - **Slot description**
-   - **Slot color**
-7. Drag gems into slots during play.
-
-## Examples
-
-### Example: elemental-only slot
-
-```js
-return getProperty(gem, "flags.world.element") === "fire";
-```
-
-### Example: first slot only accepts rare gems
-
-```js
-return slotIndex === 0 && getProperty(gemItem, "flags.world.rarity") === "rare";
-```
-
-### Example: only character-owned items can use this slot
-
-```js
-return actor?.type === "character";
-```
-
-### Example: gem usable only on weapons
-
-Configure the gem-side **Allowed Item Types** to a weapon group or weapon subtype, then optionally add a slot-side condition for a narrower rule.
-
-## Tips & Troubleshooting
-
-- You can hold `Shift` while removing a gem or deleting a socket to skip the confirmation dialog.
-- If sockets stop appearing, check **Socketable Item Types** first.
-- If a gem cannot be dropped into a slot, verify both the gem-side **Allowed Item Types** and the slot-side **Slot condition**.
-- If a gem is not recognized as a gem, confirm that its loot subtype is selected in **Gem Loot Subtypes**.
-- If a custom subtype does not appear, save it in **Custom Loot Subtypes** and reopen the item sheet.
-- If a slot description does not appear, remember that a socketed gem's `Socket Description` overrides the empty-slot description.
-- If slot tint is not visible, remember that tint is only applied while the slot is empty.
-
 ## Compatibility
 
-- **Foundry Version:** v13+ (verified on v13)
+- **Foundry Version:** v13+
 - **System:** dnd5e
-- **Sheet Modules:** Works with the core dnd5e item sheet and the community **Tidy5e Sheet** module.
-- **Recommended Modules:** [`libWrapper`](https://github.com/ruipin/fvtt-lib-wrapper) for conflict-free sheet hooks.
+- **Sheets:** default dnd5e sheet and **Tidy5e Sheet**
+- **Recommended module:** [`libWrapper`](https://github.com/ruipin/fvtt-lib-wrapper)
+
+## Useful Links
+
+- GitHub: https://github.com/Shattered-Codex/sc-simple-sockets
+- Issues: https://github.com/Shattered-Codex/sc-simple-sockets/issues
+- Wiki: https://wiki.shattered-codex.com/modules/sc-simple-sockets
+- Patreon: https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme
 
 ---
 
-SC - Simple Sockets is a Shattered Codex project. Pull requests and issue reports are welcome!
-
-
-[forks-shield]:https://img.shields.io/github/forks/Shattered-Codex/sc-simple-sockets.svg?style=flat-round
+SC - Simple Sockets is a Shattered Codex project. Pull requests, suggestions, and bug reports are welcome.
