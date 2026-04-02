@@ -452,13 +452,13 @@ return gem?.name?.includes("Ruby");
 Accept only rare gems:
 
 ```js
-getProperty(gem, "flags.world.rarity") === "rare"
+getProperty(gem, "system.rarity") === "rare"
 ```
 
-Accept only in the first socket of a character item:
+Accept only in the first socket:
 
 ```js
-slotIndex === 0 && actor?.type === "character"
+slotIndex === 0
 ```
 
 Accept only fire gems:
