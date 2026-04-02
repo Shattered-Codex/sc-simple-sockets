@@ -171,6 +171,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       gemName: slot?.gem?.name ?? slot?._gemData?.name ?? "",
       gemImg: slot?.gem?.img ?? slot?._gemData?.img ?? "",
       canInspectGem,
+      slotConfigName: slotConfig.name,
       condition: slotConfig.condition,
       description: slotConfig.description,
       descriptionEnriched,
@@ -370,6 +371,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     }
 
     return {
+      name: this.#readFieldValue("slotConfig.name"),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
       color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex"))

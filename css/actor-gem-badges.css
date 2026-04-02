@@ -942,6 +942,22 @@ body.sc-sockets-target-cursor * {
   background: color-mix(in srgb, var(--sf-panel-bg, #221f26) 92%, #4a394f 8%);
 }
 
+.socket-slot-config-app .socket-slot-config-name-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.socket-slot-config-app .socket-slot-config-name-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.socket-slot-config-app .socket-slot-config-name-field span {
+  color: var(--sf-text-strong);
+  font-weight: 600;
+}
+
 .socket-slot-config-app .socket-slot-config-color-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

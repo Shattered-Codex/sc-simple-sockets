@@ -7,11 +7,7 @@ export class GemEffectStore {
 
   static async stash(item) {
     if (!item?.effects?.size) {
-      // If there is nothing to stash, keep any existing payload so we can restore later.
-      const existing = item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_STASH);
-      if (!existing) {
-        await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_STASH);
-      }
+      // Nothing to stash — preserve any existing payload so we can restore later.
       return;
     }
     const payload = item.effects.map(e => {

@@ -9,6 +9,21 @@
             </div>
           </div>
 
+          <div class="socket-slot-config-name-row">
+            <label class="socket-slot-config-name-field">
+              <span>{{strings.slotNameLabel}}</span>
+              <input
+                type="text"
+                name="slotConfig.name"
+                class="sc-sockets-settings-control"
+                value="{{slotConfigName}}"
+                placeholder="{{strings.emptySlot}}"
+                autocomplete="off"
+                {{#unless editable}}disabled{{/unless}}
+              />
+            </label>
+          </div>
+
           <div class="socket-slot-config-item-stack">
             <article class="socket-slot-config-document-card">
               <div class="socket-slot-config-document-body">

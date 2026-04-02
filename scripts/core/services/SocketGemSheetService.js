@@ -110,7 +110,7 @@ export class SocketGemSheetService {
 
     try {
       const options = foundry.utils.mergeObject(
-        foundry.utils.deepClone(sheet.options ?? {}),
+        sheet.options ?? {},
         { editable: false },
         { inplace: false }
       );

@@ -43,11 +43,7 @@ export class GemLifecycleService {
     }
 
     const previous = item?.toObject?.() ?? item;
-    const next = foundry.utils.mergeObject(
-      foundry.utils.deepClone(previous),
-      foundry.utils.deepClone(changes),
-      { inplace: false }
-    );
+    const next = foundry.utils.mergeObject(previous, changes, { inplace: false });
 
     options[Constants.MODULE_ID] ??= {};
     options[Constants.MODULE_ID].gemTransition = {

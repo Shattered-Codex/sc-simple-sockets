@@ -87,7 +87,6 @@ export class TidyIntegration {
       return;
     }
     TidyIntegration.#api = api;
-    TidyIntegration.#registerGemFilter(api);
     TidyIntegration.#registerGemFilterTab(api);
     TidyIntegration.#registerGemDetailsTab(api);
     TidyIntegration.#registerSocketTab(api);
@@ -95,10 +94,6 @@ export class TidyIntegration {
     TidyIntegration.#registerSocketDescriptions(api);
     TidyIntegration.#registerSocketDescriptionContext();
     TidyIntegration.#associateExistingTabs(api);
-  }
-
-  static #registerGemFilter(api) {
-    // Disabled to avoid duplicate render; replaced by dedicated tab.
   }
 
   static #registerGemFilterTab(api) {

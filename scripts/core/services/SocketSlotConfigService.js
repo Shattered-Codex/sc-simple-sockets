@@ -7,13 +7,14 @@ const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
 
 export class SocketSlotConfigService {
   static #compiledConditionCache = new Map();
+  static #CONDITION_CACHE_LIMIT = 50;
 
   static getConfig(slot) {
     return getSlotConfig(slot);
   }
 
   static getSlot(hostItem, slotIndex) {
-    const slots = SocketStore.getSlots(hostItem);
+    const slots = SocketStore.peekSlots(hostItem);
     if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
       return null;
     }
@@ -109,6 +110,11 @@ const {
 ${body}`
     );
 
+    if (SocketSlotConfigService.#compiledConditionCache.size >= SocketSlotConfigService.#CONDITION_CACHE_LIMIT) {
+      SocketSlotConfigService.#compiledConditionCache.delete(
+        SocketSlotConfigService.#compiledConditionCache.keys().next().value
+      );
+    }
     SocketSlotConfigService.#compiledConditionCache.set(source, compiled);
     return compiled;
   }

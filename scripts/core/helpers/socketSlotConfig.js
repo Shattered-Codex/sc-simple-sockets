@@ -22,6 +22,7 @@ export function normalizeSlotColor(value) {
 
 export function normalizeSlotConfig(config = {}) {
   return {
+    name: normalizeText(config?.name),
     condition: normalizeText(config?.condition),
     description: normalizeText(config?.description),
     color: normalizeSlotColor(config?.color)

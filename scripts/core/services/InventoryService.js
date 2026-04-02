@@ -29,7 +29,7 @@ export class InventoryService {
       return;
     }
     const actor = hostItem.actor;
-    const payload = foundry.utils.duplicate(snap);
+    const payload = foundry.utils.deepClone(snap);
     if (!actor) {
       return;
     }

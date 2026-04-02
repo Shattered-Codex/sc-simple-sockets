@@ -177,15 +177,6 @@ export class ModuleSettings {
     if (ModuleSettings.#runtimeHooksRegistered) {
       return;
     }
-
-    Hooks.on("updateSetting", (setting) => {
-      if (setting?.key !== `${Constants.MODULE_ID}.${ModuleSettings.SETTING_SOCKET_TAB_LAYOUT}`) {
-        return;
-      }
-
-      ModuleSettings.refreshOpenSheets({ item: true, actor: false });
-    });
-
     ModuleSettings.#runtimeHooksRegistered = true;
   }
 
@@ -289,9 +280,10 @@ export class ModuleSettings {
         )
       },
       default: ModuleSettings.SOCKET_TAB_LAYOUT_LIST,
-      onChange: () => {
-        ModuleSettings.refreshOpenSheets({ item: true, actor: false });
-      }
+      onChange: foundry.utils.debounce(
+        () => ModuleSettings.refreshOpenSheets({ item: true, actor: false }),
+        150
+      )
     });
   }
 

@@ -13,7 +13,7 @@ export class SocketStore {
 
   static async addSlot(item, defaultSlot) {
     const slots = this.getSlots(item);
-    slots.push(foundry.utils.duplicate(defaultSlot));
+    slots.push(defaultSlot);
     return this.setSlots(item, slots);
   }
 

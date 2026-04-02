@@ -148,7 +148,7 @@ export class SocketService {
     if (!bypassPermission && !ModuleSettings.canAddOrRemoveSocket()) {
       return;
     }
-    const currentSlots = SocketStore.getSlots(hostItem);
+    const currentSlots = SocketStore.peekSlots(hostItem);
     const maxSlots = ModuleSettings.getMaxSockets();
     if (currentSlots.length >= maxSlots) {
       ui.notifications?.warn?.(
@@ -171,7 +171,7 @@ export class SocketService {
     if (!ModuleSettings.canAddOrRemoveSocket()) {
       return;
     }
-    const currentSlots = SocketStore.getSlots(hostItem);
+    const currentSlots = SocketStore.peekSlots(hostItem);
     if (!Number.isInteger(idx) || idx < 0 || idx >= currentSlots.length) {
       return;
     }
