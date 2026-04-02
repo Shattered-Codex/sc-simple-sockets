@@ -2,6 +2,8 @@ import { Constants } from "../../core/Constants.js";
 import { GemCriteria } from "./GemCriteria.js";
 
 export class GemDetailsBuilder {
+  static #dieOptionsCache = null;
+  static #damageTypeOptionsCache = null;
   /**
    * Builds the context consumed by the gem details tab template.
    * @param {Item|null} item
@@ -136,6 +138,9 @@ export class GemDetailsBuilder {
   }
 
   static #buildDieOptions() {
+    if (GemDetailsBuilder.#dieOptionsCache) {
+      return GemDetailsBuilder.#dieOptionsCache;
+    }
     const denominations = CONFIG?.Dice?.DamageRoll?.denominations ??
       CONFIG?.Dice?.d20?.denominations ??
       ["d4", "d6", "d8", "d10", "d12", "d20"];
@@ -146,18 +151,24 @@ export class GemDetailsBuilder {
     }));
     // Allow a blank entry.
     options.unshift({ value: "", label: "" });
+    GemDetailsBuilder.#dieOptionsCache = options;
     return options;
   }
 
   static #buildDamageTypeOptions() {
+    if (GemDetailsBuilder.#damageTypeOptionsCache) {
+      return GemDetailsBuilder.#damageTypeOptionsCache;
+    }
     const types = CONFIG?.DND5E?.damageTypes ?? {};
     const lang = game?.i18n?.lang ?? undefined;
-    return Object.entries(types)
+    const options = Object.entries(types)
       .map(([key, val]) => ({
         value: key,
         label: this.#localizeDamageLabel(val, key)
       }))
       .sort((a, b) => a.label.localeCompare(b.label, lang));
+    GemDetailsBuilder.#damageTypeOptionsCache = options;
+    return options;
   }
 
   static #localizeDamageLabel(value, fallback) {

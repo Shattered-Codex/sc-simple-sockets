@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
+import { getSlotConfig } from "./socketSlotConfig.js";
 
 export function buildSocketLayoutContext(item, {
   editable = false,
@@ -13,6 +14,7 @@ export function buildSocketLayoutContext(item, {
   return {
     editable,
     canManageSockets,
+    canConfigureSlots: canManageSockets,
     canAddSocketSlot,
     dataEditable: editable ? "true" : "false",
     socketTabLayout,
@@ -21,17 +23,32 @@ export function buildSocketLayoutContext(item, {
     useSocketGridLayout,
     useSocketListLayout: !useSocketGridLayout,
     sockets: Array.isArray(sockets)
-      ? sockets.map((slot, index) => ({
-        ...slot,
-        hasGem: Boolean(slot?.gem),
-        index,
-        displayIndex: index + 1,
-        slotFrameImg: Constants.SOCKET_SLOT_IMG,
-        gemImg: slot?.gem?.img ?? "",
-        gemName: slot?.gem?.name ?? "",
-        gemUuid: slot?.gem?.uuid ?? slot?.gem?.sourceUuid ?? slot?._gemData?.flags?.core?.sourceId ?? "",
-        hostItemUuid: item?.uuid ?? ""
-      }))
+      ? sockets.map((slot, index) => {
+        const slotConfig = getSlotConfig(slot);
+        const hasGem = Boolean(slot?.gem);
+        const tintColor = useSocketGridLayout
+          ? slotConfig.color
+          : (hasGem ? "" : slotConfig.color);
+        const slotMaskStyle = tintColor
+          ? `--sc-sockets-slot-color:${tintColor};`
+          : "";
+
+        return {
+          ...slot,
+          hasGem,
+          hasSlotTint: Boolean(tintColor),
+          index,
+          displayIndex: index + 1,
+          slotFrameImg: Constants.SOCKET_SLOT_IMG,
+          slotMaskStyle,
+          slotColor: tintColor,
+          slotConfig,
+          gemImg: slot?.gem?.img ?? "",
+          gemName: slot?.gem?.name ?? "",
+          gemUuid: slot?.gem?.uuid ?? slot?.gem?.sourceUuid ?? slot?._gemData?.flags?.core?.sourceId ?? "",
+          hostItemUuid: item?.uuid ?? ""
+        };
+      })
       : []
   };
 }

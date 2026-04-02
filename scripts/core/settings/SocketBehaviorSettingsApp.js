@@ -22,14 +22,15 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
       id: `${Constants.MODULE_ID}-socket-behavior-settings`,
       tag: "form",
       classes: ["sc-sockets", "sc-sockets-settings-theme", "socket-behavior-settings"],
-      position: { width: 760, height: 640 },
+      position: { width: 820, height: 680 },
       window: {
         title: Constants.localize(
           "SCSockets.Settings.SocketBehaviorMenu.Name",
           "Socket settings"
         ),
         icon: "fas fa-gears",
-        contentClasses: ["sc-sockets-settings-theme"]
+        contentClasses: ["sc-sockets-settings-theme"],
+        resizable: true
       },
       form: {
         handler: handleFormSubmit,
@@ -116,6 +117,54 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
       sections: [
         {
           title: Constants.localize(
+            "SCSockets.Settings.SocketBehaviorMenu.Sections.Display",
+            "Display"
+          ),
+          hint: Constants.localize(
+            "SCSockets.Settings.SocketBehaviorMenu.Sections.DisplayHint",
+            "Adjust how gem damage and the socket tab are presented in the UI."
+          ),
+          fields: [
+            {
+              key: ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS,
+              name: Constants.localize(
+                "SCSockets.Settings.EnableSocketTabForAllItems.Name",
+                "Enable Socket Tab on all items"
+              ),
+              hint: Constants.localize(
+                "SCSockets.Settings.EnableSocketTabForAllItems.Hint",
+                "If enabled, the Sockets tab appears on every socketable item. If disabled, it must be enabled per item in Details."
+              ),
+              isCheckbox: true,
+              checked: ModuleSettings.shouldEnableSocketTabForAllItems()
+            },
+            {
+              key: ModuleSettings.SETTING_GEM_ROLL_LAYOUT,
+              name: Constants.localize(
+                "SCSockets.Settings.GemRollLayout.Name",
+                "Gem damage layout in roll dialog"
+              ),
+              hint: Constants.localize(
+                "SCSockets.Settings.GemRollLayout.Hint",
+                "Enable the grouped-by-gem layout in the damage roll configuration dialog."
+              ),
+              isCheckbox: true,
+              checked: ModuleSettings.shouldUseGemRollLayout()
+            },
+            {
+              key: ModuleSettings.SETTING_SOCKET_TAB_LAYOUT,
+              name: Constants.localize("SCSockets.Settings.SocketTabLayout.Name", "Socket tab layout"),
+              hint: Constants.localize(
+                "SCSockets.Settings.SocketTabLayout.Hint",
+                "Choose how the sockets tab is displayed."
+              ),
+              isSelect: true,
+              choices: layoutChoices
+            },
+          ]
+        },
+        {
+          title: Constants.localize(
             "SCSockets.Settings.SocketBehaviorMenu.Sections.Rules",
             "Socket rules"
           ),
@@ -161,41 +210,6 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
               checked: ModuleSettings.shouldDeleteGemOnRemoval()
             }
           ]
-        },
-        {
-          title: Constants.localize(
-            "SCSockets.Settings.SocketBehaviorMenu.Sections.Display",
-            "Display"
-          ),
-          hint: Constants.localize(
-            "SCSockets.Settings.SocketBehaviorMenu.Sections.DisplayHint",
-            "Adjust how gem damage and the socket tab are presented in the UI."
-          ),
-          fields: [
-            {
-              key: ModuleSettings.SETTING_GEM_ROLL_LAYOUT,
-              name: Constants.localize(
-                "SCSockets.Settings.GemRollLayout.Name",
-                "Gem damage layout in roll dialog"
-              ),
-              hint: Constants.localize(
-                "SCSockets.Settings.GemRollLayout.Hint",
-                "Enable the grouped-by-gem layout in the damage roll configuration dialog."
-              ),
-              isCheckbox: true,
-              checked: ModuleSettings.shouldUseGemRollLayout()
-            },
-            {
-              key: ModuleSettings.SETTING_SOCKET_TAB_LAYOUT,
-              name: Constants.localize("SCSockets.Settings.SocketTabLayout.Name", "Socket tab layout"),
-              hint: Constants.localize(
-                "SCSockets.Settings.SocketTabLayout.Hint",
-                "Choose how the sockets tab is displayed."
-              ),
-              isSelect: true,
-              choices: layoutChoices
-            }
-          ]
         }
       ],
       strings: {
@@ -215,6 +229,7 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
     const deleteOnRemovalField = form.elements.namedItem(ModuleSettings.SETTING_DELETE_ON_REMOVE);
     const gemRollLayoutField = form.elements.namedItem(ModuleSettings.SETTING_GEM_ROLL_LAYOUT);
     const socketTabLayoutField = form.elements.namedItem(ModuleSettings.SETTING_SOCKET_TAB_LAYOUT);
+    const socketTabGlobalField = form.elements.namedItem(ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS);
 
     const roleChoices = ModuleSettings.getEditSocketPermissionChoices();
     const editPermissionValue = String(editPermissionField?.value ?? "");
@@ -230,6 +245,9 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
       : false;
     const gemRollLayout = gemRollLayoutField instanceof HTMLInputElement
       ? gemRollLayoutField.checked
+      : true;
+    const enableSocketTabForAllItems = socketTabGlobalField instanceof HTMLInputElement
+      ? socketTabGlobalField.checked
       : true;
 
     const socketTabLayoutValue = String(socketTabLayoutField?.value ?? "").trim().toLowerCase();
@@ -249,5 +267,10 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE, deleteOnRemoval);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT, gemRollLayout);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_TAB_LAYOUT, normalizedSocketTabLayout);
+    await game.settings.set(
+      Constants.MODULE_ID,
+      ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS,
+      enableSocketTabForAllItems
+    );
   }
 }

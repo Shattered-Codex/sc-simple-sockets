@@ -190,7 +190,7 @@ export class ActivityTransferService {
     }
 
     return Object.fromEntries(
-      Object.entries(foundry.utils.deepClone(activities))
+      Object.entries(activities)
         .filter(([, activity]) => ActivityTransferService.#isValidActivity(activity))
     );
   }
@@ -204,9 +204,9 @@ export class ActivityTransferService {
   }
 
   static async #replaceActivities(item, activities) {
-    const systemData = foundry.utils.deepClone(item?.toObject?.().system ?? {});
-    systemData.activities = foundry.utils.deepClone(activities ?? {});
-    await item.update({ system: systemData }, { diff: false, recursive: false });
+    const system = item?.toObject?.()?.system ?? {};
+    system.activities = activities ?? {};
+    await item.update({ system }, { diff: false, recursive: false });
     ActivityTransferService.#primeActivitySource(item);
   }
 
@@ -258,10 +258,11 @@ export class ActivityTransferService {
       const previousMeta = previous.activityMeta?.[activityId] ?? {};
       const slot = Array.isArray(sockets) ? sockets[slotIndex] : sockets?.[slotKey];
 
+      const prevGemImg1 = previous.gemImg !== Constants.SOCKET_SLOT_IMG ? previous.gemImg : null;
       rebuilt[slotKey] ??= {
         gemUuid: previous.gemUuid ?? sourceGem?.uuid ?? slot?.gem?.uuid ?? null,
         gemName: previous.gemName ?? slot?.gem?.name ?? slot?.name ?? fallbackName,
-        gemImg: previous.gemImg ?? slot?.gem?.img ?? slot?.img ?? Constants.SOCKET_SLOT_IMG,
+        gemImg: prevGemImg1 ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
         activityIds: [],
         activityMeta: {}
       };
@@ -288,10 +289,11 @@ export class ActivityTransferService {
 
         const previousMeta = payload?.activityMeta?.[activityId] ?? {};
         const slot = Array.isArray(sockets) ? sockets[slotIndex] : sockets?.[slotKey];
+        const prevGemImg2 = payload?.gemImg !== Constants.SOCKET_SLOT_IMG ? payload?.gemImg : null;
         rebuilt[slotKey] ??= {
           gemUuid: payload?.gemUuid ?? slot?.gem?.uuid ?? null,
           gemName: payload?.gemName ?? slot?.gem?.name ?? slot?.name ?? fallbackName,
-          gemImg: payload?.gemImg ?? slot?.gem?.img ?? slot?.img ?? Constants.SOCKET_SLOT_IMG,
+          gemImg: prevGemImg2 ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
           activityIds: [],
           activityMeta: {}
         };

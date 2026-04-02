@@ -18,7 +18,9 @@
       "CannotOpenGem": "Não foi possível abrir o item da gema.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada.",
-      "HostNotSocketable": "Este tipo de item não pode receber soquetes."
+      "HostNotSocketable": "Este tipo de item não pode receber soquetes.",
+      "SocketConditionFailed": "Essa gema não atende aos requisitos deste slot.",
+      "SocketConditionError": "A condição deste slot não pôde ser avaliada."
     },
     "Effects": {
       "DefaultName": "Efeito de Gema"
@@ -84,6 +86,50 @@
     "SocketDescription": {
       "Label": "Descrição do Socket"
     },
+    "ItemDetails": {
+      "CustomDetailsHeading": "Detalhes personalizados",
+      "EnableSocketTab": "Ativar Socket Tab",
+      "EnableSocketTabHint": "Exibe a aba de soquetes neste item quando a configuração global de exibição estiver desativada.",
+      "EnableSocketTabLockedHint": "Itens que já possuem sockets mantêm essa opção ativada até que todos os sockets sejam removidos."
+    },
+    "SocketSlotConfig": {
+      "Title": "Configurações do Slot",
+      "Subtitle": "Configure regras, descrição e cor deste slot.",
+      "SlotLabel": "Slot",
+      "SlotNameLabel": "Nome do slot",
+      "HostLabel": "Item base",
+      "GemLabel": "Gema no slot",
+      "InspectHost": "Abrir item base",
+      "InspectHostHint": "Abre a ficha do item base.",
+      "InspectGem": "Inspecionar gema",
+      "InspectHint": "Abre a gema encaixada em modo somente leitura.",
+      "EmptySlot": "Empty slot",
+      "NoGem": "Nenhuma gema está encaixada neste slot no momento.",
+      "Save": "Salvar e fechar",
+      "Cancel": "Cancelar",
+      "Saved": "Configurações do slot salvas.",
+      "Condition": {
+        "Label": "Condição do slot",
+        "Hint": "Use JavaScript. Variáveis disponíveis: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
+        "Placeholder": "Exemplo: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';",
+        "Wiki": "Abrir wiki"
+      },
+      "Description": {
+        "Label": "Descrição do slot",
+        "Hint": "Aparece em Descrições dos Sockets enquanto o slot estiver vazio. Quando uma gema for adicionada, a descrição da gema assume esse espaço."
+      },
+      "Color": {
+        "Label": "Cor do slot",
+        "Hint": "Aplicada apenas ao frame do socket vazio.",
+        "Preview": "Pré-visualização",
+        "HexLabel": "Hex",
+        "PickerLabel": "Seletor de cor",
+        "Clear": "Limpar"
+      },
+      "Validation": {
+        "InvalidCondition": "A condição do slot contém código inválido."
+      }
+    },
     "SocketDescriptions": {
       "Label": "Descrições dos Sockets",
       "SendToChat": "Enviar para o chat"
@@ -91,7 +137,9 @@
     "Tooltips": {
       "RemoveGem": "Remover a gema deste soquete.",
       "DeleteSocket": "Excluir este soquete do item.",
-      "DeleteSlotLabel": "Excluir soquete"
+      "DeleteSlotLabel": "Excluir soquete",
+      "ConfigureSlot": "Configurar este slot.",
+      "ConfigureSlotLabel": "Configurar slot"
     },
     "Settings": {
       "EditPermission": {
@@ -166,10 +214,19 @@
           "Grid": "Grade"
         }
       },
+      "EnableSocketTabForAllItems": {
+        "Name": "Ativar Socket Tab em todos os itens",
+        "Hint": "Se ativado, a aba de soquetes aparece em todos os itens socketáveis. Se desativado, ela precisa ser habilitada por item em Detalhes."
+      },
       "SupportMenu": {
         "Name": "Apoie o desenvolvedor",
         "Label": "Apoiar no Patreon",
-        "Hint": "Tenha acesso ao SC - More Gems com mais de 70 gemas e novidades todo mês. Também estamos criando o SC - Setforge para você montar sets de itens."
+        "Hint": "Tenha acesso ao SC - More Gems com mais de 120 gemas e novidades todo mês. Também estamos criando o SC - Setforge para você montar sets de itens."
+      },
+      "DocumentationMenu": {
+        "Name": "Documentação",
+        "Label": "Abrir wiki",
+        "Hint": "Abre a wiki de documentação do SC - Simple Sockets."
       },
       "SocketBehaviorMenu": {
         "Name": "Configurações de soquetes",
@@ -194,7 +251,7 @@
     "SupportCard": {
       "Description": "Apoie meu trabalho e acompanhe módulos exclusivos e o progresso do desenvolvimento.",
       "Intro": "Apoie-nos no Patreon para continuarmos criando.",
-      "Exclusive": "Tenha acesso ao módulo exclusivo <strong>SC - More Gems</strong> com mais de 70 gemas e atualizações mensais. Também estamos criando o <strong>SC - Setforge</strong> para você montar sets de itens.",
+      "Exclusive": "Tenha acesso ao módulo exclusivo <strong>SC - More Gems</strong> com mais de 120 gemas e atualizações mensais. Também estamos criando o <strong>SC - Setforge</strong> para você montar sets de itens.",
       "Issues": "Issues / Sugestões",
       "Link": "Patreon",
       "PatreonModulesTitle": "Módulos do Patreon",

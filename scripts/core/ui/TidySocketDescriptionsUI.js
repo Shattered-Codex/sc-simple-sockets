@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
+import { buildSocketDescriptionEntries } from "../helpers/socketDescriptionEntries.js";
 
 export class TidySocketDescriptionsUI {
   static SELECTOR = '[data-sc-sockets="socket-descriptions-tidy"]';
@@ -16,33 +17,21 @@ export class TidySocketDescriptionsUI {
     return text;
   }
 
+  static #buildIcon(entry) {
+    const tintClass = entry.isEmptySlot && entry.slotColor ? " has-slot-tint" : "";
+    const tintStyle = entry.isEmptySlot && entry.slotColor
+      ? ` style="--sc-sockets-slot-color:${TidySocketDescriptionsUI.#escapeHtml(entry.slotColor)};"`
+      : "";
+
+    return `
+      <div class="sc-sockets-socket-description-icon${tintClass}"${tintStyle}>
+        <img src="${TidySocketDescriptionsUI.#escapeHtml(entry.img)}" alt="${TidySocketDescriptionsUI.#escapeHtml(entry.name)}">
+      </div>
+    `;
+  }
+
   static async #buildEntries(item, slots) {
-    const getProperty = foundry?.utils?.getProperty;
-    const textEditor = Constants.getTextEditor();
-    const enrichmentOptions = {
-      secrets: item?.isOwner ?? false,
-      relativeTo: item,
-      rollData: item?.getRollData?.()
-    };
-
-    const entries = [];
-    for (const slot of slots) {
-      if (!slot?.gem) continue;
-      const description = typeof getProperty === "function"
-        ? getProperty(slot, `_gemData.flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_DESCRIPTION}`)
-        : slot?._gemData?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_SOCKET_DESCRIPTION];
-      if (!String(description ?? "").trim().length) {
-        continue;
-      }
-      const enriched = await textEditor?.enrichHTML?.(description, enrichmentOptions) ?? "";
-      entries.push({
-        name: slot?.gem?.name ?? slot?.name ?? Constants.localize("SCSockets.SocketEmptyName", "Empty"),
-        img: slot?.gem?.img ?? slot?.img ?? Constants.SOCKET_SLOT_IMG,
-        description: enriched
-      });
-    }
-
-    return entries;
+    return buildSocketDescriptionEntries(item, slots);
   }
 
   static #buildEditor({ label, entries, item }) {
@@ -57,7 +46,7 @@ export class TidySocketDescriptionsUI {
     const escapedSendLabel = TidySocketDescriptionsUI.#escapeHtml(sendLabel);
     const rows = entries.map((entry) => `
       <div class="sc-sockets-socket-description">
-        <img src="${TidySocketDescriptionsUI.#escapeHtml(entry.img)}" alt="${TidySocketDescriptionsUI.#escapeHtml(entry.name)}">
+        ${TidySocketDescriptionsUI.#buildIcon(entry)}
         <div class="sc-sockets-socket-description-body">
           <div class="sc-sockets-socket-description-header">
             <strong class="sc-sockets-socket-description-title">${TidySocketDescriptionsUI.#escapeHtml(entry.name)}</strong>
@@ -165,7 +154,7 @@ export class TidySocketDescriptionsUI {
         const row = target.closest(".sc-sockets-socket-description");
         if (!row) return;
 
-        const imgSrc = row.querySelector("img")?.getAttribute("src") ?? "";
+        const iconHtml = row.querySelector(".sc-sockets-socket-description-icon")?.outerHTML ?? "";
         const title = row.querySelector(".sc-sockets-socket-description-title")?.textContent?.trim() ?? "";
         const description = row.querySelector(".sc-sockets-socket-description-text")?.innerHTML ?? "";
         if (!description.trim()) {
@@ -176,7 +165,6 @@ export class TidySocketDescriptionsUI {
         const hostImg = section.dataset.scSocketsHostImg ?? "";
         const safeHostName = TidySocketDescriptionsUI.#escapeHtml(hostName);
         const safeHostImg = TidySocketDescriptionsUI.#escapeHtml(hostImg);
-        const safeImgSrc = TidySocketDescriptionsUI.#escapeHtml(imgSrc);
         const safeTitle = TidySocketDescriptionsUI.#escapeHtml(title);
         const hostHeader = hostName || hostImg
           ? `
@@ -191,7 +179,7 @@ export class TidySocketDescriptionsUI {
           <div class="sc-sockets-socket-description-chat-card">
             ${hostHeader}
             <div class="sc-sockets-socket-description">
-              <img src="${safeImgSrc}" alt="${safeTitle}">
+              ${iconHtml || `<div class="sc-sockets-socket-description-icon"><img src="" alt="${safeTitle}"></div>`}
               <div class="sc-sockets-socket-description-body">
                 <div class="sc-sockets-socket-description-header">
                   <strong class="sc-sockets-socket-description-title">${safeTitle}</strong>

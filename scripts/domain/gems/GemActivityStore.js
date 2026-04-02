@@ -31,22 +31,17 @@ export class GemActivityStore {
 
   static async removeAll(item) {
     if (!item) return;
-    const payload = item.getFlag(Constants.MODULE_ID, Constants.FLAG_ACTIVITY_STASH);
     if (!GemActivityStore.#hasEntries(item.system?.activities)) {
       return;
     }
 
-    const update = {};
+    // stash() is always called before removeAll() and preserves original uses.
+    const update = { "system.uses": GemActivityStore.#RESET_USES };
     for (const activity of item.system?.activities ?? []) {
       if (!activity?.id) continue;
       update[`system.activities.-=${activity.id}`] = null;
     }
-    if (payload?.uses) {
-      update["system.uses"] = GemActivityStore.#RESET_USES;
-    }
-    if (Object.keys(update).length) {
-      await item.update(update);
-    }
+    await item.update(update);
   }
 
   static async restore(item, { clearAfter = true } = {}) {
@@ -86,7 +81,7 @@ export class GemActivityStore {
     }
 
     return Object.fromEntries(
-      Object.entries(foundry.utils.deepClone(activities)).filter(([, activity]) => (
+      Object.entries(activities).filter(([, activity]) => (
         activity
         && typeof activity === "object"
         && typeof activity.type === "string"

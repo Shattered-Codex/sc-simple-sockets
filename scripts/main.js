@@ -32,7 +32,11 @@ TidyIntegration.register({
 
 Hooks.once("init", async function() {
   console.log(`${Constants.MODULE_ID} | init`);
-  
+
+  await loadTemplates([
+    `modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`
+  ]);
+
   const settings =  new ModuleSettings();
   await settings.register();
 

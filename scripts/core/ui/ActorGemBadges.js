@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { getSlotConfig } from "../helpers/socketSlotConfig.js";
 
 export class ActorGemBadges {
   static CSS_CLASS = "sc-sockets-badges";
@@ -327,12 +328,20 @@ static #scheduleInjection(target) {
     if (!slot?.gem) {
       el.classList.add("empty");
     }
+    const slotColor = !slot?.gem ? getSlotConfig(slot).color : "";
+    if (slotColor) {
+      el.classList.add("has-slot-tint");
+      el.style.setProperty("--sc-sockets-slot-color", slotColor);
+    }
 
     const img = document.createElement("img");
     const label = slot?.gem?.name ?? slot?.name ?? this.#emptySlotLabel();
     img.src = slot?.img ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG;
     img.alt = label;
     img.draggable = false;
+    if (slotColor) {
+      img.classList.add("is-tinted");
+    }
 
     this.#applySlotTooltip(el, slot, label);
 

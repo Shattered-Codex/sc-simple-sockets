@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { SocketBehaviorSettingsLauncher } from "./SocketBehaviorSettingsLauncher.js";
+import { DocumentationMenu } from "./DocumentationMenu.js";
 import { SupportMenu } from "./SupportMenu.js";
 
 export class ModuleSettings {
@@ -13,10 +14,12 @@ export class ModuleSettings {
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
   static SETTING_SOCKET_TAB_LAYOUT = "socketTabLayout";
+  static SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS = "enableSocketTabForAllItems";
   static SETTING_SOCKETABLE_ITEM_TYPES = "socketableItemTypes";
   static SETTING_SOCKETABLE_ITEM_TYPES_MENU = "socketableItemTypesSettings";
   static SETTING_SOCKET_BEHAVIOR_MENU = "socketBehaviorSettings";
   static SETTING_SUPPORT_MENU = "supportMenu";
+  static SETTING_DOCUMENTATION_MENU = "docsMenu";
   static SETTING_HIDE_SUPPORT_CARD = "hideSupportCardUntilNextUpdate";
   static SETTING_SUPPORT_CARD_VERSION = "supportCardAcknowledgedVersion";
   static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
@@ -30,6 +33,7 @@ export class ModuleSettings {
   async register() {
     ModuleSettings.#registerRuntimeHooks();
     this.#registerSupportMenu();
+    this.#registerDocumentationMenu();
     this.#registerSocketBehaviorMenu();
     this.#registerEditSocketPermission();
     await this.#registerSocketableItemTypeSettings();
@@ -37,6 +41,7 @@ export class ModuleSettings {
     this.#registerDeleteOnRemoval();
     this.#registerGemRollLayoutSetting();
     this.#registerSocketTabLayoutSetting();
+    this.#registerEnableSocketTabForAllItems();
     await this.#registerLootSubtypeSettings();
     this.#registerSupportCardSettings();
   }
@@ -162,6 +167,66 @@ export class ModuleSettings {
     return ModuleSettings.getSocketTabLayout() === ModuleSettings.SOCKET_TAB_LAYOUT_GRID;
   }
 
+  static shouldEnableSocketTabForAllItems() {
+    return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS) !== false;
+  }
+
+  static isItemSocketTabEnabledByFlag(item) {
+    return item?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_SOCKET_TAB_ENABLED) === true;
+  }
+
+  static isItemSocketTabToggleVisible(item) {
+    if (ModuleSettings.shouldEnableSocketTabForAllItems()) {
+      return false;
+    }
+
+    return ModuleSettings.isItemSocketableByType(item) || ModuleSettings.itemHasSockets(item);
+  }
+
+  static isItemSocketTabToggleLocked(item) {
+    return !ModuleSettings.shouldEnableSocketTabForAllItems() && ModuleSettings.itemHasSockets(item);
+  }
+
+  static isItemSocketTabVisible(item) {
+    if (!item) {
+      return false;
+    }
+
+    if (ModuleSettings.shouldEnableSocketTabForAllItems()) {
+      return ModuleSettings.isItemSocketable(item);
+    }
+
+    return ModuleSettings.itemHasSockets(item)
+      || (ModuleSettings.isItemSocketableByType(item) && ModuleSettings.isItemSocketTabEnabledByFlag(item));
+  }
+
+  static getItemSocketTabFieldName() {
+    return `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_TAB_ENABLED}`;
+  }
+
+  static async ensureItemSocketTabEnabled(item) {
+    if (!item || !ModuleSettings.itemHasSockets(item) || ModuleSettings.isItemSocketTabEnabledByFlag(item)) {
+      return false;
+    }
+
+    await item.setFlag(Constants.MODULE_ID, Constants.FLAG_SOCKET_TAB_ENABLED, true);
+    return true;
+  }
+
+  static async syncSocketTabFlagsForExistingItems() {
+    const items = [
+      ...(game.items ?? []),
+      ...(Array.from(game.actors ?? []).flatMap((actor) => Array.from(actor?.items ?? [])))
+    ];
+
+    for (const item of items) {
+      if (!ModuleSettings.itemHasSockets(item)) {
+        continue;
+      }
+      await ModuleSettings.ensureItemSocketTabEnabled(item);
+    }
+  }
+
   static getEditSocketPermissionChoices() {
     const roleEntries = Object.entries(CONST?.USER_ROLES ?? {})
       .filter(([, level]) => Number.isFinite(level))
@@ -177,16 +242,39 @@ export class ModuleSettings {
     if (ModuleSettings.#runtimeHooksRegistered) {
       return;
     }
+    ModuleSettings.#runtimeHooksRegistered = true;
 
-    Hooks.on("updateSetting", (setting) => {
-      if (setting?.key !== `${Constants.MODULE_ID}.${ModuleSettings.SETTING_SOCKET_TAB_LAYOUT}`) {
+    const syncItemSocketTabFlag = async (item) => {
+      if (ModuleSettings.shouldEnableSocketTabForAllItems()) {
         return;
       }
 
-      ModuleSettings.refreshOpenSheets({ item: true, actor: false });
+      if (!ModuleSettings.itemHasSockets(item) || ModuleSettings.isItemSocketTabEnabledByFlag(item)) {
+        return;
+      }
+
+      await ModuleSettings.ensureItemSocketTabEnabled(item);
+    };
+
+    Hooks.on("createItem", (item) => {
+      void syncItemSocketTabFlag(item);
     });
 
-    ModuleSettings.#runtimeHooksRegistered = true;
+    Hooks.on("updateItem", (item, changes) => {
+      if (ModuleSettings.shouldEnableSocketTabForAllItems()) {
+        return;
+      }
+
+      const socketsPath = `flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`;
+      const socketTabPath = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_TAB_ENABLED}`;
+      const changedSockets = foundry.utils.hasProperty(changes, socketsPath);
+      const changedSocketTab = foundry.utils.hasProperty(changes, socketTabPath);
+      if (!changedSockets && !changedSocketTab) {
+        return;
+      }
+
+      void syncItemSocketTabFlag(item);
+    });
   }
 
   static refreshOpenSheets({ item = true, actor = true } = {}) {
@@ -289,8 +377,35 @@ export class ModuleSettings {
         )
       },
       default: ModuleSettings.SOCKET_TAB_LAYOUT_LIST,
-      onChange: () => {
-        ModuleSettings.refreshOpenSheets({ item: true, actor: false });
+      onChange: foundry.utils.debounce(
+        () => ModuleSettings.refreshOpenSheets({ item: true, actor: false }),
+        150
+      )
+    });
+  }
+
+  #registerEnableSocketTabForAllItems() {
+    const name = Constants.localize(
+      "SCSockets.Settings.EnableSocketTabForAllItems.Name",
+      "Enable Socket Tab on all items"
+    );
+    const hint = Constants.localize(
+      "SCSockets.Settings.EnableSocketTabForAllItems.Hint",
+      "If enabled, the Sockets tab appears on every socketable item. If disabled, it must be enabled per item in Details."
+    );
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS, {
+      name,
+      hint,
+      scope: "world",
+      config: false,
+      type: Boolean,
+      default: true,
+      onChange: async (value) => {
+        if (value === false) {
+          await ModuleSettings.syncSocketTabFlagsForExistingItems();
+        }
+        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
       }
     });
   }
@@ -478,7 +593,7 @@ export class ModuleSettings {
     const label = Constants.localize("SCSockets.Settings.SupportMenu.Label", "Patreon support");
     const hint = Constants.localize(
       "SCSockets.Settings.SupportMenu.Hint",
-      "Get access to SC - More Gems with 70+ gems, and more every month. We are also building SC - Setforge to create item sets."
+      "Get access to SC - More Gems with 120+ gems, and more every month. We are also building SC - Setforge to create item sets."
     );
 
     game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_MENU, {
@@ -492,6 +607,28 @@ export class ModuleSettings {
 
     Hooks.on("renderSettingsConfig", (_app, html) => {
       SupportMenu.bindSettingsButton(html);
+    });
+  }
+
+  #registerDocumentationMenu() {
+    const name = Constants.localize("SCSockets.Settings.DocumentationMenu.Name", "Documentation");
+    const label = Constants.localize("SCSockets.Settings.DocumentationMenu.Label", "Open wiki");
+    const hint = Constants.localize(
+      "SCSockets.Settings.DocumentationMenu.Hint",
+      "Open the SC - Simple Sockets documentation wiki."
+    );
+
+    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_DOCUMENTATION_MENU, {
+      name,
+      label,
+      hint,
+      icon: "fas fa-hat-wizard",
+      type: DocumentationMenu,
+      restricted: true
+    });
+
+    Hooks.on("renderSettingsConfig", (_app, html) => {
+      DocumentationMenu.bindSettingsButton(html);
     });
   }
 

@@ -13,6 +13,7 @@ import { ActorGemBadges } from "../ui/ActorGemBadges.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
 import { buildSocketLayoutContext } from "../helpers/socketLayout.js";
+import { SocketSlotConfigApp } from "../ui/SocketSlotConfigApp.js";
 
 /**
  * Handles registering integrations with the Tidy5e sheet module when available.
@@ -23,6 +24,7 @@ export class TidyIntegration {
   static #socketExtension = null;
   static #gemFilterTabId = `${Constants.MODULE_ID}-tidy-gem-filter`;
   static #gemDetailsTabId = `${Constants.MODULE_ID}-tidy-gem-details`;
+  static #socketTabId = `${Constants.MODULE_ID}-tidy-sockets`;
   static #isTidyActive() {
     return Boolean(game?.modules?.get?.("tidy5e-sheet")?.active);
   }
@@ -86,18 +88,14 @@ export class TidyIntegration {
       return;
     }
     TidyIntegration.#api = api;
-    TidyIntegration.#registerGemFilter(api);
     TidyIntegration.#registerGemFilterTab(api);
     TidyIntegration.#registerGemDetailsTab(api);
     TidyIntegration.#registerSocketTab(api);
+    TidyIntegration.#registerSocketDetailsToggle(api);
     TidyIntegration.#registerActorBadges(api);
     TidyIntegration.#registerSocketDescriptions(api);
     TidyIntegration.#registerSocketDescriptionContext();
     TidyIntegration.#associateExistingTabs(api);
-  }
-
-  static #registerGemFilter(api) {
-    // Disabled to avoid duplicate render; replaced by dedicated tab.
   }
 
   static #registerGemFilterTab(api) {
@@ -244,21 +242,31 @@ export class TidyIntegration {
       return;
     }
 
-    const HandlebarsTab = api.models?.HandlebarsTab;
-    if (!HandlebarsTab) {
+    const HtmlTab = api.models?.HtmlTab;
+    if (!HtmlTab) {
       return;
     }
 
-    const tabId = `${Constants.MODULE_ID}-tidy-sockets`;
-
-    const socketsTab = new HandlebarsTab({
-      tabId,
+    const socketsTab = new HtmlTab({
+      tabId: TidyIntegration.#socketTabId,
       title: Constants.localize("SCSockets.TabLabel", "Sockets"),
-      path: `modules/${Constants.MODULE_ID}/templates/tidy/item-socket-tab.hbs`,
-      getData: (context) => TidyIntegration.#buildSocketTabData(context),
+      html: (data) => data?.scSocketsRenderedTabHtml ?? "",
+      getData: async (context) => {
+        const socketTab = TidyIntegration.#buildSocketTabData(context);
+        const scSocketsRenderedTabHtml = await foundry.applications.handlebars.renderTemplate(
+          `modules/${Constants.MODULE_ID}/templates/tidy/item-socket-tab.hbs`,
+          socketTab
+        );
+
+        return {
+          ...context,
+          ...socketTab,
+          scSocketsRenderedTabHtml
+        };
+      },
       enabled: (context) => {
         const item = TidyIntegration.#resolveItem(context);
-        return !!item && TidyIntegration.#socketExtension.isSockeable(item);
+        return !!item && ModuleSettings.isItemSocketTabVisible(item);
       },
       onRender: (params) => TidyIntegration.#onSocketTabRender(params)
     });
@@ -272,6 +280,53 @@ export class TidyIntegration {
     };
 
     api.registerItemTab(socketsTab);
+  }
+
+  static #registerSocketDetailsToggle(api) {
+    const HtmlContent = api.models?.HtmlContent;
+    if (!HtmlContent || !TidyIntegration.#socketExtension) {
+      return;
+    }
+
+    api.registerItemContent(
+      new HtmlContent({
+        html: `<div class="sc-sockets-tidy-item-toggle-slot" data-sc-sockets="tidy-item-socket-toggle-slot"></div>`,
+        renderScheme: "force",
+        injectParams: {
+          selector: '[data-tab-contents-for="details"]',
+          position: "beforeend"
+        },
+        enabled: (params) => {
+          const item = TidyIntegration.#resolveItem(params);
+          return ModuleSettings.isItemSocketTabToggleVisible(item);
+        },
+        onRender: async (params) => {
+          const slot = params.element?.querySelector?.('[data-sc-sockets="tidy-item-socket-toggle-slot"]');
+          if (!(slot instanceof HTMLElement)) {
+            return;
+          }
+
+          const toggle = TidyIntegration.#socketExtension.buildItemSocketTabToggleContext(params.app, {
+            includePart: false
+          });
+
+          slot.innerHTML = await foundry.applications.handlebars.renderTemplate(
+            `/modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`,
+            { socketTabToggle: toggle }
+          );
+
+          params.element.querySelectorAll?.('[data-sc-sockets="tidy-item-socket-toggle-slot"] [data-sc-sockets-item-toggle-root]')
+            ?.forEach((node, index) => {
+              if (index > 0) {
+                node.remove();
+              }
+            });
+        }
+      }),
+      {
+        layout: ["classic", "quadrone"]
+      }
+    );
   }
 
   static #associateExistingTabs(api) {
@@ -333,6 +388,7 @@ export class TidyIntegration {
     }
 
     const isGem = GemCriteria.matches(item);
+    const shouldShowSocketTab = ModuleSettings.isItemSocketTabVisible(item);
 
     const runtime = TidyIntegration.#api?.runtime?.ItemSheetQuadroneRuntime;
     const defaults = runtime?.getDefaultTabIds?.(item?.type) ?? [];
@@ -352,6 +408,7 @@ export class TidyIntegration {
     const ensureIds = new Set([
       "description",
       "details",
+      ...(shouldShowSocketTab ? [TidyIntegration.#socketTabId] : []),
       ...(isGem ? [
         "activities",
         "effects",
@@ -367,20 +424,23 @@ export class TidyIntegration {
       ensureIds.delete(id);
     }
 
-    if (isGem && ensureIds.size) {
+    if (ensureIds.size) {
       for (const id of ensureIds) {
         desired.push(id);
       }
     }
 
-    if (!isGem) {
-      // Remove Activities/Effects when leaving gem subtype.
-      const filtered = desired.filter((id) => ![
+    const blockedIds = [
+      ...(!shouldShowSocketTab ? [TidyIntegration.#socketTabId] : []),
+      ...(!isGem ? [
         "activities",
         "effects",
         TidyIntegration.#gemFilterTabId,
         TidyIntegration.#gemDetailsTabId
-      ].includes(id));
+      ] : [])
+    ];
+    if (blockedIds.length) {
+      const filtered = desired.filter((id) => !blockedIds.includes(id));
       desired.length = 0;
       desired.push(...filtered);
     }
@@ -484,7 +544,7 @@ export class TidyIntegration {
       return;
     }
 
-    if (!TidyIntegration.#socketExtension?.isSockeable(sheet.item)) {
+    if (!ModuleSettings.isItemSocketTabVisible(sheet.item)) {
       return;
     }
 
@@ -532,6 +592,9 @@ export class TidyIntegration {
           break;
         case "openGemFromSlot":
           await TidyIntegration.#handleOpenGem(event, target, sheet);
+          break;
+        case "openSocketSlotConfig":
+          await TidyIntegration.#handleOpenSocketSlotConfig(event, target, sheet);
           break;
         default:
           break;
@@ -597,6 +660,21 @@ export class TidyIntegration {
     await SocketGemSheetService.openFromHost(sheet.item, idx);
   }
 
+  static async #handleOpenSocketSlotConfig(event, target, sheet) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const idx = TidyIntegration.#resolveIndex(target);
+    if (idx === null) {
+      return;
+    }
+
+    SocketSlotConfigApp.open(sheet.item, idx, {
+      parentApp: sheet,
+      editable: sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
+    });
+  }
+
   static #resolveIndex(target) {
     const value = target.dataset.index ?? target.closest?.("[data-index]")?.dataset.index;
     const idx = Number(value);
@@ -620,8 +698,7 @@ export class TidyIntegration {
     const slots = SocketService.getSlots(item);
     const total = Array.isArray(slots) ? slots.length : 0;
     const filled = total ? slots.filter((slot) => slot?.gem).length : 0;
-    const tabId = `${Constants.MODULE_ID}-tidy-sockets`;
-    const anchor = sheet.element?.querySelector?.(`[data-tab-id="${tabId}"]`);
+    const anchor = sheet.element?.querySelector?.(`[data-tab-id="${TidyIntegration.#socketTabId}"]`);
     if (!anchor) {
       return;
     }

@@ -6,6 +6,7 @@ import { InventoryService } from "./InventoryService.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { SocketSlot } from "../model/SocketSlot.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
+import { SocketSlotConfigService } from "./SocketSlotConfigService.js";
 
 export class SocketService {
   static async addGem(hostItem, idx, source) {
@@ -62,6 +63,23 @@ export class SocketService {
       );
     }
 
+    const conditionResult = await SocketSlotConfigService.evaluateCondition({
+      hostItem,
+      slot: slots[idx],
+      slotIndex: idx,
+      gemItem,
+      source
+    });
+    if (!conditionResult.allowed) {
+      const key = conditionResult.error
+        ? "SCSockets.Notifications.SocketConditionError"
+        : "SCSockets.Notifications.SocketConditionFailed";
+      const fallback = conditionResult.error
+        ? "This socket condition could not be evaluated."
+        : "That gem does not meet this socket's requirements.";
+      return ui.notifications?.warn?.(Constants.localize(key, fallback));
+    }
+
     const previousSlot = slots[idx] ?? {};
     const shouldReturnReplacedGem = Boolean(previousSlot?.gem) && !ModuleSettings.shouldDeleteGemOnRemoval();
     const replacedGemSnapshot = shouldReturnReplacedGem
@@ -107,7 +125,7 @@ export class SocketService {
 
     await EffectService.removeGemEffects(hostItem, idx);
     await ActivityTransferService.removeForSlot(hostItem, idx);
-    slots[idx] = SocketSlot.makeDefault();
+    slots[idx] = SocketSlot.clearGem(slot, idx);
     await SocketStore.setSlots(hostItem, slots);
     ui.notifications?.info?.(
       Constants.localize("SCSockets.Notifications.GemUnsocketed", "Gem unsocketed.")
@@ -130,7 +148,7 @@ export class SocketService {
     if (!bypassPermission && !ModuleSettings.canAddOrRemoveSocket()) {
       return;
     }
-    const currentSlots = SocketStore.getSlots(hostItem);
+    const currentSlots = SocketStore.peekSlots(hostItem);
     const maxSlots = ModuleSettings.getMaxSockets();
     if (currentSlots.length >= maxSlots) {
       ui.notifications?.warn?.(
@@ -153,7 +171,7 @@ export class SocketService {
     if (!ModuleSettings.canAddOrRemoveSocket()) {
       return;
     }
-    const currentSlots = SocketStore.getSlots(hostItem);
+    const currentSlots = SocketStore.peekSlots(hostItem);
     if (!Number.isInteger(idx) || idx < 0 || idx >= currentSlots.length) {
       return;
     }
@@ -170,6 +188,10 @@ export class SocketService {
 
   static getSlots(hostItem) {
     return SocketStore.peekSlots(hostItem);
+  }
+
+  static async updateSlotConfig(hostItem, idx, config) {
+    return SocketSlotConfigService.updateConfig(hostItem, idx, config);
   }
 
   static #gemMatchesHostType(gemItem, hostItem) {

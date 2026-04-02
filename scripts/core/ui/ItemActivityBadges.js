@@ -98,9 +98,11 @@ export class ItemActivityBadges {
       const socketInfo = Array.isArray(sockets) ? sockets[slotIndex] : sockets?.[slotKey];
       for (const activityId of activityIds) {
         const info = meta[activityId] ?? {};
+        const flagImg = info.gemImg !== Constants.SOCKET_SLOT_IMG ? info.gemImg : null;
+        const entryImg = entry.gemImg !== Constants.SOCKET_SLOT_IMG ? entry.gemImg : null;
         map.set(activityId, {
           slot: slotKey,
-          gemImg: info.gemImg ?? entry.gemImg ?? socketInfo?.img ?? socketInfo?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
+          gemImg: socketInfo?.gem?.img ?? flagImg ?? entryImg ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
           gemName: info.gemName ?? entry.gemName ?? socketInfo?.gem?.name ?? socketInfo?.name ?? item.name,
           activityName: info.activityName ?? null,
           sourceId: info.sourceId ?? null

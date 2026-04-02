@@ -28,8 +28,7 @@ export class GemCriteria {
     }
 
     return ModuleSettings.getGemLootSubtypes()
-      .map((value) => String(value ?? "").trim().toLowerCase())
-      .includes(normalized);
+      .some((value) => String(value ?? "").trim().toLowerCase() === normalized);
   }
 
   static hasTypeUpdate(changes) {
