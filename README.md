@@ -8,7 +8,7 @@
 
 [![Wiki](https://img.shields.io/badge/Wiki-SC%20Simple%20Sockets-1f6feb?logo=bookstack&logoColor=white&style=for-the-badge)](https://wiki.shattered-codex.com/modules/sc-simple-sockets)
 [![Support on Patreon](https://img.shields.io/badge/Patreon-Shattered%20Codex-FF424D?logo=patreon&logoColor=white&style=for-the-badge)](https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme)
-![Foundry VTT 13+](https://img.shields.io/badge/Foundry%20VTT-13%2B-orange?logo=foundry-vtt&logoColor=white&style=for-the-badge)
+![Foundry VTT 13-14](https://img.shields.io/badge/Foundry%20VTT-v13%20%7C%20v14-orange?logo=foundry-vtt&logoColor=white&style=for-the-badge)
 ![System: dnd5e](https://img.shields.io/badge/System-dnd5e-blue?style=for-the-badge)
 [![libWrapper Recommended](https://img.shields.io/badge/libWrapper-Recommended-8A2BE2?style=for-the-badge)](https://github.com/ruipin/fvtt-lib-wrapper)
 ![Downloads](https://img.shields.io/github/downloads/Shattered-Codex/sc-simple-sockets/total?style=for-the-badge)
@@ -80,7 +80,7 @@ Once a gem is inserted, the module can:
 
 ## Requirements
 
-- **Foundry VTT:** v13 or higher
+- **Foundry VTT:** v13 and v14
 - **System:** dnd5e
 - **Recommended:** `libWrapper`
 
@@ -587,7 +587,7 @@ For automations, the module also triggers:
 
 ## Compatibility
 
-- **Foundry Version:** v13+
+- **Foundry Version:** v13 and v14
 - **System:** dnd5e
 - **Sheets:** default dnd5e sheet and **Tidy5e Sheet**
 - **Recommended module:** [`libWrapper`](https://github.com/ruipin/fvtt-lib-wrapper)
