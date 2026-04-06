@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { ItemResolver } from "../ItemResolver.js";
 
 /**
  * Handles one-time data migrations for the module.
@@ -17,7 +18,7 @@ export class DataMigration {
    * Bump this string whenever a new migration is added.
    * Format: "<module-version>-<short-description>"
    */
-  static #CURRENT_VERSION = "1.1.17-loot-activity-fields";
+  static #CURRENT_VERSION = "1.1.17-slot-item-ref-keys";
 
   /** Entry point — call once from the `ready` hook (GM only). */
   static async run() {
@@ -30,6 +31,7 @@ export class DataMigration {
 
     try {
       await DataMigration.#migrateLootActivityFields();
+      await DataMigration.#migrateSocketGemSnapshots();
     } catch (e) {
       console.error(`[${Constants.MODULE_ID}] | Migration failed, will retry on next load:`, e);
       return;
@@ -133,12 +135,92 @@ export class DataMigration {
     }
   }
 
+  /**
+   * Normalizes stored gem snapshots inside socket flags.
+   *
+   * Older snapshots could store the full gem source object directly in `_gemData`.
+   * On newer Foundry/dnd5e versions that can cause `Item.update()` to interpret
+   * nested item-like data as embedded documents during socket updates.
+   *
+   * Compacting the snapshot keeps the UI/runtime behavior the same while avoiding
+   * invalid embedded-document payloads on later updates.
+   */
+  static async #migrateSocketGemSnapshots() {
+    const allItems = DataMigration.#collectAllItemsWithSockets();
+    const toMigrate = [];
+
+    for (const item of allItems) {
+      const slots = item.getFlag(Constants.MODULE_ID, Constants.FLAGS.sockets);
+      if (!Array.isArray(slots) || !slots.some((slot) => slot?._gemData)) {
+        continue;
+      }
+
+      const normalized = foundry.utils.deepClone(slots);
+      ItemResolver.normalizeSocketSlots(normalized);
+
+      if (JSON.stringify(normalized) === JSON.stringify(slots)) {
+        continue;
+      }
+
+      toMigrate.push({ item, slots: normalized });
+    }
+
+    if (!toMigrate.length) {
+      console.log(`[${Constants.MODULE_ID}] | No socket gem snapshots need migration.`);
+      return;
+    }
+
+    console.log(`[${Constants.MODULE_ID}] | Migrating ${toMigrate.length} item(s) with legacy socket gem snapshots...`);
+
+    const byActor = new Map();
+    const standalone = [];
+
+    for (const entry of toMigrate) {
+      if (entry.item.actor) {
+        if (!byActor.has(entry.item.actor)) byActor.set(entry.item.actor, []);
+        byActor.get(entry.item.actor).push(entry);
+      } else {
+        standalone.push(entry);
+      }
+    }
+
+    for (const [actor, entries] of byActor) {
+      const updates = entries.map(({ item, slots }) => ({
+        _id: item.id,
+        [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots
+      }));
+
+      try {
+        await actor.updateEmbeddedDocuments("Item", updates);
+      } catch (e) {
+        console.warn(`[${Constants.MODULE_ID}] | Failed to migrate socket snapshots on actor "${actor.name}":`, e);
+      }
+    }
+
+    for (const { item, slots } of standalone) {
+      try {
+        await item.update({
+          [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots
+        });
+      } catch (e) {
+        console.warn(`[${Constants.MODULE_ID}] | Failed to migrate socket snapshots for "${item.name}" (${item.uuid}):`, e);
+      }
+    }
+  }
+
   static #collectAllLootItems() {
     const type = Constants.ITEM_TYPE_LOOT;
     const worldItems = [...(game.items ?? [])].filter((i) => i?.type === type);
     const actorItems = [...(game.actors ?? [])]
       .flatMap((a) => [...(a?.items ?? [])])
       .filter((i) => i?.type === type);
+    return [...worldItems, ...actorItems];
+  }
+
+  static #collectAllItemsWithSockets() {
+    const worldItems = [...(game.items ?? [])];
+    const actorItems = [...(game.actors ?? [])]
+      .flatMap((actor) => [...(actor?.items ?? [])]);
     return [...worldItems, ...actorItems];
   }
 }

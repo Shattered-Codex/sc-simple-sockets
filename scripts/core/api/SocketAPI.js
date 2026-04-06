@@ -46,13 +46,12 @@ export class SocketAPI {
     for (let slotIndex = 0; slotIndex < slots.length; slotIndex += 1) {
       const slot = slots[slotIndex];
       if (!slot?.gem) continue;
-
       gems.push({
         slotIndex,
         name: slot?.gem?.name ?? slot?.name ?? null,
         img: slot?.gem?.img ?? slot?.img ?? null,
-        uuid: slot?.gem?.uuid ?? slot?._gemData?.uuid ?? null,
-        sourceUuid: slot?.gem?.sourceUuid ?? null,
+        uuid: null,
+        sourceUuid: null,
         slot: SocketAPI.#sanitizeSlot(slot, { includeSnapshots })
       });
     }

@@ -15,19 +15,12 @@ export class SocketSlot {
   }
 
   static fillFromGem(prev, gemItem, gemSnap, slotIndex) {
-    const sourceUuid =
-      gemItem?.flags?.core?.sourceId ??
-      globalThis?.foundry?.utils?.getProperty(gemSnap, "flags.core.sourceId") ??
-      null;
-
     const slotConfig = getSlotConfig(prev);
 
     return {
       ...(prev ?? this.makeDefault()),
       slotConfig,
       gem: {
-        uuid: gemItem.uuid,
-        sourceUuid,
         name: gemItem.name,
         img: gemItem.img
       },

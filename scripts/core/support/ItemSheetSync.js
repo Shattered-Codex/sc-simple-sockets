@@ -25,17 +25,29 @@ export class ItemSheetSync {
       return item ?? null;
     }
 
-    const embedded = item.parent?.items?.get?.(item.id);
+    const root = ItemSheetSync.#resolveRootItem(item);
+
+    const byUuid = ItemSheetSync.#resolveByUuid(root?.uuid);
+    if (byUuid) {
+      return byUuid;
+    }
+
+    const embedded = root?.parent?.items?.get?.(root.id);
     if (embedded) {
       return embedded;
     }
 
-    const worldItem = game?.items?.get?.(item.id);
+    const actorItem = root?.actor?.items?.get?.(root.id);
+    if (actorItem) {
+      return actorItem;
+    }
+
+    const worldItem = game?.items?.get?.(root.id);
     if (worldItem) {
       return worldItem;
     }
 
-    return item;
+    return root ?? item;
   }
 
   static syncSheetDocument(sheet, item) {
@@ -131,5 +143,40 @@ export class ItemSheetSync {
     }
 
     return (candidate.parent?.uuid ?? null) === (item.parent?.uuid ?? null);
+  }
+
+  static #resolveRootItem(item) {
+    let current = item ?? null;
+    const visited = new Set();
+
+    while (current?.documentName === "Item" && current?.parent?.documentName === "Item") {
+      const key = current.uuid ?? current.id ?? null;
+      if (key && visited.has(key)) {
+        break;
+      }
+      if (key) {
+        visited.add(key);
+      }
+      current = current.parent;
+    }
+
+    return current ?? item ?? null;
+  }
+
+  static #resolveByUuid(uuid) {
+    if (typeof uuid !== "string" || !uuid.length) {
+      return null;
+    }
+
+    try {
+      const syncResolved = typeof fromUuidSync === "function" ? fromUuidSync(uuid, { strict: false }) : null;
+      if (syncResolved?.documentName === "Item") {
+        return syncResolved;
+      }
+    } catch {
+      // Fall through to collection lookups.
+    }
+
+    return null;
   }
 }

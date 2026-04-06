@@ -1,8 +1,8 @@
 import { Constants } from "../Constants.js";
+import { ItemResolver } from "../ItemResolver.js";
 import { getSlotConfig } from "./socketSlotConfig.js";
 
 export async function buildSocketDescriptionEntries(item, slots) {
-  const getProperty = foundry?.utils?.getProperty;
   const textEditor = Constants.getTextEditor();
   const enrichmentOptions = {
     secrets: item?.isOwner ?? false,
@@ -14,11 +14,7 @@ export async function buildSocketDescriptionEntries(item, slots) {
   for (const slot of slots) {
     const slotConfig = getSlotConfig(slot);
     const gemDescription = slot?.gem
-      ? (
-        typeof getProperty === "function"
-          ? getProperty(slot, `_gemData.flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_DESCRIPTION}`)
-          : slot?._gemData?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_SOCKET_DESCRIPTION]
-      )
+      ? (ItemResolver.getSnapshotMeta(slot?._gemData)?.socketDescription ?? "")
       : "";
     const slotDescription = slotConfig.description;
     const description = slot?.gem ? gemDescription : slotDescription;

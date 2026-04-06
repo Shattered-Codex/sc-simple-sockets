@@ -126,7 +126,7 @@ export class SocketService {
     const previousSlot = slots[idx] ?? {};
     const shouldReturnReplacedGem = Boolean(previousSlot?.gem) && !ModuleSettings.shouldDeleteGemOnRemoval();
     const replacedGemSnapshot = shouldReturnReplacedGem
-      ? foundry.utils.deepClone(previousSlot?._gemData ?? null)
+      ? ItemResolver.expandSnapshot(previousSlot?._gemData ?? null)
       : null;
 
     const noRender = SocketService.#buildInternalUpdateOptions({ render: false });
@@ -141,6 +141,7 @@ export class SocketService {
 
     const snap = ItemResolver.snapshotOne(gemItem);
     slots[idx] = SocketSlot.fillFromGem(slots[idx], gemItem, snap, idx);
+    ItemResolver.normalizeSocketSlots(slots);
 
     await EffectService.applyGemEffects(hostItem, idx, gemItem, noRender);
     await ActivityTransferService.applyFromGem(hostItem, idx, gemItem, {
@@ -175,7 +176,7 @@ export class SocketService {
 
     if (!ModuleSettings.shouldDeleteGemOnRemoval()) {
       try {
-        await InventoryService.returnOne(hostItem, slot._gemData);
+        await InventoryService.returnOne(hostItem, ItemResolver.expandSnapshot(slot._gemData));
       } catch (e) {
         console.warn("return inventory failed:", e);
       }
@@ -190,6 +191,7 @@ export class SocketService {
     }
 
     slots[idx] = SocketSlot.clearGem(slot, idx);
+    ItemResolver.normalizeSocketSlots(slots);
     await ActivityTransferService.removeForSlot(hostItem, idx, {
       ...noRender,
       [Constants.MODULE_ID]: {

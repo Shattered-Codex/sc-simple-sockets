@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { ItemResolver } from "../ItemResolver.js";
 import { getSlotConfig } from "../helpers/socketSlotConfig.js";
 
 export class ActorGemBadges {
@@ -474,8 +475,7 @@ static #scheduleInjection(target) {
       };
     }
 
-    const getProperty = globalThis?.foundry?.utils?.getProperty;
-    const description = getProperty?.(slot, "_gemData.system.description.value");
+    const description = ItemResolver.getSnapshotMeta(slot?._gemData)?.description;
     const textEditor = Constants.getTextEditor();
     if (description && typeof textEditor?.stripHTML === "function") {
       const plain = textEditor.stripHTML(description)?.trim();
@@ -563,16 +563,7 @@ static #scheduleInjection(target) {
   }
 
   static #collectCandidateUuids(slot) {
-    const candidates = [];
-    const direct = slot?.gem?.uuid ?? slot?.gem?.flags?.core?.sourceId ?? slot?.gem?.sourceUuid;
-    if (direct) {
-      candidates.push(direct);
-    }
-    const stored = slot?.gem?.flags?.core?.sourceId ?? slot?._gemData?.flags?.core?.sourceId;
-    if (stored) {
-      candidates.push(stored);
-    }
-    return candidates;
+    return [];
   }
 
   static #emptySlotLabel() {

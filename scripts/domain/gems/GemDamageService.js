@@ -1,4 +1,5 @@
 import { Constants } from "../../core/Constants.js";
+import { ItemResolver } from "../../core/ItemResolver.js";
 import { SocketStore } from "../../core/SocketStore.js";
 import { GemDetailsBuilder } from "./GemDetailsBuilder.js";
 import { Compatibility } from "../../core/support/Compatibility.js";
@@ -129,7 +130,7 @@ export class GemDamageService {
             name: gem.name ?? slot?.name,
             img: gem.img ?? slot?.img,
             slot: slot?._slot ?? slotIndex,
-            uuid: gem.uuid ?? slot?.gem?.uuid ?? slot?._gemData?.uuid
+            uuid: null
           }
         });
       }
@@ -155,17 +156,9 @@ export class GemDamageService {
       return null;
     }
     if (slot._gemData) {
-      return slot._gemData;
+      return ItemResolver.expandSnapshot(slot._gemData) ?? slot._gemData;
     }
 
-    const uuid = slot.gem?.uuid ?? slot.gem?.sourceUuid;
-    if (uuid && typeof fromUuidSync === "function") {
-      try {
-        return fromUuidSync(uuid);
-      } catch (error) {
-        console.warn(`[${Constants.MODULE_ID}] Unable to resolve gem from uuid ${uuid}:`, error);
-      }
-    }
     return null;
   }
 

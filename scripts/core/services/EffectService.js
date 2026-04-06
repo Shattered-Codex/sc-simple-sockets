@@ -19,7 +19,6 @@ export class EffectService {
       data.flags ??= {};
       data.flags[Constants.MODULE_ID] ??= {};
       data.flags[Constants.MODULE_ID][Constants.FLAG_SOURCE_GEM] = {
-        uuid: gemItem.uuid,
         slot: slotIndex
       };
       return data;

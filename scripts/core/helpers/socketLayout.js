@@ -45,7 +45,7 @@ export function buildSocketLayoutContext(item, {
           slotConfig,
           gemImg: slot?.gem?.img ?? "",
           gemName: slot?.gem?.name ?? "",
-          gemUuid: slot?.gem?.uuid ?? slot?.gem?.sourceUuid ?? slot?._gemData?.flags?.core?.sourceId ?? "",
+          gemUuid: "",
           hostItemUuid: item?.uuid ?? ""
         };
       })
