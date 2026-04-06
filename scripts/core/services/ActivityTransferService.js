@@ -40,9 +40,11 @@ export class ActivityTransferService {
       const ActivityClass = config.documentClass;
       if (typeof ActivityClass?.availableForItem === "function"
         && ActivityClass.availableForItem(hostItem) === false) {
-        console.warn(
-          `[${Constants.MODULE_ID}] skipping incompatible activity type "${type}" for host item type "${hostItem?.type ?? "unknown"}"`
-        );
+        if (Constants.isDebugEnabled()) {
+          console.warn(
+            `[${Constants.MODULE_ID}] skipping incompatible activity type "${type}" for host item type "${hostItem?.type ?? "unknown"}"`
+          );
+        }
         continue;
       }
 
@@ -462,29 +464,31 @@ export class ActivityTransferService {
     try {
       return await HostItemUpdateService.update(hostItem, updateData, updateOptions);
     } catch (error) {
-      const flattenObject = foundry?.utils?.flattenObject;
-      const flattened = typeof flattenObject === "function" ? flattenObject(updateData) : {};
-      const activityPaths = Object.keys(flattened).filter((key) => key.startsWith("system.activities."));
-      const resolved = HostItemUpdateService.resolve(hostItem);
-      console.error(`[${Constants.MODULE_ID}] host item update failed`, {
-        error,
-        reason: context.reason ?? "unknown",
-        hostItemUuid: hostItem?.uuid ?? null,
-        hostItemId: hostItem?.id ?? null,
-        hostItemName: hostItem?.name ?? null,
-        hostItemParentDocumentName: hostItem?.parent?.documentName ?? null,
-        hostItemParentUuid: hostItem?.parent?.uuid ?? null,
-        resolvedWorldItemMatches: Boolean(hostItem?.id && game?.items?.get?.(hostItem.id) === hostItem),
-        resolvedHostItemUuid: resolved?.uuid ?? null,
-        resolvedHostItemParentDocumentName: resolved?.parent?.documentName ?? null,
-        resolvedHostItemParentUuid: resolved?.parent?.uuid ?? null,
-        updateKeys: Object.keys(updateData ?? {}),
-        activityPaths,
-        activityPathSamples: activityPaths.slice(0, 10).map((path) => ({
-          path,
-          keys: updateData[path] && typeof updateData[path] === "object" ? Object.keys(updateData[path]) : null
-        }))
-      });
+      if (Constants.isDebugEnabled()) {
+        const flattenObject = foundry?.utils?.flattenObject;
+        const flattened = typeof flattenObject === "function" ? flattenObject(updateData) : {};
+        const activityPaths = Object.keys(flattened).filter((key) => key.startsWith("system.activities."));
+        const resolved = HostItemUpdateService.resolve(hostItem);
+        console.error(`[${Constants.MODULE_ID}] host item update failed`, {
+          error,
+          reason: context.reason ?? "unknown",
+          hostItemUuid: hostItem?.uuid ?? null,
+          hostItemId: hostItem?.id ?? null,
+          hostItemName: hostItem?.name ?? null,
+          hostItemParentDocumentName: hostItem?.parent?.documentName ?? null,
+          hostItemParentUuid: hostItem?.parent?.uuid ?? null,
+          resolvedWorldItemMatches: Boolean(hostItem?.id && game?.items?.get?.(hostItem.id) === hostItem),
+          resolvedHostItemUuid: resolved?.uuid ?? null,
+          resolvedHostItemParentDocumentName: resolved?.parent?.documentName ?? null,
+          resolvedHostItemParentUuid: resolved?.parent?.uuid ?? null,
+          updateKeys: Object.keys(updateData ?? {}),
+          activityPaths,
+          activityPathSamples: activityPaths.slice(0, 10).map((path) => ({
+            path,
+            keys: updateData[path] && typeof updateData[path] === "object" ? Object.keys(updateData[path]) : null
+          }))
+        });
+      }
       throw error;
     }
   }

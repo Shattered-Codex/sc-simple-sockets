@@ -1,3 +1,4 @@
+import { Constants } from "../Constants.js";
 import { ItemSheetSync } from "./ItemSheetSync.js";
 
 export class HostItemUpdateService {
@@ -50,19 +51,21 @@ export class HostItemUpdateService {
       }], operation);
       return updated ?? game?.items?.get?.(item.id) ?? item;
     } catch (error) {
-      console.error("[sc-simple-sockets] HostItemUpdateService.update failed", {
-        error,
-        itemUuid: item?.uuid ?? null,
-        itemId: item?.id ?? null,
-        itemParentDocumentName: item?.parent?.documentName ?? null,
-        itemParentUuid: item?.parent?.uuid ?? null,
-        optionsParentDocumentName: options?.parent?.documentName ?? null,
-        optionsParentUuid: options?.parent?.uuid ?? null,
-        optionsParentUuidRaw: options?.parentUuid ?? null,
-        operationParentDocumentName: operation?.parent?.documentName ?? null,
-        operationParentUuid: operation?.parent?.uuid ?? null,
-        operationParentUuidRaw: operation?.parentUuid ?? null
-      });
+      if (Constants.isDebugEnabled()) {
+        console.error(`[${Constants.MODULE_ID}] HostItemUpdateService.update failed`, {
+          error,
+          itemUuid: item?.uuid ?? null,
+          itemId: item?.id ?? null,
+          itemParentDocumentName: item?.parent?.documentName ?? null,
+          itemParentUuid: item?.parent?.uuid ?? null,
+          optionsParentDocumentName: options?.parent?.documentName ?? null,
+          optionsParentUuid: options?.parent?.uuid ?? null,
+          optionsParentUuidRaw: options?.parentUuid ?? null,
+          operationParentDocumentName: operation?.parent?.documentName ?? null,
+          operationParentUuid: operation?.parent?.uuid ?? null,
+          operationParentUuidRaw: operation?.parentUuid ?? null
+        });
+      }
       throw error;
     }
   }

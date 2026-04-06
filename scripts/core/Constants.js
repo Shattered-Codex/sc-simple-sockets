@@ -58,4 +58,14 @@ export class Constants {
 
     return fallback ?? key;
   }
+
+  static isDebugEnabled() {
+    try {
+      return Boolean(
+        game?.modules?.get?.("_dev-mode")?.api?.getPackageDebugValue?.(Constants.MODULE_ID)
+      );
+    } catch {
+      return false;
+    }
+  }
 }
