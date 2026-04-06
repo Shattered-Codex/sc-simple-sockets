@@ -31,15 +31,15 @@ export class GemActivityStore {
 
   static async removeAll(item) {
     if (!item) return;
-    if (!GemActivityStore.#hasEntries(item.system?.activities)) {
+    const ids = GemActivityStore.#extractActivityIds(item);
+    if (!ids.length) {
       return;
     }
 
     // stash() is always called before removeAll() and preserves original uses.
     const update = { "system.uses": GemActivityStore.#RESET_USES };
-    for (const activity of item.system?.activities ?? []) {
-      if (!activity?.id) continue;
-      update[`system.activities.-=${activity.id}`] = null;
+    for (const id of ids) {
+      update[`system.activities.-=${id}`] = null;
     }
     await item.update(update);
   }
@@ -88,5 +88,22 @@ export class GemActivityStore {
         && activity.type.length
       ))
     );
+  }
+
+  static #extractActivityIds(item) {
+    const sourceActivities = item?.toObject?.()?.system?.activities;
+    if (sourceActivities && typeof sourceActivities === "object" && !Array.isArray(sourceActivities)) {
+      const sanitized = GemActivityStore.#sanitizeActivities(sourceActivities);
+      return Object.keys(sanitized).filter((id) => typeof id === "string" && id.length);
+    }
+
+    const collection = item?.system?.activities;
+    if (typeof collection?.map === "function") {
+      return collection
+        .map((activity) => activity?.id ?? activity?._id ?? null)
+        .filter((id) => typeof id === "string" && id.length);
+    }
+
+    return [];
   }
 }

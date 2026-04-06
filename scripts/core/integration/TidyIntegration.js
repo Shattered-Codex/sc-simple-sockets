@@ -5,15 +5,12 @@ import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { TransferFilterUI } from "../ui/TransferFilterUI.js";
 import { GemDetailsUI } from "../ui/GemDetailsUI.js";
 import { TidySocketDescriptionsUI } from "../ui/TidySocketDescriptionsUI.js";
-import { SocketTooltipUI } from "../ui/SocketTooltipUI.js";
-import { DragHelper } from "../../helpers/DragHelper.js";
-import { SocketService } from "../services/SocketService.js";
-import { DialogHelper } from "../../helpers/DialogHelper.js";
 import { ActorGemBadges } from "../ui/ActorGemBadges.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
-import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
+import { SocketService } from "../services/SocketService.js";
 import { buildSocketLayoutContext } from "../helpers/socketLayout.js";
-import { SocketSlotConfigApp } from "../ui/SocketSlotConfigApp.js";
+import { TidySocketTabHandler } from "./TidySocketTabHandler.js";
+import { Compatibility } from "../support/Compatibility.js";
 
 /**
  * Handles registering integrations with the Tidy5e sheet module when available.
@@ -62,7 +59,7 @@ export class TidyIntegration {
         void TidyIntegration.#syncTabConfiguration(sheet.item, sheet);
       }
 
-      if (sheet instanceof dnd5e.applications.item.ItemSheet5e) {
+      if (Compatibility.isDnd5eItemSheet(sheet)) {
         void TidyIntegration.#syncTabConfiguration(sheet.item, sheet);
       }
     });
@@ -348,10 +345,11 @@ export class TidyIntegration {
           if (item) {
             return GemCriteria.matches(item);
           }
-          const subtype = foundry?.utils?.getProperty?.(context, "system.type.value");
+          const subtype = foundry?.utils?.getProperty?.(context, "system.type.value")
+            ?? foundry?.utils?.getProperty?.(context, "system.type.subtype");
           return GemCriteria.matches({
             type: Constants.ITEM_TYPE_LOOT,
-            system: { type: { value: subtype } }
+            system: { type: { value: subtype, subtype } }
           });
         },
         mode: "overwrite"
@@ -389,6 +387,8 @@ export class TidyIntegration {
 
     const isGem = GemCriteria.matches(item);
     const shouldShowSocketTab = ModuleSettings.isItemSocketTabVisible(item);
+    const shouldShowActivitiesTab = isGem || TidyIntegration.#itemHasActivities(item);
+    const shouldShowEffectsTab = isGem || TidyIntegration.#itemHasEffects(item);
 
     const runtime = TidyIntegration.#api?.runtime?.ItemSheetQuadroneRuntime;
     const defaults = runtime?.getDefaultTabIds?.(item?.type) ?? [];
@@ -409,9 +409,9 @@ export class TidyIntegration {
       "description",
       "details",
       ...(shouldShowSocketTab ? [TidyIntegration.#socketTabId] : []),
+      ...(shouldShowActivitiesTab ? ["activities"] : []),
+      ...(shouldShowEffectsTab ? ["effects"] : []),
       ...(isGem ? [
-        "activities",
-        "effects",
         TidyIntegration.#gemFilterTabId,
         TidyIntegration.#gemDetailsTabId
       ] : [])
@@ -433,8 +433,6 @@ export class TidyIntegration {
     const blockedIds = [
       ...(!shouldShowSocketTab ? [TidyIntegration.#socketTabId] : []),
       ...(!isGem ? [
-        "activities",
-        "effects",
         TidyIntegration.#gemFilterTabId,
         TidyIntegration.#gemDetailsTabId
       ] : [])
@@ -463,6 +461,40 @@ export class TidyIntegration {
     if (sheet?.render) {
       sheet.render(true);
     }
+  }
+
+  static #itemHasActivities(item) {
+    const SheetClass = Compatibility.getDnd5eItemSheetClass();
+    const predicate = SheetClass?.itemHasActivities;
+    if (typeof predicate === "function") {
+      try {
+        return Boolean(predicate.call(SheetClass, item));
+      } catch {
+        // Fall back to a direct data check below.
+      }
+    }
+
+    const contents = item?.system?.activities?.contents;
+    if (Array.isArray(contents)) {
+      return contents.length > 0;
+    }
+
+    const raw = item?.toObject?.()?.system?.activities ?? item?.system?.activities;
+    return Boolean(raw && typeof raw === "object" && Object.keys(raw).length);
+  }
+
+  static #itemHasEffects(item) {
+    const SheetClass = Compatibility.getDnd5eItemSheetClass();
+    const predicate = SheetClass?.itemHasEffects;
+    if (typeof predicate === "function") {
+      try {
+        return Boolean(predicate.call(SheetClass, item));
+      } catch {
+        // Fall back to a direct data check below.
+      }
+    }
+
+    return Number(item?.effects?.size ?? item?.effects?.length ?? 0) > 0;
   }
 
   static #buildGemFilterData(context) {
@@ -540,145 +572,11 @@ export class TidyIntegration {
   static #onSocketTabRender(params) {
     const sheet = params.app;
     const tabContents = params.tabContentsElement ?? params.element;
-    if (!sheet || !tabContents) {
-      return;
-    }
-
-    if (!ModuleSettings.isItemSocketTabVisible(sheet.item)) {
-      return;
-    }
+    if (!sheet || !tabContents) return;
+    if (!ModuleSettings.isItemSocketTabVisible(sheet.item)) return;
 
     void TidyIntegration.#syncTabConfiguration(sheet.item, sheet);
-
-    TidyIntegration.#ensureSocketActionHandlers(tabContents, sheet);
-    TidyIntegration.#bindExpansionToggle(tabContents);
-    DragHelper.bindDropZones(
-      tabContents,
-      '[data-dropzone="socket-slot"]',
-      async ({ data, index }) => {
-        await SocketService.addGem(sheet.item, index, data);
-        sheet.render();
-      }
-    );
-    SocketTooltipUI.refresh(sheet, tabContents);
-    TidyIntegration.#updateSocketTabCounter(sheet);
-  }
-
-  static #ensureSocketActionHandlers(root, sheet) {
-    if (root.dataset.scSocketsTidyBound === "true") {
-      return;
-    }
-
-    root.addEventListener("click", async (event) => {
-      const target = event.target instanceof HTMLElement
-        ? event.target.closest("[data-action]")
-        : null;
-      if (!target) {
-        return;
-      }
-
-      const action = target.dataset.action;
-      switch (action) {
-        case "addSocketSlot":
-          event.preventDefault();
-          await SocketService.addSlot(sheet.item);
-          sheet.render();
-          break;
-        case "removeSocketSlot":
-          await TidyIntegration.#handleRemoveSocketSlot(event, target, sheet);
-          break;
-        case "removeGemFromSlot":
-          await TidyIntegration.#handleRemoveGem(event, target, sheet);
-          break;
-        case "openGemFromSlot":
-          await TidyIntegration.#handleOpenGem(event, target, sheet);
-          break;
-        case "openSocketSlotConfig":
-          await TidyIntegration.#handleOpenSocketSlotConfig(event, target, sheet);
-          break;
-        default:
-          break;
-      }
-    });
-
-    root.dataset.scSocketsTidyBound = "true";
-  }
-
-  static async #handleRemoveSocketSlot(event, target, sheet) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const idx = TidyIntegration.#resolveIndex(target);
-    if (idx === null) {
-      return;
-    }
-
-    if (!event.shiftKey) {
-      const ok = await DialogHelper.confirmDeleteSocket();
-      if (!ok) {
-        return;
-      }
-    }
-
-    await SocketService.removeGem(sheet.item, idx);
-    await SocketService.removeSlot(sheet.item, idx);
-    sheet.render();
-  }
-
-  static async #handleRemoveGem(event, target, sheet) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const idx = TidyIntegration.#resolveIndex(target);
-    if (idx === null) {
-      return;
-    }
-
-    if (!event.shiftKey) {
-      const ok = await DialogHelper.confirmGeneric(
-        "SCSockets.Dialogs.RemoveGem.Title",
-        "SCSockets.Dialogs.RemoveGem.Message"
-      );
-      if (!ok) {
-        return;
-      }
-    }
-
-    await SocketService.removeGem(sheet.item, idx);
-    sheet.render();
-  }
-
-  static async #handleOpenGem(event, target, sheet) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const idx = TidyIntegration.#resolveIndex(target);
-    if (idx === null) {
-      return;
-    }
-
-    await SocketGemSheetService.openFromHost(sheet.item, idx);
-  }
-
-  static async #handleOpenSocketSlotConfig(event, target, sheet) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const idx = TidyIntegration.#resolveIndex(target);
-    if (idx === null) {
-      return;
-    }
-
-    SocketSlotConfigApp.open(sheet.item, idx, {
-      parentApp: sheet,
-      editable: sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
-    });
-  }
-
-  static #resolveIndex(target) {
-    const value = target.dataset.index ?? target.closest?.("[data-index]")?.dataset.index;
-    const idx = Number(value);
-    return Number.isInteger(idx) ? idx : null;
+    TidySocketTabHandler.bind(tabContents, sheet);
   }
 
   static #resolveItem(context) {
@@ -687,72 +585,5 @@ export class TidyIntegration {
       context?.sheet?.item ??
       context?.app?.item ??
       null;
-  }
-
-  static #updateSocketTabCounter(sheet) {
-    const item = sheet?.item;
-    if (!item) {
-      return;
-    }
-
-    const slots = SocketService.getSlots(item);
-    const total = Array.isArray(slots) ? slots.length : 0;
-    const filled = total ? slots.filter((slot) => slot?.gem).length : 0;
-    const anchor = sheet.element?.querySelector?.(`[data-tab-id="${TidyIntegration.#socketTabId}"]`);
-    if (!anchor) {
-      return;
-    }
-
-    let counter = anchor.querySelector(".tab-title-count");
-    if (!counter) {
-      counter = document.createElement("span");
-      counter.classList.add("tab-title-count", "font-data-medium", "theme-dark");
-      anchor.appendChild(counter);
-    }
-
-    if (!total) {
-      counter.textContent = "";
-      counter.classList.add("hidden");
-    } else {
-      counter.textContent = `${filled}/${total}`;
-      counter.classList.remove("hidden");
-    }
-  }
-
-  static #bindExpansionToggle(tabContents) {
-    const table = tabContents?.querySelector?.(".sc-sockets-tidy");
-    if (!table || table.dataset.scSocketsToggleBound === "true") {
-      return;
-    }
-
-    const header = table.querySelector(".tidy-table-header-row");
-    const button = table.querySelector(".expand-button");
-    const expandable = table.querySelector(".sc-sockets-expandable");
-    if (!header || !button || !expandable) {
-      return;
-    }
-
-    const setExpanded = (expanded) => {
-      table.dataset.scExpanded = expanded ? "true" : "false";
-      button.classList.toggle("expanded", expanded);
-      expandable.classList.toggle("expanded", expanded);
-      expandable.style.display = expanded ? "" : "none";
-    };
-
-    const toggle = () => {
-      const expanded = table.dataset.scExpanded !== "false";
-      setExpanded(!expanded);
-    };
-
-    setExpanded(table.dataset.scExpanded !== "false");
-
-    header.addEventListener("click", (event) => {
-      if (event.target.closest("[data-action]") || event.target.closest(".tidy-table-button")) {
-        return;
-      }
-      toggle();
-    });
-
-    table.dataset.scSocketsToggleBound = "true";
   }
 }

@@ -2,17 +2,26 @@ import { Constants } from "../Constants.js";
 
 export class ActivityTransferService {
   static UPDATE_OPTION_SKIP_RECONCILE = "skipActivityReconcile";
+  static UPDATE_OPTION_SKIP_REMOVE_EXISTING = "skipRemoveExisting";
+  static UPDATE_OPTION_EXTRA_UPDATE_DATA = "extraUpdateData";
 
-  static async applyFromGem(hostItem, slotIndex, gemItem) {
+  static async applyFromGem(hostItem, slotIndex, gemItem, options = {}) {
     if (!hostItem || !gemItem) return;
     if (!ActivityTransferService.#hasActivitiesField(hostItem)) {
       return;
     }
 
-    await ActivityTransferService.removeForSlot(hostItem, slotIndex);
+    const { extraUpdateData, updateOptions } = ActivityTransferService.#splitUpdateOptions(options);
+
+    if (!options?.[Constants.MODULE_ID]?.[ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]) {
+      await ActivityTransferService.removeForSlot(hostItem, slotIndex, options);
+    }
 
     const sourceActivities = gemItem.system?.activities?.contents ?? [];
     if (!sourceActivities.length) {
+      if (Object.keys(extraUpdateData).length) {
+        await hostItem.update(extraUpdateData, updateOptions);
+      }
       return;
     }
 
@@ -73,17 +82,19 @@ export class ActivityTransferService {
 
     const flagPath = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`;
     await hostItem.update({
+      ...extraUpdateData,
       "system.activities": nextActivities,
       [flagPath]: flagPayload
-    });
+    }, updateOptions);
     ActivityTransferService.#primeActivitySource(hostItem);
   }
 
-  static async removeForSlot(hostItem, slotIndex) {
+  static async removeForSlot(hostItem, slotIndex, options = {}) {
     if (!hostItem || !ActivityTransferService.#hasActivitiesField(hostItem)) {
       return;
     }
 
+    const { extraUpdateData, updateOptions } = ActivityTransferService.#splitUpdateOptions(options);
     const flag = hostItem.getFlag(Constants.MODULE_ID, Constants.FLAG_SOCKET_ACTIVITIES);
     const slotData = flag?.[slotIndex];
     const ids = new Set(Array.isArray(slotData?.activityIds) ? slotData.activityIds : []);
@@ -97,41 +108,42 @@ export class ActivityTransferService {
       }
     }
 
-    if (!ids.size) return;
+    if (!ids.size) {
+      if (Object.keys(extraUpdateData).length) {
+        await hostItem.update(extraUpdateData, updateOptions);
+      }
+      return;
+    }
 
-    const nextActivities = ActivityTransferService.#primeActivitySource(hostItem);
     const collection = hostItem.system?.activities;
-    let activitiesChanged = false;
-    const updates = { [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`]: null };
+    const updateData = {
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`]: null
+    };
+
     for (const id of ids) {
-      const hasActivity = Object.prototype.hasOwnProperty.call(nextActivities, id);
+      const hasActivity = Object.prototype.hasOwnProperty.call(activitySource, id);
       if (!hasActivity && !collection?.has?.(id)) {
-        delete meta[id];
         continue;
       }
+      updateData[`system.activities.-=${id}`] = null;
 
-      if (hasActivity) {
-        delete nextActivities[id];
-        activitiesChanged = true;
-      }
       const source = meta[id]?.sourceId;
       if (source) {
-        const activity = collection.get?.(source);
+        const activity = collection?.get?.(id);
         if (activity && !activity.cachedSpell) {
           const cached = activity.toObject();
           if (cached.spell?.uuid && foundry.utils.getType(cached.spell.uuid) === "string") {
-            updates[`flags.${Constants.MODULE_ID}.cachedSpells`] ??= {};
-            updates[`flags.${Constants.MODULE_ID}.cachedSpells`][cached.spell.uuid] = true;
+            updateData[`flags.${Constants.MODULE_ID}.cachedSpells`] ??= {};
+            updateData[`flags.${Constants.MODULE_ID}.cachedSpells`][cached.spell.uuid] = true;
           }
         }
       }
     }
 
-    if (activitiesChanged) {
-      await ActivityTransferService.#replaceActivities(hostItem, nextActivities);
-    }
-
-    await hostItem.update(updates);
+    await hostItem.update({
+      ...updateData,
+      ...extraUpdateData
+    }, updateOptions);
   }
 
   static async reconcileDerivedActivities(hostItem, _changes = {}, options = {}) {
@@ -168,18 +180,16 @@ export class ActivityTransferService {
       return;
     }
 
-    await hostItem.update({
-      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]: rebuiltSocketActivities
-    }, {
+    const reconcileOpts = {
       [Constants.MODULE_ID]: {
         ...(options?.[Constants.MODULE_ID] ?? {}),
         [ActivityTransferService.UPDATE_OPTION_SKIP_RECONCILE]: true
       }
-    });
-  }
-
-  static #makeActivityId() {
-    return foundry.utils.randomID();
+    };
+    if (options?.render === false) reconcileOpts.render = false;
+    await hostItem.update({
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]: rebuiltSocketActivities
+    }, reconcileOpts);
   }
 
   static #getActivityMap(item) {
@@ -201,13 +211,6 @@ export class ActivityTransferService {
       item.updateSource({ "system.activities": activities });
     }
     return activities;
-  }
-
-  static async #replaceActivities(item, activities) {
-    const system = item?.toObject?.()?.system ?? {};
-    system.activities = activities ?? {};
-    await item.update({ system }, { diff: false, recursive: false });
-    ActivityTransferService.#primeActivitySource(item);
   }
 
   static #isValidActivity(activity) {
@@ -338,5 +341,26 @@ export class ActivityTransferService {
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([key, entry]) => [key, ActivityTransferService.#sortValue(entry)])
     );
+  }
+
+  static #splitUpdateOptions(options = {}) {
+    const moduleOptions = options?.[Constants.MODULE_ID];
+    const extraUpdateData = (moduleOptions && typeof moduleOptions === "object")
+      ? foundry.utils.deepClone(moduleOptions[ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA] ?? {})
+      : {};
+
+    const updateOptions = { ...options };
+    if (moduleOptions && typeof moduleOptions === "object") {
+      const nextModuleOptions = { ...moduleOptions };
+      delete nextModuleOptions[ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA];
+      delete nextModuleOptions[ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING];
+      if (Object.keys(nextModuleOptions).length) {
+        updateOptions[Constants.MODULE_ID] = nextModuleOptions;
+      } else {
+        delete updateOptions[Constants.MODULE_ID];
+      }
+    }
+
+    return { extraUpdateData, updateOptions };
   }
 }

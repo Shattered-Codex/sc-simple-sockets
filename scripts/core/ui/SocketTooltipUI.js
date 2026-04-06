@@ -60,7 +60,7 @@ export class SocketTooltipUI {
       }
 
       const label = slot?.gem?.name ?? slot?.name ?? ActorGemBadges.emptySlotLabel();
-      ActorGemBadges.applyTooltip(target, slot, label);
+      ActorGemBadges.applyTooltip(target, slot, label, { preferText: true });
     });
   }
 

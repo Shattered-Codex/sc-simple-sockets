@@ -1,4 +1,3 @@
-import { Constants } from "../Constants.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 
 export class InventoryService {
@@ -34,12 +33,14 @@ export class InventoryService {
       return;
     }
     foundry.utils.setProperty(payload, "system.quantity", 1);
+    InventoryService.#sanitizePayload(payload);
+    const payloadStackData = InventoryService.#prepareStackData(payload);
 
     const same = actor.items.find((item) => {
       if (!GemCriteria.matches(item)) {
         return false;
       }
-      return InventoryService.#canStackWithPayload(item, payload);
+      return InventoryService.#canStackWithPayload(item, payloadStackData);
     });
     if (same) {
       const qty = Number(same.system?.quantity ?? 1);
@@ -51,34 +52,93 @@ export class InventoryService {
     return created?.[0] ?? null;
   }
 
-  static #canStackWithPayload(item, payload) {
-    if (InventoryService.#hasAscendantItemState(item) || InventoryService.#hasAscendantItemState(payload)) {
+  /**
+   * Ensures required schema fields are present when re-creating a gem from an older snapshot.
+   * Snapshots captured before LootActivitiesExtension was applied may lack `activities` and
+   * `uses`, which are required (non-nullable) by the LootWithActivities DataModel schema.
+   * Setting them to empty objects lets the schema apply its own defaults.
+   */
+  static #sanitizePayload(payload) {
+    const system = payload?.system;
+    if (!system) return;
+    if (system.activities === undefined) {
+      system.activities = {};
+    }
+    if (system.uses === undefined) {
+      system.uses = { spent: 0, max: "", recovery: [] };
+    }
+  }
+
+  static #canStackWithPayload(item, payloadStackData) {
+    if (!payloadStackData || payloadStackData.hasAscendantState) {
       return false;
     }
 
-    const getProperty = foundry?.utils?.getProperty;
-    const itemSourceId = typeof getProperty === "function"
-      ? getProperty(item, "flags.core.sourceId")
-      : item?.flags?.core?.sourceId;
-    const payloadSourceId = typeof getProperty === "function"
-      ? getProperty(payload, "flags.core.sourceId")
-      : payload?.flags?.core?.sourceId;
-
-    if (itemSourceId && payloadSourceId) {
-      return String(itemSourceId) === String(payloadSourceId);
-    }
-    if (itemSourceId || payloadSourceId) {
+    const itemStackData = InventoryService.#prepareStackData(item);
+    if (itemStackData.hasAscendantState) {
       return false;
     }
 
-    const itemFingerprint = InventoryService.#buildStackFingerprint(item?.toObject?.() ?? item);
-    const payloadFingerprint = InventoryService.#buildStackFingerprint(payload);
-    return itemFingerprint === payloadFingerprint;
+    if (itemStackData.type !== payloadStackData.type) {
+      return false;
+    }
+
+    if (itemStackData.name !== payloadStackData.name) {
+      return false;
+    }
+
+    if (itemStackData.img !== payloadStackData.img) {
+      return false;
+    }
+
+    if (itemStackData.subtype !== payloadStackData.subtype) {
+      return false;
+    }
+
+    if (itemStackData.sourceId && payloadStackData.sourceId) {
+      return itemStackData.sourceId === payloadStackData.sourceId;
+    }
+    if (itemStackData.sourceId || payloadStackData.sourceId) {
+      return false;
+    }
+
+    return itemStackData.fingerprint === payloadStackData.fingerprint;
   }
 
   static #buildStackFingerprint(source) {
     const normalized = InventoryService.#normalizeForStack(source, []);
     return JSON.stringify(normalized);
+  }
+
+  static #prepareStackData(source) {
+    const getProperty = foundry?.utils?.getProperty;
+    const raw = source?.toObject?.() ?? source ?? {};
+    const type = String(raw?.type ?? "").trim().toLowerCase();
+    const name = String(raw?.name ?? "").trim();
+    const img = String(raw?.img ?? "").trim();
+    const subtype = String(
+      (typeof getProperty === "function"
+        ? getProperty(raw, "system.type.value") ?? getProperty(raw, "system.type.subtype")
+        : raw?.system?.type?.value ?? raw?.system?.type?.subtype)
+      ?? ""
+    ).trim().toLowerCase();
+    const sourceId = String(
+      (typeof getProperty === "function"
+        ? getProperty(raw, "flags.core.sourceId")
+        : raw?.flags?.core?.sourceId)
+      ?? ""
+    ).trim();
+
+    return {
+      raw,
+      type,
+      name,
+      img,
+      subtype,
+      sourceId,
+      hasAscendantState: InventoryService.#hasAscendantItemState(raw),
+      fingerprint: sourceId ? "" : InventoryService.#buildStackFingerprint(raw)
+    };
   }
 
   static #hasAscendantItemState(source) {

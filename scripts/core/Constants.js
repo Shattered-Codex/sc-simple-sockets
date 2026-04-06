@@ -9,6 +9,7 @@ export class Constants {
   static FLAG_SOURCE_GEM = "sourceGem";
   static FLAG_ACTIVITY_STASH = "stashedActivities";
   static FLAG_SOCKET_ACTIVITIES = "socketActivities";
+  static FLAG_GEM_SUBTYPE = "gemSubtype";
   static FLAG_GEM_ALLOWED_TYPES = "gemAllowedTypes";
   static FLAG_GEM_DETAIL_TYPE = "gemDetailType";
   static FLAG_GEM_DAMAGE = "gemDamage";

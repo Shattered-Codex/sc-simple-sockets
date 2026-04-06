@@ -7,8 +7,8 @@ export class SocketStore {
     return foundry.utils.duplicate(slots);
   }
 
-  static async setSlots(item, slots) {
-    return item.setFlag(Constants.MODULE_ID, Constants.FLAGS.sockets, slots);
+  static async setSlots(item, slots, options = {}) {
+    return item.update({ [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots }, options);
   }
 
   static async addSlot(item, defaultSlot) {

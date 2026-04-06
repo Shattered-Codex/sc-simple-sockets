@@ -47,7 +47,7 @@ export class ItemActivityBadges {
     }
 
     for (const activity of activities) {
-      const node = root.querySelector(`.activity.card[data-activity-id="${activity.id}"] .icon`);
+      const node = this.#findActivityIcon(root, activity.id);
       this.#decorateIcon(node, activity, activityMap.get(activity.id));
     }
   }
@@ -83,6 +83,22 @@ export class ItemActivityBadges {
 
   static #clearBadges(root) {
     root.querySelectorAll(`.${BADGE_CLASS}`).forEach((el) => el.remove());
+  }
+
+  static #findActivityIcon(root, activityId) {
+    if (!root || !activityId) return null;
+
+    const selectors = [
+      `.activity.card[data-activity-id="${activityId}"] .icon`,
+      `[data-activity-id="${activityId}"] .icon`
+    ];
+
+    for (const selector of selectors) {
+      const node = root.querySelector(selector);
+      if (node) return node;
+    }
+
+    return null;
   }
 
   static #buildActivityMap(item) {
@@ -139,7 +155,9 @@ export class ItemActivityBadges {
     const imgSrc = meta.gemImg ?? Constants.SOCKET_SLOT_IMG;
     const label = meta.gemName ?? activity.name;
 
-    node.style.position ??= "relative";
+    if (!node.style.position) {
+      node.style.position = "relative";
+    }
 
     const badge = document.createElement("div");
     badge.className = BADGE_CLASS;

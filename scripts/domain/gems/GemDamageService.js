@@ -1,6 +1,7 @@
 import { Constants } from "../../core/Constants.js";
 import { SocketStore } from "../../core/SocketStore.js";
 import { GemDetailsBuilder } from "./GemDetailsBuilder.js";
+import { Compatibility } from "../../core/support/Compatibility.js";
 
 export class GemDamageService {
   static #damageHandler = null;
@@ -10,22 +11,22 @@ export class GemDamageService {
   static activate() {
     if (!GemDamageService.#damageHandler) {
       GemDamageService.#damageHandler = (config) => GemDamageService.#onPreRollDamage(config);
-      Hooks.on("dnd5e.preRollDamageV2", GemDamageService.#damageHandler);
+      Hooks.on(Compatibility.getPreRollHookName("damage"), GemDamageService.#damageHandler);
     }
 
     if (!GemDamageService.#attackHandler) {
       GemDamageService.#attackHandler = (config) => GemDamageService.#onPreRollAttack(config);
-      Hooks.on("dnd5e.preRollAttackV2", GemDamageService.#attackHandler);
+      Hooks.on(Compatibility.getPreRollHookName("attack"), GemDamageService.#attackHandler);
     }
   }
 
   static deactivate() {
     if (GemDamageService.#damageHandler) {
-      Hooks.off("dnd5e.preRollDamageV2", GemDamageService.#damageHandler);
+      Hooks.off(Compatibility.getPreRollHookName("damage"), GemDamageService.#damageHandler);
       GemDamageService.#damageHandler = null;
     }
     if (GemDamageService.#attackHandler) {
-      Hooks.off("dnd5e.preRollAttackV2", GemDamageService.#attackHandler);
+      Hooks.off(Compatibility.getPreRollHookName("attack"), GemDamageService.#attackHandler);
       GemDamageService.#attackHandler = null;
     }
   }
@@ -314,25 +315,36 @@ export class GemDamageService {
     }
   }
 
-  static #collectCritThreshold(item) {
+  /**
+   * Scans all socketed gems on `item` for a numeric flag and reduces the values
+   * using the provided `aggregate` function (e.g. Math.min / Math.max).
+   * `clamp` receives the raw floored value and returns the accepted value or
+   * `null` to skip that gem entirely.
+   */
+  static #collectGemStat(item, flagKey, { aggregate, clamp }) {
     const slots = SocketStore.peekSlots(item);
-    if (!Array.isArray(slots) || !slots.length) {
-      return null;
-    }
+    if (!Array.isArray(slots) || !slots.length) return null;
     let best = null;
 
     for (const slot of slots) {
       const gem = GemDamageService.resolveGemSource(slot);
       if (!gem) continue;
-
-      const raw = GemDamageService.readFlag(gem, Constants.FLAG_GEM_CRIT_THRESHOLD);
+      const raw = GemDamageService.readFlag(gem, flagKey);
       const value = Number(raw);
-      if (!Number.isFinite(value) || value <= 0) continue;
-      const clamped = Math.min(Math.max(Math.floor(value), 1), 20);
-      best = best === null ? clamped : Math.min(best, clamped);
+      if (!Number.isFinite(value)) continue;
+      const normalized = clamp(Math.floor(value));
+      if (normalized === null) continue;
+      best = best === null ? normalized : aggregate(best, normalized);
     }
 
     return best;
+  }
+
+  static #collectCritThreshold(item) {
+    return GemDamageService.#collectGemStat(item, Constants.FLAG_GEM_CRIT_THRESHOLD, {
+      aggregate: Math.min,
+      clamp: (v) => (v <= 0 ? null : Math.min(Math.max(v, 1), 20))
+    });
   }
 
   static #isCriticalAction(config, baseRoll, { strict = false } = {}) {
@@ -347,24 +359,10 @@ export class GemDamageService {
   }
 
   static #collectCritMultiplier(item) {
-    const slots = SocketStore.peekSlots(item);
-    if (!Array.isArray(slots) || !slots.length) {
-      return null;
-    }
-    let best = null;
-
-    for (const slot of slots) {
-      const gem = GemDamageService.resolveGemSource(slot);
-      if (!gem) continue;
-
-      const raw = GemDamageService.readFlag(gem, Constants.FLAG_GEM_CRIT_MULTIPLIER);
-      const value = Number(raw);
-      if (!Number.isFinite(value)) continue;
-      const normalized = Math.max(Math.floor(value), 1);
-      best = best === null ? normalized : Math.max(best, normalized);
-    }
-
-    return best;
+    return GemDamageService.#collectGemStat(item, Constants.FLAG_GEM_CRIT_MULTIPLIER, {
+      aggregate: Math.max,
+      clamp: (v) => Math.max(v, 1)
+    });
   }
 
   static #applyAttackBonus(config) {
@@ -386,19 +384,15 @@ export class GemDamageService {
 
   static #collectAttackBonus(item) {
     const slots = SocketStore.peekSlots(item);
-    if (!Array.isArray(slots) || !slots.length) {
-      return 0;
-    }
+    if (!Array.isArray(slots) || !slots.length) return 0;
     let sum = 0;
 
     for (const slot of slots) {
       const gem = GemDamageService.resolveGemSource(slot);
       if (!gem) continue;
-
       const raw = GemDamageService.readFlag(gem, Constants.FLAG_GEM_ATTACK_BONUS);
       const value = Number(raw);
-      if (!Number.isFinite(value)) continue;
-      sum += Math.floor(value);
+      if (Number.isFinite(value)) sum += Math.floor(value);
     }
 
     return sum;
