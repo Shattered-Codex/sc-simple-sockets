@@ -74,7 +74,9 @@ export class SocketService {
       try {
         gemItem = await fromUuid(source);
       } catch (error) {
-        console.debug(`[${Constants.MODULE_ID}] Could not resolve gem UUID "${source}":`, error);
+        if (Constants.isDebugEnabled()) {
+          console.debug(`[${Constants.MODULE_ID}] Could not resolve gem UUID "${source}":`, error);
+        }
       }
     } else if (source?.documentName === "Item") {
       gemItem = source;

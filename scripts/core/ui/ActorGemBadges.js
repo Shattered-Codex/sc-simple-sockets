@@ -48,7 +48,9 @@ export class ActorGemBadges {
     Hooks.on("deleteItem", deleteItemHandler);
     this.#handlers.set("deleteItem", deleteItemHandler);
 
-    console.debug(`[${Constants.MODULE_ID}] ActorGemBadges activated`);
+    if (Constants.isDebugEnabled()) {
+      console.debug(`[${Constants.MODULE_ID}] ActorGemBadges activated`);
+    }
   }
 
   /**
@@ -89,7 +91,9 @@ export class ActorGemBadges {
     }
     this.#handlers.clear();
 
-    console.debug(`[${Constants.MODULE_ID}] ActorGemBadges deactivated`);
+    if (Constants.isDebugEnabled()) {
+      console.debug(`[${Constants.MODULE_ID}] ActorGemBadges deactivated`);
+    }
   }
 
   /**

@@ -62,7 +62,9 @@ export class LootActivitiesExtension {
         itemModels.LootData = LootWithActivities;
       } catch (error) {
         if (error instanceof TypeError) {
-          console.debug(`[${Constants.MODULE_ID}] itemModels.LootData is read-only, skipping direct assignment.`);
+          if (Constants.isDebugEnabled()) {
+            console.debug(`[${Constants.MODULE_ID}] itemModels.LootData is read-only, skipping direct assignment.`);
+          }
         } else {
           throw error;
         }

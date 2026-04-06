@@ -27,7 +27,9 @@ export class DataMigration {
     const stored = DataMigration.#getStoredVersion();
     if (stored === DataMigration.#CURRENT_VERSION) return;
 
-    console.log(`[${Constants.MODULE_ID}] | Running data migrations (${stored || "none"} → ${DataMigration.#CURRENT_VERSION})...`);
+    if (Constants.isDebugEnabled()) {
+      console.log(`[${Constants.MODULE_ID}] | Running data migrations (${stored || "none"} → ${DataMigration.#CURRENT_VERSION})...`);
+    }
 
     try {
       await DataMigration.#migrateLootActivityFields();
@@ -47,7 +49,9 @@ export class DataMigration {
       console.warn(`[${Constants.MODULE_ID}] | Could not save migration version:`, e);
     }
 
-    console.log(`[${Constants.MODULE_ID}] | Data migrations complete.`);
+    if (Constants.isDebugEnabled()) {
+      console.log(`[${Constants.MODULE_ID}] | Data migrations complete.`);
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -84,11 +88,15 @@ export class DataMigration {
     const toMigrate = allLoot.filter(needsMigration);
 
     if (!toMigrate.length) {
-      console.log(`[${Constants.MODULE_ID}] | No loot items need migration.`);
+      if (Constants.isDebugEnabled()) {
+        console.log(`[${Constants.MODULE_ID}] | No loot items need migration.`);
+      }
       return;
     }
 
-    console.log(`[${Constants.MODULE_ID}] | Migrating ${toMigrate.length} loot item(s) with missing activity fields...`);
+    if (Constants.isDebugEnabled()) {
+      console.log(`[${Constants.MODULE_ID}] | Migrating ${toMigrate.length} loot item(s) with missing activity fields...`);
+    }
 
     // Group actor-owned items by their parent actor for bulk updates.
     const byActor = new Map();
@@ -166,11 +174,15 @@ export class DataMigration {
     }
 
     if (!toMigrate.length) {
-      console.log(`[${Constants.MODULE_ID}] | No socket gem snapshots need migration.`);
+      if (Constants.isDebugEnabled()) {
+        console.log(`[${Constants.MODULE_ID}] | No socket gem snapshots need migration.`);
+      }
       return;
     }
 
-    console.log(`[${Constants.MODULE_ID}] | Migrating ${toMigrate.length} item(s) with legacy socket gem snapshots...`);
+    if (Constants.isDebugEnabled()) {
+      console.log(`[${Constants.MODULE_ID}] | Migrating ${toMigrate.length} item(s) with legacy socket gem snapshots...`);
+    }
 
     const byActor = new Map();
     const standalone = [];

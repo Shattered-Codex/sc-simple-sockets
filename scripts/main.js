@@ -35,7 +35,9 @@ TidyIntegration.register({
 });
 
 Hooks.once("init", async function() {
-  console.log(`${Constants.MODULE_ID} | init`);
+  if (Constants.isDebugEnabled()) {
+    console.log(`${Constants.MODULE_ID} | init`);
+  }
   const settings = new ModuleSettingsRegistrar();
 
   // Everything below runs synchronously before the first `await` so that
@@ -55,7 +57,9 @@ Hooks.once("init", async function() {
 });
 
 Hooks.once("setup", () => {
-  console.log(`${Constants.MODULE_ID} | setup`);
+  if (Constants.isDebugEnabled()) {
+    console.log(`${Constants.MODULE_ID} | setup`);
+  }
 
   gemSheet.applyChanges();
   itemSocketSheet.applyChanges();

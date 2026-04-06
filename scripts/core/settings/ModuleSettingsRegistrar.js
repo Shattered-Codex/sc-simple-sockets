@@ -157,7 +157,9 @@ export class ModuleSettingsRegistrar {
       choices: ModuleSettings.getEditSocketPermissionChoices(),
       default: ModuleSettings.getDefaultEditSocketRole(),
       onChange: (value) => {
-        console.log(`${Constants.MODULE_ID} | editSocketPermission changed to ${value}`);
+        if (Constants.isDebugEnabled()) {
+          console.log(`${Constants.MODULE_ID} | editSocketPermission changed to ${value}`);
+        }
         ModuleSettings.refreshOpenSheets({ item: true, actor: true });
       }
     });
