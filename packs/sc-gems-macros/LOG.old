@@ -1,11 +1,5 @@
-2026/04/06-17:48:05.552770 7c9c1abfe6c0 Delete type=3 #1
-2026/04/06-23:15:09.349723 7c9a0bfff6c0 Level-0 table #491: started
-2026/04/06-23:15:09.350256 7c9a0bfff6c0 Level-0 table #491: 0 bytes OK
-2026/04/06-23:15:09.358736 7c9a0bfff6c0 Delete type=0 #489
-2026/04/06-23:15:19.924057 7c9a0bfff6c0 Manual compaction at level-0 from '!macros!DgtCnqUtWORqdeA1' @ 72057594037927935 : 1 .. '!macros!DgtCnqUtWORqdeA1' @ 0 : 0; will stop at '!macros!DgtCnqUtWORqdeA1' @ 3 : 1
-2026/04/06-23:15:19.924252 7c9a0bfff6c0 Compacting 1@0 + 0@1 files
-2026/04/06-23:15:19.929706 7c9a0bfff6c0 Generated table #492@0: 1 keys, 774 bytes
-2026/04/06-23:15:19.929862 7c9a0bfff6c0 Compacted 1@0 + 0@1 files => 774 bytes
-2026/04/06-23:15:19.935017 7c9a0bfff6c0 compacted to: files[ 0 1 0 0 0 0 0 ]
-2026/04/06-23:15:19.936777 7c9a0bfff6c0 Delete type=2 #381
-2026/04/06-23:15:20.007873 7c9a0bfff6c0 Manual compaction at level-0 from '!macros!DgtCnqUtWORqdeA1' @ 3 : 1 .. '!macros!DgtCnqUtWORqdeA1' @ 0 : 0; will stop at (end)
+2026/04/07-00:00:17.858674 7afb60bfd6c0 Delete type=3 #1
+2026/04/07-00:00:59.396844 7afb537fe6c0 Level-0 table #486: started
+2026/04/07-00:00:59.397386 7afb537fe6c0 Level-0 table #486: 0 bytes OK
+2026/04/07-00:00:59.404407 7afb537fe6c0 Delete type=0 #484
+2026/04/07-00:00:59.444311 7afb537fe6c0 Manual compaction at level-0 from 'undefined' @ 72057594037927935 : 1 .. 'undefined' @ 0 : 0; will stop at (end)
