@@ -18,8 +18,8 @@ export class GemLifecycleService {
     }
 
     const transition = options?.[Constants.MODULE_ID]?.gemTransition ?? null;
-    const wasGem = transition?.wasGem ?? GemCriteria.matches(item);
     const isGem = GemCriteria.matches(item);
+    const wasGem = transition?.wasGem ?? !isGem;
 
     if (!wasGem && !isGem) {
       return;
@@ -37,6 +37,37 @@ export class GemLifecycleService {
     await this.effectStore.restore(item);
   }
 
+  async syncGemSubtypeFlags() {
+    if (!game.user?.isGM) {
+      return;
+    }
+
+    const items = [
+      ...(game.items ?? []),
+      ...Array.from(game.actors ?? []).flatMap((actor) => Array.from(actor?.items ?? []))
+    ];
+
+    for (const item of items) {
+      if (item?.documentName !== "Item") {
+        continue;
+      }
+
+      const nextSubtype = GemCriteria.resolveGemSubtypeFromType(item);
+      const currentSubtype = item.getFlag(Constants.MODULE_ID, Constants.FLAG_GEM_SUBTYPE);
+
+      if (nextSubtype) {
+        if (currentSubtype !== nextSubtype) {
+          await item.setFlag(Constants.MODULE_ID, Constants.FLAG_GEM_SUBTYPE, nextSubtype);
+        }
+        continue;
+      }
+
+      if (typeof currentSubtype !== "undefined") {
+        await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_SUBTYPE);
+      }
+    }
+  }
+
   handlePreUpdate(item, changes, options = {}) {
     if (!GemCriteria.hasTypeUpdate(changes)) {
       return;
@@ -44,6 +75,10 @@ export class GemLifecycleService {
 
     const previous = item?.toObject?.() ?? item;
     const next = foundry.utils.mergeObject(previous, changes, { inplace: false });
+    const nextSubtype = GemCriteria.resolveGemSubtypeFromType(next);
+    const gemSubtypePath = `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_SUBTYPE}`;
+    foundry.utils.setProperty(changes, gemSubtypePath, nextSubtype);
+    foundry.utils.setProperty(next, gemSubtypePath, nextSubtype);
 
     options[Constants.MODULE_ID] ??= {};
     options[Constants.MODULE_ID].gemTransition = {
@@ -53,6 +88,15 @@ export class GemLifecycleService {
   }
 
   handlePreCreate(item, data) {
+    const subtype = GemCriteria.resolveGemSubtypeFromType(data ?? item);
+    if (subtype) {
+      const path = `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_SUBTYPE}`;
+      item.updateSource({ [path]: subtype });
+      if (data && typeof data === "object") {
+        foundry.utils.setProperty(data, path, subtype);
+      }
+    }
+
     const reference = data ?? item;
     if (!GemCriteria.matches(reference)) {
       return;

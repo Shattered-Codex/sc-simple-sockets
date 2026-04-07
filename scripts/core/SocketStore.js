@@ -1,4 +1,6 @@
 import { Constants } from "../core/Constants.js";
+import { ItemResolver } from "./ItemResolver.js";
+import { HostItemUpdateService } from "./support/HostItemUpdateService.js";
 
 export class SocketStore {
 
@@ -7,8 +9,11 @@ export class SocketStore {
     return foundry.utils.duplicate(slots);
   }
 
-  static async setSlots(item, slots) {
-    return item.setFlag(Constants.MODULE_ID, Constants.FLAGS.sockets, slots);
+  static async setSlots(item, slots, options = {}) {
+    const normalizedSlots = ItemResolver.normalizeSocketSlots(foundry.utils.deepClone(slots ?? []));
+    return HostItemUpdateService.update(item, {
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: normalizedSlots
+    }, options);
   }
 
   static async addSlot(item, defaultSlot) {

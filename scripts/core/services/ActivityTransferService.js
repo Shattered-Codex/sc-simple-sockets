@@ -1,22 +1,35 @@
 import { Constants } from "../Constants.js";
+import { HostItemUpdateService } from "../support/HostItemUpdateService.js";
+import { ItemSheetSync } from "../support/ItemSheetSync.js";
 
 export class ActivityTransferService {
   static UPDATE_OPTION_SKIP_RECONCILE = "skipActivityReconcile";
+  static UPDATE_OPTION_SKIP_REMOVE_EXISTING = "skipRemoveExisting";
+  static UPDATE_OPTION_EXTRA_UPDATE_DATA = "extraUpdateData";
 
-  static async applyFromGem(hostItem, slotIndex, gemItem) {
+  static async applyFromGem(hostItem, slotIndex, gemItem, options = {}) {
+    hostItem = ItemSheetSync.resolve(hostItem);
     if (!hostItem || !gemItem) return;
     if (!ActivityTransferService.#hasActivitiesField(hostItem)) {
       return;
     }
 
-    await ActivityTransferService.removeForSlot(hostItem, slotIndex);
+    const { extraUpdateData, updateOptions } = ActivityTransferService.#splitUpdateOptions(options);
+
+    if (!options?.[Constants.MODULE_ID]?.[ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]) {
+      await ActivityTransferService.removeForSlot(hostItem, slotIndex, options);
+    }
 
     const sourceActivities = gemItem.system?.activities?.contents ?? [];
     if (!sourceActivities.length) {
+      if (Object.keys(extraUpdateData).length) {
+        await ActivityTransferService.#updateHostItem(hostItem, extraUpdateData, updateOptions, {
+          reason: "extraUpdateData-only"
+        });
+      }
       return;
     }
 
-    const nextActivities = ActivityTransferService.#primeActivitySource(hostItem);
     const createdIds = [];
     const activityMeta = {};
     for (const activity of sourceActivities) {
@@ -25,6 +38,15 @@ export class ActivityTransferService {
       const config = CONFIG.DND5E.activityTypes[type];
       if (!config) continue;
       const ActivityClass = config.documentClass;
+      if (typeof ActivityClass?.availableForItem === "function"
+        && ActivityClass.availableForItem(hostItem) === false) {
+        if (Constants.isDebugEnabled()) {
+          console.warn(
+            `[${Constants.MODULE_ID}] skipping incompatible activity type "${type}" for host item type "${hostItem?.type ?? "unknown"}"`
+          );
+        }
+        continue;
+      }
 
       const createData = foundry.utils.deepClone(original);
       delete createData._id;
@@ -42,11 +64,20 @@ export class ActivityTransferService {
       }
 
       const payload = doc.toObject();
-      const newId = doc.id;
-      if (!newId || !ActivityTransferService.#isValidActivity(payload)) {
+      ActivityTransferService.#sanitizeTransferredActivityPayload(payload, hostItem);
+
+      const createdActivity = await ActivityTransferService.#createTransferredActivity(
+        hostItem,
+        type,
+        payload,
+        activity.id
+      );
+      hostItem = ItemSheetSync.resolve(hostItem);
+
+      const newId = createdActivity?.id ?? createdActivity?._id ?? null;
+      if (!newId) {
         continue;
       }
-      nextActivities[newId] = payload;
       createdIds.push(newId);
       activityMeta[newId] = {
         sourceId: activity.id,
@@ -60,6 +91,11 @@ export class ActivityTransferService {
     }
 
     if (!createdIds.length) {
+      if (Object.keys(extraUpdateData).length) {
+        await ActivityTransferService.#updateHostItem(hostItem, extraUpdateData, updateOptions, {
+          reason: "applyFromGem-no-created-activities"
+        });
+      }
       return;
     }
 
@@ -71,19 +107,23 @@ export class ActivityTransferService {
       activityMeta
     };
 
+    const updateData = {
+      ...extraUpdateData
+    };
     const flagPath = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`;
-    await hostItem.update({
-      "system.activities": nextActivities,
-      [flagPath]: flagPayload
+    updateData[flagPath] = flagPayload;
+    await ActivityTransferService.#updateHostItem(hostItem, updateData, updateOptions, {
+      reason: "applyFromGem"
     });
-    ActivityTransferService.#primeActivitySource(hostItem);
   }
 
-  static async removeForSlot(hostItem, slotIndex) {
+  static async removeForSlot(hostItem, slotIndex, options = {}) {
+    hostItem = ItemSheetSync.resolve(hostItem);
     if (!hostItem || !ActivityTransferService.#hasActivitiesField(hostItem)) {
       return;
     }
 
+    const { extraUpdateData, updateOptions } = ActivityTransferService.#splitUpdateOptions(options);
     const flag = hostItem.getFlag(Constants.MODULE_ID, Constants.FLAG_SOCKET_ACTIVITIES);
     const slotData = flag?.[slotIndex];
     const ids = new Set(Array.isArray(slotData?.activityIds) ? slotData.activityIds : []);
@@ -97,44 +137,57 @@ export class ActivityTransferService {
       }
     }
 
-    if (!ids.size) return;
+    if (!ids.size) {
+      if (Object.keys(extraUpdateData).length) {
+        await ActivityTransferService.#updateHostItem(hostItem, extraUpdateData, updateOptions, {
+          reason: "removeForSlot-extraUpdateData-only"
+        });
+      }
+      return;
+    }
 
-    const nextActivities = ActivityTransferService.#primeActivitySource(hostItem);
     const collection = hostItem.system?.activities;
-    let activitiesChanged = false;
-    const updates = { [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`]: null };
+    const updateData = {
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`]: null
+    };
+
+    const idsToDelete = [];
     for (const id of ids) {
-      const hasActivity = Object.prototype.hasOwnProperty.call(nextActivities, id);
+      const hasActivity = Object.prototype.hasOwnProperty.call(activitySource, id);
       if (!hasActivity && !collection?.has?.(id)) {
-        delete meta[id];
         continue;
       }
-
-      if (hasActivity) {
-        delete nextActivities[id];
-        activitiesChanged = true;
-      }
+      idsToDelete.push(id);
       const source = meta[id]?.sourceId;
       if (source) {
-        const activity = collection.get?.(source);
+        const activity = collection?.get?.(id);
         if (activity && !activity.cachedSpell) {
           const cached = activity.toObject();
           if (cached.spell?.uuid && foundry.utils.getType(cached.spell.uuid) === "string") {
-            updates[`flags.${Constants.MODULE_ID}.cachedSpells`] ??= {};
-            updates[`flags.${Constants.MODULE_ID}.cachedSpells`][cached.spell.uuid] = true;
+            updateData[`flags.${Constants.MODULE_ID}.cachedSpells`] ??= {};
+            updateData[`flags.${Constants.MODULE_ID}.cachedSpells`][cached.spell.uuid] = true;
           }
         }
       }
     }
 
-    if (activitiesChanged) {
-      await ActivityTransferService.#replaceActivities(hostItem, nextActivities);
+    for (const id of idsToDelete) {
+      hostItem = ItemSheetSync.resolve(hostItem);
+      if (typeof hostItem?.deleteActivity === "function" && hostItem.system?.activities?.has?.(id)) {
+        await hostItem.deleteActivity(id);
+      }
     }
 
-    await hostItem.update(updates);
+    await ActivityTransferService.#updateHostItem(hostItem, {
+      ...updateData,
+      ...extraUpdateData
+    }, updateOptions, {
+      reason: "removeForSlot"
+    });
   }
 
   static async reconcileDerivedActivities(hostItem, _changes = {}, options = {}) {
+    hostItem = ItemSheetSync.resolve(hostItem);
     if (!hostItem || !ActivityTransferService.#hasActivitiesField(hostItem)) {
       return;
     }
@@ -168,18 +221,18 @@ export class ActivityTransferService {
       return;
     }
 
-    await hostItem.update({
-      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]: rebuiltSocketActivities
-    }, {
+    const reconcileOpts = {
       [Constants.MODULE_ID]: {
         ...(options?.[Constants.MODULE_ID] ?? {}),
         [ActivityTransferService.UPDATE_OPTION_SKIP_RECONCILE]: true
       }
+    };
+    if (options?.render === false) reconcileOpts.render = false;
+    await ActivityTransferService.#updateHostItem(hostItem, {
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]: rebuiltSocketActivities
+    }, reconcileOpts, {
+      reason: "reconcileDerivedActivities"
     });
-  }
-
-  static #makeActivityId() {
-    return foundry.utils.randomID();
   }
 
   static #getActivityMap(item) {
@@ -201,13 +254,6 @@ export class ActivityTransferService {
       item.updateSource({ "system.activities": activities });
     }
     return activities;
-  }
-
-  static async #replaceActivities(item, activities) {
-    const system = item?.toObject?.()?.system ?? {};
-    system.activities = activities ?? {};
-    await item.update({ system }, { diff: false, recursive: false });
-    ActivityTransferService.#primeActivitySource(item);
   }
 
   static #isValidActivity(activity) {
@@ -338,5 +384,112 @@ export class ActivityTransferService {
         .sort(([left], [right]) => left.localeCompare(right))
         .map(([key, entry]) => [key, ActivityTransferService.#sortValue(entry)])
     );
+  }
+
+  static #splitUpdateOptions(options = {}) {
+    const moduleOptions = options?.[Constants.MODULE_ID];
+    const extraUpdateData = (moduleOptions && typeof moduleOptions === "object")
+      ? foundry.utils.deepClone(moduleOptions[ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA] ?? {})
+      : {};
+
+    const updateOptions = { ...options };
+    if (moduleOptions && typeof moduleOptions === "object") {
+      const nextModuleOptions = { ...moduleOptions };
+      delete nextModuleOptions[ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA];
+      delete nextModuleOptions[ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING];
+      if (Object.keys(nextModuleOptions).length) {
+        updateOptions[Constants.MODULE_ID] = nextModuleOptions;
+      } else {
+        delete updateOptions[Constants.MODULE_ID];
+      }
+    }
+
+    return { extraUpdateData, updateOptions };
+  }
+
+  static #sanitizeTransferredActivityPayload(payload, hostItem) {
+    if (!payload || typeof payload !== "object") {
+      return payload;
+    }
+
+    // Sidebar/world items reject nested Item document payloads inside activity data.
+    // Actor-owned items tolerate this better because their parent can embed Items,
+    // but transferred activities should still resolve their owning item from parent.
+    delete payload.item;
+    delete payload.parent;
+
+    if (!hostItem?.actor && payload.consumption && typeof payload.consumption === "object") {
+      const targets = Array.isArray(payload.consumption.targets) ? payload.consumption.targets : [];
+      payload.consumption.targets = targets.map((target) => {
+        if (!target || typeof target !== "object") {
+          return target;
+        }
+
+        const nextTarget = foundry.utils.deepClone(target);
+        if (nextTarget.type === "itemUses") {
+          delete nextTarget.target;
+        }
+        return nextTarget;
+      });
+    }
+
+    return payload;
+  }
+
+  static async #createTransferredActivity(hostItem, type, payload, sourceId) {
+    const currentHost = ItemSheetSync.resolve(hostItem);
+    if (!currentHost || typeof currentHost.createActivity !== "function") {
+      return null;
+    }
+
+    const beforeIds = new Set(
+      Array.from(currentHost.system?.activities ?? []).map((activity) => activity.id)
+    );
+
+    await currentHost.createActivity(type, payload, { renderSheet: false });
+
+    const refreshedHost = ItemSheetSync.resolve(currentHost);
+    const created = Array.from(refreshedHost?.system?.activities ?? []).find((activity) => {
+      if (!activity?.id || beforeIds.has(activity.id)) {
+        return false;
+      }
+      const sourceGem = activity.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_SOURCE_GEM];
+      return sourceGem?.sourceId === sourceId;
+    });
+
+    return created ?? null;
+  }
+
+  static async #updateHostItem(hostItem, updateData, updateOptions, context = {}) {
+    try {
+      return await HostItemUpdateService.update(hostItem, updateData, updateOptions);
+    } catch (error) {
+      if (Constants.isDebugEnabled()) {
+        const flattenObject = foundry?.utils?.flattenObject;
+        const flattened = typeof flattenObject === "function" ? flattenObject(updateData) : {};
+        const activityPaths = Object.keys(flattened).filter((key) => key.startsWith("system.activities."));
+        const resolved = HostItemUpdateService.resolve(hostItem);
+        console.error(`[${Constants.MODULE_ID}] host item update failed`, {
+          error,
+          reason: context.reason ?? "unknown",
+          hostItemUuid: hostItem?.uuid ?? null,
+          hostItemId: hostItem?.id ?? null,
+          hostItemName: hostItem?.name ?? null,
+          hostItemParentDocumentName: hostItem?.parent?.documentName ?? null,
+          hostItemParentUuid: hostItem?.parent?.uuid ?? null,
+          resolvedWorldItemMatches: Boolean(hostItem?.id && game?.items?.get?.(hostItem.id) === hostItem),
+          resolvedHostItemUuid: resolved?.uuid ?? null,
+          resolvedHostItemParentDocumentName: resolved?.parent?.documentName ?? null,
+          resolvedHostItemParentUuid: resolved?.parent?.uuid ?? null,
+          updateKeys: Object.keys(updateData ?? {}),
+          activityPaths,
+          activityPathSamples: activityPaths.slice(0, 10).map((path) => ({
+            path,
+            keys: updateData[path] && typeof updateData[path] === "object" ? Object.keys(updateData[path]) : null
+          }))
+        });
+      }
+      throw error;
+    }
   }
 }

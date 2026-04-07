@@ -48,6 +48,7 @@ function buildSupportCardHtml({ moduleTitle, moduleVersion }) {
     "Support my work and stay up to date with exclusive modules and development progress."
   );
   const patreonLabel = Constants.localize("SCSockets.SupportCard.Link", "Patreon");
+  const wikiLabel = Constants.localize("SCSockets.SupportCard.Wiki", "Wiki");
   const issuesLabel = Constants.localize("SCSockets.SupportCard.Issues", "Issues / Requests");
   const patreonModulesTitle = Constants.localize(
     "SCSockets.SupportCard.PatreonModulesTitle",
@@ -80,6 +81,7 @@ function buildSupportCardHtml({ moduleTitle, moduleVersion }) {
         <p style="margin: 0 0 0.65rem; color: #e9e2d2; line-height: 1.45;">${description}</p>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
           <a href="${PATREON_URL}" target="_blank" rel="noopener" style="display: inline-block; padding: 0.32rem 0.62rem; border-radius: 999px; text-decoration: none; font-weight: 700; color: #fff8f6; background: #cf3040; border: 1px solid rgba(255, 255, 255, 0.18);">&#10084; ${patreonLabel}</a>
+          <a href="${Constants.MODULE_WIKI_URL}" target="_blank" rel="noopener" style="display: inline-block; padding: 0.32rem 0.62rem; border-radius: 999px; text-decoration: none; font-weight: 700; color: #f0f7ff; background: #35628f; border: 1px solid rgba(255, 255, 255, 0.16);">${wikiLabel}</a>
           <a href="${GITHUB_ISSUES_URL}" target="_blank" rel="noopener" style="display: inline-block; padding: 0.32rem 0.62rem; border-radius: 999px; text-decoration: none; font-weight: 700; color: #e7f4ff; background: #2d476a; border: 1px solid rgba(255, 255, 255, 0.14);">${issuesLabel}</a>
         </div>
         <section style="padding: 0.6rem 0.65rem; border: 1px solid rgba(200, 157, 71, 0.32); border-radius: 8px; background: rgba(16, 22, 31, 0.66); margin-bottom: 0.55rem;">

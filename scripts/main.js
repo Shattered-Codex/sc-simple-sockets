@@ -4,6 +4,7 @@ import { ItemSocketExtension } from "./core/ItemSocketExtension.js";
 import { ActorGemBadges } from "./core/ui/ActorGemBadges.js";
 import { GemLifecycleService } from "./domain/gems/GemLifecycleService.js";
 import { ModuleSettings } from "./core/settings/ModuleSettings.js";
+import { ModuleSettingsRegistrar } from "./core/settings/ModuleSettingsRegistrar.js";
 import { LootActivitiesExtension } from "./domain/gems/LootActivitiesExtension.js";
 import { GemLootTypeExtension } from "./domain/gems/GemLootTypeExtension.js";
 import { ItemActivityBadges } from "./core/ui/ItemActivityBadges.js";
@@ -19,6 +20,9 @@ import { GemDamageService } from "./domain/gems/GemDamageService.js";
 import { DamageRollGemLayout } from "./core/ui/DamageRollGemLayout.js";
 import { ActivityTransferService } from "./core/services/ActivityTransferService.js";
 import { maybeShowSupportCard } from "./core/support/supportCard.js";
+import { DataMigration } from "./core/migration/DataMigration.js";
+import { Compatibility } from "./core/support/Compatibility.js";
+import { ItemSheetSync } from "./core/support/ItemSheetSync.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -31,21 +35,31 @@ TidyIntegration.register({
 });
 
 Hooks.once("init", async function() {
-  console.log(`${Constants.MODULE_ID} | init`);
+  if (Constants.isDebugEnabled()) {
+    console.log(`${Constants.MODULE_ID} | init`);
+  }
+  const settings = new ModuleSettingsRegistrar();
+
+  // Everything below runs synchronously before the first `await` so that
+  // CONFIG.Item.dataModels.loot is patched and all settings are registered
+  // before Foundry creates item instances and before `setup`/`ready` fire.
+  // Foundry does NOT await async hook callbacks, so anything after an `await`
+  // may execute after later hooks have already run.
+  settings.registerSettings();
+  GemLootTypeExtension.ensure();
+  LootActivitiesExtension.ensure();
 
   await loadTemplates([
     `modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`
   ]);
 
-  const settings =  new ModuleSettings();
   await settings.register();
-
-  GemLootTypeExtension.ensure();
-  LootActivitiesExtension.ensure();
 });
 
 Hooks.once("setup", () => {
-  console.log(`${Constants.MODULE_ID} | setup`);
+  if (Constants.isDebugEnabled()) {
+    console.log(`${Constants.MODULE_ID} | setup`);
+  }
 
   gemSheet.applyChanges();
   itemSocketSheet.applyChanges();
@@ -56,10 +70,20 @@ Hooks.once("setup", () => {
   GemDetailsUI.activate();
   GemSocketDescriptionUI.activate();
   SocketDescriptionsUI.activate();
+  ItemSheetSync.activate();
 
 });
 
 Hooks.once("ready", async () => {
+  if (!Compatibility.isSupportedDnd5eVersion()) {
+    const version = Compatibility.getDnd5eVersion() || "unknown";
+    const message = `${Constants.MODULE_ID} requires dnd5e ${Compatibility.MINIMUM_DND5E_VERSION}+; current version: ${version}.`;
+    console.warn(`[${Constants.MODULE_ID}] ${message}`);
+    ui.notifications?.warn?.(message);
+  }
+
+  await DataMigration.run();
+  await lifecycle.syncGemSubtypeFlags();
   GemDamageService.activate();
   const mode = ModuleSettings.shouldUseGemRollLayout() ? "gem" : "type";
   DamageRollGemLayout.activate({ mode });

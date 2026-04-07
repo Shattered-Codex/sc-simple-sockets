@@ -1,4 +1,5 @@
 import { Constants } from "./Constants.js";
+import { Compatibility } from "./support/Compatibility.js";
 
 export class SheetExtension {
   // Registry per sheetClass: { installed:boolean, injectors: Map<partId, Set<fn>> }
@@ -228,8 +229,8 @@ export class SheetExtension {
 
     // Attempts to resolve a global string path for libWrapper registration
     const resolveGlobalPath = () => {
-      if (globalThis.dnd5e?.applications?.item?.ItemSheet5e === Cls) {
-        return `dnd5e.applications.item.ItemSheet5e.prototype.${method}`;
+      if (Compatibility.getDnd5eItemSheetClass() === Cls) {
+        return Compatibility.getDnd5eItemSheetPrototypePath(method);
       }
       for (const key of Object.keys(globalThis)) {
         try {

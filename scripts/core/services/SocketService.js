@@ -7,9 +7,51 @@ import { ItemResolver } from "../ItemResolver.js";
 import { SocketSlot } from "../model/SocketSlot.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketSlotConfigService } from "./SocketSlotConfigService.js";
+import { ItemSheetSync } from "../support/ItemSheetSync.js";
 
 export class SocketService {
+  static #operationQueues = new Map();
+
   static async addGem(hostItem, idx, source) {
+    return SocketService.#enqueueHostOperation(
+      hostItem,
+      (currentHostItem) => SocketService.#addGem(currentHostItem, idx, source)
+    );
+  }
+
+  static async removeGem(hostItem, idx) {
+    return SocketService.#enqueueHostOperation(
+      hostItem,
+      (currentHostItem) => SocketService.#removeGem(currentHostItem, idx)
+    );
+  }
+
+  static async addSlot(hostItem, options = {}) {
+    return SocketService.#enqueueHostOperation(
+      hostItem,
+      (currentHostItem) => SocketService.#addSlot(currentHostItem, options)
+    );
+  }
+
+  static async removeSlot(hostItem, idx) {
+    return SocketService.#enqueueHostOperation(
+      hostItem,
+      (currentHostItem) => SocketService.#removeSlot(currentHostItem, idx)
+    );
+  }
+
+  static getSlots(hostItem) {
+    return SocketStore.peekSlots(SocketService.#resolveHostItem(hostItem));
+  }
+
+  static async updateSlotConfig(hostItem, idx, config) {
+    return SocketService.#enqueueHostOperation(
+      hostItem,
+      (currentHostItem) => SocketSlotConfigService.updateConfig(currentHostItem, idx, config)
+    );
+  }
+
+  static async #addGem(hostItem, idx, source) {
     if (!SocketService.#canUseSocketsOnHost(hostItem)) {
       return ui.notifications?.warn?.(
         Constants.localize(
@@ -31,7 +73,10 @@ export class SocketService {
     if (typeof source === "string") {
       try {
         gemItem = await fromUuid(source);
-      } catch {
+      } catch (error) {
+        if (Constants.isDebugEnabled()) {
+          console.debug(`[${Constants.MODULE_ID}] Could not resolve gem UUID "${source}":`, error);
+        }
       }
     } else if (source?.documentName === "Item") {
       gemItem = source;
@@ -83,18 +128,34 @@ export class SocketService {
     const previousSlot = slots[idx] ?? {};
     const shouldReturnReplacedGem = Boolean(previousSlot?.gem) && !ModuleSettings.shouldDeleteGemOnRemoval();
     const replacedGemSnapshot = shouldReturnReplacedGem
-      ? foundry.utils.deepClone(previousSlot?._gemData ?? null)
+      ? ItemResolver.expandSnapshot(previousSlot?._gemData ?? null)
       : null;
 
-    await EffectService.removeGemEffects(hostItem, idx);
-    await ActivityTransferService.removeForSlot(hostItem, idx);
+    const noRender = SocketService.#buildInternalUpdateOptions({ render: false });
+
+    try {
+      await EffectService.removeGemEffects(hostItem, idx, noRender);
+    } catch (e) {
+      console.error(`[${Constants.MODULE_ID}] removeGemEffects failed:`, e);
+    }
+
+    await ActivityTransferService.removeForSlot(hostItem, idx, noRender);
 
     const snap = ItemResolver.snapshotOne(gemItem);
     slots[idx] = SocketSlot.fillFromGem(slots[idx], gemItem, snap, idx);
-    await SocketStore.setSlots(hostItem, slots);
+    ItemResolver.normalizeSocketSlots(slots);
 
-    await EffectService.applyGemEffects(hostItem, idx, gemItem);
-    await ActivityTransferService.applyFromGem(hostItem, idx, gemItem);
+    await EffectService.applyGemEffects(hostItem, idx, gemItem, noRender);
+    await ActivityTransferService.applyFromGem(hostItem, idx, gemItem, {
+      ...noRender,
+      [Constants.MODULE_ID]: {
+        ...(noRender?.[Constants.MODULE_ID] ?? {}),
+        [ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]: true,
+        [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
+          [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots
+        }
+      }
+    });
     await InventoryService.consumeOne(gemItem);
 
     if (shouldReturnReplacedGem) {
@@ -106,7 +167,7 @@ export class SocketService {
     }
   }
 
-  static async removeGem(hostItem, idx) {
+  static async #removeGem(hostItem, idx) {
     const slots = SocketStore.getSlots(hostItem);
 
     if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
@@ -117,22 +178,37 @@ export class SocketService {
 
     if (!ModuleSettings.shouldDeleteGemOnRemoval()) {
       try {
-        await InventoryService.returnOne(hostItem, slot._gemData);
+        await InventoryService.returnOne(hostItem, ItemResolver.expandSnapshot(slot._gemData));
       } catch (e) {
         console.warn("return inventory failed:", e);
       }
     }
 
-    await EffectService.removeGemEffects(hostItem, idx);
-    await ActivityTransferService.removeForSlot(hostItem, idx);
+    const noRender = SocketService.#buildInternalUpdateOptions({ render: false });
+
+    try {
+      await EffectService.removeGemEffects(hostItem, idx, noRender);
+    } catch (e) {
+      console.error(`[${Constants.MODULE_ID}] removeGemEffects failed:`, e);
+    }
+
     slots[idx] = SocketSlot.clearGem(slot, idx);
-    await SocketStore.setSlots(hostItem, slots);
+    ItemResolver.normalizeSocketSlots(slots);
+    await ActivityTransferService.removeForSlot(hostItem, idx, {
+      ...noRender,
+      [Constants.MODULE_ID]: {
+        ...(noRender?.[Constants.MODULE_ID] ?? {}),
+        [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
+          [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots
+        }
+      }
+    });
     ui.notifications?.info?.(
       Constants.localize("SCSockets.Notifications.GemUnsocketed", "Gem unsocketed.")
     );
   }
 
-  static async addSlot(hostItem, options = {}) {
+  static async #addSlot(hostItem, options = {}) {
     const { bypassPermission = false } = options;
 
     if (!SocketService.#isHostTypeSocketable(hostItem)) {
@@ -167,7 +243,7 @@ export class SocketService {
     return result;
   }
 
-  static async removeSlot(hostItem, idx) {
+  static async #removeSlot(hostItem, idx) {
     if (!ModuleSettings.canAddOrRemoveSocket()) {
       return;
     }
@@ -184,14 +260,6 @@ export class SocketService {
       totalSlots: Math.max(currentSlots.length - 1, 0)
     });
     return result;
-  }
-
-  static getSlots(hostItem) {
-    return SocketStore.peekSlots(hostItem);
-  }
-
-  static async updateSlotConfig(hostItem, idx, config) {
-    return SocketSlotConfigService.updateConfig(hostItem, idx, config);
   }
 
   static #gemMatchesHostType(gemItem, hostItem) {
@@ -248,6 +316,57 @@ export class SocketService {
 
   static #isHostTypeSocketable(hostItem) {
     return ModuleSettings.isItemSocketableByType(hostItem);
+  }
+
+  static #buildInternalUpdateOptions(base = {}) {
+    return {
+      ...base,
+      [Constants.MODULE_ID]: {
+        ...(base?.[Constants.MODULE_ID] ?? {}),
+        [ActivityTransferService.UPDATE_OPTION_SKIP_RECONCILE]: true
+      }
+    };
+  }
+
+  static async #enqueueHostOperation(hostItem, operation) {
+    const currentHostItem = SocketService.#resolveHostItem(hostItem);
+    const key = SocketService.#hostOperationKey(currentHostItem);
+    if (!key) {
+      return operation(currentHostItem);
+    }
+
+    const previous = SocketService.#operationQueues.get(key) ?? Promise.resolve();
+    const next = previous
+      .catch(() => undefined)
+      .then(() => operation(SocketService.#resolveHostItem(currentHostItem)));
+
+    SocketService.#operationQueues.set(key, next);
+
+    try {
+      return await next;
+    } finally {
+      if (SocketService.#operationQueues.get(key) === next) {
+        SocketService.#operationQueues.delete(key);
+      }
+    }
+  }
+
+  static #resolveHostItem(hostItem) {
+    return ItemSheetSync.resolve(hostItem);
+  }
+
+  static #hostOperationKey(hostItem) {
+    if (!hostItem) {
+      return null;
+    }
+
+    const parentUuid = hostItem.parent?.uuid ?? "world";
+    const itemId = hostItem.id ?? hostItem.uuid ?? null;
+    if (!itemId) {
+      return null;
+    }
+
+    return `${parentUuid}:${itemId}`;
   }
 
   static #emitSocketAdded(hostItem, { slotIndex, slot, totalSlots }) {

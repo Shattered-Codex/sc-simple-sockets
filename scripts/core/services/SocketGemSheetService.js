@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { SocketService } from "./SocketService.js";
+import { ItemResolver } from "../ItemResolver.js";
 
 export class SocketGemSheetService {
   static async openFromHost(hostItem, slotIndex, { editable = true } = {}) {
@@ -33,24 +34,11 @@ export class SocketGemSheetService {
   }
 
   static async #resolveDocument(slot) {
-    const candidates = [
-      slot?.gem?.uuid,
-      slot?.gem?.sourceUuid,
-      slot?._gemData?.flags?.core?.sourceId
-    ].filter((value, index, array) => value && array.indexOf(value) === index);
-
-    for (const uuid of candidates) {
-      const resolved = await this.#fromUuid(uuid);
-      if (resolved?.documentName === "Item") {
-        return resolved;
-      }
-    }
-
     return null;
   }
 
   static #buildTemporaryDocument(hostItem, slot) {
-    const payload = foundry.utils.deepClone(slot?._gemData ?? null);
+    const payload = ItemResolver.expandSnapshot(slot?._gemData ?? null);
     const ItemDocument = CONFIG?.Item?.documentClass;
     if (!payload || typeof ItemDocument !== "function") {
       return null;

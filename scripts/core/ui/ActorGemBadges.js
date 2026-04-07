@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { ItemResolver } from "../ItemResolver.js";
 import { getSlotConfig } from "../helpers/socketSlotConfig.js";
 
 export class ActorGemBadges {
@@ -35,7 +36,21 @@ export class ActorGemBadges {
       this.#handlers.set(hook, handler);
     }
 
-    console.debug(`[${Constants.MODULE_ID}] ActorGemBadges activated`);
+    const updateItemHandler = (item, changes) => this.#onOwnedItemUpdated(item, changes);
+    Hooks.on("updateItem", updateItemHandler);
+    this.#handlers.set("updateItem", updateItemHandler);
+
+    const createItemHandler = (item) => this.#refreshActorSheets(item?.parent);
+    Hooks.on("createItem", createItemHandler);
+    this.#handlers.set("createItem", createItemHandler);
+
+    const deleteItemHandler = (item) => this.#refreshActorSheets(item?.parent);
+    Hooks.on("deleteItem", deleteItemHandler);
+    this.#handlers.set("deleteItem", deleteItemHandler);
+
+    if (Constants.isDebugEnabled()) {
+      console.debug(`[${Constants.MODULE_ID}] ActorGemBadges activated`);
+    }
   }
 
   /**
@@ -43,9 +58,16 @@ export class ActorGemBadges {
    * @param {HTMLElement} element
    * @param {object} slot
    * @param {string} [fallbackLabel]
+   * @param {object} [options]
+   * @param {boolean} [options.preferText=false]
    */
-  static applyTooltip(element, slot, fallbackLabel) {
-    ActorGemBadges.#applySlotTooltip(element, slot, fallbackLabel ?? ActorGemBadges.#emptySlotLabel());
+  static applyTooltip(element, slot, fallbackLabel, options = {}) {
+    ActorGemBadges.#applySlotTooltip(
+      element,
+      slot,
+      fallbackLabel ?? ActorGemBadges.#emptySlotLabel(),
+      options
+    );
   }
 
   /**
@@ -69,7 +91,9 @@ export class ActorGemBadges {
     }
     this.#handlers.clear();
 
-    console.debug(`[${Constants.MODULE_ID}] ActorGemBadges deactivated`);
+    if (Constants.isDebugEnabled()) {
+      console.debug(`[${Constants.MODULE_ID}] ActorGemBadges deactivated`);
+    }
   }
 
   /**
@@ -123,6 +147,65 @@ export class ActorGemBadges {
     if (html instanceof Element || html?.querySelector) return html;
     // Some themes expose via sheet.element
     return null;
+  }
+
+  static #onOwnedItemUpdated(item, changes) {
+    const actor = item?.parent;
+    if (actor?.documentName !== "Actor") return;
+    if (!this.#hasSocketBadgeUpdate(changes)) return;
+    this.#refreshActorSheets(actor);
+  }
+
+  static #hasSocketBadgeUpdate(changes) {
+    if (!changes || typeof changes !== "object") return false;
+
+    const socketsPath = `flags.${Constants.MODULE_ID}.${this.FLAG_KEY}`;
+    const hasProperty = foundry?.utils?.hasProperty;
+    if (typeof hasProperty === "function" && hasProperty(changes, socketsPath)) {
+      return true;
+    }
+
+    return Object.keys(changes).some((key) => (
+      key === socketsPath || key.startsWith(`${socketsPath}.`)
+    ));
+  }
+
+  static #refreshActorSheets(actor) {
+    if (actor?.documentName !== "Actor") return;
+
+    const apps = new Set();
+    if (actor.sheet?.rendered && typeof actor.sheet.render === "function") {
+      apps.add(actor.sheet);
+    }
+
+    for (const app of Object.values(ui?.windows ?? {})) {
+      const doc = app?.document ?? app?.object;
+      if (!app?.rendered || typeof app?.render !== "function") continue;
+      if (doc === actor || doc?.uuid === actor.uuid) {
+        apps.add(app);
+      }
+    }
+
+    const applicationInstances = foundry?.applications?.instances;
+    const instances = applicationInstances instanceof Map
+      ? Array.from(applicationInstances.values())
+      : Array.isArray(applicationInstances)
+        ? applicationInstances
+        : applicationInstances && typeof applicationInstances === "object"
+          ? Object.values(applicationInstances)
+          : [];
+
+    for (const app of instances) {
+      const doc = app?.document ?? app?.object;
+      if (!app?.rendered || typeof app?.render !== "function") continue;
+      if (doc === actor || doc?.uuid === actor.uuid) {
+        apps.add(app);
+      }
+    }
+
+    for (const app of apps) {
+      app.render(false);
+    }
   }
 
   static #normalizeSlots(raw) {
@@ -356,8 +439,8 @@ static #scheduleInjection(target) {
    * @param {string} fallbackLabel Default label if no richer info is available.
    * @private
    */
-  static #applySlotTooltip(element, slot, fallbackLabel) {
-    const tooltip = this.#buildSlotTooltip(slot, fallbackLabel);
+  static #applySlotTooltip(element, slot, fallbackLabel, options = {}) {
+    const tooltip = this.#buildSlotTooltip(slot, fallbackLabel, options);
     if (!tooltip) return;
 
     const { type, label, uuid, uuids, direction, cssClass } = tooltip;
@@ -380,11 +463,12 @@ static #scheduleInjection(target) {
    * @returns {{type: string, label?: string, uuid?: string, direction?: string, cssClass?: string}|null}
    * @private
    */
-  static #buildSlotTooltip(slot, fallbackLabel) {
+  static #buildSlotTooltip(slot, fallbackLabel, options = {}) {
     const label = slot?.gem?.name ?? slot?.name ?? fallbackLabel ?? this.#emptySlotLabel();
+    const preferText = options?.preferText === true;
 
     const uuids = this.#collectCandidateUuids(slot);
-    if (uuids.length && game?.system?.id === "dnd5e") {
+    if (!preferText && uuids.length && game?.system?.id === "dnd5e") {
       return {
         type: "item",
         uuid: uuids[0],
@@ -395,8 +479,7 @@ static #scheduleInjection(target) {
       };
     }
 
-    const getProperty = globalThis?.foundry?.utils?.getProperty;
-    const description = getProperty?.(slot, "_gemData.system.description.value");
+    const description = ItemResolver.getSnapshotMeta(slot?._gemData)?.description;
     const textEditor = Constants.getTextEditor();
     if (description && typeof textEditor?.stripHTML === "function") {
       const plain = textEditor.stripHTML(description)?.trim();
@@ -484,16 +567,7 @@ static #scheduleInjection(target) {
   }
 
   static #collectCandidateUuids(slot) {
-    const candidates = [];
-    const direct = slot?.gem?.uuid ?? slot?.gem?.flags?.core?.sourceId ?? slot?.gem?.sourceUuid;
-    if (direct) {
-      candidates.push(direct);
-    }
-    const stored = slot?.gem?.flags?.core?.sourceId ?? slot?._gemData?.flags?.core?.sourceId;
-    if (stored) {
-      candidates.push(stored);
-    }
-    return candidates;
+    return [];
   }
 
   static #emptySlotLabel() {

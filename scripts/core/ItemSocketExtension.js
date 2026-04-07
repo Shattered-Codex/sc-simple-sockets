@@ -7,14 +7,18 @@ import { ModuleSettings } from "./settings/ModuleSettings.js";
 import { SocketGemSheetService } from "./services/SocketGemSheetService.js";
 import { buildSocketLayoutContext } from "./helpers/socketLayout.js";
 import { SocketSlotConfigApp } from "./ui/SocketSlotConfigApp.js";
+import { SocketTooltipUI } from "./ui/SocketTooltipUI.js";
+import { Compatibility } from "./support/Compatibility.js";
+import { ItemSheetSync } from "./support/ItemSheetSync.js";
 
 export class ItemSocketExtension extends SheetExtension {
   static TAB_ID = "sockets";
   static PART_ID = "item-sockets-part";
   static DETAILS_TOGGLE_PART_ID = "sc-sockets-item-toggle-part";
+  static TEMPLATE_PATH = `modules/${Constants.MODULE_ID}/templates/socket-tab.hbs`;
 
   constructor() {
-    super(dnd5e.applications.item.ItemSheet5e);
+    super(Compatibility.requireDnd5eItemSheetClass());
   }
 
   applyChanges() {
@@ -49,14 +53,15 @@ export class ItemSocketExtension extends SheetExtension {
    * @returns {object}
    */
   buildSocketTabContext(sheet, {
+    item = null,
     includeTab = true,
     includePartId = true,
     partId = ItemSocketExtension.PART_ID
   } = {}) {
     const editable = !!sheet?.isEditable;
     const canManageSockets = editable && ModuleSettings.canAddOrRemoveSocket(game.user);
-    const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(sheet?.item);
-    const item = sheet?.item ?? null;
+    item = item ?? sheet?.item ?? null;
+    const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(item);
     const sockets = SocketService.getSlots(item);
     const context = buildSocketLayoutContext(item, {
       editable,
@@ -181,11 +186,14 @@ export class ItemSocketExtension extends SheetExtension {
   }
 
   #registerActions() {
+    const extension = this;
+
     this.addActions({
       async addSocketSlot(event) {
         event.preventDefault();
-        await SocketService.addSlot(this.item);
-        this.sheet?.render();
+        const item = ItemSheetSync.syncSheetDocument(this.sheet, this.item);
+        await SocketService.addSlot(item);
+        await extension.#refreshSocketUi(this.sheet);
       },
 
       async removeSocketSlot(event, target) {
@@ -204,9 +212,10 @@ export class ItemSocketExtension extends SheetExtension {
           }
         }
 
-        await SocketService.removeGem(this.item, idx);
-        await SocketService.removeSlot(this.item, idx);
-        this.sheet?.render();
+        const item = ItemSheetSync.syncSheetDocument(this.sheet, this.item);
+        await SocketService.removeGem(item, idx);
+        await SocketService.removeSlot(item, idx);
+        await extension.#refreshSocketUi(this.sheet);
       },
 
       async removeGemFromSlot(event, target) {
@@ -228,8 +237,9 @@ export class ItemSocketExtension extends SheetExtension {
           }
         }
 
-        await SocketService.removeGem(this.item, idx);
-        this.sheet?.render();
+        const item = ItemSheetSync.syncSheetDocument(this.sheet, this.item);
+        await SocketService.removeGem(item, idx);
+        await extension.#refreshSocketUi(this.sheet);
       },
 
       async openGemFromSlot(event, target) {
@@ -241,7 +251,10 @@ export class ItemSocketExtension extends SheetExtension {
           return;
         }
 
-        await SocketGemSheetService.openFromHost(this.item, idx);
+        await SocketGemSheetService.openFromHost(
+          ItemSheetSync.syncSheetDocument(this.sheet, this.item),
+          idx
+        );
       },
 
       async openSocketSlotConfig(event, target) {
@@ -253,7 +266,7 @@ export class ItemSocketExtension extends SheetExtension {
           return;
         }
 
-        SocketSlotConfigApp.open(this.item, idx, {
+        SocketSlotConfigApp.open(ItemSheetSync.syncSheetDocument(this.sheet, this.item), idx, {
           parentApp: this.sheet,
           editable: this.sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
         });
@@ -262,7 +275,8 @@ export class ItemSocketExtension extends SheetExtension {
   }
 
   #bindDnD(sheet) {
-    if (!this.#isSockeable(sheet.item)) {
+    const item = ItemSheetSync.syncSheetDocument(sheet, sheet.item);
+    if (!this.#isSockeable(item)) {
       return;
     }
     const root = sheet.element;
@@ -274,10 +288,35 @@ export class ItemSocketExtension extends SheetExtension {
       root,
       '[data-dropzone="socket-slot"]',
       async ({ data, index }) => {
-        await SocketService.addGem(sheet.item, index, data);
-        sheet.render();
+        const item = ItemSheetSync.syncSheetDocument(sheet, sheet.item);
+        await SocketService.addGem(item, index, data);
+        await this.#refreshSocketUi(sheet);
       }
     );
+  }
+
+  async #refreshSocketUi(sheet) {
+    const item = ItemSheetSync.syncSheetDocument(sheet, sheet?.item);
+    if (!item) {
+      return;
+    }
+
+    const root = sheet.element;
+    const current = root?.querySelector?.(`[data-application-part="${ItemSocketExtension.PART_ID}"]`);
+    if (!(current instanceof HTMLElement)) {
+      sheet.render(true);
+      return;
+    }
+
+    const html = await foundry.applications.handlebars.renderTemplate(
+      ItemSocketExtension.TEMPLATE_PATH,
+      this.buildSocketTabContext(sheet, { item })
+    );
+
+    current.outerHTML = html;
+
+    this.#bindDnD(sheet);
+    SocketTooltipUI.refresh(sheet, sheet.element);
   }
 
   #isTabActive(sheet) {

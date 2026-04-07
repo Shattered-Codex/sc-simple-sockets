@@ -27,6 +27,18 @@ export class LootActivitiesExtension {
     try {
       const MixedLootModel = lootModel.mixin(activitiesTemplate);
       class LootWithActivities extends MixedLootModel {
+        constructor(data, options) {
+          // ActivitiesTemplate marks `activities` and `uses` as required (non-nullable).
+          // Existing loot items saved before this extension was applied will lack these
+          // fields in their raw source, causing a DataModelValidationError during any
+          // actor reset (e.g. when effects are deleted). Providing empty-object defaults
+          // lets the schema initialise with its own field defaults instead of throwing.
+          const normalized = data ? { ...data } : {};
+          if (normalized.activities === undefined) normalized.activities = {};
+          if (normalized.uses === undefined) normalized.uses = { spent: 0, max: "", recovery: [] };
+          super(normalized, options);
+        }
+
         prepareFinalData(...args) {
           if (typeof super.prepareFinalData === "function") {
             super.prepareFinalData(...args);
@@ -50,7 +62,9 @@ export class LootActivitiesExtension {
         itemModels.LootData = LootWithActivities;
       } catch (error) {
         if (error instanceof TypeError) {
-          console.debug(`[${Constants.MODULE_ID}] itemModels.LootData is read-only, skipping direct assignment.`);
+          if (Constants.isDebugEnabled()) {
+            console.debug(`[${Constants.MODULE_ID}] itemModels.LootData is read-only, skipping direct assignment.`);
+          }
         } else {
           throw error;
         }

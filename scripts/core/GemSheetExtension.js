@@ -3,6 +3,7 @@ import { SheetExtension } from "./SheetExtension.js";
 import { GemCriteria } from "../domain/gems/GemCriteria.js";
 import { GemTargetFilterBuilder } from "../domain/gems/GemTargetFilterBuilder.js";
 import { GemDetailsBuilder } from "../domain/gems/GemDetailsBuilder.js";
+import { Compatibility } from "./support/Compatibility.js";
 
 export class GemSheetExtension extends SheetExtension {
 
@@ -14,7 +15,7 @@ export class GemSheetExtension extends SheetExtension {
   #condition;
 
   constructor({
-    sheetClass = dnd5e.applications.item.ItemSheet5e,
+    sheetClass = Compatibility.requireDnd5eItemSheetClass(),
     criteria = GemCriteria
   } = {}) {
     super(sheetClass);
@@ -206,7 +207,7 @@ export class GemSheetExtension extends SheetExtension {
     if (globalThis.libWrapper?.register) {
       libWrapper.register(
         Constants.MODULE_ID,
-        "dnd5e.applications.item.ItemSheet5e.itemHasActivities",
+        Compatibility.getDnd5eItemSheetStaticPath("itemHasActivities"),
         function (wrapped, item) {
           const result = wrapped.call(this, item);
           return evaluate(item, result);
