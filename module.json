@@ -1,95 +1,96 @@
 {
-    "id": "sc-simple-sockets",
-    "title": "SC - Simple Sockets",
-    "version": "1.1.18",
-    "media": [
-        {
-            "type": "setup",
-            "url": "modules/sc-simple-sockets/assets/imgs/cover.webp"
-        }
-    ],
-    "compatibility": {
-        "minimum": "13",
-        "verified": "14"
+  "id": "sc-simple-sockets",
+  "title": "SC - Simple Sockets",
+  "version": "1.1.17",
+  "media": [
+    {
+      "type": "setup",
+      "url": "modules/sc-simple-sockets/assets/imgs/cover.webp",
+      "loop": false,
+      "flags": {}
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Gustavo Bacelar",
+      "flags": {}
+    }
+  ],
+  "flags": {
+    "canUpload": true
+  },
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json",
+      "flags": {}
     },
-    "authors": [
-        {
-            "name": "Gustavo Bacelar",
-            "flags": {}
-        }
-    ],
-    "flags": {
-        "canUpload": true
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-BR.json",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    {
+      "src": "css/actor-gem-badges.css"
     },
-    "languages": [
-        {
-            "lang": "en",
-            "name": "English",
-            "path": "lang/en.json",
-            "flags": {}
-        },
-        {
-            "lang": "pt-BR",
-            "name": "Português (Brasil)",
-            "path": "lang/pt-BR.json",
-            "flags": {}
-        }
-    ],
-    "esmodules": [
-        "scripts/main.js"
-    ],
-    "styles": [
-        {
-            "src": "css/actor-gem-badges.css"
-        },
-        {
-            "src": "css/tidy-sockets.css"
-        }
-    ],
-    "url": "https://github.com/Shattered-Codex/sc-simple-sockets",
-    "manifest": "https://github.com/Shattered-Codex/sc-simple-sockets/releases/latest/download/module.json",
-    "download": "https://github.com/Shattered-Codex/sc-simple-sockets/releases/download/v1.1.18/sc-simple-sockets.zip",
-    "packs": [
-        {
-            "name": "sc-gems",
-            "label": "SC - Gems",
-            "path": "packs/sc-gems",
-            "type": "Item",
-            "system": "dnd5e",
-            "ownership": {
-                "PLAYER": "OBSERVER",
-                "ASSISTANT": "OWNER"
-            }
-        },
-        {
-            "name": "sc-gems-macros",
-            "label": "SC - Gems Macros",
-            "path": "packs/sc-gems-macros",
-            "type": "Macro",
-            "ownership": {
-                "PLAYER": "OBSERVER",
-                "ASSISTANT": "OWNER"
-            }
-        }
-    ],
-    "relationships": {
-        "systems": [
-            {
-                "id": "dnd5e",
-                "type": "system",
-                "compatibility": {
-                    "minimum": "5.3.0"
-                }
-            }
-        ],
-        "requires": [],
-        "recommends": [
-            {
-                "id": "lib-wrapper",
-                "type": "module",
-                "compatibility": {}
-            }
-        ]
+    {
+      "src": "css/tidy-sockets.css"
+    }
+  ],
+  "url": "https://github.com/Shattered-Codex/sc-simple-sockets",
+  "manifest": "https://github.com/Shattered-Codex/sc-simple-sockets/releases/latest/download/module.json",
+  "download": "https://github.com/Shattered-Codex/sc-simple-sockets/releases/download/v1.1.17/sc-simple-sockets.zip",
+  "packs": [
+    {
+      "name": "sc-simple-sockets-gem",
+      "label": "SC - SImple Sockets Gems",
+      "path": "packs/sc-simple-sockets-gem",
+      "type": "Item",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "system": "dnd5e",
+      "flags": {}
     },
-    "description": ""
+    {
+      "name": "sc-simple-sockets-macro",
+      "label": "SC - Simple Sockets Macro",
+      "path": "packs/sc-simple-sockets-macro",
+      "type": "Macro",
+      "ownership": {
+        "PLAYER": "OBSERVER",
+        "ASSISTANT": "OWNER"
+      },
+      "system": "dnd5e",
+      "flags": {}
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system"
+      }
+    ],
+    "recommends": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "compatibility": {}
+      }
+    ]
+  },
+  "description": ""
 }

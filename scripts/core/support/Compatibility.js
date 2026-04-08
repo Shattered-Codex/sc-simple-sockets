@@ -1,20 +1,6 @@
 import { Constants } from "../Constants.js";
 
 export class Compatibility {
-  static MINIMUM_DND5E_VERSION = "5.3.0";
-
-  static getDnd5eVersion() {
-    if (game?.system?.id !== "dnd5e") return "";
-    return String(game.system.version ?? game.system.data?.version ?? "").trim();
-  }
-
-  static isSupportedDnd5eVersion(minimum = Compatibility.MINIMUM_DND5E_VERSION) {
-    const current = Compatibility.getDnd5eVersion();
-    const isNewerVersion = foundry?.utils?.isNewerVersion;
-    if (!current.length || typeof isNewerVersion !== "function") return true;
-    return current === minimum || isNewerVersion(current, minimum);
-  }
-
   static getDnd5eItemSheetClass() {
     return globalThis.dnd5e?.applications?.item?.ItemSheet5e ?? null;
   }
@@ -27,7 +13,7 @@ export class Compatibility {
 
     throw new Error(
       `${Constants.MODULE_ID}: dnd5e.applications.item.ItemSheet5e is required. `
-      + `Use dnd5e ${Compatibility.MINIMUM_DND5E_VERSION}+ on Foundry VTT v13/v14.`
+      + `Use a compatible dnd5e release on Foundry VTT v13/v14.`
     );
   }
 
