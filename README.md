@@ -81,7 +81,7 @@ Once a gem is inserted, the module can:
 ## Requirements
 
 - **Foundry VTT:** v13 and v14
-- **System:** dnd5e 5.3.0 or newer
+- **System:** dnd5e
 - **Recommended:** `libWrapper`
 
 ## Installation

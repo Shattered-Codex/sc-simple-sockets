@@ -21,7 +21,6 @@ import { DamageRollGemLayout } from "./core/ui/DamageRollGemLayout.js";
 import { ActivityTransferService } from "./core/services/ActivityTransferService.js";
 import { maybeShowSupportCard } from "./core/support/supportCard.js";
 import { DataMigration } from "./core/migration/DataMigration.js";
-import { Compatibility } from "./core/support/Compatibility.js";
 import { ItemSheetSync } from "./core/support/ItemSheetSync.js";
 
 const gemSheet = new GemSheetExtension();
@@ -75,13 +74,6 @@ Hooks.once("setup", () => {
 });
 
 Hooks.once("ready", async () => {
-  if (!Compatibility.isSupportedDnd5eVersion()) {
-    const version = Compatibility.getDnd5eVersion() || "unknown";
-    const message = `${Constants.MODULE_ID} requires dnd5e ${Compatibility.MINIMUM_DND5E_VERSION}+; current version: ${version}.`;
-    console.warn(`[${Constants.MODULE_ID}] ${message}`);
-    ui.notifications?.warn?.(message);
-  }
-
   await DataMigration.run();
   await lifecycle.syncGemSubtypeFlags();
   GemDamageService.activate();
