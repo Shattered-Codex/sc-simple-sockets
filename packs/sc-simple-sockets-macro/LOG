@@ -1,5 +1,3 @@
-2026/04/08-22:37:04.461328 72232f3fe6c0 Delete type=3 #1
-2026/04/08-22:39:59.280380 72211bfff6c0 Level-0 table #5: started
-2026/04/08-22:39:59.289622 72211bfff6c0 Level-0 table #5: 776 bytes OK
-2026/04/08-22:39:59.299463 72211bfff6c0 Delete type=0 #3
-2026/04/08-22:39:59.526152 72211bfff6c0 Manual compaction at level-0 from '!macros!DgtCnqUtWORqdeA1' @ 72057594037927935 : 1 .. '!macros!DgtCnqUtWORqdeA1' @ 0 : 0; will stop at (end)
+2026/04/26-00:40:48.533912 75c5b27fc6c0 Recovering log #14
+2026/04/26-00:40:48.536472 75c5b27fc6c0 Delete type=0 #14
+2026/04/26-00:40:48.536497 75c5b27fc6c0 Delete type=3 #12
