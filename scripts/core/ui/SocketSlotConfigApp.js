@@ -172,6 +172,8 @@ export class SocketSlotConfigApp extends BaseApplication {
       gemImg: slot?.gem?.img ?? slot?._gemData?.img ?? "",
       canInspectGem,
       slotConfigName: slotConfig.name,
+      hidden: slotConfig.hidden,
+      canEditVisibility: this.#canEditVisibility(),
       condition: slotConfig.condition,
       description: slotConfig.description,
       descriptionEnriched,
@@ -201,6 +203,14 @@ export class SocketSlotConfigApp extends BaseApplication {
         slotNameLabel: Constants.localize(
           "SCSockets.SocketSlotConfig.SlotNameLabel",
           "Slot name"
+        ),
+        hiddenLabel: Constants.localize(
+          "SCSockets.SocketSlotConfig.Hidden.Label",
+          "Hide slot"
+        ),
+        hiddenHint: Constants.localize(
+          "SCSockets.SocketSlotConfig.Hidden.Hint",
+          "Only GMs can see this slot and its socket description."
         ),
         conditionLabel: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Label",
@@ -364,6 +374,8 @@ export class SocketSlotConfigApp extends BaseApplication {
   #readForm(form) {
     if (!(form instanceof HTMLFormElement)) {
       return {
+        name: "",
+        hidden: this.#currentHiddenValue(),
         condition: "",
         description: "",
         color: ""
@@ -372,10 +384,20 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     return {
       name: this.#readFieldValue("slotConfig.name"),
+      hidden: this.#canEditVisibility() ? this.#readCheckboxValue("slotConfig.hidden") : this.#currentHiddenValue(),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
       color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex"))
     };
+  }
+
+  #canEditVisibility() {
+    return Boolean(this.#editable && game.user?.isGM);
+  }
+
+  #currentHiddenValue() {
+    const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    return SocketSlotConfigService.getConfig(slot).hidden;
   }
 
   #clearColorInputs() {
@@ -405,6 +427,14 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     const attributeValue = field.getAttribute?.("value");
     return typeof attributeValue === "string" ? attributeValue : "";
+  }
+
+  #readCheckboxValue(name) {
+    const field = this.form?.elements?.namedItem?.(name) ?? this.form?.querySelector?.(`[name="${name}"]`) ?? null;
+    if (field instanceof HTMLInputElement) {
+      return field.checked;
+    }
+    return false;
   }
 
   #refreshPreview() {

@@ -44,6 +44,15 @@
             </div>
 
             <div class="item-detail item-controls socket-controls sc-sockets-slot-actions">
+              {{#if ../canToggleSlotVisibility}}
+              <a class="socket-control item-control sc-sockets-slot-action sc-sockets-slot-action--visibility"
+                data-action="toggleSocketSlotVisibility" data-index="{{slot.index}}"
+                aria-label="{{slot.visibilityLabel}}"
+                data-tooltip="{{slot.visibilityTooltip}}"
+                data-tooltip-direction="LEFT">
+                <i class="fas {{slot.visibilityIcon}}"></i>
+              </a>
+              {{/if}}
               {{#if slot.hasGem}}
                 {{#if ../editable}}
                 <a class="socket-control item-control sc-sockets-slot-action sc-sockets-slot-action--remove-gem"
@@ -70,8 +79,8 @@
         </ol>
         {{else}}
         <ol class="item-list unlist">
-          {{#each sockets as |slot i|}}
-          <li class="item flexrow socket-row" data-index="{{i}}" data-dropzone="socket-slot" aria-dropeffect="copy">
+          {{#each sockets as |slot|}}
+          <li class="item flexrow socket-row" data-index="{{slot.index}}" data-dropzone="socket-slot" aria-dropeffect="copy">
 
             <div class="item-name socket-name sc-sockets-slot-main">
               <div class="socket-icon-wrapper sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
@@ -104,8 +113,16 @@
             </div>
 
             <div class="item-detail item-controls socket-controls">
+              {{#if ../canToggleSlotVisibility}}
+              <a class="socket-control item-control" data-action="toggleSocketSlotVisibility" data-index="{{slot.index}}"
+                aria-label="{{slot.visibilityLabel}}"
+                data-tooltip="{{slot.visibilityTooltip}}"
+                data-tooltip-direction="LEFT">
+                <i class="fas {{slot.visibilityIcon}}"></i>
+              </a>
+              {{/if}}
               {{#if ../canConfigureSlots}}
-              <a class="socket-control item-control" data-action="openSocketSlotConfig" data-index="{{i}}"
+              <a class="socket-control item-control" data-action="openSocketSlotConfig" data-index="{{slot.index}}"
                 aria-label="{{ localize 'SCSockets.Tooltips.ConfigureSlotLabel' }}"
                 data-tooltip="{{ localize 'SCSockets.Tooltips.ConfigureSlot' }}"
                 data-tooltip-direction="LEFT">
@@ -113,7 +130,7 @@
               </a>
               {{/if}}
               {{#if ../editable}}
-              <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{i}}"
+              <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{slot.index}}"
                 aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}"
                 data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
                 data-tooltip-direction="LEFT">
@@ -121,7 +138,7 @@
               </a>
               {{/if}}
               {{#if ../canManageSockets}}
-              <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{i}}" data-tooltip
+              <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{slot.index}}" data-tooltip
                 aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}"
                 data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"
                 data-tooltip-direction="LEFT">

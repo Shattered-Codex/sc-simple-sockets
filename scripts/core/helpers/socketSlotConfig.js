@@ -2,6 +2,10 @@ function normalizeText(value) {
   return typeof value === "string" ? value : "";
 }
 
+function normalizeBoolean(value) {
+  return value === true || value === 1 || value === "true" || value === "1" || value === "on";
+}
+
 export function normalizeSlotColor(value) {
   const raw = String(value ?? "").trim();
   if (!raw.length) {
@@ -25,12 +29,21 @@ export function normalizeSlotConfig(config = {}) {
     name: normalizeText(config?.name),
     condition: normalizeText(config?.condition),
     description: normalizeText(config?.description),
-    color: normalizeSlotColor(config?.color)
+    color: normalizeSlotColor(config?.color),
+    hidden: normalizeBoolean(config?.hidden)
   };
 }
 
 export function getSlotConfig(slot) {
   return normalizeSlotConfig(slot?.slotConfig);
+}
+
+export function isSlotHidden(slot) {
+  return getSlotConfig(slot).hidden;
+}
+
+export function canUserSeeSlot(slot, user = globalThis.game?.user) {
+  return !isSlotHidden(slot) || Boolean(user?.isGM);
 }
 
 export function hasSlotConfigDescription(slot) {

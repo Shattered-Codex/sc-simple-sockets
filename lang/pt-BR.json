@@ -108,6 +108,10 @@
       "Save": "Salvar e fechar",
       "Cancel": "Cancelar",
       "Saved": "Configurações do slot salvas.",
+      "Hidden": {
+        "Label": "Ocultar slot",
+        "Hint": "Somente GMs podem ver este slot e sua descrição de socket."
+      },
       "Condition": {
         "Label": "Condição do slot",
         "Hint": "Use JavaScript. Variáveis disponíveis: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
@@ -139,7 +143,9 @@
       "DeleteSocket": "Excluir este soquete do item.",
       "DeleteSlotLabel": "Excluir soquete",
       "ConfigureSlot": "Configurar este slot.",
-      "ConfigureSlotLabel": "Configurar slot"
+      "ConfigureSlotLabel": "Configurar slot",
+      "HideSlot": "Ocultar este slot dos jogadores.",
+      "ShowSlot": "Mostrar este slot para os jogadores."
     },
     "Settings": {
       "EditPermission": {

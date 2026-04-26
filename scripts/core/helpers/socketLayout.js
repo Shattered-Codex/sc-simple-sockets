@@ -1,6 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
-import { getSlotConfig } from "./socketSlotConfig.js";
+import { canUserSeeSlot, getSlotConfig } from "./socketSlotConfig.js";
 
 export function buildSocketLayoutContext(item, {
   editable = false,
@@ -15,6 +15,7 @@ export function buildSocketLayoutContext(item, {
     editable,
     canManageSockets,
     canConfigureSlots: canManageSockets,
+    canToggleSlotVisibility: canManageSockets && Boolean(globalThis.game?.user?.isGM),
     canAddSocketSlot,
     dataEditable: editable ? "true" : "false",
     socketTabLayout,
@@ -23,8 +24,12 @@ export function buildSocketLayoutContext(item, {
     useSocketGridLayout,
     useSocketListLayout: !useSocketGridLayout,
     sockets: Array.isArray(sockets)
-      ? sockets.map((slot, index) => {
+      ? sockets.reduce((entries, slot, index) => {
         const slotConfig = getSlotConfig(slot);
+        if (!canUserSeeSlot({ ...slot, slotConfig })) {
+          return entries;
+        }
+
         const hasGem = Boolean(slot?.gem);
         const tintColor = useSocketGridLayout
           ? slotConfig.color
@@ -33,8 +38,13 @@ export function buildSocketLayoutContext(item, {
           ? `--sc-sockets-slot-color:${tintColor};`
           : "";
 
-        return {
+        const hiddenTooltip = slotConfig.hidden
+          ? Constants.localize("SCSockets.Tooltips.ShowSlot", "Show this slot to players.")
+          : Constants.localize("SCSockets.Tooltips.HideSlot", "Hide this slot from players.");
+
+        entries.push({
           ...slot,
+          hidden: slotConfig.hidden,
           hasGem,
           hasSlotTint: Boolean(tintColor),
           index,
@@ -43,12 +53,16 @@ export function buildSocketLayoutContext(item, {
           slotMaskStyle,
           slotColor: tintColor,
           slotConfig,
+          visibilityIcon: slotConfig.hidden ? "fa-eye-slash" : "fa-eye",
+          visibilityTooltip: hiddenTooltip,
+          visibilityLabel: hiddenTooltip,
           gemImg: slot?.gem?.img ?? "",
           gemName: slot?.gem?.name ?? "",
           gemUuid: "",
           hostItemUuid: item?.uuid ?? ""
-        };
-      })
+        });
+        return entries;
+      }, [])
       : []
   };
 }

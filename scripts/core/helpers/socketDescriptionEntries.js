@@ -1,6 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
-import { getSlotConfig } from "./socketSlotConfig.js";
+import { canUserSeeSlot, getSlotConfig } from "./socketSlotConfig.js";
 
 export async function buildSocketDescriptionEntries(item, slots) {
   const textEditor = Constants.getTextEditor();
@@ -13,6 +13,10 @@ export async function buildSocketDescriptionEntries(item, slots) {
   const entries = [];
   for (const slot of slots) {
     const slotConfig = getSlotConfig(slot);
+    if (!canUserSeeSlot({ ...slot, slotConfig })) {
+      continue;
+    }
+
     const gemDescription = slot?.gem
       ? (ItemResolver.getSnapshotMeta(slot?._gemData)?.socketDescription ?? "")
       : "";
