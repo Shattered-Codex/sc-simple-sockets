@@ -32,6 +32,22 @@ export class SocketSlotConfigService {
     return true;
   }
 
+  static async toggleHidden(hostItem, slotIndex) {
+    const slots = SocketStore.getSlots(hostItem);
+    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
+      return null;
+    }
+
+    const config = getSlotConfig(slots[slotIndex]);
+    const nextConfig = {
+      ...config,
+      hidden: !config.hidden
+    };
+    slots[slotIndex] = SocketSlot.applyConfig(slots[slotIndex], nextConfig, slotIndex);
+    await SocketStore.setSlots(hostItem, slots);
+    return nextConfig.hidden;
+  }
+
   static validateCondition(code) {
     const source = String(code ?? "");
     if (!source.trim().length) {

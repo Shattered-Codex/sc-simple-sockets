@@ -1,12 +1,14 @@
 import { Constants } from "../Constants.js";
 import { SocketService } from "../services/SocketService.js";
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
+import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js";
 import { SocketSlotConfigApp } from "../ui/SocketSlotConfigApp.js";
 import { SocketTooltipUI } from "../ui/SocketTooltipUI.js";
 import { DragHelper } from "../../helpers/DragHelper.js";
 import { DialogHelper } from "../../helpers/DialogHelper.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { buildSocketLayoutContext } from "../helpers/socketLayout.js";
+import { canUserSeeSlot } from "../helpers/socketSlotConfig.js";
 import { ItemSheetSync } from "../support/ItemSheetSync.js";
 
 /**
@@ -78,8 +80,11 @@ export class TidySocketTabHandler {
     if (!item) return;
 
     const slots = SocketService.getSlots(item);
-    const total = Array.isArray(slots) ? slots.length : 0;
-    const filled = total ? slots.filter((slot) => slot?.gem).length : 0;
+    const visibleSlots = Array.isArray(slots)
+      ? slots.filter((slot) => canUserSeeSlot(slot))
+      : [];
+    const total = visibleSlots.length;
+    const filled = total ? visibleSlots.filter((slot) => slot?.gem).length : 0;
 
     const anchor = sheet.element?.querySelector?.(`[data-tab-id="${TidySocketTabHandler.#socketTabId}"]`);
     if (!anchor) return;
@@ -131,6 +136,9 @@ export class TidySocketTabHandler {
           break;
         case "openSocketSlotConfig":
           await TidySocketTabHandler.#handleOpenSocketSlotConfig(event, target, sheet);
+          break;
+        case "toggleSocketSlotVisibility":
+          await TidySocketTabHandler.#handleToggleSocketSlotVisibility(event, target, sheet, root);
           break;
         default:
           break;
@@ -198,6 +206,21 @@ export class TidySocketTabHandler {
       parentApp: sheet,
       editable: sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
     });
+  }
+
+  static async #handleToggleSocketSlotVisibility(event, target, sheet, root) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!ModuleSettings.canAddOrRemoveSocket(game.user)) {
+      return;
+    }
+
+    const idx = TidySocketTabHandler.#resolveIndex(target);
+    if (idx === null) return;
+
+    await SocketSlotConfigService.toggleHidden(ItemSheetSync.syncSheetDocument(sheet, sheet.item), idx);
+    await TidySocketTabHandler.refresh(root, sheet);
   }
 
   static #resolveIndex(target) {

@@ -172,6 +172,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       gemImg: slot?.gem?.img ?? slot?._gemData?.img ?? "",
       canInspectGem,
       slotConfigName: slotConfig.name,
+      hidden: slotConfig.hidden,
       condition: slotConfig.condition,
       description: slotConfig.description,
       descriptionEnriched,
@@ -201,6 +202,14 @@ export class SocketSlotConfigApp extends BaseApplication {
         slotNameLabel: Constants.localize(
           "SCSockets.SocketSlotConfig.SlotNameLabel",
           "Slot name"
+        ),
+        hiddenLabel: Constants.localize(
+          "SCSockets.SocketSlotConfig.Hidden.Label",
+          "Hide slot"
+        ),
+        hiddenHint: Constants.localize(
+          "SCSockets.SocketSlotConfig.Hidden.Hint",
+          "Only GMs can see this slot and its socket description."
         ),
         conditionLabel: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Label",
@@ -364,6 +373,8 @@ export class SocketSlotConfigApp extends BaseApplication {
   #readForm(form) {
     if (!(form instanceof HTMLFormElement)) {
       return {
+        name: "",
+        hidden: false,
         condition: "",
         description: "",
         color: ""
@@ -372,6 +383,7 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     return {
       name: this.#readFieldValue("slotConfig.name"),
+      hidden: this.#readCheckboxValue("slotConfig.hidden"),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
       color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex"))
@@ -405,6 +417,14 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     const attributeValue = field.getAttribute?.("value");
     return typeof attributeValue === "string" ? attributeValue : "";
+  }
+
+  #readCheckboxValue(name) {
+    const field = this.form?.elements?.namedItem?.(name) ?? this.form?.querySelector?.(`[name="${name}"]`) ?? null;
+    if (field instanceof HTMLInputElement) {
+      return field.checked;
+    }
+    return false;
   }
 
   #refreshPreview() {

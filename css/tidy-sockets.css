@@ -484,7 +484,7 @@
 .sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-action,
 .sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action {
   position: absolute;
-  z-index: 1;
+  z-index: 5;
 }
 
 .sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action,
@@ -542,6 +542,12 @@
   bottom: 0.05rem;
 }
 
+.sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-action--visibility,
+.sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--visibility {
+  top: 0.05rem;
+  left: -0.05rem;
+}
+
 .sc-sockets-layout-cauldron .sc-sockets-view .sc-sockets-slot-action--configure-slot,
 .sc-sockets-view[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--configure-slot {
   top: 0.05rem;
@@ -554,6 +560,14 @@
   right: -0.05rem !important;
   bottom: 0.05rem !important;
   left: auto !important;
+}
+
+.sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action--visibility,
+.sc-sockets-tidy[data-sc-sockets-layout="cauldron"] .sc-sockets-slot-action--visibility {
+  top: 0.05rem !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: -0.05rem !important;
 }
 
 .sc-sockets-layout-cauldron .sc-sockets-tidy .sc-sockets-slot-action--configure-slot,

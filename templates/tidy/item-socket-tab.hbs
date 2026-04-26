@@ -51,6 +51,15 @@
                 </div>
 
                 <div class="tidy-table-cell tidy-table-actions sc-sockets-slot-actions" data-tidy-sheet-part="table-cell">
+                  {{#if ../canConfigureSlots}}
+                    <a class="tidy-table-button sc-sockets-slot-action sc-sockets-slot-action--visibility"
+                       data-action="toggleSocketSlotVisibility"
+                       data-index="{{slot.index}}"
+                       data-tooltip="{{slot.visibilityTooltip}}"
+                       aria-label="{{slot.visibilityLabel}}">
+                      <i class="fas {{slot.visibilityIcon}}"></i>
+                    </a>
+                  {{/if}}
                   {{#if slot.hasGem}}
                     {{#if ../editable}}
                     <a class="tidy-table-button sc-sockets-slot-action sc-sockets-slot-action--remove-gem"
@@ -76,8 +85,8 @@
             </div>
             {{/each}}
           {{else}}
-            {{#each sockets as |slot i|}}
-            <div class="tidy-table-row-container socket" data-index="{{i}}" data-dropzone="socket-slot" aria-hidden="false">
+            {{#each sockets as |slot|}}
+            <div class="tidy-table-row-container socket" data-index="{{slot.index}}" data-dropzone="socket-slot" aria-hidden="false">
               <div class="tidy-table-row tidy-table-row-v2" data-tidy-table-row="" data-tidy-sheet-part="table-row">
                 <div class="tidy-table-cell primary sc-sockets-slot-main" data-tidy-sheet-part="table-cell">
                   <div class="tidy-table-row-use-button socket-icon-wrapper sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
@@ -105,8 +114,17 @@
                 <div class="tidy-table-cell tidy-table-actions" data-tidy-sheet-part="table-cell">
                   {{#if ../canConfigureSlots}}
                     <a class="tidy-table-button"
+                       data-action="toggleSocketSlotVisibility"
+                       data-index="{{slot.index}}"
+                       data-tooltip="{{slot.visibilityTooltip}}"
+                       aria-label="{{slot.visibilityLabel}}">
+                      <i class="fas {{slot.visibilityIcon}}"></i>
+                    </a>
+                  {{/if}}
+                  {{#if ../canConfigureSlots}}
+                    <a class="tidy-table-button"
                        data-action="openSocketSlotConfig"
-                       data-index="{{i}}"
+                       data-index="{{slot.index}}"
                        data-tooltip="{{ localize 'SCSockets.Tooltips.ConfigureSlot' }}"
                        aria-label="{{ localize 'SCSockets.Tooltips.ConfigureSlotLabel' }}">
                       <i class="fas fa-pen-to-square"></i>
@@ -115,7 +133,7 @@
                   {{#if ../editable}}
                     <a class="tidy-table-button"
                        data-action="removeGemFromSlot"
-                       data-index="{{i}}"
+                       data-index="{{slot.index}}"
                        data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
                        aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}">
                       <i class="fas fa-hammer-crash"></i>
@@ -124,7 +142,7 @@
                   {{#if ../canManageSockets}}
                     <a class="tidy-table-button"
                        data-action="removeSocketSlot"
-                       data-index="{{i}}"
+                       data-index="{{slot.index}}"
                        data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"
                        aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}">
                       <i class="fas fa-trash"></i>

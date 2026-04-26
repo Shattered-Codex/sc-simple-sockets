@@ -5,6 +5,7 @@ import { DragHelper } from "../helpers/DragHelper.js";
 import { SocketService } from "./services/SocketService.js";
 import { ModuleSettings } from "./settings/ModuleSettings.js";
 import { SocketGemSheetService } from "./services/SocketGemSheetService.js";
+import { SocketSlotConfigService } from "./services/SocketSlotConfigService.js";
 import { buildSocketLayoutContext } from "./helpers/socketLayout.js";
 import { SocketSlotConfigApp } from "./ui/SocketSlotConfigApp.js";
 import { SocketTooltipUI } from "./ui/SocketTooltipUI.js";
@@ -270,6 +271,24 @@ export class ItemSocketExtension extends SheetExtension {
           parentApp: this.sheet,
           editable: this.sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
         });
+      },
+
+      async toggleSocketSlotVisibility(event, target) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!ModuleSettings.canAddOrRemoveSocket(game.user)) {
+          return;
+        }
+
+        const idx = Number(target.dataset.index ?? target.closest("[data-index]")?.dataset.index);
+        if (!Number.isInteger(idx)) {
+          return;
+        }
+
+        const item = ItemSheetSync.syncSheetDocument(this.sheet, this.item);
+        await SocketSlotConfigService.toggleHidden(item, idx);
+        await extension.#refreshSocketUi(this.sheet);
       }
     });
   }

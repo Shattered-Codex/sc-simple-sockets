@@ -1,6 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
-import { getSlotConfig } from "../helpers/socketSlotConfig.js";
+import { canUserSeeSlot, getSlotConfig } from "../helpers/socketSlotConfig.js";
 
 export class ActorGemBadges {
   static CSS_CLASS = "sc-sockets-badges";
@@ -118,10 +118,10 @@ export class ActorGemBadges {
     if (!socketed.length) return;
 
     for (const { item, sockets } of socketed) {
-      const slots = this.#normalizeSlots(sockets);
-      if (!slots.length) continue;
+      const slots = this.#normalizeSlots(sockets).filter((slot) => canUserSeeSlot(slot));
 
       this.#removeExistingBadges(root, item.id);
+      if (!slots.length) continue;
 
       const targets = this.#collectTargets(root, item, slots);
       if (!targets.length) continue;
@@ -316,7 +316,7 @@ static #removeExistingBadges(root, itemId) {
     const flag = item.getFlag(Constants.MODULE_ID, Constants.FLAG_SOCKET_ACTIVITIES) ?? {};
     for (const [slotIndex, payload] of Object.entries(flag)) {
       const index = Number(slotIndex);
-      const slot = slots[index];
+      const slot = slots.find((entry) => entry?._index === index);
       if (!slot?.gem) continue;
 
       const meta = payload?.activityMeta ?? {};

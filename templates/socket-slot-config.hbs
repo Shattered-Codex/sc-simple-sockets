@@ -22,6 +22,19 @@
                 {{#unless editable}}disabled{{/unless}}
               />
             </label>
+            <label class="socket-slot-config-hidden-field">
+              <input
+                type="checkbox"
+                name="slotConfig.hidden"
+                value="true"
+                {{#if hidden}}checked{{/if}}
+                {{#unless editable}}disabled{{/unless}}
+              />
+              <span>
+                <strong>{{strings.hiddenLabel}}</strong>
+                <small>{{strings.hiddenHint}}</small>
+              </span>
+            </label>
           </div>
 
           <div class="socket-slot-config-item-stack">
