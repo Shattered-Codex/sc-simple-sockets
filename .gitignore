@@ -1,4 +1,5 @@
-packs/**/*.log
+# Foundry compendium packs use LevelDB-style numbered `*.log` files as live data
+# segments. Ignoring them can drop pack content changes from commits.
 # packs/**/LOG*
 # packs/**/MANIFEST*
 # packs/**/CURRENT
