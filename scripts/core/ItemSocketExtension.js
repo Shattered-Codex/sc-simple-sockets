@@ -277,7 +277,7 @@ export class ItemSocketExtension extends SheetExtension {
         event.preventDefault();
         event.stopPropagation();
 
-        if (!ModuleSettings.canAddOrRemoveSocket(game.user)) {
+        if (!game.user?.isGM || !ModuleSettings.canAddOrRemoveSocket(game.user)) {
           return;
         }
 

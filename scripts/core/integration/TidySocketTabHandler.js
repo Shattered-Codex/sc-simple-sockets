@@ -212,7 +212,7 @@ export class TidySocketTabHandler {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!ModuleSettings.canAddOrRemoveSocket(game.user)) {
+    if (!game.user?.isGM || !ModuleSettings.canAddOrRemoveSocket(game.user)) {
       return;
     }
 

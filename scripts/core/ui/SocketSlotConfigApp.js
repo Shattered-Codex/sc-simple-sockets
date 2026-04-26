@@ -173,6 +173,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       canInspectGem,
       slotConfigName: slotConfig.name,
       hidden: slotConfig.hidden,
+      canEditVisibility: this.#canEditVisibility(),
       condition: slotConfig.condition,
       description: slotConfig.description,
       descriptionEnriched,
@@ -374,7 +375,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     if (!(form instanceof HTMLFormElement)) {
       return {
         name: "",
-        hidden: false,
+        hidden: this.#currentHiddenValue(),
         condition: "",
         description: "",
         color: ""
@@ -383,11 +384,20 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     return {
       name: this.#readFieldValue("slotConfig.name"),
-      hidden: this.#readCheckboxValue("slotConfig.hidden"),
+      hidden: this.#canEditVisibility() ? this.#readCheckboxValue("slotConfig.hidden") : this.#currentHiddenValue(),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
       color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex"))
     };
+  }
+
+  #canEditVisibility() {
+    return Boolean(this.#editable && game.user?.isGM);
+  }
+
+  #currentHiddenValue() {
+    const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    return SocketSlotConfigService.getConfig(slot).hidden;
   }
 
   #clearColorInputs() {
