@@ -51,7 +51,7 @@
                 </div>
 
                 <div class="tidy-table-cell tidy-table-actions sc-sockets-slot-actions" data-tidy-sheet-part="table-cell">
-                  {{#if ../canConfigureSlots}}
+                  {{#if ../canToggleSlotVisibility}}
                     <a class="tidy-table-button sc-sockets-slot-action sc-sockets-slot-action--visibility"
                        data-action="toggleSocketSlotVisibility"
                        data-index="{{slot.index}}"
@@ -112,7 +112,7 @@
                 </div>
 
                 <div class="tidy-table-cell tidy-table-actions" data-tidy-sheet-part="table-cell">
-                  {{#if ../canConfigureSlots}}
+                  {{#if ../canToggleSlotVisibility}}
                     <a class="tidy-table-button"
                        data-action="toggleSocketSlotVisibility"
                        data-index="{{slot.index}}"

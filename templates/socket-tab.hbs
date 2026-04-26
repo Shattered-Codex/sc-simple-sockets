@@ -44,7 +44,7 @@
             </div>
 
             <div class="item-detail item-controls socket-controls sc-sockets-slot-actions">
-              {{#if ../canConfigureSlots}}
+              {{#if ../canToggleSlotVisibility}}
               <a class="socket-control item-control sc-sockets-slot-action sc-sockets-slot-action--visibility"
                 data-action="toggleSocketSlotVisibility" data-index="{{slot.index}}"
                 aria-label="{{slot.visibilityLabel}}"
@@ -113,7 +113,7 @@
             </div>
 
             <div class="item-detail item-controls socket-controls">
-              {{#if ../canConfigureSlots}}
+              {{#if ../canToggleSlotVisibility}}
               <a class="socket-control item-control" data-action="toggleSocketSlotVisibility" data-index="{{slot.index}}"
                 aria-label="{{slot.visibilityLabel}}"
                 data-tooltip="{{slot.visibilityTooltip}}"
