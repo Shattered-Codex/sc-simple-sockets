@@ -138,6 +138,45 @@ jobs:
           artifacts: "./module.json, ./${{ env.MODULE_ID }}.zip, ./CHANGELOG.md"
           token: ${{ github.token }}
 
+      - name: Notify Discord
+        if: ${{ success() }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          VERSION: ${{ steps.tag_version.outputs.new_version }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        shell: bash
+        run: |
+          if [ -z "${DISCORD_WEBHOOK_URL}" ]; then
+            echo "DISCORD_WEBHOOK_URL is not configured. Skipping Discord notification."
+            exit 0
+          fi
+
+          MODULE_TITLE=$(jq -r '.title // .id // env.MODULE_ID' module.json)
+          MERGE_MESSAGE=$(printf '%s\n' "${HEAD_COMMIT_MESSAGE}" | sed '1,/^$/d' | sed '/^[[:space:]]*$/d' | head -n 1)
+
+          if [ -z "${MERGE_MESSAGE}" ]; then
+            MERGE_MESSAGE=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
+              --jq '.[0].title // empty' 2>/dev/null || true)
+          fi
+
+          if [ -z "${MERGE_MESSAGE}" ]; then
+            MERGE_MESSAGE=$(printf '%s\n' "${HEAD_COMMIT_MESSAGE}" | head -n 1)
+          fi
+
+          if [ -z "${MERGE_MESSAGE}" ]; then
+            MERGE_MESSAGE="Release published"
+          fi
+
+          CONTENT=$(printf 'New Update:\n[%s][%s] %s' "${MODULE_TITLE}" "${VERSION}" "${MERGE_MESSAGE}")
+          payload=$(jq -n --arg content "${CONTENT}" '{content:$content}')
+
+          curl -sSf \
+            -H "Content-Type: application/json" \
+            -d "${payload}" \
+            "${DISCORD_WEBHOOK_URL}"
+
       # --- STEP 10: Publish release to Foundry ---
       - name: Publish to Foundry Package API
         if: ${{ success() }}
