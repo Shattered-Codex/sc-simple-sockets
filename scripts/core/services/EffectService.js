@@ -5,8 +5,10 @@ export class EffectService {
   static async applyGemEffects(hostItem, slotIndex, gemItem, options = {}) {
     const src = gemItem.effects?.contents ?? [];
     if (!src.length) {
-      return;
+      return new Map();
     }
+    const activityEffectIds = EffectService.#getActivityEffectIds(gemItem);
+    const sourceEffectIds = src.map(eff => eff.id);
     const toCreate = src.map(eff => {
       const data = eff.toObject();
       delete data._id;
@@ -21,7 +23,7 @@ export class EffectService {
         data.flags.dnd5e ??= {};
         data.flags.dnd5e.enchantmentProfile ??= eff.id;
       } else {
-        data.transfer = true;
+        data.transfer = !activityEffectIds.has(eff.id);
         data.origin = hostItem.uuid;
       }
       data.flags ??= {};
@@ -33,7 +35,8 @@ export class EffectService {
       };
       return data;
     });
-    await hostItem.createEmbeddedDocuments("ActiveEffect", toCreate, options);
+    const createdEffects = await hostItem.createEmbeddedDocuments("ActiveEffect", toCreate, options);
+    return EffectService.#buildCreatedEffectIdMap(sourceEffectIds, createdEffects);
   }
 
   static async removeGemEffects(hostItem, slotIndex, options = {}) {
@@ -48,6 +51,30 @@ export class EffectService {
 
   static #isEnchantmentEffect(effectData) {
     return effectData?.type === "enchantment" || effectData?.flags?.dnd5e?.type === "enchantment";
+  }
+
+  static #getActivityEffectIds(item) {
+    const ids = new Set();
+    for (const activity of item?.system?.activities?.contents ?? []) {
+      const effects = activity?.toObject?.()?.effects;
+      if (!Array.isArray(effects)) continue;
+      for (const effect of effects) {
+        const id = String(effect?._id ?? "").trim();
+        if (id) ids.add(id);
+      }
+    }
+    return ids;
+  }
+
+  static #buildCreatedEffectIdMap(sourceEffectIds, createdEffects) {
+    const map = new Map();
+    for (const [index, sourceId] of sourceEffectIds.entries()) {
+      const createdId = createdEffects?.[index]?.id ?? createdEffects?.[index]?._id ?? null;
+      if (sourceId && createdId) {
+        map.set(sourceId, createdId);
+      }
+    }
+    return map;
   }
 
   static #getAppliedEnchantmentOrigin(effectData, effect, gemItem, hostItem) {
