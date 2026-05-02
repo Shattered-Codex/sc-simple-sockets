@@ -34,6 +34,8 @@ Use the same world content on both targets:
 - Confirm the host item receives the expected effects.
 - Socket a gem that grants activities.
 - Confirm the host item activities appear and activity badges render.
+- Socket a gem with an activity that applies one of the gem's own non-transfer effects.
+- Confirm the copied activity applies the copied host effect, not the original gem effect ID.
 - Remove the gem and confirm transferred effects and activities are removed.
 
 ## 5. Tidy Integration

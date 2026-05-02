@@ -145,12 +145,13 @@ export class SocketService {
     slots[idx] = SocketSlot.fillFromGem(slots[idx], gemItem, snap, idx);
     ItemResolver.normalizeSocketSlots(slots);
 
-    await EffectService.applyGemEffects(hostItem, idx, gemItem, noRender);
+    const effectIdMap = await EffectService.applyGemEffects(hostItem, idx, gemItem, noRender);
     await ActivityTransferService.applyFromGem(hostItem, idx, gemItem, {
       ...noRender,
       [Constants.MODULE_ID]: {
         ...(noRender?.[Constants.MODULE_ID] ?? {}),
         [ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]: true,
+        [ActivityTransferService.UPDATE_OPTION_EFFECT_ID_MAP]: effectIdMap,
         [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
           [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots
         }

@@ -6,6 +6,7 @@ export class ActivityTransferService {
   static UPDATE_OPTION_SKIP_RECONCILE = "skipActivityReconcile";
   static UPDATE_OPTION_SKIP_REMOVE_EXISTING = "skipRemoveExisting";
   static UPDATE_OPTION_EXTRA_UPDATE_DATA = "extraUpdateData";
+  static UPDATE_OPTION_EFFECT_ID_MAP = "effectIdMap";
 
   static async applyFromGem(hostItem, slotIndex, gemItem, options = {}) {
     hostItem = ItemSheetSync.resolve(hostItem);
@@ -14,7 +15,7 @@ export class ActivityTransferService {
       return;
     }
 
-    const { extraUpdateData, updateOptions } = ActivityTransferService.#splitUpdateOptions(options);
+    const { extraUpdateData, updateOptions, effectIdMap } = ActivityTransferService.#splitUpdateOptions(options);
 
     if (!options?.[Constants.MODULE_ID]?.[ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]) {
       await ActivityTransferService.removeForSlot(hostItem, slotIndex, options);
@@ -50,6 +51,7 @@ export class ActivityTransferService {
 
       const createData = foundry.utils.deepClone(original);
       delete createData._id;
+      ActivityTransferService.#remapActivityEffectReferences(createData, effectIdMap);
       createData.flags ??= {};
       createData.flags[Constants.MODULE_ID] ??= {};
       createData.flags[Constants.MODULE_ID][Constants.FLAG_SOURCE_GEM] = {
@@ -391,12 +393,16 @@ export class ActivityTransferService {
     const extraUpdateData = (moduleOptions && typeof moduleOptions === "object")
       ? foundry.utils.deepClone(moduleOptions[ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA] ?? {})
       : {};
+    const effectIdMap = ActivityTransferService.#normalizeEffectIdMap(
+      moduleOptions?.[ActivityTransferService.UPDATE_OPTION_EFFECT_ID_MAP]
+    );
 
     const updateOptions = { ...options };
     if (moduleOptions && typeof moduleOptions === "object") {
       const nextModuleOptions = { ...moduleOptions };
       delete nextModuleOptions[ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA];
       delete nextModuleOptions[ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING];
+      delete nextModuleOptions[ActivityTransferService.UPDATE_OPTION_EFFECT_ID_MAP];
       if (Object.keys(nextModuleOptions).length) {
         updateOptions[Constants.MODULE_ID] = nextModuleOptions;
       } else {
@@ -404,7 +410,41 @@ export class ActivityTransferService {
       }
     }
 
-    return { extraUpdateData, updateOptions };
+    return { extraUpdateData, updateOptions, effectIdMap };
+  }
+
+  static #normalizeEffectIdMap(value) {
+    if (value instanceof Map) {
+      return value;
+    }
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return new Map();
+    }
+    return new Map(
+      Object.entries(value)
+        .map(([sourceId, createdId]) => [String(sourceId), String(createdId)])
+        .filter(([sourceId, createdId]) => sourceId && createdId)
+    );
+  }
+
+  static #remapActivityEffectReferences(activityData, effectIdMap) {
+    if (!effectIdMap?.size || !Array.isArray(activityData?.effects)) {
+      return;
+    }
+    activityData.effects = activityData.effects.map((effectRef) => {
+      if (!effectRef || typeof effectRef !== "object") {
+        return effectRef;
+      }
+      const sourceId = String(effectRef._id ?? "").trim();
+      const createdId = effectIdMap.get(sourceId);
+      if (!createdId) {
+        return effectRef;
+      }
+      return {
+        ...foundry.utils.deepClone(effectRef),
+        _id: createdId
+      };
+    });
   }
 
   static #sanitizeTransferredActivityPayload(payload, hostItem) {
