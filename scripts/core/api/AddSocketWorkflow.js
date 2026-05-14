@@ -1,12 +1,15 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketService } from "../services/SocketService.js";
+import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js";
 import { SelectionController } from "./SelectionController.js";
-import { ItemSocketExtension } from "../ItemSocketExtension.js";
+import { normalizeSlotConfig, normalizeSlotColor } from "../helpers/socketSlotConfig.js";
 
 export const DEFAULT_OPTIONS = {
   renderSheet: true,
-  notifications: true
+  notifications: true,
+  promptSlotConfig: false,
+  slotConfig: {}
 };
 
 const escapeHtml = (str) => {
@@ -25,15 +28,182 @@ const getSocketCount = (item) => {
   return Array.isArray(slots) ? slots.length : 0;
 };
 
+const resolveDialogForm = (button, dialog) => {
+  if (button?.form instanceof HTMLFormElement) return button.form;
+  if (dialog?.form instanceof HTMLFormElement) return dialog.form;
+  if (typeof dialog?.element?.querySelector === "function") {
+    const form = dialog.element.querySelector("form");
+    if (form instanceof HTMLFormElement) return form;
+  }
+  return null;
+};
+
+const readFieldValue = (form, name) => {
+  if (!(form instanceof HTMLElement)) return "";
+  const field = form.querySelector(`[name="${name}"]`);
+  if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
+    return String(field.value ?? "");
+  }
+  return "";
+};
+
+const valueOrDefault = (value, fallback) => (
+  String(value ?? "").trim().length ? value : fallback
+);
+
+const colorOrDefault = (value, fallback) => {
+  const raw = String(value ?? "").trim();
+  if (!raw.length) {
+    return fallback;
+  }
+
+  const normalized = normalizeSlotColor(raw);
+  return normalized || fallback;
+};
+
 export class AddSocketWorkflow {
   constructor(options = {}) {
-    this.options = { ...DEFAULT_OPTIONS, ...options };
+    this.options = {
+      ...DEFAULT_OPTIONS,
+      ...options,
+      slotConfig: normalizeSlotConfig(options.slotConfig ?? DEFAULT_OPTIONS.slotConfig)
+    };
   }
 
   #notify(level, key, fallback, data) {
     if (!this.options.notifications) return;
     const message = data ? (game.i18n?.format?.(key, data) ?? fallback) : Constants.localize(key, fallback);
     ui.notifications?.[level]?.(message);
+  }
+
+  #validateSlotConfig(slotConfig) {
+    const validation = SocketSlotConfigService.validateCondition(slotConfig?.condition);
+    if (validation.valid) {
+      return true;
+    }
+
+    const invalidConditionLabel = Constants.localize(
+      "SCSockets.SocketSlotConfig.Validation.InvalidCondition",
+      "The slot condition has invalid code."
+    );
+    const errorMessage = validation.error?.message
+      ? `${invalidConditionLabel} ${validation.error.message}`
+      : invalidConditionLabel;
+    ui.notifications?.warn?.(errorMessage);
+    return false;
+  }
+
+  async #resolveSlotConfig() {
+    if (!this.options.promptSlotConfig) {
+      return this.#validateSlotConfig(this.options.slotConfig)
+        ? this.options.slotConfig
+        : null;
+    }
+
+    const { DialogV2 } = foundry.applications.api;
+    if (!DialogV2?.wait) {
+      return this.#validateSlotConfig(this.options.slotConfig)
+        ? this.options.slotConfig
+        : null;
+    }
+
+    const defaults = this.options.slotConfig;
+    const title = Constants.localize(
+      "SCSockets.SocketSlotConfig.Title",
+      "Socket Slot Settings"
+    );
+    const submitLabel = Constants.localize(
+      "SCSockets.SocketSlotConfig.Save",
+      "Save and Close"
+    );
+    const cancelLabel = Constants.localize(
+      "SCSockets.SocketSlotConfig.Cancel",
+      "Cancel"
+    );
+    const helpText = Constants.localize(
+      "SCSockets.SocketSlotConfig.Subtitle",
+      "Configure rules, description, and tint for this slot."
+    );
+    while (true) {
+      const result = await DialogV2.wait({
+        window: { title },
+        content: `
+          <form class="standard-form">
+            <p>${escapeHtml(helpText)}</p>
+            <div class="form-group">
+              <label>${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.SlotNameLabel", "Slot name"))}</label>
+              <div class="form-fields">
+                <input type="text" name="slotName" value="${escapeHtml(defaults.name)}" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.Description.Label", "Slot description"))}</label>
+              <div class="form-fields">
+                <textarea name="slotDescription" rows="4">${escapeHtml(defaults.description)}</textarea>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.Condition.Label", "Slot condition"))}</label>
+              <div class="form-fields">
+                <textarea name="slotCondition" rows="6" placeholder="${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.Condition.Placeholder", "Example: return gem.name?.includes('Ruby');"))}">${escapeHtml(defaults.condition)}</textarea>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.Color.Label", "Slot color"))}</label>
+              <div class="form-fields">
+                <input
+                  type="text"
+                  name="slotColor"
+                  value="${escapeHtml(defaults.color)}"
+                  placeholder="${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.Color.HexLabel", "Hex"))}"
+                />
+              </div>
+            </div>
+          </form>
+        `,
+        buttons: [
+          {
+            action: "save",
+            label: submitLabel,
+            icon: "fas fa-floppy-disk",
+            default: true,
+            callback: (_event, button, dialog) => {
+              const form = resolveDialogForm(button, dialog);
+              return {
+                name: readFieldValue(form, "slotName"),
+                description: readFieldValue(form, "slotDescription"),
+                condition: readFieldValue(form, "slotCondition"),
+                color: readFieldValue(form, "slotColor")
+              };
+            }
+          },
+          {
+            action: "cancel",
+            label: cancelLabel,
+            icon: "fas fa-xmark",
+            callback: () => null
+          }
+        ]
+      }, { rejectClose: false });
+
+      if (!result) {
+        return null;
+      }
+
+      const slotConfig = normalizeSlotConfig({
+        ...defaults,
+        name: valueOrDefault(result.name, defaults.name),
+        description: valueOrDefault(result.description, defaults.description),
+        condition: valueOrDefault(result.condition, defaults.condition),
+        color: colorOrDefault(result.color, defaults.color)
+      });
+
+      if (!this.#validateSlotConfig(slotConfig)) {
+        continue;
+      }
+
+      return slotConfig;
+    }
   }
 
   async run() {
@@ -170,7 +340,15 @@ export class AddSocketWorkflow {
       }
 
       try {
-        await SocketService.addSlot(item, { bypassPermission: !hasModulePermission });
+        const slotConfig = await this.#resolveSlotConfig();
+        if (slotConfig === null) {
+          return { success: false, reason: "cancelled" };
+        }
+
+        await SocketService.addSlot(item, {
+          bypassPermission: !hasModulePermission,
+          slotConfig
+        });
         this.#notify(
           "info",
           "SCSockets.Macro.AddSocket.Success",
