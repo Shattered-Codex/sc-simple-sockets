@@ -578,6 +578,23 @@ await game.modules.get("sc-simple-sockets")?.api?.macro?.addSocketInteractive({
 });
 ```
 
+You can also preconfigure socket defaults and optionally prompt for them before the slot is created:
+
+```js
+await game.modules.get("sc-simple-sockets")?.api?.macro?.addSocketInteractive({
+  notifications: true,
+  promptSlotConfig: true,
+  slotConfig: {
+    name: "Runeword Socket",
+    description: "Only accepts runes from your curated list.",
+    condition: "return gem?.type === 'loot' && gem?.name?.includes('Rune');",
+    color: "#C44D24"
+  }
+});
+```
+
+When `promptSlotConfig` is enabled, the dialog lets you edit `name`, `description`, `condition`, and `color`. If a field is left blank, the configured default value is used.
+
 ### Available hooks
 
 For automations, the module also triggers:

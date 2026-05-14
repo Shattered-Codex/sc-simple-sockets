@@ -210,7 +210,7 @@ export class SocketService {
   }
 
   static async #addSlot(hostItem, options = {}) {
-    const { bypassPermission = false } = options;
+    const { bypassPermission = false, slotConfig = {} } = options;
 
     if (!SocketService.#isHostTypeSocketable(hostItem)) {
       ui.notifications?.warn?.(
@@ -233,7 +233,7 @@ export class SocketService {
       );
       return;
     }
-    const slot = SocketSlot.makeDefault();
+    const slot = SocketSlot.makeDefault(slotConfig);
     const createdIndex = currentSlots.length;
     const result = await SocketStore.addSlot(hostItem, slot);
     SocketService.#emitSocketAdded(hostItem, {

@@ -1,7 +1,36 @@
 import { Constants } from "../Constants.js";
 
-const ITEM_SELECTORS = "[data-item-id],[data-document-id],[data-uuid],[data-document-uuid]";
+const ITEM_SELECTORS = "[data-item-id],[data-document-id],[data-entry-id],[data-uuid],[data-document-uuid],[data-info-card-entity-uuid]";
 const CURSOR_CLASS = "sc-sockets-target-cursor";
+
+const findRelatedElement = (element, selector) => {
+  if (!(element instanceof HTMLElement)) return null;
+  return element.matches(selector)
+    ? element
+    : element.closest(selector) ?? element.querySelector(selector);
+};
+
+const getDatasetValue = (element, keys = []) => {
+  for (const key of keys) {
+    const direct = element?.dataset?.[key];
+    if (typeof direct === "string" && direct.length) {
+      return direct;
+    }
+  }
+
+  const related = findRelatedElement(
+    element,
+    "[data-uuid],[data-document-uuid],[data-entry-uuid],[data-actor-uuid],[data-parent-uuid],[data-item-uuid],[data-info-card-entity-uuid]"
+  );
+  for (const key of keys) {
+    const value = related?.dataset?.[key];
+    if (typeof value === "string" && value.length) {
+      return value;
+    }
+  }
+
+  return null;
+};
 
 const findApplicationForElement = (element) => {
   const root = element.closest("[data-app-id], [data-appid], .window-app");
@@ -30,20 +59,25 @@ const resolveItemFromElement = async (element) => {
   if (!element) return null;
   const { dataset } = element;
 
-  const uuid =
-    dataset.uuid ??
-    dataset.documentUuid ??
-    dataset.entryUuid ??
-    dataset.actorUuid ??
-    dataset.parentUuid ??
-    dataset.itemUuid;
+  const uuid = getDatasetValue(element, [
+    "uuid",
+    "documentUuid",
+    "entryUuid",
+    "actorUuid",
+    "parentUuid",
+    "itemUuid",
+    "infoCardEntityUuid"
+  ]);
 
   if (uuid && typeof uuid === "string") {
     try {
       const doc = await fromUuid(uuid);
       if (doc?.documentName === "Item") return doc;
-      if (doc?.documentName === "Actor" && dataset?.documentId) {
-        return doc.items.get(dataset.documentId) ?? null;
+      if (doc?.documentName === "Actor") {
+        const actorItemId = dataset.documentId ?? dataset.itemId ?? dataset.entryId;
+        if (actorItemId) {
+          return doc.items.get(actorItemId) ?? null;
+        }
       }
     } catch {
       // noop
@@ -52,7 +86,7 @@ const resolveItemFromElement = async (element) => {
 
   const app = findApplicationForElement(element);
   if (!app) return null;
-  const itemId = dataset.documentId ?? dataset.itemId;
+  const itemId = dataset.documentId ?? dataset.itemId ?? dataset.entryId;
   if (!itemId) return null;
 
   if (app?.document?.documentName === "Actor") {
