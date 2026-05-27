@@ -79,6 +79,48 @@ export function buildGemBox({ title, imageSrc, rows }) {
   return box;
 }
 
+export function buildBadgeBox({ badges, rows }) {
+  if (!Array.isArray(rows) || !rows.length) {
+    return null;
+  }
+
+  const box = document.createElement("li");
+  box.className = "sc-sockets-gem-box";
+
+  const fieldset = document.createElement("fieldset");
+  fieldset.className = "sc-sockets-gem-fieldset";
+
+  const legend = document.createElement("legend");
+  legend.className = "sc-sockets-gem-legend sc-sockets-gem-legend-badges";
+
+  if (Array.isArray(badges) && badges.length) {
+    const wrapper = createBadgeWrapper(badges, {
+      wrapperTag: "span",
+      wrapperClassName: "sc-sockets-gem-roll-badges sc-sockets-badges sc-sockets-badges-inline"
+    });
+    legend.append(wrapper);
+    fieldset.appendChild(legend);
+  }
+
+  const content = document.createElement("div");
+  content.className = "sc-sockets-gem-box__content";
+
+  rows.forEach((row) => {
+    const container = document.createElement("div");
+    container.className = "sc-sockets-gem-box__row";
+
+    while (row.firstChild) {
+      container.appendChild(row.firstChild);
+    }
+
+    content.appendChild(container);
+  });
+
+  fieldset.appendChild(content);
+  box.appendChild(fieldset);
+  return box;
+}
+
 export function appendBadges(row, badges, { hideStaticLabel = false } = {}) {
   if (!(row instanceof HTMLElement) || !Array.isArray(badges) || !badges.length) {
     return row;
@@ -112,8 +154,23 @@ export function appendBadges(row, badges, { hideStaticLabel = false } = {}) {
     }
   }
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "sc-sockets-gem-roll-badges sc-sockets-badges sc-sockets-badges-inline";
+  const wrapper = createBadgeWrapper(badges, {
+    wrapperClassName: "sc-sockets-gem-roll-badges sc-sockets-badges sc-sockets-badges-inline"
+  });
+
+  side.insertBefore(wrapper, side.firstChild ?? null);
+  return row;
+}
+
+function createBadgeWrapper(
+  badges,
+  {
+    wrapperTag = "div",
+    wrapperClassName = "sc-sockets-gem-roll-badges sc-sockets-badges sc-sockets-badges-inline"
+  } = {}
+) {
+  const wrapper = document.createElement(wrapperTag);
+  wrapper.className = wrapperClassName;
 
   badges.forEach((badgeData) => {
     const badge = document.createElement("span");
@@ -142,8 +199,7 @@ export function appendBadges(row, badges, { hideStaticLabel = false } = {}) {
     wrapper.append(badge);
   });
 
-  side.insertBefore(wrapper, side.firstChild ?? null);
-  return row;
+  return wrapper;
 }
 
 function buildBadgeLabel(badgeData) {

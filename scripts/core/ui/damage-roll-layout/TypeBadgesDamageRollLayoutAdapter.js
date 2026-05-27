@@ -1,5 +1,5 @@
 import { Constants } from "../../Constants.js";
-import { appendBadges, condenseRows } from "./damageRollLayoutDom.js";
+import { buildBadgeBox, condenseRows } from "./damageRollLayoutDom.js";
 import { collectRollEntries } from "./damageRollLayoutData.js";
 
 export class TypeBadgesDamageRollLayoutAdapter {
@@ -36,10 +36,11 @@ export class TypeBadgesDamageRollLayoutAdapter {
           Number(left?.priority ?? 99) - Number(right?.priority ?? 99)
           || String(left?.label ?? "").localeCompare(String(right?.label ?? ""), game?.i18n?.lang ?? undefined)
         ));
-      condensed.forEach((row) => {
-        appendBadges(row, badges, { hideStaticLabel: true });
-        rendered.push(row);
-      });
+
+      const box = buildBadgeBox({ badges, rows: condensed });
+      if (box) {
+        rendered.push(box);
+      }
     });
 
     return rendered;

@@ -1609,6 +1609,15 @@ body.sc-sockets-extract-cursor * {
   color: var(--color-text-light-heading, #f0f0f0);
 }
 
+.sc-sockets-gem-legend.sc-sockets-gem-legend-badges {
+  gap: 0;
+  font-weight: 400;
+}
+
+.sc-sockets-gem-legend-badges .sc-sockets-gem-roll-badges {
+  flex-wrap: wrap;
+}
+
 .sc-sockets-gem-legend .sc-sockets-gem-box__img {
   width: 20px;
   height: 20px;
