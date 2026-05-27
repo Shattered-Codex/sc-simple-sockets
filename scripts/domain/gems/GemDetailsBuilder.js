@@ -83,7 +83,8 @@ export class GemDetailsBuilder {
       })),
       damageTypeOptions: damageTypeOptions.map((opt) => ({
         ...opt,
-        selected: opt.value === entry.type
+        selected: entry.types.includes(opt.value),
+        removable: opt.value !== Constants.GEM_DAMAGE_INHERIT_TYPE
       })),
       activityOptions: activityOptions.map((opt) => ({
         ...opt,
@@ -161,12 +162,18 @@ export class GemDetailsBuilder {
     }
     const types = CONFIG?.DND5E?.damageTypes ?? {};
     const lang = game?.i18n?.lang ?? undefined;
-    const options = Object.entries(types)
+    const options = [
+      {
+        value: Constants.GEM_DAMAGE_INHERIT_TYPE,
+        label: Constants.localize("SCSockets.GemDetails.ExtraDamage.TypeOptions.Inherit", "Same as host")
+      },
+      ...Object.entries(types)
       .map(([key, val]) => ({
         value: key,
         label: this.#localizeDamageLabel(val, key)
       }))
-      .sort((a, b) => a.label.localeCompare(b.label, lang));
+      .sort((a, b) => a.label.localeCompare(b.label, lang))
+    ];
     GemDetailsBuilder.#damageTypeOptionsCache = options;
     return options;
   }
@@ -219,7 +226,12 @@ export class GemDetailsBuilder {
       return [];
     }
     return entries
-      .map((entry) => this.#normalizeDamageEntry(entry, { defaults, allowedDice, allowedTypes, allowedActivities }))
+      .map((entry) => this.#normalizeDamageEntry(entry, {
+        defaults,
+        allowedDice,
+        allowedTypes,
+        allowedActivities
+      }))
       .filter(Boolean);
   }
 
@@ -232,9 +244,29 @@ export class GemDetailsBuilder {
       ? entry.die.toLowerCase()
       : defaults.die;
     const bonus = Number(entry.bonus ?? defaults.bonus ?? 0);
-    const type = typeof entry.type === "string" && allowedTypes.has(entry.type)
+    const legacyType = typeof entry.type === "string" && allowedTypes.has(entry.type)
       ? entry.type
-      : defaults.type;
+      : "";
+    const rawTypes = Array.isArray(entry.types)
+      ? entry.types.filter((type) => typeof type === "string" && allowedTypes.has(type))
+      : legacyType
+        ? [legacyType]
+        : [];
+    const uniqueTypes = Array.from(new Set(rawTypes));
+    const hasLegacyInheritMode = entry.typeMode === "inherit";
+    const hasInheritType = uniqueTypes.includes(Constants.GEM_DAMAGE_INHERIT_TYPE);
+    const types = hasLegacyInheritMode || hasInheritType || !uniqueTypes.length
+      ? [Constants.GEM_DAMAGE_INHERIT_TYPE]
+      : uniqueTypes.filter((type) => type !== Constants.GEM_DAMAGE_INHERIT_TYPE);
+    const typeMode = types.includes(Constants.GEM_DAMAGE_INHERIT_TYPE)
+      ? "inherit"
+      : "fixed";
+    const resolvedType = typeMode === "fixed"
+      ? types[0] ?? ""
+      : "";
+    const resolvedTypes = typeMode === "inherit"
+      ? [Constants.GEM_DAMAGE_INHERIT_TYPE]
+      : types;
     const activity = typeof entry.activity === "string" && allowedActivities?.has(entry.activity)
       ? entry.activity
       : "any";
@@ -243,19 +275,22 @@ export class GemDetailsBuilder {
       number: Number.isFinite(number) ? number : defaults.number,
       die,
       bonus: Number.isFinite(bonus) ? bonus : defaults.bonus,
-      type,
+      typeMode,
+      types: resolvedTypes,
+      type: resolvedType,
       activity
-    };
+    }
   }
 
   static #getDefaultDamageEntry({ dieOptions, damageTypeOptions }) {
     const die = dieOptions?.find?.((opt) => opt.value)?.value ?? "d6";
-    const type = damageTypeOptions?.[0]?.value ?? "";
     return {
       number: 1,
       die,
       bonus: 0,
-      type,
+      typeMode: "inherit",
+      types: [Constants.GEM_DAMAGE_INHERIT_TYPE],
+      type: "",
       activity: "any"
     };
   }

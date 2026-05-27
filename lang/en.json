@@ -50,9 +50,19 @@
         "Hint": "Add one or more extra damage entries applied when this gem is socketed into weapons or spells.",
         "Damage": "Damage",
         "Type": "Type",
+        "TypeHint": "Choose one or more damage types. Same as host is exclusive and clears the other selections. If multiple fixed types are selected, the roll dialog lets the player choose one of them.",
+        "TypeMode": "Damage type",
+        "TypeModeHint": "Same as host uses the socketed item's rolled damage type. Fixed type(s) lets this gem define one or more damage types for the roll dialog.",
         "Add": "Add damage",
         "Remove": "Remove",
         "Clear": "Clear all",
+        "TypeOptions": {
+          "Inherit": "Same as host"
+        },
+        "TypeModeOptions": {
+          "Inherit": "Same as host",
+          "Fixed": "Fixed type(s)"
+        },
         "Fields": {
           "Number": "Number",
           "Die": "Die",

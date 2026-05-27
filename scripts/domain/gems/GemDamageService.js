@@ -73,16 +73,20 @@ export class GemDamageService {
       const properties = Array.isArray(baseOptions.properties)
         ? [...baseOptions.properties]
         : [];
-      const types = entry.type
-        ? [entry.type]
+      const entryTypes = Array.isArray(entry.types) ? [...entry.types] : [];
+      const types = entry.typeMode === "fixed"
+        ? entryTypes
         : Array.isArray(baseOptions.types)
           ? [...baseOptions.types]
+          : baseOptions.type
+            ? [baseOptions.type]
           : [];
+      const primaryType = types[0] ?? baseOptions.type;
 
       const options = {
         ...baseOptions,
         properties,
-        type: entry.type ?? baseOptions.type,
+        type: primaryType,
         types
       };
       GemDamageService.addMetadata(options, entry);
@@ -198,11 +202,18 @@ export class GemDamageService {
   static addMetadata(options, entry) {
     if (!entry) return options;
     const source = entry.source ?? {};
+    const typeMode = entry.typeMode === "fixed" ? "fixed" : "inherit";
+    const types = Array.isArray(entry.types) ? [...entry.types] : [];
     const meta = {
       gemName: source.name ?? Constants.localize("SCSockets.GemDetails.ExtraDamage.Label", "Gem"),
       gemImg: source.img ?? Constants.SOCKET_SLOT_IMG,
       formula: entry.formula,
       type: entry.type,
+      types,
+      typeMode,
+      typeLabel: typeMode === "fixed"
+        ? GemDamageService.#formatTypeLabels(types).join(" / ")
+        : Constants.localize("SCSockets.GemDetails.ExtraDamage.TypeOptions.Inherit", "Same as host"),
       slot: source.slot,
       gemUuid: source.uuid,
       criticalOnly: entry.criticalOnly === true
@@ -215,6 +226,22 @@ export class GemDamageService {
     }
     opts[Constants.MODULE_ID][GemDamageService.META_KEY].push(meta);
     return opts;
+  }
+
+  static #formatTypeLabels(types) {
+    const configuredTypes = CONFIG?.DND5E?.damageTypes ?? {};
+    return (Array.isArray(types) ? types : [])
+      .map((type) => {
+        const data = configuredTypes[type];
+        if (typeof data === "string") {
+          return game.i18n?.localize?.(data) ?? data;
+        }
+        if (data?.label) {
+          return game.i18n?.localize?.(data.label) ?? data.label;
+        }
+        return type;
+      })
+      .filter(Boolean);
   }
 
   static extractItem(config) {

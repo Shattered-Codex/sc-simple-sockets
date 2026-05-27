@@ -72,7 +72,9 @@ export class DamageRollGemBadges {
     if (entry?.formula) {
       parts.push(entry.formula);
     }
-    if (entry?.type) {
+    if (entry?.typeLabel) {
+      parts.push(entry.typeLabel);
+    } else if (entry?.type) {
       parts.push(entry.type);
     }
     return parts.join(" • ");

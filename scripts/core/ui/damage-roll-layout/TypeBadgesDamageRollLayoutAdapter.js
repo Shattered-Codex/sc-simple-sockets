@@ -37,7 +37,7 @@ export class TypeBadgesDamageRollLayoutAdapter {
           || String(left?.label ?? "").localeCompare(String(right?.label ?? ""), game?.i18n?.lang ?? undefined)
         ));
       condensed.forEach((row) => {
-        appendBadges(row, badges);
+        appendBadges(row, badges, { hideStaticLabel: true });
         rendered.push(row);
       });
     });

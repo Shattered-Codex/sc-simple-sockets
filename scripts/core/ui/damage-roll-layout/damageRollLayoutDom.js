@@ -79,7 +79,7 @@ export function buildGemBox({ title, imageSrc, rows }) {
   return box;
 }
 
-export function appendBadges(row, badges) {
+export function appendBadges(row, badges, { hideStaticLabel = false } = {}) {
   if (!(row instanceof HTMLElement) || !Array.isArray(badges) || !badges.length) {
     return row;
   }
@@ -102,6 +102,13 @@ export function appendBadges(row, badges) {
       side.append(label);
     } else {
       line.append(side);
+    }
+  }
+
+  if (hideStaticLabel && label instanceof HTMLElement) {
+    const hasInteractiveControl = Boolean(label.querySelector("select, multi-select, input, button"));
+    if (!hasInteractiveControl) {
+      label.remove();
     }
   }
 
