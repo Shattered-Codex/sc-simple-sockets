@@ -10,6 +10,26 @@ import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { buildSocketLayoutContext } from "../helpers/socketLayout.js";
 import { canUserSeeSlot } from "../helpers/socketSlotConfig.js";
 import { ItemSheetSync } from "../support/ItemSheetSync.js";
+import { DebugTrace } from "../support/DebugTrace.js";
+
+const LOCAL_UI_UPDATE_OPTIONS = {
+  [Constants.MODULE_ID]: {
+    [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
+  }
+};
+
+function keepSheetInFront(sheet) {
+  const bringToTop = (phase) => DebugTrace.bringToTop(sheet, "tidy-socket-tab.keepSheetInFront", { phase });
+
+  bringToTop("immediate");
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => bringToTop("raf"));
+  }
+  setTimeout(() => bringToTop("timeout-32"), 32);
+  setTimeout(() => bringToTop("timeout-96"), 96);
+  setTimeout(() => bringToTop("timeout-256"), 256);
+  setTimeout(() => bringToTop("timeout-512"), 512);
+}
 
 /**
  * Handles all DOM interaction for the Tidy5e socket tab:
@@ -31,8 +51,14 @@ export class TidySocketTabHandler {
       '[data-dropzone="socket-slot"]',
       async ({ data, index }) => {
         const item = ItemSheetSync.syncSheetDocument(sheet, sheet.item);
-        await SocketService.addGem(item, index, data);
+        DebugTrace.log("tidy-socket-tab.dropGem", {
+          sheet: DebugTrace.describeApp(sheet),
+          item: DebugTrace.describeItem(item),
+          slotIndex: index
+        });
+        await SocketService.addGem(item, index, data, LOCAL_UI_UPDATE_OPTIONS);
         await TidySocketTabHandler.refresh(tabContents, sheet);
+        keepSheetInFront(sheet);
       }
     );
     SocketTooltipUI.refresh(sheet, tabContents);
@@ -118,12 +144,20 @@ export class TidySocketTabHandler {
         : null;
       if (!target) return;
 
-      const action = target.dataset.action;
-      switch (action) {
+        const action = target.dataset.action;
+        switch (action) {
         case "addSocketSlot":
           event.preventDefault();
-          await SocketService.addSlot(ItemSheetSync.syncSheetDocument(sheet, sheet.item));
+          DebugTrace.log("tidy-socket-tab.action.addSocketSlot", {
+            sheet: DebugTrace.describeApp(sheet),
+            item: DebugTrace.describeItem(ItemSheetSync.resolve(sheet?.item))
+          });
+          await SocketService.addSlot(
+            ItemSheetSync.syncSheetDocument(sheet, sheet.item),
+            LOCAL_UI_UPDATE_OPTIONS
+          );
           await TidySocketTabHandler.refresh(root, sheet);
+          keepSheetInFront(sheet);
           break;
         case "removeSocketSlot":
           await TidySocketTabHandler.#handleRemoveSocketSlot(event, target, sheet, root);
@@ -161,9 +195,15 @@ export class TidySocketTabHandler {
     }
 
     const item = ItemSheetSync.syncSheetDocument(sheet, sheet.item);
-    await SocketService.removeGem(item, idx);
-    await SocketService.removeSlot(item, idx);
+    DebugTrace.log("tidy-socket-tab.action.removeSocketSlot", {
+      sheet: DebugTrace.describeApp(sheet),
+      item: DebugTrace.describeItem(item),
+      slotIndex: idx
+    });
+    await SocketService.removeGem(item, idx, LOCAL_UI_UPDATE_OPTIONS);
+    await SocketService.removeSlot(item, idx, LOCAL_UI_UPDATE_OPTIONS);
     await TidySocketTabHandler.refresh(root, sheet);
+    keepSheetInFront(sheet);
   }
 
   static async #handleRemoveGem(event, target, sheet, root) {
@@ -181,8 +221,18 @@ export class TidySocketTabHandler {
       if (!ok) return;
     }
 
-    await SocketService.removeGem(ItemSheetSync.syncSheetDocument(sheet, sheet.item), idx);
+    await SocketService.removeGem(
+      ItemSheetSync.syncSheetDocument(sheet, sheet.item),
+      idx,
+      LOCAL_UI_UPDATE_OPTIONS
+    );
+    DebugTrace.log("tidy-socket-tab.action.removeGemFromSlot", {
+      sheet: DebugTrace.describeApp(sheet),
+      item: DebugTrace.describeItem(ItemSheetSync.resolve(sheet?.item)),
+      slotIndex: idx
+    });
     await TidySocketTabHandler.refresh(root, sheet);
+    keepSheetInFront(sheet);
   }
 
   static async #handleOpenGem(event, target, sheet) {
@@ -219,8 +269,18 @@ export class TidySocketTabHandler {
     const idx = TidySocketTabHandler.#resolveIndex(target);
     if (idx === null) return;
 
-    await SocketSlotConfigService.toggleHidden(ItemSheetSync.syncSheetDocument(sheet, sheet.item), idx);
+    await SocketSlotConfigService.toggleHidden(
+      ItemSheetSync.syncSheetDocument(sheet, sheet.item),
+      idx,
+      LOCAL_UI_UPDATE_OPTIONS
+    );
+    DebugTrace.log("tidy-socket-tab.action.toggleSocketSlotVisibility", {
+      sheet: DebugTrace.describeApp(sheet),
+      item: DebugTrace.describeItem(ItemSheetSync.resolve(sheet?.item)),
+      slotIndex: idx
+    });
     await TidySocketTabHandler.refresh(root, sheet);
+    keepSheetInFront(sheet);
   }
 
   static #resolveIndex(target) {

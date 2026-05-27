@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { canUserSeeSlot, getSlotConfig } from "../helpers/socketSlotConfig.js";
+import { DebugTrace } from "../support/DebugTrace.js";
 
 export class ActorGemBadges {
   static CSS_CLASS = "sc-sockets-badges";
@@ -39,14 +40,6 @@ export class ActorGemBadges {
     const updateItemHandler = (item, changes) => this.#onOwnedItemUpdated(item, changes);
     Hooks.on("updateItem", updateItemHandler);
     this.#handlers.set("updateItem", updateItemHandler);
-
-    const createItemHandler = (item) => this.#refreshActorSheets(item?.parent);
-    Hooks.on("createItem", createItemHandler);
-    this.#handlers.set("createItem", createItemHandler);
-
-    const deleteItemHandler = (item) => this.#refreshActorSheets(item?.parent);
-    Hooks.on("deleteItem", deleteItemHandler);
-    this.#handlers.set("deleteItem", deleteItemHandler);
 
     if (Constants.isDebugEnabled()) {
       console.debug(`[${Constants.MODULE_ID}] ActorGemBadges activated`);
@@ -107,6 +100,8 @@ export class ActorGemBadges {
     const root = this.#rootOf(html);
     if (!root) return;
 
+    this.#clearBadges(root);
+
     const socketed = [];
     for (const item of actor.items) {
       const sockets = item.getFlag(Constants.MODULE_ID, this.FLAG_KEY);
@@ -153,6 +148,11 @@ export class ActorGemBadges {
     const actor = item?.parent;
     if (actor?.documentName !== "Actor") return;
     if (!this.#hasSocketBadgeUpdate(changes)) return;
+    DebugTrace.log("actor-gem-badges.updateItem", {
+      item: DebugTrace.describeItem(item),
+      actor: DebugTrace.describeActor(actor),
+      changes: DebugTrace.describeChanges(changes)
+    });
     this.#refreshActorSheets(actor);
   }
 
@@ -203,9 +203,27 @@ export class ActorGemBadges {
       }
     }
 
+    DebugTrace.log("actor-gem-badges.refreshActorSheets", {
+      actor: DebugTrace.describeActor(actor),
+      apps: Array.from(apps).map((app) => DebugTrace.describeApp(app))
+    });
+
     for (const app of apps) {
-      app.render(false);
+      const root = this.#rootOf(app.element);
+      if (!root?.isConnected) {
+        continue;
+      }
+
+      this.#onRenderActorSheet(app, root);
     }
+  }
+
+  static #clearBadges(root) {
+    if (!root?.querySelectorAll) return;
+    root.querySelectorAll(`.${this.CSS_CLASS}`).forEach((el) => el.remove());
+    root.querySelectorAll(".sc-sockets-name-with-badges").forEach((el) => {
+      el.classList.remove("sc-sockets-name-with-badges");
+    });
   }
 
   static #normalizeSlots(raw) {

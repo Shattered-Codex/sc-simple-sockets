@@ -22,6 +22,7 @@ import { ActivityTransferService } from "./core/services/ActivityTransferService
 import { maybeShowSupportCard } from "./core/support/supportCard.js";
 import { DataMigration } from "./core/migration/DataMigration.js";
 import { ItemSheetSync } from "./core/support/ItemSheetSync.js";
+import { DebugTrace } from "./core/support/DebugTrace.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -70,6 +71,7 @@ Hooks.once("setup", () => {
   GemSocketDescriptionUI.activate();
   SocketDescriptionsUI.activate();
   ItemSheetSync.activate();
+  DebugTrace.activate();
 
 });
 
@@ -84,6 +86,12 @@ Hooks.once("ready", async () => {
 
 Hooks.on("preUpdateItem", (item, changes, options) => {
   try {
+    DebugTrace.log("main.preUpdateItem", {
+      item: DebugTrace.describeItem(item),
+      actor: DebugTrace.describeActor(item?.actor ?? item?.parent),
+      changes: DebugTrace.describeChanges(changes),
+      options: DebugTrace.describeOptions(options)
+    });
     lifecycle.handlePreUpdate(item, changes, options);
   } catch (e) {
     console.error(`[${Constants.MODULE_ID}] handlePreUpdate failed:`, e);
@@ -92,8 +100,18 @@ Hooks.on("preUpdateItem", (item, changes, options) => {
 
 Hooks.on("updateItem", async (item, changes, options) => {
   try {
+    DebugTrace.log("main.updateItem.start", {
+      item: DebugTrace.describeItem(item),
+      actor: DebugTrace.describeActor(item?.actor ?? item?.parent),
+      changes: DebugTrace.describeChanges(changes),
+      options: DebugTrace.describeOptions(options)
+    });
     await lifecycle.handleItemUpdated(item, changes, options);
     await ActivityTransferService.reconcileDerivedActivities(item, changes, options);
+    DebugTrace.log("main.updateItem.done", {
+      item: DebugTrace.describeItem(item),
+      actor: DebugTrace.describeActor(item?.actor ?? item?.parent)
+    });
   } catch (e) {
     console.error(`[${Constants.MODULE_ID}] handleItemUpdated failed:`, e);
   }
@@ -101,6 +119,11 @@ Hooks.on("updateItem", async (item, changes, options) => {
 
 Hooks.on("preCreateItem", (item, data) => {
   try {
+    DebugTrace.log("main.preCreateItem", {
+      item: DebugTrace.describeItem(item),
+      actor: DebugTrace.describeActor(item?.actor ?? item?.parent),
+      dataKeys: Object.keys(data ?? {})
+    });
     lifecycle.handlePreCreate(item, data);
   } catch (e) {
     console.error(`[${Constants.MODULE_ID}] handlePreCreate failed:`, e);

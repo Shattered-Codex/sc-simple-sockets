@@ -8,6 +8,7 @@ import { SocketSlot } from "../model/SocketSlot.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketSlotConfigService } from "./SocketSlotConfigService.js";
 import { ItemSheetSync } from "../support/ItemSheetSync.js";
+import { DebugTrace } from "../support/DebugTrace.js";
 
 export class SocketService {
   static #operationQueues = new Map();
@@ -15,10 +16,10 @@ export class SocketService {
   static REMOVE_GEM_MODE_KEEP = "keep";
   static REMOVE_GEM_MODE_DELETE = "delete";
 
-  static async addGem(hostItem, idx, source) {
+  static async addGem(hostItem, idx, source, options = {}) {
     return SocketService.#enqueueHostOperation(
       hostItem,
-      (currentHostItem) => SocketService.#addGem(currentHostItem, idx, source)
+      (currentHostItem) => SocketService.#addGem(currentHostItem, idx, source, options)
     );
   }
 
@@ -36,10 +37,10 @@ export class SocketService {
     );
   }
 
-  static async removeSlot(hostItem, idx) {
+  static async removeSlot(hostItem, idx, options = {}) {
     return SocketService.#enqueueHostOperation(
       hostItem,
-      (currentHostItem) => SocketService.#removeSlot(currentHostItem, idx)
+      (currentHostItem) => SocketService.#removeSlot(currentHostItem, idx, options)
     );
   }
 
@@ -54,7 +55,14 @@ export class SocketService {
     );
   }
 
-  static async #addGem(hostItem, idx, source) {
+  static async #addGem(hostItem, idx, source, options = {}) {
+    DebugTrace.log("socket-service.addGem.start", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      actor: DebugTrace.describeActor(hostItem?.actor ?? hostItem?.parent),
+      slotIndex: idx,
+      sourceUuid: typeof source === "string" ? source : source?.uuid ?? null,
+      options: DebugTrace.describeOptions(options)
+    });
     if (!SocketService.#canUseSocketsOnHost(hostItem)) {
       return ui.notifications?.warn?.(
         Constants.localize(
@@ -135,7 +143,12 @@ export class SocketService {
       ? ItemResolver.expandSnapshot(previousSlot?._gemData ?? null)
       : null;
 
-    const noRender = SocketService.#buildInternalUpdateOptions({ render: false });
+    const noRender = SocketService.#buildInternalUpdateOptions({ render: false }, options);
+    DebugTrace.log("socket-service.addGem.noRender", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      slotIndex: idx,
+      options: DebugTrace.describeOptions(noRender)
+    });
 
     try {
       await EffectService.removeGemEffects(hostItem, idx, noRender);
@@ -161,18 +174,29 @@ export class SocketService {
         }
       }
     });
-    await InventoryService.consumeOne(gemItem);
+    await InventoryService.consumeOne(gemItem, noRender);
 
     if (shouldReturnReplacedGem) {
       try {
-        await InventoryService.returnOne(hostItem, replacedGemSnapshot);
+        await InventoryService.returnOne(hostItem, replacedGemSnapshot, noRender);
       } catch (error) {
         console.warn(`[${Constants.MODULE_ID}] failed to return replaced gem to inventory:`, error);
       }
     }
+
+    DebugTrace.log("socket-service.addGem.done", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      slotIndex: idx
+    });
   }
 
   static async #removeGem(hostItem, idx, options = {}) {
+    DebugTrace.log("socket-service.removeGem.start", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      actor: DebugTrace.describeActor(hostItem?.actor ?? hostItem?.parent),
+      slotIndex: idx,
+      options: DebugTrace.describeOptions(options)
+    });
     const slots = SocketStore.getSlots(hostItem);
 
     if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
@@ -184,15 +208,20 @@ export class SocketService {
     const shouldDeleteGem = SocketService.#shouldDeleteGemOnRemoval(slot, { mode: removalMode });
     const gemSnapshot = ItemResolver.expandSnapshot(slot?._gemData ?? null);
 
+    const noRender = SocketService.#buildInternalUpdateOptions({ render: false }, options);
+    DebugTrace.log("socket-service.removeGem.noRender", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      slotIndex: idx,
+      options: DebugTrace.describeOptions(noRender)
+    });
+
     if (!shouldDeleteGem && gemSnapshot) {
       try {
-        await InventoryService.returnOne(hostItem, gemSnapshot);
+        await InventoryService.returnOne(hostItem, gemSnapshot, noRender);
       } catch (e) {
         console.warn("return inventory failed:", e);
       }
     }
-
-    const noRender = SocketService.#buildInternalUpdateOptions({ render: false });
 
     try {
       await EffectService.removeGemEffects(hostItem, idx, noRender);
@@ -216,9 +245,19 @@ export class SocketService {
         Constants.localize("SCSockets.Notifications.GemUnsocketed", "Gem unsocketed.")
       );
     }
+
+    DebugTrace.log("socket-service.removeGem.done", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      slotIndex: idx
+    });
   }
 
   static async #addSlot(hostItem, options = {}) {
+    DebugTrace.log("socket-service.addSlot.start", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      actor: DebugTrace.describeActor(hostItem?.actor ?? hostItem?.parent),
+      options: DebugTrace.describeOptions(options)
+    });
     const { bypassPermission = false, slotConfig = {} } = options;
 
     if (!SocketService.#isHostTypeSocketable(hostItem)) {
@@ -244,16 +283,31 @@ export class SocketService {
     }
     const slot = SocketSlot.makeDefault(slotConfig);
     const createdIndex = currentSlots.length;
-    const result = await SocketStore.addSlot(hostItem, slot);
+    const updateOptions = SocketService.#buildInternalUpdateOptions({ render: false }, options);
+    DebugTrace.log("socket-service.addSlot.noRender", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      options: DebugTrace.describeOptions(updateOptions)
+    });
+    const result = await SocketStore.addSlot(hostItem, slot, updateOptions);
     SocketService.#emitSocketAdded(hostItem, {
       slotIndex: createdIndex,
       slot,
       totalSlots: createdIndex + 1
     });
+    DebugTrace.log("socket-service.addSlot.done", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      slotIndex: createdIndex
+    });
     return result;
   }
 
-  static async #removeSlot(hostItem, idx) {
+  static async #removeSlot(hostItem, idx, options = {}) {
+    DebugTrace.log("socket-service.removeSlot.start", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      actor: DebugTrace.describeActor(hostItem?.actor ?? hostItem?.parent),
+      slotIndex: idx,
+      options: DebugTrace.describeOptions(options)
+    });
     if (!ModuleSettings.canAddOrRemoveSocket()) {
       return;
     }
@@ -263,11 +317,21 @@ export class SocketService {
     }
 
     const removedSlot = foundry.utils.deepClone(currentSlots[idx] ?? null);
-    const result = await SocketStore.removeSlot(hostItem, idx);
+    const updateOptions = SocketService.#buildInternalUpdateOptions({ render: false }, options);
+    DebugTrace.log("socket-service.removeSlot.noRender", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      slotIndex: idx,
+      options: DebugTrace.describeOptions(updateOptions)
+    });
+    const result = await SocketStore.removeSlot(hostItem, idx, updateOptions);
     SocketService.#emitSocketRemoved(hostItem, {
       slotIndex: idx,
       slot: removedSlot,
       totalSlots: Math.max(currentSlots.length - 1, 0)
+    });
+    DebugTrace.log("socket-service.removeSlot.done", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      slotIndex: idx
     });
     return result;
   }
@@ -349,11 +413,12 @@ export class SocketService {
     return slotDeleteOverride || ModuleSettings.shouldDeleteGemOnRemoval();
   }
 
-  static #buildInternalUpdateOptions(base = {}) {
+  static #buildInternalUpdateOptions(base = {}, options = {}) {
     return {
       ...base,
       [Constants.MODULE_ID]: {
         ...(base?.[Constants.MODULE_ID] ?? {}),
+        ...(options?.[Constants.MODULE_ID] ?? {}),
         [ActivityTransferService.UPDATE_OPTION_SKIP_RECONCILE]: true
       }
     };

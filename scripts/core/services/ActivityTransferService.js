@@ -174,10 +174,7 @@ export class ActivityTransferService {
     }
 
     for (const id of idsToDelete) {
-      hostItem = ItemSheetSync.resolve(hostItem);
-      if (typeof hostItem?.deleteActivity === "function" && hostItem.system?.activities?.has?.(id)) {
-        await hostItem.deleteActivity(id);
-      }
+      updateData[`system.activities.-=${id}`] = null;
     }
 
     await ActivityTransferService.#updateHostItem(hostItem, {

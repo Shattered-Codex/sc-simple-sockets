@@ -35,6 +35,7 @@ export class ModuleSettingsRegistrar {
     this.#registerEnableSocketTabForAllItems();
     this.#registerLootSubtypeDataSettings();
     this.#registerSupportCardSettings();
+    this.#registerDebugTraceSetting();
     this.#registerMigrationSettings();
   }
 
@@ -381,6 +382,26 @@ export class ModuleSettingsRegistrar {
       config: false,
       type: String,
       default: ""
+    });
+  }
+
+  #registerDebugTraceSetting() {
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_DEBUG_TRACE, {
+      name: Constants.localize(
+        "SCSockets.Settings.DebugTrace.Name",
+        "Debug trace logging"
+      ),
+      hint: Constants.localize(
+        "SCSockets.Settings.DebugTrace.Hint",
+        "Logs item updates, sheet renders, and focus changes to the browser console to diagnose socket UI issues."
+      ),
+      scope: "client",
+      config: true,
+      type: Boolean,
+      default: false,
+      onChange: (value) => {
+        console.info(`[${Constants.MODULE_ID}] debug trace ${value ? "enabled" : "disabled"}`);
+      }
     });
   }
 

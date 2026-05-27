@@ -36,6 +36,7 @@ export class Constants {
   static SETTING_GEM_LOOT_SUBTYPES = "gemLootSubtypes";
   static SETTING_LOOT_SUBTYPE_MENU = "gemLootSubtypeSettings";
   static SETTING_CUSTOM_LOOT_SUBTYPES = "customLootSubtypes";
+  static UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC = "skipItemSheetSync";
 
   static getTextEditor() {
     return foundry?.applications?.ux?.TextEditor?.implementation

@@ -11,6 +11,38 @@ import { SocketSlotConfigApp } from "./ui/SocketSlotConfigApp.js";
 import { SocketTooltipUI } from "./ui/SocketTooltipUI.js";
 import { Compatibility } from "./support/Compatibility.js";
 import { ItemSheetSync } from "./support/ItemSheetSync.js";
+import { DebugTrace } from "./support/DebugTrace.js";
+
+const LOCAL_UI_UPDATE_OPTIONS = {
+  [Constants.MODULE_ID]: {
+    [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
+  }
+};
+
+function resolveActionSheet(context) {
+  if (context?.render && context?.item) {
+    return context;
+  }
+
+  if (context?.sheet?.render && context?.sheet?.item) {
+    return context.sheet;
+  }
+
+  return null;
+}
+
+function keepSheetInFront(sheet) {
+  const bringToTop = (phase) => DebugTrace.bringToTop(sheet, "item-sheet.keepSheetInFront", { phase });
+
+  bringToTop("immediate");
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => bringToTop("raf"));
+  }
+  setTimeout(() => bringToTop("timeout-32"), 32);
+  setTimeout(() => bringToTop("timeout-96"), 96);
+  setTimeout(() => bringToTop("timeout-256"), 256);
+  setTimeout(() => bringToTop("timeout-512"), 512);
+}
 
 export class ItemSocketExtension extends SheetExtension {
   static TAB_ID = "sockets";
@@ -192,9 +224,15 @@ export class ItemSocketExtension extends SheetExtension {
     this.addActions({
       async addSocketSlot(event) {
         event.preventDefault();
-        const item = ItemSheetSync.syncSheetDocument(this.sheet, this.item);
-        await SocketService.addSlot(item);
-        await extension.#refreshSocketUi(this.sheet);
+        const sheet = resolveActionSheet(this);
+        const item = ItemSheetSync.syncSheetDocument(sheet, sheet?.item ?? this.item);
+        DebugTrace.log("item-sheet.action.addSocketSlot", {
+          sheet: DebugTrace.describeApp(sheet),
+          item: DebugTrace.describeItem(item)
+        });
+        await SocketService.addSlot(item, LOCAL_UI_UPDATE_OPTIONS);
+        await extension.#refreshSocketUi(sheet);
+        keepSheetInFront(sheet);
       },
 
       async removeSocketSlot(event, target) {
@@ -213,10 +251,17 @@ export class ItemSocketExtension extends SheetExtension {
           }
         }
 
-        const item = ItemSheetSync.syncSheetDocument(this.sheet, this.item);
-        await SocketService.removeGem(item, idx);
-        await SocketService.removeSlot(item, idx);
-        await extension.#refreshSocketUi(this.sheet);
+        const sheet = resolveActionSheet(this);
+        const item = ItemSheetSync.syncSheetDocument(sheet, sheet?.item ?? this.item);
+        DebugTrace.log("item-sheet.action.removeSocketSlot", {
+          sheet: DebugTrace.describeApp(sheet),
+          item: DebugTrace.describeItem(item),
+          slotIndex: idx
+        });
+        await SocketService.removeGem(item, idx, LOCAL_UI_UPDATE_OPTIONS);
+        await SocketService.removeSlot(item, idx, LOCAL_UI_UPDATE_OPTIONS);
+        await extension.#refreshSocketUi(sheet);
+        keepSheetInFront(sheet);
       },
 
       async removeGemFromSlot(event, target) {
@@ -238,9 +283,16 @@ export class ItemSocketExtension extends SheetExtension {
           }
         }
 
-        const item = ItemSheetSync.syncSheetDocument(this.sheet, this.item);
-        await SocketService.removeGem(item, idx);
-        await extension.#refreshSocketUi(this.sheet);
+        const sheet = resolveActionSheet(this);
+        const item = ItemSheetSync.syncSheetDocument(sheet, sheet?.item ?? this.item);
+        DebugTrace.log("item-sheet.action.removeGemFromSlot", {
+          sheet: DebugTrace.describeApp(sheet),
+          item: DebugTrace.describeItem(item),
+          slotIndex: idx
+        });
+        await SocketService.removeGem(item, idx, LOCAL_UI_UPDATE_OPTIONS);
+        await extension.#refreshSocketUi(sheet);
+        keepSheetInFront(sheet);
       },
 
       async openGemFromSlot(event, target) {
@@ -252,10 +304,8 @@ export class ItemSocketExtension extends SheetExtension {
           return;
         }
 
-        await SocketGemSheetService.openFromHost(
-          ItemSheetSync.syncSheetDocument(this.sheet, this.item),
-          idx
-        );
+        const sheet = resolveActionSheet(this);
+        await SocketGemSheetService.openFromHost(ItemSheetSync.syncSheetDocument(sheet, sheet?.item ?? this.item), idx);
       },
 
       async openSocketSlotConfig(event, target) {
@@ -267,9 +317,10 @@ export class ItemSocketExtension extends SheetExtension {
           return;
         }
 
-        SocketSlotConfigApp.open(ItemSheetSync.syncSheetDocument(this.sheet, this.item), idx, {
-          parentApp: this.sheet,
-          editable: this.sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
+        const sheet = resolveActionSheet(this);
+        SocketSlotConfigApp.open(ItemSheetSync.syncSheetDocument(sheet, sheet?.item ?? this.item), idx, {
+          parentApp: sheet,
+          editable: sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
         });
       },
 
@@ -286,9 +337,16 @@ export class ItemSocketExtension extends SheetExtension {
           return;
         }
 
-        const item = ItemSheetSync.syncSheetDocument(this.sheet, this.item);
-        await SocketSlotConfigService.toggleHidden(item, idx);
-        await extension.#refreshSocketUi(this.sheet);
+        const sheet = resolveActionSheet(this);
+        const item = ItemSheetSync.syncSheetDocument(sheet, sheet?.item ?? this.item);
+        DebugTrace.log("item-sheet.action.toggleSocketSlotVisibility", {
+          sheet: DebugTrace.describeApp(sheet),
+          item: DebugTrace.describeItem(item),
+          slotIndex: idx
+        });
+        await SocketSlotConfigService.toggleHidden(item, idx, LOCAL_UI_UPDATE_OPTIONS);
+        await extension.#refreshSocketUi(sheet);
+        keepSheetInFront(sheet);
       }
     });
   }
@@ -308,8 +366,14 @@ export class ItemSocketExtension extends SheetExtension {
       '[data-dropzone="socket-slot"]',
       async ({ data, index }) => {
         const item = ItemSheetSync.syncSheetDocument(sheet, sheet.item);
-        await SocketService.addGem(item, index, data);
+        DebugTrace.log("item-sheet.dropGem", {
+          sheet: DebugTrace.describeApp(sheet),
+          item: DebugTrace.describeItem(item),
+          slotIndex: index
+        });
+        await SocketService.addGem(item, index, data, LOCAL_UI_UPDATE_OPTIONS);
         await this.#refreshSocketUi(sheet);
+        keepSheetInFront(sheet);
       }
     );
   }
@@ -323,9 +387,17 @@ export class ItemSocketExtension extends SheetExtension {
     const root = sheet.element;
     const current = root?.querySelector?.(`[data-application-part="${ItemSocketExtension.PART_ID}"]`);
     if (!(current instanceof HTMLElement)) {
-      sheet.render(true);
+      DebugTrace.render(sheet, false, "item-sheet.refreshSocketUi.fallback", {
+        sheet: DebugTrace.describeApp(sheet),
+        item: DebugTrace.describeItem(item)
+      });
       return;
     }
+
+    DebugTrace.log("item-sheet.refreshSocketUi.dom", {
+      sheet: DebugTrace.describeApp(sheet),
+      item: DebugTrace.describeItem(item)
+    });
 
     const html = await foundry.applications.handlebars.renderTemplate(
       ItemSocketExtension.TEMPLATE_PATH,

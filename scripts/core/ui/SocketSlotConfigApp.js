@@ -2,6 +2,7 @@ import { Constants } from "../Constants.js";
 import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js";
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
 import { normalizeSlotColor } from "../helpers/socketSlotConfig.js";
+import { DebugTrace } from "../support/DebugTrace.js";
 
 const api = foundry?.applications?.api ?? {};
 const BaseV2 = api.FormApplicationV2 ?? api.ApplicationV2;
@@ -12,6 +13,11 @@ if (!BaseV2 || typeof HandlebarsMixin !== "function") {
 
 const BaseApplication = HandlebarsMixin(BaseV2);
 const TEMPLATE_PATH = `modules/${Constants.MODULE_ID}/templates/socket-slot-config.hbs`;
+const LOCAL_UI_UPDATE_OPTIONS = {
+  [Constants.MODULE_ID]: {
+    [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
+  }
+};
 
 function handleFormSubmit(event, form, formData) {
   return this._processSubmitData(event, form, formData);
@@ -103,7 +109,12 @@ export class SocketSlotConfigApp extends BaseApplication {
       return false;
     }
 
-    const updated = await SocketSlotConfigService.updateConfig(this.#hostItem, this.#slotIndex, payload);
+    const updated = await SocketSlotConfigService.updateConfig(
+      this.#hostItem,
+      this.#slotIndex,
+      payload,
+      LOCAL_UI_UPDATE_OPTIONS
+    );
     if (!updated) {
       ui.notifications?.warn?.(
         Constants.localize(
@@ -114,7 +125,19 @@ export class SocketSlotConfigApp extends BaseApplication {
       return false;
     }
 
-    this.#parentApp?.render?.(true);
+    DebugTrace.log("socket-slot-config.save", {
+      hostItem: DebugTrace.describeItem(this.#hostItem),
+      slotIndex: this.#slotIndex,
+      parentApp: DebugTrace.describeApp(this.#parentApp)
+    });
+    DebugTrace.render(this.#parentApp, false, "socket-slot-config.save.parentRefresh", {
+      hostItem: DebugTrace.describeItem(this.#hostItem),
+      slotIndex: this.#slotIndex
+    });
+    DebugTrace.bringToTop(this.#parentApp, "socket-slot-config.save.parentBringToTop", {
+      hostItem: DebugTrace.describeItem(this.#hostItem),
+      slotIndex: this.#slotIndex
+    });
     ui.notifications?.info?.(
       Constants.localize(
         "SCSockets.SocketSlotConfig.Saved",

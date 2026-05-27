@@ -21,18 +21,18 @@ export class SocketSlotConfigService {
     return slots[slotIndex] ?? null;
   }
 
-  static async updateConfig(hostItem, slotIndex, config) {
+  static async updateConfig(hostItem, slotIndex, config, options = {}) {
     const slots = SocketStore.getSlots(hostItem);
     if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
       return false;
     }
 
     slots[slotIndex] = SocketSlot.applyConfig(slots[slotIndex], config, slotIndex);
-    await SocketStore.setSlots(hostItem, slots);
+    await SocketStore.setSlots(hostItem, slots, options);
     return true;
   }
 
-  static async toggleHidden(hostItem, slotIndex) {
+  static async toggleHidden(hostItem, slotIndex, options = {}) {
     const slots = SocketStore.getSlots(hostItem);
     if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
       return null;
@@ -44,7 +44,7 @@ export class SocketSlotConfigService {
       hidden: !config.hidden
     };
     slots[slotIndex] = SocketSlot.applyConfig(slots[slotIndex], nextConfig, slotIndex);
-    await SocketStore.setSlots(hostItem, slots);
+    await SocketStore.setSlots(hostItem, slots, options);
     return nextConfig.hidden;
   }
 
