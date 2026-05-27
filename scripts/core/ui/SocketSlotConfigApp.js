@@ -173,6 +173,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       canInspectGem,
       slotConfigName: slotConfig.name,
       hidden: slotConfig.hidden,
+      deleteGemOnRemoval: slotConfig.deleteGemOnRemoval,
       canEditVisibility: this.#canEditVisibility(),
       condition: slotConfig.condition,
       description: slotConfig.description,
@@ -211,6 +212,14 @@ export class SocketSlotConfigApp extends BaseApplication {
         hiddenHint: Constants.localize(
           "SCSockets.SocketSlotConfig.Hidden.Hint",
           "Only GMs can see this slot and its socket description."
+        ),
+        deleteGemOnRemovalLabel: Constants.localize(
+          "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Label",
+          "Delete gem on removal"
+        ),
+        deleteGemOnRemovalHint: Constants.localize(
+          "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Hint",
+          "When enabled, this slot deletes its gem when unsocketed even if the global setting is disabled."
         ),
         conditionLabel: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Label",
@@ -376,6 +385,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       return {
         name: "",
         hidden: this.#currentHiddenValue(),
+        deleteGemOnRemoval: this.#currentDeleteGemOnRemovalValue(),
         condition: "",
         description: "",
         color: ""
@@ -385,6 +395,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     return {
       name: this.#readFieldValue("slotConfig.name"),
       hidden: this.#canEditVisibility() ? this.#readCheckboxValue("slotConfig.hidden") : this.#currentHiddenValue(),
+      deleteGemOnRemoval: this.#readCheckboxValue("slotConfig.deleteGemOnRemoval"),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
       color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex"))
@@ -398,6 +409,11 @@ export class SocketSlotConfigApp extends BaseApplication {
   #currentHiddenValue() {
     const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
     return SocketSlotConfigService.getConfig(slot).hidden;
+  }
+
+  #currentDeleteGemOnRemovalValue() {
+    const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    return SocketSlotConfigService.getConfig(slot).deleteGemOnRemoval;
   }
 
   #clearColorInputs() {

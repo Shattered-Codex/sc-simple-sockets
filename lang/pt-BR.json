@@ -112,6 +112,10 @@
         "Label": "Ocultar slot",
         "Hint": "Somente GMs podem ver este slot e sua descrição de socket."
       },
+      "DeleteGemOnRemoval": {
+        "Label": "Destruir gema ao remover",
+        "Hint": "Quando ativado, este slot destrói a gema ao removê-la mesmo se a configuração global estiver desativada."
+      },
       "Condition": {
         "Label": "Condição do slot",
         "Hint": "Use JavaScript. Variáveis disponíveis: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
@@ -140,6 +144,8 @@
     },
     "Tooltips": {
       "RemoveGem": "Remover a gema deste soquete.",
+      "DestroyGem": "Destruir gema",
+      "ExtractGem": "Extrair gema",
       "DeleteSocket": "Excluir este soquete do item.",
       "DeleteSlotLabel": "Excluir soquete",
       "ConfigureSlot": "Configurar este slot.",
@@ -301,6 +307,15 @@
         "SelectAnother": "Deseja selecionar outro item?",
         "Success": "Um soquete foi adicionado a {name}.",
         "Error": "Falha ao adicionar soquete. Veja o console para detalhes."
+      },
+      "ExtractGem": {
+        "SelectPrompt": "Clique em um slot preenchido para extrair a gema. Pressione Esc para cancelar.",
+        "Cancelled": "Seleção cancelada.",
+        "InvalidSlot": "Não foi possível resolver o slot clicado.",
+        "EmptySlot": "Esse slot não contém gema.",
+        "ItemPermissionBody": "Você não tem permissão para editar {name}.",
+        "Success": "Gema {gem} extraída de {name}.",
+        "Error": "Falha ao extrair a gema. Veja o console para detalhes."
       }
     }
   }

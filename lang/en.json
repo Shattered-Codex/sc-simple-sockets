@@ -112,6 +112,10 @@
         "Label": "Hide slot",
         "Hint": "Only GMs can see this slot and its socket description."
       },
+      "DeleteGemOnRemoval": {
+        "Label": "Delete gem on removal",
+        "Hint": "When enabled, this slot deletes its gem when unsocketed even if the global setting is disabled."
+      },
       "Condition": {
         "Label": "Slot condition",
         "Hint": "Use JavaScript. Available variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
@@ -140,6 +144,8 @@
     },
     "Tooltips": {
       "RemoveGem": "Remove the gem from this socket.",
+      "DestroyGem": "Destroy gem",
+      "ExtractGem": "Extract gem",
       "DeleteSocket": "Delete this slot from the item.",
       "DeleteSlotLabel": "Delete slot",
       "ConfigureSlot": "Configure this slot.",
@@ -301,6 +307,15 @@
         "SelectAnother": "Do you want to select another item?",
         "Success": "A socket was added to {name}.",
         "Error": "Failed to add socket. See console for details."
+      },
+      "ExtractGem": {
+        "SelectPrompt": "Click a filled socket to extract its gem. Press Esc to cancel.",
+        "Cancelled": "Selection cancelled.",
+        "InvalidSlot": "Could not resolve the clicked socket.",
+        "EmptySlot": "That slot does not contain a gem.",
+        "ItemPermissionBody": "You do not have permission to edit {name}.",
+        "Success": "Extracted {gem} from {name}.",
+        "Error": "Failed to extract gem. See console for details."
       }
     }
   }

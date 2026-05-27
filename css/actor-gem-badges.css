@@ -147,12 +147,19 @@
 
 :root {
   --sc-sockets-cursor: url("/modules/sc-simple-sockets/assets/imgs/hammer-cursor.png") 16 16, crosshair;
+  --sc-sockets-extract-cursor: url("/modules/sc-simple-sockets/assets/imgs/hammer-cursor.png") 16 16, pointer;
 }
 
 html.sc-sockets-target-cursor,
 body.sc-sockets-target-cursor,
 body.sc-sockets-target-cursor * {
   cursor: var(--sc-sockets-cursor, crosshair) !important;
+}
+
+html.sc-sockets-extract-cursor,
+body.sc-sockets-extract-cursor,
+body.sc-sockets-extract-cursor * {
+  cursor: var(--sc-sockets-extract-cursor, pointer) !important;
 }
 
 .sc-sockets-gem-target-filter {

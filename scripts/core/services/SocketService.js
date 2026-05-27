@@ -11,6 +11,9 @@ import { ItemSheetSync } from "../support/ItemSheetSync.js";
 
 export class SocketService {
   static #operationQueues = new Map();
+  static REMOVE_GEM_MODE_DEFAULT = "default";
+  static REMOVE_GEM_MODE_KEEP = "keep";
+  static REMOVE_GEM_MODE_DELETE = "delete";
 
   static async addGem(hostItem, idx, source) {
     return SocketService.#enqueueHostOperation(
@@ -19,10 +22,10 @@ export class SocketService {
     );
   }
 
-  static async removeGem(hostItem, idx) {
+  static async removeGem(hostItem, idx, options = {}) {
     return SocketService.#enqueueHostOperation(
       hostItem,
-      (currentHostItem) => SocketService.#removeGem(currentHostItem, idx)
+      (currentHostItem) => SocketService.#removeGem(currentHostItem, idx, options)
     );
   }
 
@@ -126,7 +129,8 @@ export class SocketService {
     }
 
     const previousSlot = slots[idx] ?? {};
-    const shouldReturnReplacedGem = Boolean(previousSlot?.gem) && !ModuleSettings.shouldDeleteGemOnRemoval();
+    const shouldDeleteReplacedGem = SocketService.#shouldDeleteGemOnRemoval(previousSlot);
+    const shouldReturnReplacedGem = Boolean(previousSlot?.gem || previousSlot?._gemData) && !shouldDeleteReplacedGem;
     const replacedGemSnapshot = shouldReturnReplacedGem
       ? ItemResolver.expandSnapshot(previousSlot?._gemData ?? null)
       : null;
@@ -168,7 +172,7 @@ export class SocketService {
     }
   }
 
-  static async #removeGem(hostItem, idx) {
+  static async #removeGem(hostItem, idx, options = {}) {
     const slots = SocketStore.getSlots(hostItem);
 
     if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
@@ -176,10 +180,13 @@ export class SocketService {
     }
 
     const slot = slots[idx] ?? {};
+    const removalMode = SocketService.#normalizeRemoveGemMode(options?.mode);
+    const shouldDeleteGem = SocketService.#shouldDeleteGemOnRemoval(slot, { mode: removalMode });
+    const gemSnapshot = ItemResolver.expandSnapshot(slot?._gemData ?? null);
 
-    if (!ModuleSettings.shouldDeleteGemOnRemoval()) {
+    if (!shouldDeleteGem && gemSnapshot) {
       try {
-        await InventoryService.returnOne(hostItem, ItemResolver.expandSnapshot(slot._gemData));
+        await InventoryService.returnOne(hostItem, gemSnapshot);
       } catch (e) {
         console.warn("return inventory failed:", e);
       }
@@ -204,9 +211,11 @@ export class SocketService {
         }
       }
     });
-    ui.notifications?.info?.(
-      Constants.localize("SCSockets.Notifications.GemUnsocketed", "Gem unsocketed.")
-    );
+    if (options?.notify !== false) {
+      ui.notifications?.info?.(
+        Constants.localize("SCSockets.Notifications.GemUnsocketed", "Gem unsocketed.")
+      );
+    }
   }
 
   static async #addSlot(hostItem, options = {}) {
@@ -317,6 +326,27 @@ export class SocketService {
 
   static #isHostTypeSocketable(hostItem) {
     return ModuleSettings.isItemSocketableByType(hostItem);
+  }
+
+  static #normalizeRemoveGemMode(mode) {
+    const normalized = String(mode ?? SocketService.REMOVE_GEM_MODE_DEFAULT).trim().toLowerCase();
+    if (normalized === SocketService.REMOVE_GEM_MODE_KEEP || normalized === SocketService.REMOVE_GEM_MODE_DELETE) {
+      return normalized;
+    }
+    return SocketService.REMOVE_GEM_MODE_DEFAULT;
+  }
+
+  static #shouldDeleteGemOnRemoval(slot, { mode = SocketService.REMOVE_GEM_MODE_DEFAULT } = {}) {
+    if (mode === SocketService.REMOVE_GEM_MODE_KEEP) {
+      return false;
+    }
+
+    if (mode === SocketService.REMOVE_GEM_MODE_DELETE) {
+      return true;
+    }
+
+    const slotDeleteOverride = SocketSlotConfigService.getConfig(slot).deleteGemOnRemoval;
+    return slotDeleteOverride || ModuleSettings.shouldDeleteGemOnRemoval();
   }
 
   static #buildInternalUpdateOptions(base = {}) {

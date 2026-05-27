@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
+import { SocketService } from "../services/SocketService.js";
 
 export class SocketAPI {
   static register() {
@@ -14,6 +15,13 @@ export class SocketAPI {
         SocketAPI.getItemSlots(itemOrUuid, options);
       module.api.sockets.getItemGems = async (itemOrUuid, options = {}) =>
         SocketAPI.getItemGems(itemOrUuid, options);
+      module.api.sockets.removeGem = async (itemOrUuid, slotIndex, options = {}) =>
+        SocketAPI.removeGem(itemOrUuid, slotIndex, options);
+      module.api.sockets.removeGemKeepingItem = async (itemOrUuid, slotIndex, options = {}) =>
+        SocketAPI.removeGem(itemOrUuid, slotIndex, {
+          ...options,
+          mode: SocketService.REMOVE_GEM_MODE_KEEP
+        });
 
       module.api.sockets.HOOK_SOCKET_ADDED = Constants.HOOK_SOCKET_ADDED;
       module.api.sockets.HOOK_SOCKET_REMOVED = Constants.HOOK_SOCKET_REMOVED;
@@ -57,6 +65,21 @@ export class SocketAPI {
     }
 
     return gems;
+  }
+
+  static async removeGem(itemOrUuid, slotIndex, options = {}) {
+    const item = await SocketAPI.#resolveItem(itemOrUuid);
+    if (!item) {
+      return false;
+    }
+
+    const idx = Number(slotIndex);
+    if (!Number.isInteger(idx) || idx < 0) {
+      return false;
+    }
+
+    await SocketService.removeGem(item, idx, options);
+    return true;
   }
 
   static #sanitizeSlot(slot, { includeSnapshots = false } = {}) {

@@ -21,7 +21,7 @@
         {{#if useSocketGridLayout}}
         <ol class="item-list unlist sc-sockets-collection">
           {{#each sockets as |slot|}}
-          <li class="item socket-row sc-sockets-slot-card sc-sockets-slot-card--icon-only" data-index="{{slot.index}}" data-dropzone="socket-slot"
+          <li class="item socket-row sc-sockets-slot-card sc-sockets-slot-card--icon-only" data-index="{{slot.index}}" data-item-uuid="{{slot.hostItemUuid}}" data-dropzone="socket-slot"
             aria-dropeffect="copy">
 
             <div class="item-name socket-name sc-sockets-slot-main">
@@ -57,10 +57,10 @@
                 {{#if ../editable}}
                 <a class="socket-control item-control sc-sockets-slot-action sc-sockets-slot-action--remove-gem"
                   data-action="removeGemFromSlot" data-index="{{slot.index}}"
-                  aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}"
-                  data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
+                  aria-label="{{slot.removeGemTooltip}}"
+                  data-tooltip="{{slot.removeGemTooltip}}"
                   data-tooltip-direction="LEFT">
-                  <i class="fas fa-hammer-crash"></i>
+                  <i class="fas {{slot.removeGemIcon}}"></i>
                 </a>
                 {{/if}}
               {{/if}}
@@ -80,7 +80,7 @@
         {{else}}
         <ol class="item-list unlist">
           {{#each sockets as |slot|}}
-          <li class="item flexrow socket-row" data-index="{{slot.index}}" data-dropzone="socket-slot" aria-dropeffect="copy">
+          <li class="item flexrow socket-row" data-index="{{slot.index}}" data-item-uuid="{{slot.hostItemUuid}}" data-dropzone="socket-slot" aria-dropeffect="copy">
 
             <div class="item-name socket-name sc-sockets-slot-main">
               <div class="socket-icon-wrapper sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
@@ -131,10 +131,10 @@
               {{/if}}
               {{#if ../editable}}
               <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{slot.index}}"
-                aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}"
-                data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
+                aria-label="{{slot.removeGemTooltip}}"
+                data-tooltip="{{slot.removeGemTooltip}}"
                 data-tooltip-direction="LEFT">
-                <i class="fas fa-hammer-crash"></i>
+                <i class="fas {{slot.removeGemIcon}}"></i>
               </a>
               {{/if}}
               {{#if ../canManageSockets}}
