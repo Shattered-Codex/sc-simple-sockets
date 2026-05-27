@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
 
 /**
  * Runtime API for reading and writing module settings.
@@ -133,7 +134,16 @@ export class ModuleSettings {
   // Layout ---------------------------------------------------------------------
 
   static shouldUseGemRollLayout() {
-    return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT) ?? true;
+    return ModuleSettings.getGemRollLayoutMode() === DamageRollLayoutAdapterRegistry.MODE_GEM;
+  }
+
+  static getGemRollLayoutMode() {
+    const value = game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT);
+    return DamageRollLayoutAdapterRegistry.normalizeMode(value);
+  }
+
+  static getGemRollLayoutChoices() {
+    return DamageRollLayoutAdapterRegistry.getSettingsChoices();
   }
 
   static getSocketTabLayout() {

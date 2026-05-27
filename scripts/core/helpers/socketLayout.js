@@ -46,6 +46,11 @@ export function buildSocketLayoutContext(item, {
           ? Constants.localize("SCSockets.Tooltips.DestroyGem", "Destroy gem")
           : Constants.localize("SCSockets.Tooltips.ExtractGem", "Extract gem");
         const removeGemIcon = destroysGemOnRemoval ? "fa-burst" : "fa-hammer-crash";
+        const slotName = String(slot?.name ?? "").trim()
+          || Constants.localize("SCSockets.SocketEmptyName", "Empty");
+        const gemName = String(slot?.gem?.name ?? "").trim();
+        const slotSummary = gemName && gemName !== slotName ? gemName : "";
+        const slotAriaLabel = slotSummary ? `${slotName}: ${slotSummary}` : slotName;
 
         entries.push({
           ...slot,
@@ -65,8 +70,11 @@ export function buildSocketLayoutContext(item, {
           visibilityTooltip: hiddenTooltip,
           visibilityLabel: hiddenTooltip,
           gemImg: slot?.gem?.img ?? "",
-          gemName: slot?.gem?.name ?? "",
+          gemName,
           gemUuid: "",
+          slotName,
+          slotSummary,
+          slotAriaLabel,
           hostItemUuid: item?.uuid ?? ""
         });
         return entries;

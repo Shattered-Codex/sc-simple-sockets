@@ -77,7 +77,7 @@ Hooks.once("ready", async () => {
   await DataMigration.run();
   await lifecycle.syncGemSubtypeFlags();
   GemDamageService.activate();
-  const mode = ModuleSettings.shouldUseGemRollLayout() ? "gem" : "type";
+  const mode = ModuleSettings.getGemRollLayoutMode();
   DamageRollGemLayout.activate({ mode });
   await maybeShowSupportCard();
 });

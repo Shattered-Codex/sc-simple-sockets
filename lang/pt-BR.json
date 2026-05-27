@@ -216,7 +216,25 @@
       },
       "GemRollLayout": {
         "Name": "Layout de dano das gemas no diálogo",
-        "Hint": "Ative o layout agrupado por gema no diálogo de configuração de dano."
+        "Hint": "Escolha como o dano das gemas será organizado no diálogo de configuração de dano.",
+        "Options": {
+          "Gem": {
+            "Label": "Agrupar por gema",
+            "Description": "Cada gema encaixada mantém seu próprio bloco e mostra apenas as linhas de dano vindas daquela gema específica."
+          },
+          "Type": {
+            "Label": "Agrupar por tipo de dano",
+            "Description": "Todas as linhas são mescladas por tipo de dano, independentemente da gema ou item que as gerou."
+          },
+          "GemType": {
+            "Label": "Agrupar por tipo de gema",
+            "Description": "Gemas idênticas são mescladas em um único bloco. O título mostra 2x, 3x e assim por diante quando mais de uma cópia contribui."
+          },
+          "TypeBadges": {
+            "Label": "Agrupar por tipo de dano com badges",
+            "Description": "Todas as linhas são mescladas por tipo de dano e cada resultado mostra badges das gemas correspondentes, além do item base quando o dano dele participa daquele tipo."
+          }
+        }
       },
       "SocketTabLayout": {
         "Name": "Layout da aba de soquetes",

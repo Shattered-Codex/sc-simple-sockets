@@ -216,7 +216,25 @@
       },
       "GemRollLayout": {
         "Name": "Gem damage layout in roll dialog",
-        "Hint": "Enable the grouped-by-gem layout in the damage roll configuration dialog."
+        "Hint": "Choose how gem damage is organized in the damage roll configuration dialog.",
+        "Options": {
+          "Gem": {
+            "Label": "Group by gem",
+            "Description": "Each socketed gem keeps its own block and shows only the damage rows that came from that specific gem."
+          },
+          "Type": {
+            "Label": "Group by damage type",
+            "Description": "All rows are merged by damage type, regardless of which gem or item created them."
+          },
+          "GemType": {
+            "Label": "Group by gem type",
+            "Description": "Identical gems are merged into one block. The title shows 2x, 3x, and so on when more than one copy contributes."
+          },
+          "TypeBadges": {
+            "Label": "Group by damage type with badges",
+            "Description": "All rows are merged by damage type and each result shows badges for the gems, plus the host item when its own damage is part of that type."
+          }
+        }
       },
       "SocketTabLayout": {
         "Name": "Socket tab layout",

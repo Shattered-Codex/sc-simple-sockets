@@ -3,6 +3,7 @@ import { ModuleSettings } from "./ModuleSettings.js";
 import { SocketBehaviorSettingsLauncher } from "./SocketBehaviorSettingsLauncher.js";
 import { DocumentationMenu } from "./DocumentationMenu.js";
 import { SupportMenu } from "./SupportMenu.js";
+import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
 
 /**
  * Registers all game settings and menus for the module.
@@ -225,6 +226,11 @@ export class ModuleSettingsRegistrar {
   }
 
   #registerGemRollLayoutSetting() {
+    const choices = DamageRollLayoutAdapterRegistry.getSettingsChoices().reduce((accumulator, choice) => {
+      accumulator[choice.value] = choice.label;
+      return accumulator;
+    }, {});
+
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT, {
       name: Constants.localize(
         "SCSockets.Settings.GemRollLayout.Name",
@@ -232,15 +238,16 @@ export class ModuleSettingsRegistrar {
       ),
       hint: Constants.localize(
         "SCSockets.Settings.GemRollLayout.Hint",
-        "Enable the grouped-by-gem layout in the damage roll configuration dialog."
+        "Choose how gem damage is organized in the damage roll configuration dialog."
       ),
       scope: "client",
       config: false,
-      type: Boolean,
-      default: true,
+      type: String,
+      choices,
+      default: DamageRollLayoutAdapterRegistry.getDefaultMode(),
       onChange: async (value) => {
         const { DamageRollGemLayout } = await import("../ui/DamageRollGemLayout.js");
-        DamageRollGemLayout.activate({ mode: value ? "gem" : "type" });
+        DamageRollGemLayout.activate({ mode: value });
       }
     });
   }

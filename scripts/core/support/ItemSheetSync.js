@@ -99,7 +99,7 @@ export class ItemSheetSync {
 
     for (const app of ItemSheetSync.#collectOpenSheets(current)) {
       ItemSheetSync.syncSheetDocument(app, current);
-      app.render(true);
+      ItemSheetSync.#renderSheet(app);
     }
   }
 
@@ -178,5 +178,59 @@ export class ItemSheetSync {
     }
 
     return null;
+  }
+
+  static #renderSheet(app) {
+    if (!app?.rendered || typeof app.render !== "function") {
+      return;
+    }
+
+    const windowElement = ItemSheetSync.#resolveWindowElement(app);
+    const previousZIndex = windowElement?.style?.zIndex ?? "";
+    const hadFocus = windowElement?.contains?.(document.activeElement) === true;
+
+    try {
+      app.render(false);
+    } catch {
+      app.render(true);
+    }
+
+    const restoreWindowState = () => {
+      const nextWindowElement = ItemSheetSync.#resolveWindowElement(app);
+      if (!(nextWindowElement instanceof HTMLElement)) {
+        return;
+      }
+
+      if (previousZIndex) {
+        nextWindowElement.style.zIndex = previousZIndex;
+      }
+
+      if (hadFocus && typeof app.bringToTop === "function") {
+        app.bringToTop();
+      }
+    };
+
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(restoreWindowState);
+      return;
+    }
+
+    setTimeout(restoreWindowState, 0);
+  }
+
+  static #resolveWindowElement(app) {
+    const element = app?.element?.jquery ? app.element[0] : app?.element;
+    if (element instanceof HTMLElement) {
+      return element.closest(".window-app") ?? element;
+    }
+
+    const appId = app?.appId ?? app?.id;
+    if (appId == null) {
+      return null;
+    }
+
+    return document.querySelector(
+      `.window-app[data-appid="${appId}"], .window-app[data-app-id="${appId}"]`
+    );
   }
 }

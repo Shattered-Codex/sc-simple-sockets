@@ -56,6 +56,51 @@
   filter: grayscale(1) brightness(0.86) contrast(1.06);
 }
 
+.sc-sockets-gem-roll-badges {
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 3px;
+  padding: 0;
+}
+
+.sc-sockets-gem-roll-badge-count {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: rgba(10, 16, 28, 0.92);
+  color: #f4f0e8;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1rem;
+  text-align: center;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.sc-sockets-gem-roll-side {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.sc-sockets-gem-roll-side .label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.sc-sockets-settings-option-description {
+  margin-top: 0.45rem;
+}
+
 .tidy5e-sheet .sc-sockets-badges,
 .tidy5e-sheet.quadrone .sc-sockets-badges {
   width: 100%;

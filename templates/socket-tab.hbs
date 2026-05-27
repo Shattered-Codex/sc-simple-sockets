@@ -25,8 +25,8 @@
             aria-dropeffect="copy">
 
             <div class="item-name socket-name sc-sockets-slot-main">
-              <div class="sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
-                <img class="item-image socket-icon sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+              <div class="sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.slotAriaLabel}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
+                <img class="item-image socket-icon sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.slotAriaLabel}}">
                 {{#if slot.hasGem}}
                 <img class="item-image socket-icon sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
                 {{/if}}
@@ -83,8 +83,8 @@
           <li class="item flexrow socket-row" data-index="{{slot.index}}" data-item-uuid="{{slot.hostItemUuid}}" data-dropzone="socket-slot" aria-dropeffect="copy">
 
             <div class="item-name socket-name sc-sockets-slot-main">
-              <div class="socket-icon-wrapper sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
-                <img class="item-image socket-icon sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+              <div class="socket-icon-wrapper sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.slotAriaLabel}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
+                <img class="item-image socket-icon sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.slotAriaLabel}}">
                 {{#if slot.hasGem}}
                 <img class="item-image socket-icon sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
                 {{/if}}
@@ -100,7 +100,7 @@
                 {{/if}}
               </div>
               <div class="name name-stacked">
-                <span class="title">{{slot.name}}</span>
+                <span class="title">{{slot.slotName}}</span>
               </div>
             </div>
 
