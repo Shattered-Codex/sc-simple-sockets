@@ -22,6 +22,12 @@ export class TidyIntegration {
   static #gemFilterTabId = `${Constants.MODULE_ID}-tidy-gem-filter`;
   static #gemDetailsTabId = `${Constants.MODULE_ID}-tidy-gem-details`;
   static #socketTabId = `${Constants.MODULE_ID}-tidy-sockets`;
+  static #managedModuleTabIds = new Set([
+    `${Constants.MODULE_ID}-tidy-gem-filter`,
+    `${Constants.MODULE_ID}-tidy-gem-details`,
+    `${Constants.MODULE_ID}-tidy-sockets`
+  ]);
+
   static #isTidyActive() {
     return Boolean(game?.modules?.get?.("tidy5e-sheet")?.active);
   }
@@ -45,39 +51,29 @@ export class TidyIntegration {
     }
 
     Hooks.on("updateItem", (item, changes) => {
-      if (!GemCriteria.hasTypeUpdate(changes)) {
+      if (!TidyIntegration.#requiresTabConfigurationSync(changes)) {
         return;
       }
       void TidyIntegration.#syncTabConfiguration(item);
     });
 
-    Hooks.on("renderItemSheet", (sheet) => {
-      // Ensure default tabs (including Allowed Item Types) are present for existing gems
-      // even when the subtype hasn't just changed.
-      const name = sheet?.constructor?.name?.toLowerCase?.() ?? "";
-      if (name.includes("tidy")) {
-        void TidyIntegration.#syncTabConfiguration(sheet.item, sheet);
-      }
-
-      if (Compatibility.isDnd5eItemSheet(sheet)) {
-        void TidyIntegration.#syncTabConfiguration(sheet.item, sheet);
-      }
-    });
-
     Hooks.on("createItem", (item) => {
-      // Ensure freshly created/imported gem items get the default tab configuration.
       void TidyIntegration.#syncTabConfiguration(item);
     });
 
     Hooks.once("ready", () => {
-      // One-time sync for existing gem items (GM only) so they get the tabs without subtype edits.
-      if (!game.user?.isGM) return;
-      for (const item of game.items ?? []) {
-        if (GemCriteria.matches(item)) {
-          void TidyIntegration.#syncTabConfiguration(item);
-        }
-      }
+      void TidyIntegration.syncAllItemTabConfigurations();
     });
+  }
+
+  static async syncAllItemTabConfigurations() {
+    if (!TidyIntegration.#isTidyActive() || !game.user?.isGM) {
+      return;
+    }
+
+    for (const item of TidyIntegration.#collectPersistedTabSyncCandidates()) {
+      await TidyIntegration.#syncTabConfiguration(item);
+    }
   }
 
   static #onApiReady(api) {
@@ -380,7 +376,7 @@ export class TidyIntegration {
     }
   }
 
-  static async #syncTabConfiguration(item, sheet) {
+  static async #syncTabConfiguration(item) {
     if (!TidyIntegration.#isTidyActive()) {
       return;
     }
@@ -458,9 +454,6 @@ export class TidyIntegration {
     };
 
     await item.setFlag("tidy5e-sheet", "tab-configuration", nextConfig);
-    if (sheet?.render) {
-      sheet.render(true);
-    }
   }
 
   static #itemHasActivities(item) {
@@ -575,7 +568,6 @@ export class TidyIntegration {
     if (!sheet || !tabContents) return;
     if (!ModuleSettings.isItemSocketTabVisible(sheet.item)) return;
 
-    void TidyIntegration.#syncTabConfiguration(sheet.item, sheet);
     TidySocketTabHandler.bind(tabContents, sheet);
   }
 
@@ -585,5 +577,73 @@ export class TidyIntegration {
       context?.sheet?.item ??
       context?.app?.item ??
       null;
+  }
+
+  static #collectSyncCandidates() {
+    const items = [
+      ...(game.items ?? []),
+      ...(Array.from(game.actors ?? []).flatMap((actor) => Array.from(actor?.items ?? [])))
+    ];
+    const seen = new Set();
+    const candidates = [];
+
+    for (const item of items) {
+      const key = item?.uuid ?? item?.id;
+      if (!key || seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+
+      if (!TidyIntegration.#shouldSyncItem(item)) {
+        continue;
+      }
+
+      candidates.push(item);
+    }
+
+    return candidates;
+  }
+
+  static #collectPersistedTabSyncCandidates() {
+    return TidyIntegration.#collectSyncCandidates().filter((item) => (
+      TidyIntegration.#hasManagedModuleTabsConfigured(item)
+      || ModuleSettings.isItemSocketTabVisible(item)
+    ));
+  }
+
+  static #shouldSyncItem(item) {
+    if (!item) {
+      return false;
+    }
+
+    return GemCriteria.matches(item)
+      || ModuleSettings.isItemSocketTabVisible(item)
+      || TidyIntegration.#hasManagedModuleTabsConfigured(item);
+  }
+
+  static #hasManagedModuleTabsConfigured(item) {
+    const selected = item?.getFlag?.("tidy5e-sheet", "tab-configuration")?.selected;
+    if (!Array.isArray(selected) || !selected.length) {
+      return false;
+    }
+
+    return selected.some((tabId) => TidyIntegration.#managedModuleTabIds.has(tabId));
+  }
+
+  static #requiresTabConfigurationSync(changes) {
+    if (GemCriteria.hasTypeUpdate(changes)) {
+      return true;
+    }
+
+    const paths = [
+      `flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`,
+      `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_TAB_ENABLED}`,
+      "system.activities"
+    ];
+
+    return paths.some((path) => (
+      foundry?.utils?.hasProperty?.(changes, path)
+      || Object.keys(changes ?? {}).some((key) => key === path || key.startsWith(`${path}.`))
+    ));
   }
 }

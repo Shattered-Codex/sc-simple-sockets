@@ -4,6 +4,7 @@ import { SocketBehaviorSettingsLauncher } from "./SocketBehaviorSettingsLauncher
 import { DocumentationMenu } from "./DocumentationMenu.js";
 import { SupportMenu } from "./SupportMenu.js";
 import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
+import { TidyIntegration } from "../integration/TidyIntegration.js";
 
 /**
  * Registers all game settings and menus for the module.
@@ -13,6 +14,7 @@ import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/Damage
  */
 export class ModuleSettingsRegistrar {
   static #runtimeHooksRegistered = false;
+  static #settingsConfigHookRegistered = false;
   #settingsRegistered = false;
 
   /**
@@ -26,6 +28,7 @@ export class ModuleSettingsRegistrar {
     this.#settingsRegistered = true;
 
     ModuleSettingsRegistrar.#registerRuntimeHooks();
+    ModuleSettingsRegistrar.#registerSettingsConfigHook();
     this.#registerEditSocketPermission();
     this.#registerSocketableItemTypeSetting();
     this.#registerMaxSockets();
@@ -85,6 +88,16 @@ export class ModuleSettingsRegistrar {
     });
   }
 
+  static #registerSettingsConfigHook() {
+    if (ModuleSettingsRegistrar.#settingsConfigHookRegistered) return;
+    ModuleSettingsRegistrar.#settingsConfigHookRegistered = true;
+
+    Hooks.on("renderSettingsConfig", (_app, html) => {
+      SupportMenu.bindSettingsButton(html);
+      DocumentationMenu.bindSettingsButton(html);
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Menus
   // ---------------------------------------------------------------------------
@@ -101,10 +114,6 @@ export class ModuleSettingsRegistrar {
       type: SupportMenu,
       restricted: true
     });
-
-    Hooks.on("renderSettingsConfig", (_app, html) => {
-      SupportMenu.bindSettingsButton(html);
-    });
   }
 
   #registerDocumentationMenu() {
@@ -118,10 +127,6 @@ export class ModuleSettingsRegistrar {
       icon: "fas fa-hat-wizard",
       type: DocumentationMenu,
       restricted: true
-    });
-
-    Hooks.on("renderSettingsConfig", (_app, html) => {
-      DocumentationMenu.bindSettingsButton(html);
     });
   }
 
@@ -172,7 +177,11 @@ export class ModuleSettingsRegistrar {
       scope: "world",
       config: false,
       type: Array,
-      default: ModuleSettings.getDefaultSocketableItemTypes()
+      default: ModuleSettings.getDefaultSocketableItemTypes(),
+      onChange: () => {
+        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
+        void TidyIntegration.syncAllItemTabConfigurations();
+      }
     });
   }
 
@@ -309,14 +318,21 @@ export class ModuleSettingsRegistrar {
       scope: "world",
       config: false,
       type: Array,
-      default: []
+      default: [],
+      onChange: () => {
+        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
+      }
     });
 
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_LOOT_SUBTYPES, {
       scope: "world",
       config: false,
       type: Array,
-      default: [Constants.ITEM_SUBTYPE_GEM]
+      default: [Constants.ITEM_SUBTYPE_GEM],
+      onChange: () => {
+        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
+        void TidyIntegration.syncAllItemTabConfigurations();
+      }
     });
   }
 

@@ -9,6 +9,10 @@ export class DragHelper {
     if (!root) return;
     const zones = root.querySelectorAll(selector);
     for (const el of zones) {
+      if (el.dataset.scSocketsDropBound === "true") {
+        continue;
+      }
+
       el.addEventListener("dragover", (ev) => ev.preventDefault());
 
       el.addEventListener("drop", async (ev) => {
@@ -25,6 +29,8 @@ export class DragHelper {
         const index = Number(el.dataset.index);
         onDrop?.({ event: ev, element: el, data, index });
       });
+
+      el.dataset.scSocketsDropBound = "true";
     }
   }
 }

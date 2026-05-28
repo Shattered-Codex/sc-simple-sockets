@@ -9,6 +9,7 @@ import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketSlotConfigService } from "./SocketSlotConfigService.js";
 import { ItemSheetSync } from "../support/ItemSheetSync.js";
 import { DebugTrace } from "../support/DebugTrace.js";
+import { HostItemUpdateService } from "../support/HostItemUpdateService.js";
 
 export class SocketService {
   static #operationQueues = new Map();
@@ -27,6 +28,13 @@ export class SocketService {
     return SocketService.#enqueueHostOperation(
       hostItem,
       (currentHostItem) => SocketService.#removeGem(currentHostItem, idx, options)
+    );
+  }
+
+  static async removeSlotWithContents(hostItem, idx, options = {}) {
+    return SocketService.#enqueueHostOperation(
+      hostItem,
+      (currentHostItem) => SocketService.#removeSlotWithContents(currentHostItem, idx, options)
     );
   }
 
@@ -64,7 +72,9 @@ export class SocketService {
       options: DebugTrace.describeOptions(options)
     });
     if (!SocketService.#canUseSocketsOnHost(hostItem)) {
-      return ui.notifications?.warn?.(
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "host-not-socketable",
         Constants.localize(
           "SCSockets.Notifications.HostNotSocketable",
           "This item type cannot receive sockets."
@@ -72,10 +82,23 @@ export class SocketService {
       );
     }
 
+    if (!SocketService.#canMutateSockets(options)) {
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "permission-denied",
+        Constants.localize(
+          "SCSockets.Notifications.EditPermissionDenied",
+          "You do not have permission to modify sockets on this item."
+        )
+      );
+    }
+
     const slots = SocketStore.getSlots(hostItem);
 
     if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
-      return ui.notifications?.warn?.(
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "invalid-slot-index",
         Constants.localize("SCSockets.Notifications.InvalidSocketIndex", "Invalid socket index.")
       );
     }
@@ -96,13 +119,17 @@ export class SocketService {
     }
 
     if (!gemItem) {
-      return ui.notifications?.warn?.(
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "cannot-resolve-item",
         Constants.localize("SCSockets.Notifications.CannotResolveItem", "Cannot resolve dropped item.")
       );
     }
 
     if (!ItemResolver.isGem(gemItem)) {
-      return ui.notifications?.warn?.(
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "not-a-gem",
         Constants.localize(
           "SCSockets.Notifications.OnlyGems",
           "Only socket-compatible items can be inserted."
@@ -111,7 +138,9 @@ export class SocketService {
     }
 
     if (!SocketService.#gemMatchesHostType(gemItem, hostItem)) {
-      return ui.notifications?.warn?.(
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "gem-incompatible",
         Constants.localize(
           "SCSockets.Notifications.GemIncompatible",
           "That item is not compatible with this socket."
@@ -133,7 +162,11 @@ export class SocketService {
       const fallback = conditionResult.error
         ? "This socket condition could not be evaluated."
         : "That gem does not meet this socket's requirements.";
-      return ui.notifications?.warn?.(Constants.localize(key, fallback));
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        conditionResult.error ? "socket-condition-error" : "socket-condition-failed",
+        Constants.localize(key, fallback)
+      );
     }
 
     const previousSlot = slots[idx] ?? {};
@@ -150,44 +183,54 @@ export class SocketService {
       options: DebugTrace.describeOptions(noRender)
     });
 
+    const hostState = SocketService.#captureHostState(hostItem);
+    const incomingGemSnapshot = ItemResolver.snapshotOne(gemItem);
+    let consumedIncomingGem = false;
+
     try {
-      await EffectService.removeGemEffects(hostItem, idx, noRender);
-    } catch (e) {
-      console.error(`[${Constants.MODULE_ID}] removeGemEffects failed:`, e);
-    }
+      await InventoryService.consumeOne(gemItem, noRender);
+      consumedIncomingGem = Boolean(gemItem?.actor);
 
-    await ActivityTransferService.removeForSlot(hostItem, idx, noRender);
-
-    const snap = ItemResolver.snapshotOne(gemItem);
-    slots[idx] = SocketSlot.fillFromGem(slots[idx], gemItem, snap, idx);
-    ItemResolver.normalizeSocketSlots(slots);
-
-    const effectIdMap = await EffectService.applyGemEffects(hostItem, idx, gemItem, noRender);
-    await ActivityTransferService.applyFromGem(hostItem, idx, gemItem, {
-      ...noRender,
-      [Constants.MODULE_ID]: {
-        ...(noRender?.[Constants.MODULE_ID] ?? {}),
-        [ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]: true,
-        [ActivityTransferService.UPDATE_OPTION_EFFECT_ID_MAP]: effectIdMap,
-        [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
-          [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots
-        }
-      }
-    });
-    await InventoryService.consumeOne(gemItem, noRender);
-
-    if (shouldReturnReplacedGem) {
       try {
-        await InventoryService.returnOne(hostItem, replacedGemSnapshot, noRender);
-      } catch (error) {
-        console.warn(`[${Constants.MODULE_ID}] failed to return replaced gem to inventory:`, error);
+        await EffectService.removeGemEffects(hostItem, idx, noRender);
+      } catch (e) {
+        console.error(`[${Constants.MODULE_ID}] removeGemEffects failed:`, e);
       }
+
+      await ActivityTransferService.removeForSlot(hostItem, idx, noRender);
+
+      slots[idx] = SocketSlot.fillFromGem(slots[idx], gemItem, incomingGemSnapshot, idx);
+      ItemResolver.normalizeSocketSlots(slots);
+
+      const effectIdMap = await EffectService.applyGemEffects(hostItem, idx, gemItem, noRender);
+      await ActivityTransferService.applyFromGem(hostItem, idx, gemItem, {
+        ...noRender,
+        [Constants.MODULE_ID]: {
+          ...(noRender?.[Constants.MODULE_ID] ?? {}),
+          [ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]: true,
+          [ActivityTransferService.UPDATE_OPTION_EFFECT_ID_MAP]: effectIdMap,
+          [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
+            [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots
+          }
+        }
+      });
+
+      if (shouldReturnReplacedGem) {
+        await InventoryService.returnOne(hostItem, replacedGemSnapshot, noRender);
+      }
+    } catch (error) {
+      await SocketService.#rollbackHostOperation(hostItem, hostState, noRender, {
+        consumedIncomingGem,
+        consumedIncomingSnapshot: incomingGemSnapshot
+      });
+      throw error;
     }
 
     DebugTrace.log("socket-service.addGem.done", {
       hostItem: DebugTrace.describeItem(hostItem),
       slotIndex: idx
     });
+    return SocketService.#buildResult({ success: true, changed: true, reason: "gem-added" });
   }
 
   static async #removeGem(hostItem, idx, options = {}) {
@@ -199,11 +242,25 @@ export class SocketService {
     });
     const slots = SocketStore.getSlots(hostItem);
 
+    if (!SocketService.#canMutateSockets(options)) {
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "permission-denied",
+        Constants.localize(
+          "SCSockets.Notifications.EditPermissionDenied",
+          "You do not have permission to modify sockets on this item."
+        )
+      );
+    }
+
     if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
-      return;
+      return SocketService.#buildResult({ success: false, changed: false, reason: "invalid-slot-index" });
     }
 
     const slot = slots[idx] ?? {};
+    if (!slot?.gem && !slot?._gemData) {
+      return SocketService.#buildResult({ success: false, changed: false, reason: "empty-slot" });
+    }
     const removalMode = SocketService.#normalizeRemoveGemMode(options?.mode);
     const shouldDeleteGem = SocketService.#shouldDeleteGemOnRemoval(slot, { mode: removalMode });
     const gemSnapshot = ItemResolver.expandSnapshot(slot?._gemData ?? null);
@@ -215,31 +272,38 @@ export class SocketService {
       options: DebugTrace.describeOptions(noRender)
     });
 
-    if (!shouldDeleteGem && gemSnapshot) {
-      try {
-        await InventoryService.returnOne(hostItem, gemSnapshot, noRender);
-      } catch (e) {
-        console.warn("return inventory failed:", e);
-      }
-    }
+    const hostState = SocketService.#captureHostState(hostItem);
+    let returnedGemItem = null;
 
     try {
-      await EffectService.removeGemEffects(hostItem, idx, noRender);
-    } catch (e) {
-      console.error(`[${Constants.MODULE_ID}] removeGemEffects failed:`, e);
+      try {
+        await EffectService.removeGemEffects(hostItem, idx, noRender);
+      } catch (e) {
+        console.error(`[${Constants.MODULE_ID}] removeGemEffects failed:`, e);
+      }
+
+      slots[idx] = SocketSlot.clearGem(slot, idx);
+      ItemResolver.normalizeSocketSlots(slots);
+      await ActivityTransferService.removeForSlot(hostItem, idx, {
+        ...noRender,
+        [Constants.MODULE_ID]: {
+          ...(noRender?.[Constants.MODULE_ID] ?? {}),
+          [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
+            [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots
+          }
+        }
+      });
+
+      if (!shouldDeleteGem && gemSnapshot) {
+        returnedGemItem = await InventoryService.returnOne(hostItem, gemSnapshot, noRender);
+      }
+    } catch (error) {
+      await SocketService.#rollbackHostOperation(hostItem, hostState, noRender, {
+        returnedGemItem
+      });
+      throw error;
     }
 
-    slots[idx] = SocketSlot.clearGem(slot, idx);
-    ItemResolver.normalizeSocketSlots(slots);
-    await ActivityTransferService.removeForSlot(hostItem, idx, {
-      ...noRender,
-      [Constants.MODULE_ID]: {
-        ...(noRender?.[Constants.MODULE_ID] ?? {}),
-        [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
-          [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: slots
-        }
-      }
-    });
     if (options?.notify !== false) {
       ui.notifications?.info?.(
         Constants.localize("SCSockets.Notifications.GemUnsocketed", "Gem unsocketed.")
@@ -249,6 +313,12 @@ export class SocketService {
     DebugTrace.log("socket-service.removeGem.done", {
       hostItem: DebugTrace.describeItem(hostItem),
       slotIndex: idx
+    });
+    return SocketService.#buildResult({
+      success: true,
+      changed: true,
+      reason: "gem-removed",
+      returnedGemItem
     });
   }
 
@@ -334,6 +404,48 @@ export class SocketService {
       slotIndex: idx
     });
     return result;
+  }
+
+  static async #removeSlotWithContents(hostItem, idx, options = {}) {
+    hostItem = SocketService.#resolveHostItem(hostItem);
+    const currentSlots = SocketStore.peekSlots(hostItem);
+    if (!Number.isInteger(idx) || idx < 0 || idx >= currentSlots.length) {
+      return SocketService.#buildResult({ success: false, changed: false, reason: "invalid-slot-index" });
+    }
+
+    const hostState = SocketService.#captureHostState(hostItem);
+    let removeGemResult = null;
+
+    try {
+      if (currentSlots[idx]?.gem || currentSlots[idx]?._gemData) {
+        removeGemResult = await SocketService.#removeGem(hostItem, idx, options);
+        if (!removeGemResult?.success) {
+          return removeGemResult;
+        }
+      } else {
+        await SocketService.#removeDerivedSlotData(hostItem, idx, options);
+      }
+
+      hostItem = SocketService.#resolveHostItem(hostItem);
+      return await SocketService.#removeSlot(hostItem, idx, options);
+    } catch (error) {
+      await SocketService.#rollbackHostOperation(hostItem, hostState, options, {
+        returnedGemItem: removeGemResult?.returnedGemItem ?? removeGemResult?.data?.returnedGemItem ?? null
+      });
+      throw error;
+    }
+  }
+
+  static async #removeDerivedSlotData(hostItem, idx, options = {}) {
+    const noRender = SocketService.#buildInternalUpdateOptions({ render: false }, options);
+
+    try {
+      await EffectService.removeGemEffects(hostItem, idx, noRender);
+    } catch (error) {
+      console.error(`[${Constants.MODULE_ID}] removeGemEffects failed during slot cleanup:`, error);
+    }
+
+    await ActivityTransferService.removeForSlot(hostItem, idx, noRender);
   }
 
   static #gemMatchesHostType(gemItem, hostItem) {
@@ -449,6 +561,107 @@ export class SocketService {
 
   static #resolveHostItem(hostItem) {
     return ItemSheetSync.resolve(hostItem);
+  }
+
+  static #canMutateSockets(options = {}) {
+    return Boolean(options?.bypassPermission) || ModuleSettings.canAddOrRemoveSocket();
+  }
+
+  static #buildResult({ success = false, changed = false, reason = "unknown", ...data } = {}) {
+    return {
+      success,
+      changed,
+      reason,
+      data
+    };
+  }
+
+  static #warnAndReturnResult(level, reason, message) {
+    ui.notifications?.[level]?.(message);
+    return SocketService.#buildResult({
+      success: false,
+      changed: false,
+      reason,
+      message
+    });
+  }
+
+  static #captureHostState(hostItem) {
+    const currentHostItem = SocketService.#resolveHostItem(hostItem);
+    const source = currentHostItem?.toObject?.() ?? {};
+
+    return {
+      sockets: foundry.utils.deepClone(SocketStore.peekSlots(currentHostItem)),
+      socketActivities: foundry.utils.deepClone(
+        currentHostItem?.getFlag?.(Constants.MODULE_ID, Constants.FLAG_SOCKET_ACTIVITIES) ?? null
+      ),
+      activities: foundry.utils.deepClone(source.system?.activities ?? {}),
+      effects: (currentHostItem?.effects?.contents ?? []).map((effect) => {
+        const data = effect.toObject();
+        delete data._id;
+        return data;
+      })
+    };
+  }
+
+  static async #rollbackHostOperation(hostItem, hostState, options = {}, {
+    consumedIncomingGem = false,
+    consumedIncomingSnapshot = null,
+    returnedGemItem = null
+  } = {}) {
+    try {
+      await SocketService.#restoreHostState(hostItem, hostState, options);
+    } catch (restoreError) {
+      console.error(`[${Constants.MODULE_ID}] failed to restore host item after socket error:`, restoreError);
+    }
+
+    if (returnedGemItem) {
+      try {
+        await InventoryService.consumeOne(returnedGemItem, options);
+      } catch (inventoryError) {
+        console.warn(`[${Constants.MODULE_ID}] failed to revert returned gem after socket error:`, inventoryError);
+      }
+    }
+
+    if (consumedIncomingGem && consumedIncomingSnapshot) {
+      try {
+        await InventoryService.returnOne(SocketService.#resolveHostItem(hostItem), consumedIncomingSnapshot, options);
+      } catch (inventoryError) {
+        console.warn(`[${Constants.MODULE_ID}] failed to restore consumed gem after socket error:`, inventoryError);
+      }
+    }
+  }
+
+  static async #restoreHostState(hostItem, hostState, options = {}) {
+    let currentHostItem = SocketService.#resolveHostItem(hostItem);
+    if (!currentHostItem || !hostState) {
+      return currentHostItem ?? null;
+    }
+
+    currentHostItem = await HostItemUpdateService.update(currentHostItem, {
+      "system.activities": foundry.utils.deepClone(hostState.activities ?? {}),
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]:
+        foundry.utils.deepClone(hostState.socketActivities ?? {}),
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]:
+        foundry.utils.deepClone(hostState.sockets ?? [])
+    }, options);
+
+    const effectIds = (currentHostItem?.effects?.contents ?? [])
+      .map((effect) => effect?.id)
+      .filter((id) => typeof id === "string" && id.length);
+    if (effectIds.length) {
+      await currentHostItem.deleteEmbeddedDocuments("ActiveEffect", effectIds, options);
+    }
+
+    if (Array.isArray(hostState.effects) && hostState.effects.length) {
+      await currentHostItem.createEmbeddedDocuments(
+        "ActiveEffect",
+        hostState.effects.map((effect) => foundry.utils.deepClone(effect)),
+        options
+      );
+    }
+
+    return SocketService.#resolveHostItem(currentHostItem);
   }
 
   static #hostOperationKey(hostItem) {

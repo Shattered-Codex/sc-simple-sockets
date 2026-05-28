@@ -32,7 +32,10 @@ export class GemCriteria {
     if (Object.prototype.hasOwnProperty.call(changes, "type")) {
       return true;
     }
-    return GemCriteria.#SUBTYPE_PATHS.some((path) => foundry?.utils?.hasProperty?.(changes, path));
+    return GemCriteria.#SUBTYPE_PATHS.some((path) => (
+      foundry?.utils?.hasProperty?.(changes, path)
+      || Object.prototype.hasOwnProperty.call(changes, path)
+    ));
   }
 
   static resolveGemSubtype(item) {

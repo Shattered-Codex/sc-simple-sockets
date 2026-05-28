@@ -10,19 +10,8 @@ export class ItemSheetSync {
       return;
     }
 
-    ItemSheetSync.#updateHandler = (item, changes, options = {}) => {
-      const skip = options?.[Constants.MODULE_ID]?.[Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC] === true;
-      DebugTrace.log("item-sheet-sync.updateItem", {
-        item: DebugTrace.describeItem(item),
-        changes: DebugTrace.describeChanges(changes),
-        options: DebugTrace.describeOptions(options),
-        skip
-      });
-
+    ItemSheetSync.#updateHandler = (item, changes) => {
       if (!ItemSheetSync.hasSocketUpdate(changes)) {
-        return;
-      }
-      if (skip) {
         return;
       }
       ItemSheetSync.refreshOpenSheets(item);
@@ -122,15 +111,80 @@ export class ItemSheetSync {
     const apps = ItemSheetSync.#collectOpenSheets(current);
     DebugTrace.log("item-sheet-sync.refreshOpenSheets", {
       item: DebugTrace.describeItem(current),
-      apps: apps.map((app) => DebugTrace.describeApp(app))
+      apps: Array.from(apps, (app) => DebugTrace.describeApp(app))
     });
 
     for (const app of apps) {
       ItemSheetSync.syncSheetDocument(app, current);
-      DebugTrace.render(app, false, "item-sheet-sync.refreshOpenSheets", {
-        item: DebugTrace.describeItem(current)
-      });
+      ItemSheetSync.#renderSheet(app);
     }
+  }
+
+  static refreshSheet(sheet, item, { force = true, reason = "item-sheet-sync.refreshSheet" } = {}) {
+    const current = ItemSheetSync.syncSheetDocument(sheet, item);
+    if (!sheet || !current) {
+      return current ?? null;
+    }
+
+    DebugTrace.render(sheet, force, reason, {
+      item: DebugTrace.describeItem(current)
+    });
+
+    return current;
+  }
+
+  static #renderSheet(app) {
+    if (!app?.rendered || typeof app.render !== "function") {
+      return;
+    }
+
+    const windowElement = ItemSheetSync.#resolveWindowElement(app);
+    const previousZIndex = windowElement?.style?.zIndex ?? "";
+    const hadFocus = windowElement?.contains?.(document.activeElement) === true;
+
+    try {
+      app.render(false);
+    } catch {
+      app.render(true);
+    }
+
+    const restoreWindowState = () => {
+      const nextWindowElement = ItemSheetSync.#resolveWindowElement(app);
+      if (!(nextWindowElement instanceof HTMLElement)) {
+        return;
+      }
+
+      if (previousZIndex) {
+        nextWindowElement.style.zIndex = previousZIndex;
+      }
+
+      if (hadFocus && typeof app.bringToTop === "function") {
+        app.bringToTop();
+      }
+    };
+
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(restoreWindowState);
+      return;
+    }
+
+    setTimeout(restoreWindowState, 0);
+  }
+
+  static #resolveWindowElement(app) {
+    const element = app?.element?.jquery ? app.element[0] : app?.element;
+    if (element instanceof HTMLElement) {
+      return element.closest(".window-app") ?? element;
+    }
+
+    const appId = app?.appId ?? app?.id;
+    if (appId == null) {
+      return null;
+    }
+
+    return document.querySelector(
+      `.window-app[data-appid="${appId}"], .window-app[data-app-id="${appId}"]`
+    );
   }
 
   static #collectOpenSheets(item) {

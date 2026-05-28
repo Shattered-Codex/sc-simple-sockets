@@ -70,16 +70,16 @@ export class SocketAPI {
   static async removeGem(itemOrUuid, slotIndex, options = {}) {
     const item = await SocketAPI.#resolveItem(itemOrUuid);
     if (!item) {
-      return false;
+      return SocketAPI.#buildResult({ success: false, changed: false, reason: "item-not-found" });
     }
 
     const idx = Number(slotIndex);
     if (!Number.isInteger(idx) || idx < 0) {
-      return false;
+      return SocketAPI.#buildResult({ success: false, changed: false, reason: "invalid-slot-index" });
     }
 
-    await SocketService.removeGem(item, idx, options);
-    return true;
+    const result = await SocketService.removeGem(item, idx, options);
+    return SocketAPI.#buildResult(result);
   }
 
   static #sanitizeSlot(slot, { includeSnapshots = false } = {}) {
@@ -121,5 +121,14 @@ export class SocketAPI {
     }
 
     return null;
+  }
+
+  static #buildResult(result = {}) {
+    return {
+      success: result?.success === true,
+      changed: result?.changed === true,
+      reason: result?.reason ?? "unknown",
+      data: result?.data ?? {}
+    };
   }
 }

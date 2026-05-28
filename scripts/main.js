@@ -77,7 +77,6 @@ Hooks.once("setup", () => {
 
 Hooks.once("ready", async () => {
   await DataMigration.run();
-  await lifecycle.syncGemSubtypeFlags();
   GemDamageService.activate();
   const mode = ModuleSettings.getGemRollLayoutMode();
   DamageRollGemLayout.activate({ mode });

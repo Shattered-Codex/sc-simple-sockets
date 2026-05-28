@@ -37,37 +37,6 @@ export class GemLifecycleService {
     await this.effectStore.restore(item);
   }
 
-  async syncGemSubtypeFlags() {
-    if (!game.user?.isGM) {
-      return;
-    }
-
-    const items = [
-      ...(game.items ?? []),
-      ...Array.from(game.actors ?? []).flatMap((actor) => Array.from(actor?.items ?? []))
-    ];
-
-    for (const item of items) {
-      if (item?.documentName !== "Item") {
-        continue;
-      }
-
-      const nextSubtype = GemCriteria.resolveGemSubtypeFromType(item);
-      const currentSubtype = item.getFlag(Constants.MODULE_ID, Constants.FLAG_GEM_SUBTYPE);
-
-      if (nextSubtype) {
-        if (currentSubtype !== nextSubtype) {
-          await item.setFlag(Constants.MODULE_ID, Constants.FLAG_GEM_SUBTYPE, nextSubtype);
-        }
-        continue;
-      }
-
-      if (typeof currentSubtype !== "undefined") {
-        await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_SUBTYPE);
-      }
-    }
-  }
-
   handlePreUpdate(item, changes, options = {}) {
     if (!GemCriteria.hasTypeUpdate(changes)) {
       return;

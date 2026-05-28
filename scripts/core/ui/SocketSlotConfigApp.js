@@ -13,12 +13,6 @@ if (!BaseV2 || typeof HandlebarsMixin !== "function") {
 
 const BaseApplication = HandlebarsMixin(BaseV2);
 const TEMPLATE_PATH = `modules/${Constants.MODULE_ID}/templates/socket-slot-config.hbs`;
-const LOCAL_UI_UPDATE_OPTIONS = {
-  [Constants.MODULE_ID]: {
-    [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
-  }
-};
-
 function handleFormSubmit(event, form, formData) {
   return this._processSubmitData(event, form, formData);
 }
@@ -112,8 +106,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     const updated = await SocketSlotConfigService.updateConfig(
       this.#hostItem,
       this.#slotIndex,
-      payload,
-      LOCAL_UI_UPDATE_OPTIONS
+      payload
     );
     if (!updated) {
       ui.notifications?.warn?.(
@@ -130,11 +123,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       slotIndex: this.#slotIndex,
       parentApp: DebugTrace.describeApp(this.#parentApp)
     });
-    DebugTrace.render(this.#parentApp, false, "socket-slot-config.save.parentRefresh", {
-      hostItem: DebugTrace.describeItem(this.#hostItem),
-      slotIndex: this.#slotIndex
-    });
-    DebugTrace.bringToTop(this.#parentApp, "socket-slot-config.save.parentBringToTop", {
+    DebugTrace.render(this.#parentApp, true, "socket-slot-config.save.parentRefresh", {
       hostItem: DebugTrace.describeItem(this.#hostItem),
       slotIndex: this.#slotIndex
     });

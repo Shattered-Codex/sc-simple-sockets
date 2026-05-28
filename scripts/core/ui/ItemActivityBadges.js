@@ -214,8 +214,8 @@ export class ItemActivityBadges {
       const socketInfo = Array.isArray(sockets) ? sockets[sourceGem.slot] : sockets?.[slotKey];
       map.set(activity.id, {
         slot: slotKey,
-        gemImg: socketInfo?.img ?? socketInfo?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
-        gemName: socketInfo?.gem?.name ?? socketInfo?.name ?? item.name,
+        gemImg: socketInfo?.gem?.img ?? socketInfo?._gemData?.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
+        gemName: socketInfo?.gem?.name ?? socketInfo?._gemData?.name ?? socketInfo?.name ?? item.name,
         activityName: activity.name ?? null,
         sourceId: sourceGem.sourceId ?? null
       });
@@ -241,8 +241,8 @@ export class ItemActivityBadges {
 
       map.set(effect.id, {
         slot: slotKey,
-        gemImg: socketGem.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
-        gemName: socketGem.name ?? socketInfo?.name ?? item.name,
+        gemImg: socketGem.img ?? socketInfo?._gemData?.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
+        gemName: socketGem.name ?? socketInfo?._gemData?.name ?? socketInfo?.name ?? item.name,
         sourceId: sourceGem.sourceId ?? null
       });
     }

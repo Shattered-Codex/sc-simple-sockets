@@ -13,12 +13,6 @@ import { Compatibility } from "./support/Compatibility.js";
 import { ItemSheetSync } from "./support/ItemSheetSync.js";
 import { DebugTrace } from "./support/DebugTrace.js";
 
-const LOCAL_UI_UPDATE_OPTIONS = {
-  [Constants.MODULE_ID]: {
-    [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
-  }
-};
-
 function resolveActionSheet(context) {
   if (context?.render && context?.item) {
     return context;
@@ -29,19 +23,6 @@ function resolveActionSheet(context) {
   }
 
   return null;
-}
-
-function keepSheetInFront(sheet) {
-  const bringToTop = (phase) => DebugTrace.bringToTop(sheet, "item-sheet.keepSheetInFront", { phase });
-
-  bringToTop("immediate");
-  if (typeof requestAnimationFrame === "function") {
-    requestAnimationFrame(() => bringToTop("raf"));
-  }
-  setTimeout(() => bringToTop("timeout-32"), 32);
-  setTimeout(() => bringToTop("timeout-96"), 96);
-  setTimeout(() => bringToTop("timeout-256"), 256);
-  setTimeout(() => bringToTop("timeout-512"), 512);
 }
 
 export class ItemSocketExtension extends SheetExtension {
@@ -230,9 +211,8 @@ export class ItemSocketExtension extends SheetExtension {
           sheet: DebugTrace.describeApp(sheet),
           item: DebugTrace.describeItem(item)
         });
-        await SocketService.addSlot(item, LOCAL_UI_UPDATE_OPTIONS);
+        await SocketService.addSlot(item);
         await extension.#refreshSocketUi(sheet);
-        keepSheetInFront(sheet);
       },
 
       async removeSocketSlot(event, target) {
@@ -258,10 +238,8 @@ export class ItemSocketExtension extends SheetExtension {
           item: DebugTrace.describeItem(item),
           slotIndex: idx
         });
-        await SocketService.removeGem(item, idx, LOCAL_UI_UPDATE_OPTIONS);
-        await SocketService.removeSlot(item, idx, LOCAL_UI_UPDATE_OPTIONS);
+        await SocketService.removeSlotWithContents(item, idx);
         await extension.#refreshSocketUi(sheet);
-        keepSheetInFront(sheet);
       },
 
       async removeGemFromSlot(event, target) {
@@ -290,9 +268,8 @@ export class ItemSocketExtension extends SheetExtension {
           item: DebugTrace.describeItem(item),
           slotIndex: idx
         });
-        await SocketService.removeGem(item, idx, LOCAL_UI_UPDATE_OPTIONS);
+        await SocketService.removeGem(item, idx);
         await extension.#refreshSocketUi(sheet);
-        keepSheetInFront(sheet);
       },
 
       async openGemFromSlot(event, target) {
@@ -344,9 +321,8 @@ export class ItemSocketExtension extends SheetExtension {
           item: DebugTrace.describeItem(item),
           slotIndex: idx
         });
-        await SocketSlotConfigService.toggleHidden(item, idx, LOCAL_UI_UPDATE_OPTIONS);
+        await SocketSlotConfigService.toggleHidden(item, idx);
         await extension.#refreshSocketUi(sheet);
-        keepSheetInFront(sheet);
       }
     });
   }
@@ -371,9 +347,8 @@ export class ItemSocketExtension extends SheetExtension {
           item: DebugTrace.describeItem(item),
           slotIndex: index
         });
-        await SocketService.addGem(item, index, data, LOCAL_UI_UPDATE_OPTIONS);
+        await SocketService.addGem(item, index, data);
         await this.#refreshSocketUi(sheet);
-        keepSheetInFront(sheet);
       }
     );
   }
@@ -387,7 +362,7 @@ export class ItemSocketExtension extends SheetExtension {
     const root = sheet.element;
     const current = root?.querySelector?.(`[data-application-part="${ItemSocketExtension.PART_ID}"]`);
     if (!(current instanceof HTMLElement)) {
-      DebugTrace.render(sheet, false, "item-sheet.refreshSocketUi.fallback", {
+      DebugTrace.render(sheet, true, "item-sheet.refreshSocketUi.fallback", {
         sheet: DebugTrace.describeApp(sheet),
         item: DebugTrace.describeItem(item)
       });
@@ -408,6 +383,14 @@ export class ItemSocketExtension extends SheetExtension {
 
     this.#bindDnD(sheet);
     SocketTooltipUI.refresh(sheet, sheet.element);
+
+    const keepInFront = () => {
+      if (sheet?.rendered) DebugTrace.bringToTop(sheet, "item-sheet.refreshSocketUi.done");
+    };
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(keepInFront);
+    }
+    setTimeout(keepInFront, 0);
   }
 
   #isTabActive(sheet) {

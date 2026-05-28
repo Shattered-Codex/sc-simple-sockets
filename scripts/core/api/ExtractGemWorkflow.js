@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SelectionController } from "./SelectionController.js";
 import { SocketService } from "../services/SocketService.js";
 
@@ -23,6 +24,7 @@ export class ExtractGemWorkflow {
   }
 
   async run() {
+    const hasModulePermission = ModuleSettings.canAddOrRemoveSocket(game.user);
     while (true) {
       const selection = await SelectionController.selectSocketSlot({
         notifications: this.options.notifications,
@@ -71,10 +73,19 @@ export class ExtractGemWorkflow {
       }
 
       try {
-        await SocketService.removeGem(item, slotIndex, {
+        const result = await SocketService.removeGem(item, slotIndex, {
+          bypassPermission: !hasModulePermission,
           mode: SocketService.REMOVE_GEM_MODE_KEEP,
           notify: false
         });
+        if (!result?.success) {
+          this.#notify(
+            "warn",
+            "SCSockets.Macro.ExtractGem.Error",
+            "Failed to extract gem. See console for details."
+          );
+          return { success: false, reason: result?.reason ?? "error", result };
+        }
         this.#notify(
           "info",
           "SCSockets.Macro.ExtractGem.Success",
