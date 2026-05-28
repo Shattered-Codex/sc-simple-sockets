@@ -30,7 +30,8 @@ export function normalizeSlotConfig(config = {}) {
     condition: normalizeText(config?.condition),
     description: normalizeText(config?.description),
     color: normalizeSlotColor(config?.color),
-    hidden: normalizeBoolean(config?.hidden)
+    hidden: normalizeBoolean(config?.hidden),
+    deleteGemOnRemoval: normalizeBoolean(config?.deleteGemOnRemoval)
   };
 }
 

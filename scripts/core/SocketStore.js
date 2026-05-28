@@ -16,17 +16,17 @@ export class SocketStore {
     }, options);
   }
 
-  static async addSlot(item, defaultSlot) {
+  static async addSlot(item, defaultSlot, options = {}) {
     const slots = this.getSlots(item);
     slots.push(defaultSlot);
-    return this.setSlots(item, slots);
+    return this.setSlots(item, slots, options);
   }
 
-  static async removeSlot(item, idx) {
+  static async removeSlot(item, idx, options = {}) {
     const slots = this.getSlots(item);
     if (idx >= 0 && idx < slots.length) {
       slots.splice(idx, 1);
-      return this.setSlots(item, slots);
+      return this.setSlots(item, slots, options);
     }
   }
 

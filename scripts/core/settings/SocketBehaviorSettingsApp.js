@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "./ModuleSettings.js";
+import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
 
 const api = foundry?.applications?.api ?? {};
 const BaseV2 = api.FormApplicationV2 ?? api.ApplicationV2;
@@ -87,6 +88,17 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
       event.preventDefault();
       void this.close();
     });
+
+    root.addEventListener("change", (event) => {
+      const field = event.target;
+      if (!(field instanceof HTMLSelectElement)) return;
+      if (field.dataset.scSocketsDynamicDescription !== "true") return;
+      this.#updateSelectDescription(field);
+    });
+
+    root
+      .querySelectorAll('select[data-sc-sockets-dynamic-description="true"]')
+      .forEach((field) => this.#updateSelectDescription(field));
   }
 
   #buildContext() {
@@ -108,6 +120,13 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
         selected: ModuleSettings.getSocketTabLayout() === ModuleSettings.SOCKET_TAB_LAYOUT_GRID
       }
     ];
+
+    const gemRollLayoutMode = ModuleSettings.getGemRollLayoutMode();
+    const gemRollLayoutChoices = ModuleSettings.getGemRollLayoutChoices().map((choice) => ({
+      ...choice,
+      selected: choice.value === gemRollLayoutMode
+    }));
+    const gemRollLayoutChoice = DamageRollLayoutAdapterRegistry.getSettingsChoice(gemRollLayoutMode);
 
     return {
       description: Constants.localize(
@@ -146,10 +165,12 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
               ),
               hint: Constants.localize(
                 "SCSockets.Settings.GemRollLayout.Hint",
-                "Enable the grouped-by-gem layout in the damage roll configuration dialog."
+                "Choose how gem damage is organized in the damage roll configuration dialog."
               ),
-              isCheckbox: true,
-              checked: ModuleSettings.shouldUseGemRollLayout()
+              isSelect: true,
+              isDynamicDescription: true,
+              selectedDescription: gemRollLayoutChoice.description,
+              choices: gemRollLayoutChoices
             },
             {
               key: ModuleSettings.SETTING_SOCKET_TAB_LAYOUT,
@@ -243,9 +264,7 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
     const deleteOnRemoval = deleteOnRemovalField instanceof HTMLInputElement
       ? deleteOnRemovalField.checked
       : false;
-    const gemRollLayout = gemRollLayoutField instanceof HTMLInputElement
-      ? gemRollLayoutField.checked
-      : true;
+    const gemRollLayout = DamageRollLayoutAdapterRegistry.normalizeMode(gemRollLayoutField?.value);
     const enableSocketTabForAllItems = socketTabGlobalField instanceof HTMLInputElement
       ? socketTabGlobalField.checked
       : true;
@@ -272,5 +291,24 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
       ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS,
       enableSocketTabForAllItems
     );
+  }
+
+  #updateSelectDescription(field) {
+    if (!(field instanceof HTMLSelectElement)) {
+      return;
+    }
+
+    const row = field.closest(".sc-sockets-settings-row");
+    if (!(row instanceof HTMLElement)) {
+      return;
+    }
+
+    const target = row.querySelector("[data-sc-sockets-select-description]");
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const selectedOption = field.selectedOptions?.[0] ?? null;
+    target.textContent = selectedOption?.dataset?.description ?? "";
   }
 }

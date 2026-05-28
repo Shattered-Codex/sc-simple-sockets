@@ -2,6 +2,10 @@
   position: relative;
 }
 
+.sc-sockets-tidy:not([data-sc-sockets-layout="cauldron"]) {
+  --sc-sockets-slot-icon-size: 2.7rem;
+}
+
 .sc-sockets-view {
   --sc-sockets-slot-icon-size: 2.5rem;
   --sc-sockets-slot-radius: 8px;
@@ -116,7 +120,7 @@
 }
 
 .socket-slot-config-app .socket-slot-config-preview-wrap .sc-sockets-slot-visual {
-  --sc-sockets-slot-icon-size: 4.25rem;
+  --sc-sockets-slot-icon-size: 7.25rem;
   --sc-sockets-slot-radius: 16px;
 }
 
@@ -159,6 +163,24 @@
   margin-right: 0.5rem;
 }
 
+.tidy5e-sheet .sc-sockets-tidy .tidy-table-row-use-button.socket-icon-wrapper,
+.tidy5e-sheet.quadrone .sc-sockets-tidy .tidy-table-row-use-button.socket-icon-wrapper {
+  margin: 0;
+  outline: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.tidy5e-sheet .sc-sockets-tidy .socket-icon-wrapper,
+.tidy5e-sheet.quadrone .sc-sockets-tidy .socket-icon-wrapper {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+
 .sc-sockets-tidy .socket-icon-wrapper .item-image {
   width: 100%;
   height: 100%;
@@ -184,6 +206,12 @@
   object-fit: cover;
 }
 
+.tidy5e-sheet .sc-sockets-tidy:not([data-sc-sockets-layout="cauldron"]) .socket-icon-wrapper .item-image.sc-sockets-slot-gem,
+.tidy5e-sheet.quadrone .sc-sockets-tidy:not([data-sc-sockets-layout="cauldron"]) .socket-icon-wrapper .item-image.sc-sockets-slot-gem {
+  width: calc(var(--sc-sockets-slot-icon-size) * 0.75);
+  height: calc(var(--sc-sockets-slot-icon-size) * 0.75);
+}
+
 .sc-sockets-tidy .socket-icon-wrapper .sc-sockets-slot-link {
   width: 100%;
   height: 100%;
@@ -200,6 +228,18 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.sc-sockets-tidy .cell-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sc-sockets-tidy .sc-sockets-slot-summary {
+  color: var(--color-text-muted, rgba(0, 0, 0, 0.6));
+  font-size: 0.85em;
+  line-height: 1.2;
 }
 
 .sc-sockets-tidy .tidy-table-row-container.socket .tidy-table-row {
@@ -220,11 +260,44 @@
 }
 
 /* Keep gem details row layout consistent even with Quadrone theme flex overrides */
+.tidy5e-sheet .sc-sockets-gem-damage-row.form-group,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row.form-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
 .tidy5e-sheet .sc-sockets-gem-damage-row .form-group > * {
   flex: 0 1 auto;
 }
 .tidy5e-sheet .sc-sockets-gem-damage-row .form-group.sc-sockets-gem-damage-remove > * {
   flex: 0 0 auto;
+}
+
+.tidy5e-sheet .sc-sockets-gem-damage-row-chips,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-chips {
+  grid-column: 1 / -1;
+  align-items: flex-start;
+  gap: 0.1rem;
+  margin-bottom: 0.15rem;
+}
+
+.tidy5e-sheet .sc-sockets-gem-damage-row-chips .tag.sc-sockets-gem-damage-type-chip,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-chips .tag.sc-sockets-gem-damage-type-chip {
+  min-height: 1.1rem;
+  padding: 0.04rem 0.22rem;
+  gap: 0.16rem;
+  font-size: 0.66rem;
+  line-height: 1;
+  border-radius: 2px;
+}
+
+.tidy5e-sheet .sc-sockets-gem-damage-row-top,
+.tidy5e-sheet .sc-sockets-gem-damage-row-bottom,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-top,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-bottom {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .sc-sockets-expandable {

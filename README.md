@@ -553,6 +553,8 @@ You can call:
 
 - `getItemSlots(itemOrUuid)`
 - `getItemGems(itemOrUuid)`
+- `removeGem(itemOrUuid, slotIndex, options)`
+- `removeGemKeepingItem(itemOrUuid, slotIndex)`
 
 In simple terms:
 
@@ -568,12 +570,22 @@ const macroApi = game.modules.get("sc-simple-sockets")?.api?.macro;
 Available helpers:
 
 - `addSocketInteractive()`
+- `extractGemInteractive()`
 - `selectItemForSocket()`
+- `removeGemWithoutDeleting(itemOrUuid, slotIndex)`
 
 Example:
 
 ```js
 await game.modules.get("sc-simple-sockets")?.api?.macro?.addSocketInteractive({
+  notifications: true
+});
+```
+
+To extract a gem interactively, activate the macro and click a filled socket. This always keeps the gem instead of deleting it.
+
+```js
+await game.modules.get("sc-simple-sockets")?.api?.macro?.extractGemInteractive({
   notifications: true
 });
 ```
@@ -594,6 +606,23 @@ await game.modules.get("sc-simple-sockets")?.api?.macro?.addSocketInteractive({
 ```
 
 When `promptSlotConfig` is enabled, the dialog lets you edit `name`, `description`, `condition`, and `color`. If a field is left blank, the configured default value is used.
+
+### Example macro: remove a gem without deleting it
+
+This helper always returns the gem to the actor inventory, ignoring both the global setting and the slot override.
+
+```js
+const macroApi = game.modules.get("sc-simple-sockets")?.api?.macro;
+const item = canvas.tokens?.controlled?.[0]?.actor?.items?.getName("Longsword");
+
+if (!macroApi || !item) {
+  ui.notifications?.warn("Select a token and make sure the item exists.");
+} else {
+  await macroApi.removeGemWithoutDeleting(item.uuid, 0);
+}
+```
+
+This removes the gem from slot `0` of the selected item's sockets and keeps the gem instead of deleting it.
 
 ### Available hooks
 

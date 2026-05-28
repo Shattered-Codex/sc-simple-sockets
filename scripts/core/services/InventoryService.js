@@ -1,4 +1,5 @@
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
+import { DebugTrace } from "../support/DebugTrace.js";
 
 export class InventoryService {
   static #ASCENDANT_ITEMS_MODULE_ID = "sc-ascendant-items";
@@ -11,19 +12,28 @@ export class InventoryService {
     "ownership"
   ]);
 
-  static async consumeOne(gemItem) {
+  static async consumeOne(gemItem, options = {}) {
     if (!gemItem?.actor) {
       return;
     }
+    DebugTrace.log("inventory.consumeOne.start", {
+      gemItem: DebugTrace.describeItem(gemItem),
+      actor: DebugTrace.describeActor(gemItem.actor),
+      options: DebugTrace.describeOptions(options)
+    });
     const qty = Number(gemItem.system?.quantity ?? 1);
     if (qty > 1) {
-      await gemItem.update({ "system.quantity": qty - 1 });
+      await gemItem.update({ "system.quantity": qty - 1 }, options);
     } else {
-      await gemItem.actor.deleteEmbeddedDocuments("Item", [gemItem.id]);
+      await gemItem.actor.deleteEmbeddedDocuments("Item", [gemItem.id], options);
     }
+    DebugTrace.log("inventory.consumeOne.done", {
+      gemItem: DebugTrace.describeItem(gemItem),
+      actor: DebugTrace.describeActor(gemItem.actor)
+    });
   }
 
-  static async returnOne(hostItem, snap) {
+  static async returnOne(hostItem, snap, options = {}) {
     if (!snap) {
       return;
     }
@@ -32,6 +42,12 @@ export class InventoryService {
     if (!actor) {
       return;
     }
+    DebugTrace.log("inventory.returnOne.start", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      actor: DebugTrace.describeActor(actor),
+      options: DebugTrace.describeOptions(options),
+      gemName: payload?.name ?? null
+    });
     foundry.utils.setProperty(payload, "system.quantity", 1);
     InventoryService.#sanitizePayload(payload);
     const payloadStackData = InventoryService.#prepareStackData(payload);
@@ -44,11 +60,20 @@ export class InventoryService {
     });
     if (same) {
       const qty = Number(same.system?.quantity ?? 1);
-      await same.update({ "system.quantity": qty + 1 });
+      await same.update({ "system.quantity": qty + 1 }, options);
+      DebugTrace.log("inventory.returnOne.stack", {
+        actor: DebugTrace.describeActor(actor),
+        item: DebugTrace.describeItem(same)
+      });
       return same;
     }
 
-    const created = await actor.createEmbeddedDocuments("Item", [payload]);
+    const created = await actor.createEmbeddedDocuments("Item", [payload], options);
+    DebugTrace.log("inventory.returnOne.create", {
+      actor: DebugTrace.describeActor(actor),
+      item: DebugTrace.describeItem(created?.[0] ?? null),
+      gemName: payload?.name ?? null
+    });
     return created?.[0] ?? null;
   }
 

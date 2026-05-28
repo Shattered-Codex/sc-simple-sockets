@@ -28,13 +28,13 @@
         {{#if sockets.length}}
           {{#if useSocketGridLayout}}
             {{#each sockets as |slot|}}
-            <div class="tidy-table-row-container socket sc-sockets-slot-card sc-sockets-slot-card--icon-only" data-index="{{slot.index}}"
+            <div class="tidy-table-row-container socket sc-sockets-slot-card sc-sockets-slot-card--icon-only" data-index="{{slot.index}}" data-item-uuid="{{slot.hostItemUuid}}"
               data-dropzone="socket-slot" aria-hidden="false">
               <div class="tidy-table-row tidy-table-row-v2 sc-sockets-slot-shell" data-tidy-table-row=""
                 data-tidy-sheet-part="table-row">
                 <div class="tidy-table-cell primary socket-name sc-sockets-slot-main" data-tidy-sheet-part="table-cell">
-                  <div class="sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
-                    <img class="item-image sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+                  <div class="sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.slotAriaLabel}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
+                    <img class="item-image sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.slotAriaLabel}}">
                     {{#if slot.hasGem}}
                     <img class="item-image sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
                     {{/if}}
@@ -65,9 +65,9 @@
                     <a class="tidy-table-button sc-sockets-slot-action sc-sockets-slot-action--remove-gem"
                        data-action="removeGemFromSlot"
                        data-index="{{slot.index}}"
-                       data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
-                       aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}">
-                      <i class="fas fa-hammer-crash"></i>
+                       data-tooltip="{{slot.removeGemTooltip}}"
+                       aria-label="{{slot.removeGemTooltip}}">
+                      <i class="fas {{slot.removeGemIcon}}"></i>
                     </a>
                     {{/if}}
                   {{/if}}
@@ -86,11 +86,11 @@
             {{/each}}
           {{else}}
             {{#each sockets as |slot|}}
-            <div class="tidy-table-row-container socket" data-index="{{slot.index}}" data-dropzone="socket-slot" aria-hidden="false">
+            <div class="tidy-table-row-container socket" data-index="{{slot.index}}" data-item-uuid="{{slot.hostItemUuid}}" data-dropzone="socket-slot" aria-hidden="false">
               <div class="tidy-table-row tidy-table-row-v2" data-tidy-table-row="" data-tidy-sheet-part="table-row">
                 <div class="tidy-table-cell primary sc-sockets-slot-main" data-tidy-sheet-part="table-cell">
-                  <div class="tidy-table-row-use-button socket-icon-wrapper sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.name}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
-                    <img class="item-image sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.name}}">
+                  <div class="tidy-table-row-use-button socket-icon-wrapper sc-sockets-slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-label="{{slot.slotAriaLabel}}" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
+                    <img class="item-image sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="{{slot.slotAriaLabel}}">
                     {{#if slot.hasGem}}
                     <img class="item-image sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="{{slot.gemName}}">
                     {{/if}}
@@ -106,7 +106,10 @@
                   </div>
                   <div class="item-name">
                     <span class="cell-text">
-                      <span class="cell-name">{{slot.name}}</span>
+                      <span class="cell-name">{{slot.slotName}}</span>
+                      {{#if slot.slotSummary}}
+                      <span class="sc-sockets-slot-summary">{{slot.slotSummary}}</span>
+                      {{/if}}
                     </span>
                   </div>
                 </div>
@@ -134,9 +137,9 @@
                     <a class="tidy-table-button"
                        data-action="removeGemFromSlot"
                        data-index="{{slot.index}}"
-                       data-tooltip="{{ localize 'SCSockets.Tooltips.RemoveGem' }}"
-                       aria-label="{{ localize 'SCSockets.ActionRemoveGem' }}">
-                      <i class="fas fa-hammer-crash"></i>
+                       data-tooltip="{{slot.removeGemTooltip}}"
+                       aria-label="{{slot.removeGemTooltip}}">
+                      <i class="fas {{slot.removeGemIcon}}"></i>
                     </a>
                   {{/if}}
                   {{#if ../canManageSockets}}

@@ -42,11 +42,19 @@ export class GemDetailsUI {
     }
 
     container.addEventListener("change", async (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement)) {
+      const target = GemDetailsUI.#resolveFieldTarget(event.target);
+      if (!GemDetailsUI.#isSupportedInputTarget(target)) {
         return;
       }
-      const name = target.name ?? "";
+      const isNormalizationReplay = target instanceof HTMLElement
+        && target.dataset.scSocketsNormalizePending === "true";
+      if (isNormalizationReplay) {
+        delete target.dataset.scSocketsNormalizePending;
+      } else {
+        GemDetailsUI.#normalizeDamageTypeSelections(container, target);
+      }
+
+      const name = target.getAttribute?.("name") ?? target.name ?? "";
       if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_CRIT_THRESHOLD}`)) {
         event.preventDefault();
         await GemDetailsUI.#persistCritThreshold(sheet?.item, target.value);
@@ -96,12 +104,17 @@ export class GemDetailsUI {
             flag: Constants.FLAG_GEM_DAMAGE
           });
           break;
+        case "removeGemDamageType":
+          event.preventDefault();
+          await GemDetailsUI.#handleRemoveDamageType(sheet, target);
+          break;
         default:
           break;
       }
     });
 
     container.dataset.scSocketsGemDetailsBound = "true";
+    GemDetailsUI.#normalizeDamageTypeSelections(container);
   }
 
   static async #handleAddDamage(sheet, container, { sectionSelector, flag }) {
@@ -133,6 +146,30 @@ export class GemDetailsUI {
   static async #handleClearDamage(sheet, { flag }) {
     if (!sheet?.item) return;
     await GemDetailsUI.#writeEntries(sheet.item, [], flag);
+  }
+
+  static async #handleRemoveDamageType(sheet, target) {
+    if (!sheet?.item || !(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const typeValue = String(target.dataset.typeValue ?? "").trim();
+    if (!typeValue || typeValue === Constants.GEM_DAMAGE_INHERIT_TYPE) {
+      return;
+    }
+
+    const row = target.closest?.(".sc-sockets-gem-damage-row");
+    const typesField = row?.querySelector?.('[name$=".types"]');
+    if (!(typesField instanceof HTMLElement)) {
+      return;
+    }
+
+    const selectedValues = GemDetailsUI.#readSelectedValues(typesField);
+    const nextValues = selectedValues.filter((value) => value !== typeValue);
+    GemDetailsUI.#applySelectedValues(typesField, nextValues);
+    GemDetailsUI.#writeSelectionSnapshot(typesField, nextValues);
+
+    typesField.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
   static #bindFormSubmit(root, sheet) {
@@ -169,12 +206,13 @@ export class GemDetailsUI {
     const number = Number(container?.dataset?.defaultNumber ?? 1);
     const bonus = Number(container?.dataset?.defaultBonus ?? 0);
     const die = String(container?.dataset?.defaultDie ?? "d6").toLowerCase();
-    const type = String(container?.dataset?.defaultType ?? "");
     return {
       number: Number.isFinite(number) ? number : 1,
       die,
       bonus: Number.isFinite(bonus) ? bonus : 0,
-      type
+      typeMode: "inherit",
+      types: [Constants.GEM_DAMAGE_INHERIT_TYPE],
+      type: ""
     };
   }
 
@@ -194,13 +232,18 @@ export class GemDetailsUI {
       const number = Number(row.querySelector('input[name$=".number"]')?.value ?? 0);
       const die = row.querySelector('select[name$=".die"]')?.value ?? "";
       const bonus = Number(row.querySelector('input[name$=".bonus"]')?.value ?? 0);
-      const type = row.querySelector('select[name$=".type"]')?.value ?? "";
+      const types = GemDetailsUI.#normalizeDamageTypeValues(
+        GemDetailsUI.#readSelectedValues(row.querySelector('[name$=".types"]'))
+      );
+      const typeMode = types.includes(Constants.GEM_DAMAGE_INHERIT_TYPE) ? "inherit" : "fixed";
       const activity = row.querySelector('select[name$=".activity"]')?.value ?? "any";
       entries.push({
         number: Number.isFinite(number) ? number : 0,
         die,
         bonus: Number.isFinite(bonus) ? bonus : 0,
-        type,
+        typeMode,
+        types,
+        type: typeMode === "fixed" ? (types[0] ?? "") : "",
         activity
       });
     }
@@ -214,17 +257,14 @@ export class GemDetailsUI {
 
   static async #writeEntries(item, entries, flag) {
     if (!item) return;
-    const cleaned = Array.isArray(entries) ? entries.filter((entry) => entry && typeof entry === "object") : [];
-    const existing = item.getFlag(Constants.MODULE_ID, flag);
-    const sameLength = Array.isArray(existing) && existing.length === cleaned.length;
-    const sameContent = sameLength && cleaned.every((entry, idx) => {
-      const prev = existing?.[idx] ?? {};
-      return prev.number === entry.number &&
-        prev.die === entry.die &&
-        prev.bonus === entry.bonus &&
-        prev.type === entry.type &&
-        prev.activity === entry.activity;
-    });
+    const cleaned = Array.isArray(entries)
+      ? entries
+        .filter((entry) => entry && typeof entry === "object")
+        .map((entry) => GemDetailsUI.#normalizeEntry(entry))
+      : [];
+    const existing = GemDetailsBuilder.getNormalizedDamageEntries(item, { flag });
+    const sameLength = existing.length === cleaned.length;
+    const sameContent = sameLength && cleaned.every((entry, idx) => GemDetailsUI.#damageEntriesEqual(entry, existing[idx]));
     if (sameContent) return;
 
     if (!cleaned.length) {
@@ -238,6 +278,206 @@ export class GemDetailsUI {
   static #querySection(container, selector) {
     if (!container || !selector) return null;
     return container.querySelector?.(selector) ?? null;
+  }
+
+  static #resolveFieldTarget(target) {
+    if (!(target instanceof HTMLElement)) {
+      return target;
+    }
+    const path = typeof target.composedPath === "function" ? target.composedPath() : [];
+    const fromPath = path.find((entry) => (
+      entry instanceof HTMLElement
+      && (entry.tagName === "MULTI-SELECT" || entry.hasAttribute?.("name"))
+    ));
+    return fromPath ?? target.closest?.("multi-select,[name]") ?? target;
+  }
+
+  static #isSupportedInputTarget(target) {
+    return target instanceof HTMLInputElement
+      || target instanceof HTMLSelectElement
+      || target instanceof HTMLTextAreaElement
+      || (target instanceof HTMLElement && target.tagName === "MULTI-SELECT");
+  }
+
+  static #readSelectedValues(field) {
+    if (!(field instanceof HTMLElement)) {
+      return [];
+    }
+    if (field.tagName === "MULTI-SELECT") {
+      const values = GemDetailsUI.#coerceSelectedValues(field.value);
+      if (values.length) {
+        return values;
+      }
+    }
+    const options = Array.from(field.querySelectorAll?.("option") ?? []);
+    return GemDetailsUI.#coerceSelectedValues(options
+      .filter((option) => option.selected)
+      .map((option) => String(option.value ?? "").trim())
+      .filter(Boolean));
+  }
+
+  static #coerceSelectedValues(rawValues) {
+    if (Array.isArray(rawValues)) {
+      return rawValues
+        .map((value) => String(value ?? "").trim())
+        .filter(Boolean);
+    }
+    if (rawValues && typeof rawValues !== "string" && typeof rawValues[Symbol.iterator] === "function") {
+      return Array.from(rawValues)
+        .map((value) => String(value ?? "").trim())
+        .filter(Boolean);
+    }
+    if (typeof rawValues === "string") {
+      const value = rawValues.trim();
+      return value ? [value] : [];
+    }
+    return [];
+  }
+
+  static #normalizeDamageTypeValues(types) {
+    const cleaned = Array.from(new Set(
+      (Array.isArray(types) ? types : [])
+        .map((type) => String(type ?? "").trim())
+        .filter(Boolean)
+    ));
+    if (!cleaned.length || cleaned.includes(Constants.GEM_DAMAGE_INHERIT_TYPE)) {
+      return [Constants.GEM_DAMAGE_INHERIT_TYPE];
+    }
+    return cleaned.filter((type) => type !== Constants.GEM_DAMAGE_INHERIT_TYPE);
+  }
+
+  static #readSelectionSnapshot(field) {
+    if (!(field instanceof HTMLElement)) {
+      return [];
+    }
+    const raw = String(field.dataset.scSocketsSelectedValues ?? "").trim();
+    if (!raw.length) {
+      return [];
+    }
+    return raw.split("|").map((value) => value.trim()).filter(Boolean);
+  }
+
+  static #writeSelectionSnapshot(field, values) {
+    if (!(field instanceof HTMLElement)) {
+      return;
+    }
+    field.dataset.scSocketsSelectedValues = (Array.isArray(values) ? values : []).join("|");
+  }
+
+  static #resolveExclusiveDamageTypes(currentValues, previousValues, isChangedField) {
+    const inherit = Constants.GEM_DAMAGE_INHERIT_TYPE;
+    const normalizedCurrent = Array.from(new Set(
+      GemDetailsUI.#coerceSelectedValues(currentValues)
+    ));
+    const previous = Array.isArray(previousValues) ? previousValues : [];
+    const fixedTypes = normalizedCurrent.filter((value) => value !== inherit);
+
+    if (!normalizedCurrent.length) {
+      return [inherit];
+    }
+    if (!normalizedCurrent.includes(inherit)) {
+      return fixedTypes;
+    }
+    if (!fixedTypes.length) {
+      return [inherit];
+    }
+
+    if (!isChangedField) {
+      return [inherit];
+    }
+
+    if (previous.includes(inherit)) {
+      return fixedTypes.length ? fixedTypes : [inherit];
+    }
+
+    return [inherit];
+  }
+
+  static #applySelectedValues(field, values) {
+    if (!(field instanceof HTMLElement)) {
+      return;
+    }
+    const normalizedValues = GemDetailsUI.#coerceSelectedValues(values);
+    for (const option of Array.from(field.querySelectorAll?.("option") ?? [])) {
+      option.selected = normalizedValues.includes(String(option.value ?? "").trim());
+    }
+    if (field.tagName !== "MULTI-SELECT") {
+      return;
+    }
+    try {
+      field.value = normalizedValues;
+    } catch (_error) {
+      // The option state already reflects the normalized selection.
+    }
+  }
+
+  static #normalizeEntry(entry) {
+    const number = Number(entry?.number ?? 0);
+    const bonus = Number(entry?.bonus ?? 0);
+    const die = typeof entry?.die === "string" ? entry.die : "";
+    const types = GemDetailsUI.#normalizeDamageTypeValues(entry?.types);
+    const typeMode = types.includes(Constants.GEM_DAMAGE_INHERIT_TYPE) ? "inherit" : "fixed";
+    const activity = typeof entry?.activity === "string" ? entry.activity : "any";
+
+    return {
+      number: Number.isFinite(number) ? number : 0,
+      die,
+      bonus: Number.isFinite(bonus) ? bonus : 0,
+      typeMode,
+      types,
+      type: typeMode === "fixed" ? (types[0] ?? "") : "",
+      activity
+    };
+  }
+
+  static #damageEntriesEqual(left, right) {
+    if (!left || !right) return false;
+    if (left.number !== right.number || left.die !== right.die || left.bonus !== right.bonus) {
+      return false;
+    }
+    if (left.typeMode !== right.typeMode || left.activity !== right.activity) {
+      return false;
+    }
+    if ((left.types?.length ?? 0) !== (right.types?.length ?? 0)) {
+      return false;
+    }
+    return left.types.every((type, index) => type === right.types[index]);
+  }
+
+  static #normalizeDamageTypeSelections(container, changedTarget = null) {
+    const rows = container?.querySelectorAll?.(".sc-sockets-gem-damage-row") ?? [];
+    for (const row of rows) {
+      const typesField = row.querySelector('[name$=".types"]');
+      if (!(typesField instanceof HTMLElement)) {
+        continue;
+      }
+
+      const selectedValues = GemDetailsUI.#readSelectedValues(typesField);
+      const previousValues = GemDetailsUI.#readSelectionSnapshot(typesField);
+      const normalizedValues = GemDetailsUI.#resolveExclusiveDamageTypes(
+        selectedValues,
+        previousValues,
+        typesField === changedTarget
+      );
+      const needsUpdate = normalizedValues.length !== selectedValues.length
+        || normalizedValues.some((value, index) => value !== selectedValues[index]);
+
+      if (needsUpdate) {
+        GemDetailsUI.#applySelectedValues(typesField, normalizedValues);
+        if (typesField === changedTarget && typeof typesField.dispatchEvent === "function") {
+          typesField.dataset.scSocketsNormalizePending = "true";
+          queueMicrotask(() => {
+            typesField.dispatchEvent(new Event("change", { bubbles: true }));
+          });
+        }
+      }
+
+      GemDetailsUI.#writeSelectionSnapshot(typesField, normalizedValues);
+
+      if (row instanceof HTMLElement) {
+        row.dataset.damageTypeMode = normalizedValues.includes(Constants.GEM_DAMAGE_INHERIT_TYPE) ? "inherit" : "fixed";
+      }
+    }
   }
 
   static async #persistDamageFlags(container, item, keep = true) {

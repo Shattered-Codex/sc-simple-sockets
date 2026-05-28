@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
 
 /**
  * Runtime API for reading and writing module settings.
@@ -26,6 +27,7 @@ export class ModuleSettings {
   static SETTING_DOCUMENTATION_MENU = "docsMenu";
   static SETTING_HIDE_SUPPORT_CARD = "hideSupportCardUntilNextUpdate";
   static SETTING_SUPPORT_CARD_VERSION = "supportCardAcknowledgedVersion";
+  static SETTING_DEBUG_TRACE = "debugTrace";
   static SETTING_GEM_LOOT_SUBTYPES = Constants.SETTING_GEM_LOOT_SUBTYPES;
   static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
   static SETTING_CUSTOM_LOOT_SUBTYPES = Constants.SETTING_CUSTOM_LOOT_SUBTYPES;
@@ -133,7 +135,16 @@ export class ModuleSettings {
   // Layout ---------------------------------------------------------------------
 
   static shouldUseGemRollLayout() {
-    return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT) ?? true;
+    return ModuleSettings.getGemRollLayoutMode() === DamageRollLayoutAdapterRegistry.MODE_GEM;
+  }
+
+  static getGemRollLayoutMode() {
+    const value = game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT);
+    return DamageRollLayoutAdapterRegistry.normalizeMode(value);
+  }
+
+  static getGemRollLayoutChoices() {
+    return DamageRollLayoutAdapterRegistry.getSettingsChoices();
   }
 
   static getSocketTabLayout() {
@@ -149,6 +160,14 @@ export class ModuleSettings {
 
   static shouldUseSocketTabGridLayout() {
     return ModuleSettings.getSocketTabLayout() === ModuleSettings.SOCKET_TAB_LAYOUT_GRID;
+  }
+
+  static isDebugTraceEnabled() {
+    if (!ModuleSettings.#isSettingRegistered(ModuleSettings.SETTING_DEBUG_TRACE)) {
+      return false;
+    }
+
+    return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_DEBUG_TRACE) === true;
   }
 
   // Socket tab visibility ------------------------------------------------------

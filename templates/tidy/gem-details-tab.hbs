@@ -72,15 +72,33 @@
                   data-sc-sockets="gem-details"
                   data-default-number="{{details.damage.defaults.number}}"
                   data-default-die="{{details.damage.defaults.die}}"
-                  data-default-bonus="{{details.damage.defaults.bonus}}"
-                  data-default-type="{{details.damage.defaults.type}}">
+                  data-default-bonus="{{details.damage.defaults.bonus}}">
           <legend class="form-header">{{ localize "SCSockets.GemDetails.ExtraDamage.Label" }}</legend>
           <p class="hint">{{ localize "SCSockets.GemDetails.ExtraDamage.Hint" }}</p>
             <div class="sc-sockets-gem-damage" data-sc-sockets="gem-damage">
               <div class="sc-sockets-gem-damage-rows">
                 {{#each details.damage.entries as |entry i|}}
                   <div class="form-group sc-sockets-gem-damage-row" data-index="{{i}}">
-                    <div class="form-fields sc-sockets-gem-damage-row-top split-group">
+                    <div class="sc-sockets-gem-damage-row-chips">
+                      {{#each entry.damageTypeOptions as |opt|}}
+                        {{#if opt.selected}}
+                          {{#if opt.removable}}
+                            <button type="button"
+                                    class="tag sc-sockets-gem-damage-type-chip"
+                                    data-action="removeGemDamageType"
+                                    data-index="{{../i}}"
+                                    data-type-value="{{opt.value}}"
+                                    aria-label="{{ localize 'SCSockets.GemDetails.ExtraDamage.Remove' }}">
+                              <span>{{opt.label}}</span>
+                              <i class="fa-solid fa-xmark"></i>
+                            </button>
+                          {{else}}
+                            <span class="tag sc-sockets-gem-damage-type-chip is-static">{{opt.label}}</span>
+                          {{/if}}
+                        {{/if}}
+                      {{/each}}
+                    </div>
+                    <div class="form-fields sc-sockets-gem-damage-row-top sc-sockets-gem-damage-row-header split-group">
                       <div class="form-group label-top">
                         <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Number" }}</label>
                         <div class="form-fields">
@@ -111,19 +129,37 @@
                                  step="1">
                         </div>
                       </div>
-                      <div class="form-group label-top">
-                        <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Type" }}</label>
+                      <div class="form-group label-top sc-sockets-gem-damage-type-select-field">
+                        <label>
+                          {{ localize "SCSockets.GemDetails.ExtraDamage.Type" }}
+                          <i class="fa-solid fa-circle-info"
+                             data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.TypeHint' }}"></i>
+                        </label>
                         <div class="form-fields">
-                          <select name="{{../details.damage.namePrefix}}.{{i}}.type">
+                          <multi-select name="{{../details.damage.namePrefix}}.{{i}}.types">
                             {{#each entry.damageTypeOptions as |opt|}}
                               <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>
                                 {{opt.label}}
                               </option>
                             {{/each}}
-                          </select>
+                          </multi-select>
                         </div>
                       </div>
-                      <div class="form-group label-top">
+                      <div class="form-group label-top sc-sockets-gem-damage-row-remove">
+                        <label>&nbsp;</label>
+                        <div class="form-fields">
+                          <button type="button"
+                                  class="sc-sockets-gem-damage-remove"
+                                  data-action="removeGemDamage"
+                                  data-index="{{i}}"
+                                  data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.Remove' }}">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-fields sc-sockets-gem-damage-row-bottom sc-sockets-gem-damage-row-activity">
+                      <div class="form-group label-top sc-sockets-gem-damage-activity-field">
                         <label>
                           {{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Activity" }}
                           <i class="fa-solid fa-circle-info"
@@ -137,18 +173,6 @@
                               </option>
                             {{/each}}
                           </select>
-                        </div>
-                      </div>
-                      <div class="form-group label-top sc-sockets-gem-damage-remove">
-                        <label>&nbsp;</label>
-                        <div class="form-fields">
-                          <button type="button"
-                                  class="sc-sockets-gem-damage-remove"
-                                  data-action="removeGemDamage"
-                                  data-index="{{i}}"
-                                  data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.Remove' }}">
-                            <i class="fas fa-trash"></i>
-                          </button>
                         </div>
                       </div>
                     </div>

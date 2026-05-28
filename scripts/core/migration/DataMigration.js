@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
+import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 
 /**
  * Handles one-time data migrations for the module.
@@ -18,7 +19,7 @@ export class DataMigration {
    * Bump this string whenever a new migration is added.
    * Format: "<module-version>-<short-description>"
    */
-  static #CURRENT_VERSION = "1.1.17-slot-item-ref-keys";
+  static #CURRENT_VERSION = "2.0.8-gem-subtype-flags";
 
   /** Entry point — call once from the `ready` hook (GM only). */
   static async run() {
@@ -34,6 +35,7 @@ export class DataMigration {
     try {
       await DataMigration.#migrateLootActivityFields();
       await DataMigration.#migrateSocketGemSnapshots();
+      await DataMigration.#migrateGemSubtypeFlags();
     } catch (e) {
       console.error(`[${Constants.MODULE_ID}] | Migration failed, will retry on next load:`, e);
       return;
@@ -234,5 +236,63 @@ export class DataMigration {
     const actorItems = [...(game.actors ?? [])]
       .flatMap((actor) => [...(actor?.items ?? [])]);
     return [...worldItems, ...actorItems];
+  }
+
+  static async #migrateGemSubtypeFlags() {
+    const allItems = [
+      ...(game.items ?? []),
+      ...(Array.from(game.actors ?? []).flatMap((actor) => Array.from(actor?.items ?? [])))
+    ].filter((item) => item?.documentName === "Item");
+
+    const toMigrate = [];
+    for (const item of allItems) {
+      const nextSubtype = GemCriteria.resolveGemSubtypeFromType(item);
+      const currentSubtype = item.getFlag(Constants.MODULE_ID, Constants.FLAG_GEM_SUBTYPE);
+      if ((nextSubtype ?? null) === (currentSubtype ?? null)) {
+        continue;
+      }
+
+      const patch = { _id: item.id };
+      if (nextSubtype) {
+        patch[`flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_SUBTYPE}`] = nextSubtype;
+      } else {
+        patch[`flags.${Constants.MODULE_ID}.-=${Constants.FLAG_GEM_SUBTYPE}`] = null;
+      }
+      toMigrate.push({ item, patch });
+    }
+
+    if (!toMigrate.length) {
+      return;
+    }
+
+    const byActor = new Map();
+    const standalone = [];
+    for (const entry of toMigrate) {
+      if (entry.item.actor) {
+        if (!byActor.has(entry.item.actor)) {
+          byActor.set(entry.item.actor, []);
+        }
+        byActor.get(entry.item.actor).push(entry.patch);
+      } else {
+        standalone.push(entry);
+      }
+    }
+
+    for (const [actor, updates] of byActor) {
+      try {
+        await actor.updateEmbeddedDocuments("Item", updates);
+      } catch (error) {
+        console.warn(`[${Constants.MODULE_ID}] | Failed to migrate gem subtype flags on actor "${actor.name}":`, error);
+      }
+    }
+
+    for (const { item, patch } of standalone) {
+      try {
+        const { _id, ...update } = patch;
+        await item.update(update);
+      } catch (error) {
+        console.warn(`[${Constants.MODULE_ID}] | Failed to migrate gem subtype flag for "${item.name}" (${item.uuid}):`, error);
+      }
+    }
   }
 }

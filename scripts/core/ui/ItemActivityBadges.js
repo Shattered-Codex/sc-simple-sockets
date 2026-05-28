@@ -12,11 +12,22 @@ export class ItemActivityBadges {
   static #handlers = new Map();
   static #observerState = new WeakMap();
 
+  static render(sheet, html) {
+    const item = sheet?.item ?? sheet?.document;
+    if (!item) return;
+
+    const root = this.#rootOf(html);
+    if (!root) return;
+
+    this.#renderBadges(root, item);
+    this.#observeLazyTidyContent(root, item);
+  }
+
   static activate() {
     this.deactivate();
     if (this.#handlers.size) return;
 
-    const itemHandler = (sheet, html, ...rest) => this.#onRenderItemSheet(sheet, html, ...rest);
+    const itemHandler = (sheet, html, ...rest) => this.render(sheet, html, ...rest);
     Hooks.on("renderItemSheet5e", itemHandler);
     Hooks.on("renderItemSheet", itemHandler);
     this.#handlers.set("renderItemSheet5e", itemHandler);
@@ -33,17 +44,6 @@ export class ItemActivityBadges {
       Hooks.off(hook, handler);
     }
     this.#handlers.clear();
-  }
-
-  static #onRenderItemSheet(sheet, html) {
-    const item = sheet?.item ?? sheet?.document;
-    if (!item) return;
-
-    const root = this.#rootOf(html);
-    if (!root) return;
-
-    this.#renderBadges(root, item);
-    this.#observeLazyTidyContent(root, item);
   }
 
   static #renderBadges(root, item) {
@@ -130,6 +130,8 @@ export class ItemActivityBadges {
       `.item.activity[data-activity-id="${escapedId}"] .item-name.activity-name .name.name-stacked`,
       `.activity-row[data-activity-id="${escapedId}"] .item-name.activity-name .name.name-stacked`,
       `[data-activity-id="${escapedId}"] .item-name.activity-name .name.name-stacked`,
+      `.activity.card[data-activity-id="${escapedId}"] button.name`,
+      `[data-activity-id="${escapedId}"] button.name`,
       `.tidy-table-row.activity[data-activity-id="${escapedId}"] .tidy-table-cell.primary .item-name .cell-text`,
       `[data-activity-id="${escapedId}"] .tidy-table-cell.primary .item-name .cell-text`,
       `.activity.card[data-activity-id="${escapedId}"] .name`,
@@ -150,6 +152,8 @@ export class ItemActivityBadges {
       `.item.effect[data-effect-id="${escapedId}"] .item-name.effect-name .name.name-stacked`,
       `.activity-row[data-effect-id="${escapedId}"] .item-name.effect-name .name.name-stacked`,
       `[data-effect-id="${escapedId}"] .item-name.effect-name .name.name-stacked`,
+      `.item.effect[data-effect-id="${escapedId}"] .item-name.effect-name span.truncate`,
+      `[data-effect-id="${escapedId}"] .item-name.effect-name span.truncate`,
       `.item.effect[data-effect-id="${escapedId}"] .item-name.effect-name .truncate`,
       `[data-effect-id="${escapedId}"] .item-name.effect-name .truncate`,
       `.item.effect[data-effect-id="${escapedId}"] .item-name.effect-name`,
@@ -214,8 +218,8 @@ export class ItemActivityBadges {
       const socketInfo = Array.isArray(sockets) ? sockets[sourceGem.slot] : sockets?.[slotKey];
       map.set(activity.id, {
         slot: slotKey,
-        gemImg: socketInfo?.img ?? socketInfo?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
-        gemName: socketInfo?.gem?.name ?? socketInfo?.name ?? item.name,
+        gemImg: socketInfo?.gem?.img ?? socketInfo?._gemData?.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
+        gemName: socketInfo?.gem?.name ?? socketInfo?._gemData?.name ?? socketInfo?.name ?? item.name,
         activityName: activity.name ?? null,
         sourceId: sourceGem.sourceId ?? null
       });
@@ -241,8 +245,8 @@ export class ItemActivityBadges {
 
       map.set(effect.id, {
         slot: slotKey,
-        gemImg: socketGem.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
-        gemName: socketGem.name ?? socketInfo?.name ?? item.name,
+        gemImg: socketGem.img ?? socketInfo?._gemData?.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
+        gemName: socketGem.name ?? socketInfo?._gemData?.name ?? socketInfo?.name ?? item.name,
         sourceId: sourceGem.sourceId ?? null
       });
     }

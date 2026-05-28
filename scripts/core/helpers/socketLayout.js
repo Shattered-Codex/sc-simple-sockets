@@ -41,9 +41,20 @@ export function buildSocketLayoutContext(item, {
         const hiddenTooltip = slotConfig.hidden
           ? Constants.localize("SCSockets.Tooltips.ShowSlot", "Show this slot to players.")
           : Constants.localize("SCSockets.Tooltips.HideSlot", "Hide this slot from players.");
+        const destroysGemOnRemoval = slotConfig.deleteGemOnRemoval || ModuleSettings.shouldDeleteGemOnRemoval();
+        const removeGemTooltip = destroysGemOnRemoval
+          ? Constants.localize("SCSockets.Tooltips.DestroyGem", "Destroy gem")
+          : Constants.localize("SCSockets.Tooltips.ExtractGem", "Extract gem");
+        const removeGemIcon = destroysGemOnRemoval ? "fa-burst" : "fa-hammer-crash";
+        const slotName = String(slot?.name ?? "").trim()
+          || Constants.localize("SCSockets.SocketEmptyName", "Empty");
+        const gemName = String(slot?.gem?.name ?? "").trim();
+        const slotSummary = gemName && gemName !== slotName ? gemName : "";
+        const slotAriaLabel = slotSummary ? `${slotName}: ${slotSummary}` : slotName;
 
         entries.push({
           ...slot,
+          destroysGemOnRemoval,
           hidden: slotConfig.hidden,
           hasGem,
           hasSlotTint: Boolean(tintColor),
@@ -53,12 +64,17 @@ export function buildSocketLayoutContext(item, {
           slotMaskStyle,
           slotColor: tintColor,
           slotConfig,
+          removeGemIcon,
+          removeGemTooltip,
           visibilityIcon: slotConfig.hidden ? "fa-eye-slash" : "fa-eye",
           visibilityTooltip: hiddenTooltip,
           visibilityLabel: hiddenTooltip,
           gemImg: slot?.gem?.img ?? "",
-          gemName: slot?.gem?.name ?? "",
+          gemName,
           gemUuid: "",
+          slotName,
+          slotSummary,
+          slotAriaLabel,
           hostItemUuid: item?.uuid ?? ""
         });
         return entries;

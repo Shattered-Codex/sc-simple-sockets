@@ -37,6 +37,20 @@
             </label>
           </div>
 
+          <label class="socket-slot-config-hidden-field">
+            <input
+              type="checkbox"
+              name="slotConfig.deleteGemOnRemoval"
+              value="true"
+              {{#if deleteGemOnRemoval}}checked{{/if}}
+              {{#unless editable}}disabled{{/unless}}
+            />
+            <span>
+              <strong>{{strings.deleteGemOnRemovalLabel}}</strong>
+              <small>{{strings.deleteGemOnRemovalHint}}</small>
+            </span>
+          </label>
+
           <div class="socket-slot-config-item-stack">
             <article class="socket-slot-config-document-card">
               <div class="socket-slot-config-document-body">

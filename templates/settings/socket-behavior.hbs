@@ -25,11 +25,22 @@
               </div>
 
               {{#if this.isSelect}}
-                <select name="{{this.key}}" class="sc-sockets-settings-control">
+                <select
+                  name="{{this.key}}"
+                  class="sc-sockets-settings-control"
+                  {{#if this.isDynamicDescription}}data-sc-sockets-dynamic-description="true"{{/if}}
+                >
                   {{#each this.choices}}
-                    <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                    <option
+                      value="{{this.value}}"
+                      data-description="{{this.description}}"
+                      {{#if this.selected}}selected{{/if}}
+                    >{{this.label}}</option>
                   {{/each}}
                 </select>
+                {{#if this.isDynamicDescription}}
+                  <p class="hint sc-sockets-settings-option-description" data-sc-sockets-select-description>{{this.selectedDescription}}</p>
+                {{/if}}
               {{/if}}
 
               {{#if this.isNumber}}

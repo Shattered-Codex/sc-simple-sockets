@@ -1,11 +1,11 @@
 import { Constants } from "../Constants.js";
+import { openSupportCard } from "../support/supportCard.js";
 
 const api = foundry?.applications?.api ?? {};
 const { ApplicationV2 } = api;
 if (!ApplicationV2) {
   throw new Error(`${Constants.MODULE_ID}: ApplicationV2 is required to render SupportMenu.`);
 }
-const PATREON_URL = "https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=foundry_module&utm_campaign=support_button";
 const SUPPORT_MENU_KEY = `${Constants.MODULE_ID}.supportMenu`;
 
 export class SupportMenu extends ApplicationV2 {
@@ -23,12 +23,12 @@ export class SupportMenu extends ApplicationV2 {
   }, { inplace: false });
 
   render(...args) {
-    SupportMenu.openPatreon();
+    SupportMenu.openSupportPopup();
     return this;
   }
 
-  static openPatreon() {
-    window?.open?.(PATREON_URL, "_blank", "noopener");
+  static openSupportPopup() {
+    void openSupportCard({ force: true });
   }
 
   static bindSettingsButton(html) {
@@ -54,7 +54,7 @@ export class SupportMenu extends ApplicationV2 {
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        SupportMenu.openPatreon();
+        SupportMenu.openSupportPopup();
       }, { capture: true });
     }
   }

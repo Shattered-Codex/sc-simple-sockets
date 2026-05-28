@@ -159,6 +159,22 @@ export class AddSocketWorkflow {
                 />
               </div>
             </div>
+            <div class="form-group">
+              <label>${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Label", "Delete gem on removal"))}</label>
+              <div class="form-fields">
+                <label class="checkbox">
+                  <input
+                    type="checkbox"
+                    name="slotDeleteGemOnRemoval"
+                    ${defaults.deleteGemOnRemoval ? "checked" : ""}
+                  />
+                  ${escapeHtml(Constants.localize(
+                    "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Hint",
+                    "When enabled, this slot deletes its gem when unsocketed even if the global setting is disabled."
+                  ))}
+                </label>
+              </div>
+            </div>
           </form>
         `,
         buttons: [
@@ -173,7 +189,8 @@ export class AddSocketWorkflow {
                 name: readFieldValue(form, "slotName"),
                 description: readFieldValue(form, "slotDescription"),
                 condition: readFieldValue(form, "slotCondition"),
-                color: readFieldValue(form, "slotColor")
+                color: readFieldValue(form, "slotColor"),
+                deleteGemOnRemoval: form?.querySelector?.('[name="slotDeleteGemOnRemoval"]')?.checked === true
               };
             }
           },
@@ -195,7 +212,8 @@ export class AddSocketWorkflow {
         name: valueOrDefault(result.name, defaults.name),
         description: valueOrDefault(result.description, defaults.description),
         condition: valueOrDefault(result.condition, defaults.condition),
-        color: colorOrDefault(result.color, defaults.color)
+        color: colorOrDefault(result.color, defaults.color),
+        deleteGemOnRemoval: result.deleteGemOnRemoval === true
       });
 
       if (!this.#validateSlotConfig(slotConfig)) {

@@ -50,9 +50,19 @@
         "Hint": "Adicione um ou mais danos extras aplicados quando esta gema for encaixada em armas ou magias.",
         "Damage": "Dano",
         "Type": "Tipo",
+        "TypeHint": "Escolha um ou mais tipos de dano. Mesmo do item é exclusivo e limpa as outras seleções. Se vários tipos fixos forem selecionados, a janela de rolagem permitirá escolher um deles.",
+        "TypeMode": "Tipo de dano",
+        "TypeModeHint": "Mesmo do item usa o tipo de dano rolado pelo item socketado. Tipo(s) fixo(s) permite que a gema defina um ou mais tipos de dano para a rolagem.",
         "Add": "Adicionar dano",
         "Remove": "Remover",
         "Clear": "Limpar tudo",
+        "TypeOptions": {
+          "Inherit": "Mesmo do item"
+        },
+        "TypeModeOptions": {
+          "Inherit": "Mesmo do item",
+          "Fixed": "Tipo(s) fixo(s)"
+        },
         "Fields": {
           "Number": "Quantidade",
           "Die": "Dado",
@@ -112,6 +122,10 @@
         "Label": "Ocultar slot",
         "Hint": "Somente GMs podem ver este slot e sua descrição de socket."
       },
+      "DeleteGemOnRemoval": {
+        "Label": "Destruir gema ao remover",
+        "Hint": "Quando ativado, este slot destrói a gema ao removê-la mesmo se a configuração global estiver desativada."
+      },
       "Condition": {
         "Label": "Condição do slot",
         "Hint": "Use JavaScript. Variáveis disponíveis: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
@@ -140,6 +154,8 @@
     },
     "Tooltips": {
       "RemoveGem": "Remover a gema deste soquete.",
+      "DestroyGem": "Destruir gema",
+      "ExtractGem": "Extrair gema",
       "DeleteSocket": "Excluir este soquete do item.",
       "DeleteSlotLabel": "Excluir soquete",
       "ConfigureSlot": "Configurar este slot.",
@@ -210,7 +226,25 @@
       },
       "GemRollLayout": {
         "Name": "Layout de dano das gemas no diálogo",
-        "Hint": "Ative o layout agrupado por gema no diálogo de configuração de dano."
+        "Hint": "Escolha como o dano das gemas será organizado no diálogo de configuração de dano.",
+        "Options": {
+          "Gem": {
+            "Label": "Agrupar por gema",
+            "Description": "Cada gema encaixada mantém seu próprio bloco e mostra apenas as linhas de dano vindas daquela gema específica."
+          },
+          "Type": {
+            "Label": "Agrupar por tipo de dano",
+            "Description": "Todas as linhas são mescladas por tipo de dano, independentemente da gema ou item que as gerou."
+          },
+          "GemType": {
+            "Label": "Agrupar por tipo de gema",
+            "Description": "Gemas idênticas são mescladas em um único bloco. O título mostra 2x, 3x e assim por diante quando mais de uma cópia contribui."
+          },
+          "TypeBadges": {
+            "Label": "Agrupar por tipo de dano com badges",
+            "Description": "Todas as linhas são mescladas por tipo de dano e cada resultado mostra badges das gemas correspondentes, além do item base quando o dano dele participa daquele tipo."
+          }
+        }
       },
       "SocketTabLayout": {
         "Name": "Layout da aba de soquetes",
@@ -226,8 +260,8 @@
       },
       "SupportMenu": {
         "Name": "Apoie o desenvolvedor",
-        "Label": "Apoiar no Patreon",
-        "Hint": "Tenha acesso ao SC - More Gems com mais de 120 gemas e novidades todo mês. Também estamos criando o SC - Setforge para você montar sets de itens."
+        "Label": "Abrir popup de suporte",
+        "Hint": "Abre o popup da Shattered Codex com notas da versão, destaques de módulos e links para Patreon, Discord e wiki."
       },
       "DocumentationMenu": {
         "Name": "Documentação",
@@ -250,20 +284,34 @@
         }
       },
       "HideSupportCard": {
-        "Name": "Ocultar mensagem automática de suporte até a próxima atualização",
-        "Hint": "Depois que o card de suporte aparecer uma vez para a versão atual, esta opção é marcada automaticamente. Desmarque se quiser que o card apareça sempre que o mundo carregar."
+        "Name": "Ocultar popup automático de novidades até a próxima atualização",
+        "Hint": "Depois que o popup de novidades aparecer para a versão atual, esta opção pode mantê-lo oculto até a próxima atualização. Desmarque se quiser que o popup apareça sempre que o mundo carregar."
       }
     },
     "SupportCard": {
       "Description": "Apoie meu trabalho e acompanhe módulos exclusivos e o progresso do desenvolvimento.",
       "Intro": "Apoie-nos no Patreon para continuarmos criando.",
       "Exclusive": "Tenha acesso ao módulo exclusivo <strong>SC - More Gems</strong> com mais de 120 gemas e atualizações mensais. Também estamos criando o <strong>SC - Setforge</strong> para você montar sets de itens.",
+      "Discord": "Discord",
+      "DiscordInvite": "Entrar na comunidade",
       "Issues": "Issues / Sugestões",
       "Link": "Patreon",
       "Wiki": "Wiki",
       "PatreonModulesTitle": "Módulos do Patreon",
       "FreeModulesTitle": "Módulos gratuitos",
-      "Footer": "Este card do chat será exibido apenas uma vez. Reative nas configurações se precisar."
+      "Footer": "Este card do chat será exibido apenas uma vez. Reative nas configurações se precisar.",
+      "Title": "Novidades",
+      "MoreFrom": "Mais de Shattered Codex",
+      "ReleaseSubtitle": "SC - Simple Sockets Changelog",
+      "ViewModule": "Ver na wiki",
+      "DontShowAgain": "Não mostrar novamente até a próxima atualização",
+      "FeatureRequest": "Sugerir recurso",
+      "Close": "Fechar",
+      "Status": {
+        "Free": "Grátis",
+        "Patreon": "Patreon",
+        "New": "Novo"
+      }
     }
   },
   "Notifications": {
@@ -301,6 +349,15 @@
         "SelectAnother": "Deseja selecionar outro item?",
         "Success": "Um soquete foi adicionado a {name}.",
         "Error": "Falha ao adicionar soquete. Veja o console para detalhes."
+      },
+      "ExtractGem": {
+        "SelectPrompt": "Clique em um slot preenchido para extrair a gema. Pressione Esc para cancelar.",
+        "Cancelled": "Seleção cancelada.",
+        "InvalidSlot": "Não foi possível resolver o slot clicado.",
+        "EmptySlot": "Esse slot não contém gema.",
+        "ItemPermissionBody": "Você não tem permissão para editar {name}.",
+        "Success": "Gema {gem} extraída de {name}.",
+        "Error": "Falha ao extrair a gema. Veja o console para detalhes."
       }
     }
   }

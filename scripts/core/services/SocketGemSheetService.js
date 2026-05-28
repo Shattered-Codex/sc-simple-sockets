@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { SocketService } from "./SocketService.js";
 import { ItemResolver } from "../ItemResolver.js";
+import { Compatibility } from "../support/Compatibility.js";
 
 export class SocketGemSheetService {
   static async openFromHost(hostItem, slotIndex, { editable = true } = {}) {
@@ -81,7 +82,7 @@ export class SocketGemSheetService {
   }
 
   static #renderDocument(document, { editable = true } = {}) {
-    const sheet = document?.sheet;
+    const sheet = this.#createRenderSheet(document, { editable });
     if (!sheet?.render) {
       return false;
     }
@@ -113,6 +114,26 @@ export class SocketGemSheetService {
       console.warn(`[${Constants.MODULE_ID}] failed to render read-only gem sheet`, error);
       return false;
     }
+  }
+
+  static #createRenderSheet(document, { editable = true } = {}) {
+    if (!document) {
+      return null;
+    }
+
+    const fallbackSheetClass = Compatibility.getDnd5eItemSheetClass();
+    const shouldBypassTidyThemeCrash = !document.uuid && typeof fallbackSheetClass === "function";
+
+    if (!shouldBypassTidyThemeCrash) {
+      return document.sheet ?? null;
+    }
+
+    const options = {
+      editable,
+      id: `sc-sockets-temp-gem-${document.id ?? foundry.utils.randomID()}`
+    };
+
+    return this.#createSheetInstance(fallbackSheetClass, document, options);
   }
 
   static #makeSheetReadOnly(sheet) {

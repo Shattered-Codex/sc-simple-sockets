@@ -13,6 +13,7 @@ export class Constants {
   static FLAG_GEM_ALLOWED_TYPES = "gemAllowedTypes";
   static FLAG_GEM_DETAIL_TYPE = "gemDetailType";
   static FLAG_GEM_DAMAGE = "gemDamage";
+  static GEM_DAMAGE_INHERIT_TYPE = "__inherit__";
   static FLAG_GEM_CRIT_THRESHOLD = "gemCritThreshold";
   static FLAG_GEM_CRIT_MULTIPLIER = "gemCritMultiplier";
   static FLAG_GEM_ATTACK_BONUS = "gemAttackBonus";
@@ -35,6 +36,7 @@ export class Constants {
   static SETTING_GEM_LOOT_SUBTYPES = "gemLootSubtypes";
   static SETTING_LOOT_SUBTYPE_MENU = "gemLootSubtypeSettings";
   static SETTING_CUSTOM_LOOT_SUBTYPES = "customLootSubtypes";
+  static UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC = "skipItemSheetSync";
 
   static getTextEditor() {
     return foundry?.applications?.ux?.TextEditor?.implementation

@@ -50,9 +50,19 @@
         "Hint": "Add one or more extra damage entries applied when this gem is socketed into weapons or spells.",
         "Damage": "Damage",
         "Type": "Type",
+        "TypeHint": "Choose one or more damage types. Same as host is exclusive and clears the other selections. If multiple fixed types are selected, the roll dialog lets the player choose one of them.",
+        "TypeMode": "Damage type",
+        "TypeModeHint": "Same as host uses the socketed item's rolled damage type. Fixed type(s) lets this gem define one or more damage types for the roll dialog.",
         "Add": "Add damage",
         "Remove": "Remove",
         "Clear": "Clear all",
+        "TypeOptions": {
+          "Inherit": "Same as host"
+        },
+        "TypeModeOptions": {
+          "Inherit": "Same as host",
+          "Fixed": "Fixed type(s)"
+        },
         "Fields": {
           "Number": "Number",
           "Die": "Die",
@@ -112,6 +122,10 @@
         "Label": "Hide slot",
         "Hint": "Only GMs can see this slot and its socket description."
       },
+      "DeleteGemOnRemoval": {
+        "Label": "Delete gem on removal",
+        "Hint": "When enabled, this slot deletes its gem when unsocketed even if the global setting is disabled."
+      },
       "Condition": {
         "Label": "Slot condition",
         "Hint": "Use JavaScript. Available variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
@@ -140,6 +154,8 @@
     },
     "Tooltips": {
       "RemoveGem": "Remove the gem from this socket.",
+      "DestroyGem": "Destroy gem",
+      "ExtractGem": "Extract gem",
       "DeleteSocket": "Delete this slot from the item.",
       "DeleteSlotLabel": "Delete slot",
       "ConfigureSlot": "Configure this slot.",
@@ -210,7 +226,25 @@
       },
       "GemRollLayout": {
         "Name": "Gem damage layout in roll dialog",
-        "Hint": "Enable the grouped-by-gem layout in the damage roll configuration dialog."
+        "Hint": "Choose how gem damage is organized in the damage roll configuration dialog.",
+        "Options": {
+          "Gem": {
+            "Label": "Group by gem",
+            "Description": "Each socketed gem keeps its own block and shows only the damage rows that came from that specific gem."
+          },
+          "Type": {
+            "Label": "Group by damage type",
+            "Description": "All rows are merged by damage type, regardless of which gem or item created them."
+          },
+          "GemType": {
+            "Label": "Group by gem type",
+            "Description": "Identical gems are merged into one block. The title shows 2x, 3x, and so on when more than one copy contributes."
+          },
+          "TypeBadges": {
+            "Label": "Group by damage type with badges",
+            "Description": "All rows are merged by damage type and each result shows badges for the gems, plus the host item when its own damage is part of that type."
+          }
+        }
       },
       "SocketTabLayout": {
         "Name": "Socket tab layout",
@@ -226,8 +260,8 @@
       },
       "SupportMenu": {
         "Name": "Support the developer",
-        "Label": "Patreon support",
-        "Hint": "Get access to SC - More Gems with 120+ gems, and more every month. We are also building SC - Setforge to create item sets."
+        "Label": "Open support popup",
+        "Hint": "Open the Shattered Codex popup with release notes, module highlights, Patreon, Discord, and wiki links."
       },
       "DocumentationMenu": {
         "Name": "Documentation",
@@ -250,20 +284,34 @@
         }
       },
       "HideSupportCard": {
-        "Name": "Hide automatic support message until next update",
-        "Hint": "After the support card appears once for the current version, this option is checked automatically. Uncheck it if you want the card to appear whenever the world loads."
+        "Name": "Hide automatic What's New popup until next update",
+        "Hint": "After the What's New popup appears for the current version, this option can keep it hidden until the next update. Uncheck it if you want the popup to appear whenever the world loads."
       }
     },
     "SupportCard": {
       "Description": "Support my work and stay up to date with exclusive modules and development progress.",
       "Intro": "Support us on Patreon to help us keep creating.",
       "Exclusive": "Get access to the exclusive <strong>SC - More Gems</strong> module with 120+ gems and monthly updates. We are also building <strong>SC - Setforge</strong> so you can create item sets.",
+      "Discord": "Discord",
+      "DiscordInvite": "Join the community",
       "Issues": "Issues / Requests",
       "Link": "Patreon",
       "Wiki": "Wiki",
       "PatreonModulesTitle": "Patreon modules",
       "FreeModulesTitle": "Free modules",
-      "Footer": "This chat card will only be shown once. Enable it again in the settings if needed."
+      "Footer": "This chat card will only be shown once. Enable it again in the settings if needed.",
+      "Title": "What's New",
+      "MoreFrom": "More from Shattered Codex",
+      "ReleaseSubtitle": "SC - Simple Sockets Changelog",
+      "ViewModule": "View on wiki",
+      "DontShowAgain": "Don't show again until the next update",
+      "FeatureRequest": "Feature Request",
+      "Close": "Close",
+      "Status": {
+        "Free": "Free",
+        "Patreon": "Patreon",
+        "New": "New"
+      }
     },
     "Notifications": {
       "Reloading": "Reloading..."
@@ -301,6 +349,15 @@
         "SelectAnother": "Do you want to select another item?",
         "Success": "A socket was added to {name}.",
         "Error": "Failed to add socket. See console for details."
+      },
+      "ExtractGem": {
+        "SelectPrompt": "Click a filled socket to extract its gem. Press Esc to cancel.",
+        "Cancelled": "Selection cancelled.",
+        "InvalidSlot": "Could not resolve the clicked socket.",
+        "EmptySlot": "That slot does not contain a gem.",
+        "ItemPermissionBody": "You do not have permission to edit {name}.",
+        "Success": "Extracted {gem} from {name}.",
+        "Error": "Failed to extract gem. See console for details."
       }
     }
   }

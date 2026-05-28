@@ -3,6 +3,8 @@ import { ModuleSettings } from "./ModuleSettings.js";
 import { SocketBehaviorSettingsLauncher } from "./SocketBehaviorSettingsLauncher.js";
 import { DocumentationMenu } from "./DocumentationMenu.js";
 import { SupportMenu } from "./SupportMenu.js";
+import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
+import { TidyIntegration } from "../integration/TidyIntegration.js";
 
 /**
  * Registers all game settings and menus for the module.
@@ -12,6 +14,7 @@ import { SupportMenu } from "./SupportMenu.js";
  */
 export class ModuleSettingsRegistrar {
   static #runtimeHooksRegistered = false;
+  static #settingsConfigHookRegistered = false;
   #settingsRegistered = false;
 
   /**
@@ -25,6 +28,7 @@ export class ModuleSettingsRegistrar {
     this.#settingsRegistered = true;
 
     ModuleSettingsRegistrar.#registerRuntimeHooks();
+    ModuleSettingsRegistrar.#registerSettingsConfigHook();
     this.#registerEditSocketPermission();
     this.#registerSocketableItemTypeSetting();
     this.#registerMaxSockets();
@@ -34,6 +38,7 @@ export class ModuleSettingsRegistrar {
     this.#registerEnableSocketTabForAllItems();
     this.#registerLootSubtypeDataSettings();
     this.#registerSupportCardSettings();
+    this.#registerDebugTraceSetting();
     this.#registerMigrationSettings();
   }
 
@@ -83,6 +88,16 @@ export class ModuleSettingsRegistrar {
     });
   }
 
+  static #registerSettingsConfigHook() {
+    if (ModuleSettingsRegistrar.#settingsConfigHookRegistered) return;
+    ModuleSettingsRegistrar.#settingsConfigHookRegistered = true;
+
+    Hooks.on("renderSettingsConfig", (_app, html) => {
+      SupportMenu.bindSettingsButton(html);
+      DocumentationMenu.bindSettingsButton(html);
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // Menus
   // ---------------------------------------------------------------------------
@@ -99,10 +114,6 @@ export class ModuleSettingsRegistrar {
       type: SupportMenu,
       restricted: true
     });
-
-    Hooks.on("renderSettingsConfig", (_app, html) => {
-      SupportMenu.bindSettingsButton(html);
-    });
   }
 
   #registerDocumentationMenu() {
@@ -116,10 +127,6 @@ export class ModuleSettingsRegistrar {
       icon: "fas fa-hat-wizard",
       type: DocumentationMenu,
       restricted: true
-    });
-
-    Hooks.on("renderSettingsConfig", (_app, html) => {
-      DocumentationMenu.bindSettingsButton(html);
     });
   }
 
@@ -170,7 +177,11 @@ export class ModuleSettingsRegistrar {
       scope: "world",
       config: false,
       type: Array,
-      default: ModuleSettings.getDefaultSocketableItemTypes()
+      default: ModuleSettings.getDefaultSocketableItemTypes(),
+      onChange: () => {
+        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
+        void TidyIntegration.syncAllItemTabConfigurations();
+      }
     });
   }
 
@@ -225,6 +236,11 @@ export class ModuleSettingsRegistrar {
   }
 
   #registerGemRollLayoutSetting() {
+    const choices = DamageRollLayoutAdapterRegistry.getSettingsChoices().reduce((accumulator, choice) => {
+      accumulator[choice.value] = choice.label;
+      return accumulator;
+    }, {});
+
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT, {
       name: Constants.localize(
         "SCSockets.Settings.GemRollLayout.Name",
@@ -232,15 +248,16 @@ export class ModuleSettingsRegistrar {
       ),
       hint: Constants.localize(
         "SCSockets.Settings.GemRollLayout.Hint",
-        "Enable the grouped-by-gem layout in the damage roll configuration dialog."
+        "Choose how gem damage is organized in the damage roll configuration dialog."
       ),
       scope: "client",
       config: false,
-      type: Boolean,
-      default: true,
+      type: String,
+      choices,
+      default: DamageRollLayoutAdapterRegistry.getDefaultMode(),
       onChange: async (value) => {
         const { DamageRollGemLayout } = await import("../ui/DamageRollGemLayout.js");
-        DamageRollGemLayout.activate({ mode: value ? "gem" : "type" });
+        DamageRollGemLayout.activate({ mode: value });
       }
     });
   }
@@ -301,14 +318,21 @@ export class ModuleSettingsRegistrar {
       scope: "world",
       config: false,
       type: Array,
-      default: []
+      default: [],
+      onChange: () => {
+        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
+      }
     });
 
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_LOOT_SUBTYPES, {
       scope: "world",
       config: false,
       type: Array,
-      default: [Constants.ITEM_SUBTYPE_GEM]
+      default: [Constants.ITEM_SUBTYPE_GEM],
+      onChange: () => {
+        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
+        void TidyIntegration.syncAllItemTabConfigurations();
+      }
     });
   }
 
@@ -357,16 +381,16 @@ export class ModuleSettingsRegistrar {
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_HIDE_SUPPORT_CARD, {
       name: Constants.localize(
         "SCSockets.Settings.HideSupportCard.Name",
-        "Hide automatic support message until next update"
+        "Hide automatic What's New popup until next update"
       ),
       hint: Constants.localize(
         "SCSockets.Settings.HideSupportCard.Hint",
-        "After the support card appears once for the current version, this option is checked automatically. Uncheck it if you want the card to appear whenever the world loads."
+        "After the What's New popup appears for the current version, this option can keep it hidden until the next update. Uncheck it if you want the popup to appear whenever the world loads."
       ),
       scope: "client",
       config: true,
       type: Boolean,
-      default: false
+      default: true
     });
 
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_CARD_VERSION, {
@@ -374,6 +398,26 @@ export class ModuleSettingsRegistrar {
       config: false,
       type: String,
       default: ""
+    });
+  }
+
+  #registerDebugTraceSetting() {
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_DEBUG_TRACE, {
+      name: Constants.localize(
+        "SCSockets.Settings.DebugTrace.Name",
+        "Debug trace logging"
+      ),
+      hint: Constants.localize(
+        "SCSockets.Settings.DebugTrace.Hint",
+        "Logs item updates, sheet renders, and focus changes to the browser console to diagnose socket UI issues."
+      ),
+      scope: "client",
+      config: true,
+      type: Boolean,
+      default: false,
+      onChange: (value) => {
+        console.info(`[${Constants.MODULE_ID}] debug trace ${value ? "enabled" : "disabled"}`);
+      }
     });
   }
 

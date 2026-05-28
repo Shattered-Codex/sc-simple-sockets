@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { DebugTrace } from "./DebugTrace.js";
 
 export class ItemSheetSync {
   static #active = false;
@@ -58,6 +59,11 @@ export class ItemSheetSync {
 
     try {
       if (sheet.document !== next) {
+        DebugTrace.log("item-sheet-sync.syncDocument", {
+          target: "document",
+          sheet: DebugTrace.describeApp(sheet),
+          item: DebugTrace.describeItem(next)
+        });
         sheet.document = next;
       }
     } catch {
@@ -66,6 +72,11 @@ export class ItemSheetSync {
 
     try {
       if (sheet.object?.documentName === "Item" && sheet.object !== next) {
+        DebugTrace.log("item-sheet-sync.syncDocument", {
+          target: "object",
+          sheet: DebugTrace.describeApp(sheet),
+          item: DebugTrace.describeItem(next)
+        });
         sheet.object = next;
       }
     } catch {
@@ -91,16 +102,91 @@ export class ItemSheetSync {
     ));
   }
 
-  static refreshOpenSheets(item) {
+  static refreshOpenSheets(item, { force = true } = {}) {
     const current = ItemSheetSync.resolve(item);
     if (!current) {
       return;
     }
 
-    for (const app of ItemSheetSync.#collectOpenSheets(current)) {
+    const apps = ItemSheetSync.#collectOpenSheets(current);
+    DebugTrace.log("item-sheet-sync.refreshOpenSheets", {
+      item: DebugTrace.describeItem(current),
+      apps: Array.from(apps, (app) => DebugTrace.describeApp(app))
+    });
+
+    for (const app of apps) {
       ItemSheetSync.syncSheetDocument(app, current);
-      app.render(true);
+      ItemSheetSync.#renderSheet(app, { force });
     }
+  }
+
+  static refreshSheet(sheet, item, { force = true, reason = "item-sheet-sync.refreshSheet" } = {}) {
+    const current = ItemSheetSync.syncSheetDocument(sheet, item);
+    if (!sheet || !current) {
+      return current ?? null;
+    }
+
+    DebugTrace.render(sheet, force, reason, {
+      item: DebugTrace.describeItem(current)
+    });
+
+    return current;
+  }
+
+  static #renderSheet(app, { force = true } = {}) {
+    if (!app?.rendered || typeof app.render !== "function") {
+      return;
+    }
+
+    const hasHTMLElement = typeof HTMLElement !== "undefined";
+    const windowElement = ItemSheetSync.#resolveWindowElement(app);
+    const previousZIndex = windowElement?.style?.zIndex ?? "";
+    const hadFocus = windowElement?.contains?.(document.activeElement) === true;
+
+    try {
+      app.render(force);
+    } catch {
+      app.render(!force);
+    }
+
+    const restoreWindowState = () => {
+      const nextWindowElement = ItemSheetSync.#resolveWindowElement(app);
+      if (!hasHTMLElement || !(nextWindowElement instanceof HTMLElement)) {
+        return;
+      }
+
+      if (previousZIndex) {
+        nextWindowElement.style.zIndex = previousZIndex;
+      }
+
+      if (hadFocus && typeof app.bringToTop === "function") {
+        app.bringToTop();
+      }
+    };
+
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(restoreWindowState);
+      return;
+    }
+
+    setTimeout(restoreWindowState, 0);
+  }
+
+  static #resolveWindowElement(app) {
+    const hasHTMLElement = typeof HTMLElement !== "undefined";
+    const element = app?.element?.jquery ? app.element[0] : app?.element;
+    if (hasHTMLElement && element instanceof HTMLElement) {
+      return element.closest(".window-app") ?? element;
+    }
+
+    const appId = app?.appId ?? app?.id;
+    if (appId == null) {
+      return null;
+    }
+
+    return document.querySelector(
+      `.window-app[data-appid="${appId}"], .window-app[data-app-id="${appId}"]`
+    );
   }
 
   static #collectOpenSheets(item) {

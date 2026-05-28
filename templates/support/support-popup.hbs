@@ -1,0 +1,116 @@
+<section class="scsockets-support-popup" data-support-tone="{{slide.tone}}">
+  <div class="scsockets-support-popup__body">
+    <aside class="scsockets-support-popup__carousel">
+      <div class="scsockets-support-popup__section-heading">
+        <span>{{strings.moreFrom}}</span>
+        <span data-card-index>{{slide.indexLabel}} / {{slide.totalLabel}}</span>
+      </div>
+
+      <article class="scsockets-support-popup__feature-card">
+        <div class="scsockets-support-popup__preview">
+          <div class="scsockets-support-popup__preview-image-wrap">
+            <img
+              class="scsockets-support-popup__preview-image"
+              data-card-image
+              src="{{slide.image}}"
+              alt="{{slide.name}}"
+              {{#unless slide.image}}hidden{{/unless}}
+            >
+          </div>
+          <div class="scsockets-support-popup__preview-controls">
+            <button type="button" class="scsockets-support-popup__nav" data-action="prev-slide" aria-label="Previous module">
+              <i class="fas fa-chevron-left" aria-hidden="true"></i>
+            </button>
+            <a
+              class="scsockets-support-popup__preview-copy"
+              data-card-preview-link
+              data-action="open-module"
+              href="{{slide.url}}"
+              target="_blank"
+              rel="noopener"
+            >
+              <span>{{strings.viewModule}}</span>
+              <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </a>
+            <button type="button" class="scsockets-support-popup__nav" data-action="next-slide" aria-label="Next module">
+              <i class="fas fa-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="scsockets-support-popup__feature-copy">
+          <h3 class="scsockets-support-popup__feature-title" data-card-title>{{slide.name}}</h3>
+          <p class="scsockets-support-popup__feature-description" data-card-description>{{slide.description}}</p>
+        </div>
+      </article>
+
+      <div class="scsockets-support-popup__dots" role="tablist" aria-label="{{strings.moreFrom}}">
+        {{#each slides}}
+          <button
+            type="button"
+            class="scsockets-support-popup__dot{{#if active}} is-active{{/if}}"
+            data-action="go-slide"
+            data-slide-index="{{index}}"
+            aria-label="{{ariaLabel}}"
+            aria-pressed="{{#if active}}true{{else}}false{{/if}}"
+          ></button>
+        {{/each}}
+      </div>
+    </aside>
+
+    <main class="scsockets-support-popup__notes">
+      <div class="scsockets-support-popup__notes-scroll">
+        <section class="scsockets-support-popup__release-intro">
+          <p class="scsockets-support-popup__release-intro-title">{{strings.releaseSubtitle}} · {{moduleVersion}}</p>
+        </section>
+
+        {{#each releaseSections}}
+          <section class="scsockets-support-popup__note-section scsockets-support-popup__note-section--{{tone}}">
+            <h3 class="scsockets-support-popup__note-title">
+              {{title}}
+            </h3>
+            <ul class="scsockets-support-popup__note-list">
+              {{#each items}}
+                <li class="scsockets-support-popup__note-item">
+                  <span class="scsockets-support-popup__note-item-copy">
+                    {{#if html}}
+                      {{{html}}}
+                    {{else}}
+                      {{#if title}}<strong>{{title}}</strong>{{#if text}}: {{/if}}{{/if}}{{text}}
+                    {{/if}}
+                  </span>
+                </li>
+              {{/each}}
+            </ul>
+          </section>
+        {{/each}}
+      </div>
+    </main>
+  </div>
+
+  <footer class="scsockets-support-popup__footer">
+    <label class="scsockets-support-popup__toggle">
+      <input type="checkbox" name="suppressSupportCard" {{#if suppressUntilNextUpdate}}checked{{/if}}>
+      <span>{{strings.dontShowAgain}}</span>
+    </label>
+
+    <div class="scsockets-support-popup__actions">
+      <a class="scsockets-support-popup__action scsockets-support-popup__action--wiki" href="{{links.wiki.url}}" target="_blank" rel="noopener">
+        <i class="fas fa-book-open" aria-hidden="true"></i>
+        <span>{{links.wiki.label}}</span>
+      </a>
+      <a class="scsockets-support-popup__action scsockets-support-popup__action--discord" href="{{links.discord.url}}" target="_blank" rel="noopener">
+        <i class="fa-brands fa-discord" aria-hidden="true"></i>
+        <span>{{links.discord.label}}</span>
+      </a>
+      <a class="scsockets-support-popup__action scsockets-support-popup__action--patreon" href="{{links.patreon.url}}" target="_blank" rel="noopener">
+        <i class="fa-brands fa-patreon" aria-hidden="true"></i>
+        <span>{{links.patreon.label}}</span>
+      </a>
+      <a class="scsockets-support-popup__action scsockets-support-popup__action--feature" href="{{links.featureRequest.url}}" target="_blank" rel="noopener">
+        <i class="fas fa-star" aria-hidden="true"></i>
+        <span>{{links.featureRequest.label}}</span>
+      </a>
+    </div>
+  </footer>
+</section>
