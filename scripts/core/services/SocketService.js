@@ -188,7 +188,7 @@ export class SocketService {
     let consumedIncomingGem = false;
 
     try {
-      await InventoryService.consumeOne(gemItem, noRender);
+      await InventoryService.consumeOne(gemItem);
       consumedIncomingGem = Boolean(gemItem?.actor);
 
       try {
@@ -216,7 +216,7 @@ export class SocketService {
       });
 
       if (shouldReturnReplacedGem) {
-        await InventoryService.returnOne(hostItem, replacedGemSnapshot, noRender);
+        await InventoryService.returnOne(hostItem, replacedGemSnapshot);
       }
     } catch (error) {
       await SocketService.#rollbackHostOperation(hostItem, hostState, noRender, {
@@ -295,7 +295,7 @@ export class SocketService {
       });
 
       if (!shouldDeleteGem && gemSnapshot) {
-        returnedGemItem = await InventoryService.returnOne(hostItem, gemSnapshot, noRender);
+        returnedGemItem = await InventoryService.returnOne(hostItem, gemSnapshot);
       }
     } catch (error) {
       await SocketService.#rollbackHostOperation(hostItem, hostState, noRender, {

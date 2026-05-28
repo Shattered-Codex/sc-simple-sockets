@@ -232,11 +232,44 @@
 }
 
 /* Keep gem details row layout consistent even with Quadrone theme flex overrides */
+.tidy5e-sheet .sc-sockets-gem-damage-row.form-group,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row.form-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
 .tidy5e-sheet .sc-sockets-gem-damage-row .form-group > * {
   flex: 0 1 auto;
 }
 .tidy5e-sheet .sc-sockets-gem-damage-row .form-group.sc-sockets-gem-damage-remove > * {
   flex: 0 0 auto;
+}
+
+.tidy5e-sheet .sc-sockets-gem-damage-row-chips,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-chips {
+  grid-column: 1 / -1;
+  align-items: flex-start;
+  gap: 0.1rem;
+  margin-bottom: 0.15rem;
+}
+
+.tidy5e-sheet .sc-sockets-gem-damage-row-chips .tag.sc-sockets-gem-damage-type-chip,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-chips .tag.sc-sockets-gem-damage-type-chip {
+  min-height: 1.1rem;
+  padding: 0.04rem 0.22rem;
+  gap: 0.16rem;
+  font-size: 0.66rem;
+  line-height: 1;
+  border-radius: 2px;
+}
+
+.tidy5e-sheet .sc-sockets-gem-damage-row-top,
+.tidy5e-sheet .sc-sockets-gem-damage-row-bottom,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-top,
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-bottom {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .sc-sockets-expandable {
