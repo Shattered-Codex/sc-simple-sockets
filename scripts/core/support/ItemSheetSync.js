@@ -102,7 +102,7 @@ export class ItemSheetSync {
     ));
   }
 
-  static refreshOpenSheets(item) {
+  static refreshOpenSheets(item, { force = true } = {}) {
     const current = ItemSheetSync.resolve(item);
     if (!current) {
       return;
@@ -116,7 +116,7 @@ export class ItemSheetSync {
 
     for (const app of apps) {
       ItemSheetSync.syncSheetDocument(app, current);
-      ItemSheetSync.#renderSheet(app);
+      ItemSheetSync.#renderSheet(app, { force });
     }
   }
 
@@ -133,24 +133,25 @@ export class ItemSheetSync {
     return current;
   }
 
-  static #renderSheet(app) {
+  static #renderSheet(app, { force = true } = {}) {
     if (!app?.rendered || typeof app.render !== "function") {
       return;
     }
 
+    const hasHTMLElement = typeof HTMLElement !== "undefined";
     const windowElement = ItemSheetSync.#resolveWindowElement(app);
     const previousZIndex = windowElement?.style?.zIndex ?? "";
     const hadFocus = windowElement?.contains?.(document.activeElement) === true;
 
     try {
-      app.render(false);
+      app.render(force);
     } catch {
-      app.render(true);
+      app.render(!force);
     }
 
     const restoreWindowState = () => {
       const nextWindowElement = ItemSheetSync.#resolveWindowElement(app);
-      if (!(nextWindowElement instanceof HTMLElement)) {
+      if (!hasHTMLElement || !(nextWindowElement instanceof HTMLElement)) {
         return;
       }
 
@@ -172,8 +173,9 @@ export class ItemSheetSync {
   }
 
   static #resolveWindowElement(app) {
+    const hasHTMLElement = typeof HTMLElement !== "undefined";
     const element = app?.element?.jquery ? app.element[0] : app?.element;
-    if (element instanceof HTMLElement) {
+    if (hasHTMLElement && element instanceof HTMLElement) {
       return element.closest(".window-app") ?? element;
     }
 

@@ -381,16 +381,16 @@ export class ModuleSettingsRegistrar {
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_HIDE_SUPPORT_CARD, {
       name: Constants.localize(
         "SCSockets.Settings.HideSupportCard.Name",
-        "Hide automatic support message until next update"
+        "Hide automatic What's New popup until next update"
       ),
       hint: Constants.localize(
         "SCSockets.Settings.HideSupportCard.Hint",
-        "After the support card appears once for the current version, this option is checked automatically. Uncheck it if you want the card to appear whenever the world loads."
+        "After the What's New popup appears for the current version, this option can keep it hidden until the next update. Uncheck it if you want the popup to appear whenever the world loads."
       ),
       scope: "client",
       config: true,
       type: Boolean,
-      default: false
+      default: true
     });
 
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_CARD_VERSION, {

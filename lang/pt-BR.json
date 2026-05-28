@@ -260,8 +260,8 @@
       },
       "SupportMenu": {
         "Name": "Apoie o desenvolvedor",
-        "Label": "Apoiar no Patreon",
-        "Hint": "Tenha acesso ao SC - More Gems com mais de 120 gemas e novidades todo mês. Também estamos criando o SC - Setforge para você montar sets de itens."
+        "Label": "Abrir popup de suporte",
+        "Hint": "Abre o popup da Shattered Codex com notas da versão, destaques de módulos e links para Patreon, Discord e wiki."
       },
       "DocumentationMenu": {
         "Name": "Documentação",
@@ -284,20 +284,34 @@
         }
       },
       "HideSupportCard": {
-        "Name": "Ocultar mensagem automática de suporte até a próxima atualização",
-        "Hint": "Depois que o card de suporte aparecer uma vez para a versão atual, esta opção é marcada automaticamente. Desmarque se quiser que o card apareça sempre que o mundo carregar."
+        "Name": "Ocultar popup automático de novidades até a próxima atualização",
+        "Hint": "Depois que o popup de novidades aparecer para a versão atual, esta opção pode mantê-lo oculto até a próxima atualização. Desmarque se quiser que o popup apareça sempre que o mundo carregar."
       }
     },
     "SupportCard": {
       "Description": "Apoie meu trabalho e acompanhe módulos exclusivos e o progresso do desenvolvimento.",
       "Intro": "Apoie-nos no Patreon para continuarmos criando.",
       "Exclusive": "Tenha acesso ao módulo exclusivo <strong>SC - More Gems</strong> com mais de 120 gemas e atualizações mensais. Também estamos criando o <strong>SC - Setforge</strong> para você montar sets de itens.",
+      "Discord": "Discord",
+      "DiscordInvite": "Entrar na comunidade",
       "Issues": "Issues / Sugestões",
       "Link": "Patreon",
       "Wiki": "Wiki",
       "PatreonModulesTitle": "Módulos do Patreon",
       "FreeModulesTitle": "Módulos gratuitos",
-      "Footer": "Este card do chat será exibido apenas uma vez. Reative nas configurações se precisar."
+      "Footer": "Este card do chat será exibido apenas uma vez. Reative nas configurações se precisar.",
+      "Title": "Novidades",
+      "MoreFrom": "Mais de Shattered Codex",
+      "ReleaseSubtitle": "SC - Simple Sockets Changelog",
+      "ViewModule": "Ver na wiki",
+      "DontShowAgain": "Não mostrar novamente até a próxima atualização",
+      "FeatureRequest": "Sugerir recurso",
+      "Close": "Fechar",
+      "Status": {
+        "Free": "Grátis",
+        "Patreon": "Patreon",
+        "New": "Novo"
+      }
     }
   },
   "Notifications": {

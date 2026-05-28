@@ -46,6 +46,9 @@
         },
         {
             "src": "css/tidy-sockets.css"
+        },
+        {
+            "src": "css/support-popup.css"
         }
     ],
     "url": "https://github.com/Shattered-Codex/sc-simple-sockets",
