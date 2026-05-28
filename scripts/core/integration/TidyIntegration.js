@@ -180,8 +180,12 @@ export class TidyIntegration {
 
     api.registerItemContent(
       new HtmlContent({
-        html: "",
+        html: '<div data-sc-sockets="tidy-item-badges-hook" hidden></div>',
         renderScheme: "force",
+        injectParams: {
+          selector: "main.item-content",
+          position: "beforeend"
+        },
         onRender: (params) => {
           ItemActivityBadges.render(params.app, params.element);
         }
