@@ -2,6 +2,10 @@
   position: relative;
 }
 
+.sc-sockets-tidy:not([data-sc-sockets-layout="cauldron"]) {
+  --sc-sockets-slot-icon-size: 2.7rem;
+}
+
 .sc-sockets-view {
   --sc-sockets-slot-icon-size: 2.5rem;
   --sc-sockets-slot-radius: 8px;
@@ -159,6 +163,24 @@
   margin-right: 0.5rem;
 }
 
+.tidy5e-sheet .sc-sockets-tidy .tidy-table-row-use-button.socket-icon-wrapper,
+.tidy5e-sheet.quadrone .sc-sockets-tidy .tidy-table-row-use-button.socket-icon-wrapper {
+  margin: 0;
+  outline: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.tidy5e-sheet .sc-sockets-tidy .socket-icon-wrapper,
+.tidy5e-sheet.quadrone .sc-sockets-tidy .socket-icon-wrapper {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+
 .sc-sockets-tidy .socket-icon-wrapper .item-image {
   width: 100%;
   height: 100%;
@@ -182,6 +204,12 @@
   transform: translate(-50%, -50%);
   /* border-radius: 6px; */
   object-fit: cover;
+}
+
+.tidy5e-sheet .sc-sockets-tidy:not([data-sc-sockets-layout="cauldron"]) .socket-icon-wrapper .item-image.sc-sockets-slot-gem,
+.tidy5e-sheet.quadrone .sc-sockets-tidy:not([data-sc-sockets-layout="cauldron"]) .socket-icon-wrapper .item-image.sc-sockets-slot-gem {
+  width: calc(var(--sc-sockets-slot-icon-size) * 0.75);
+  height: calc(var(--sc-sockets-slot-icon-size) * 0.75);
 }
 
 .sc-sockets-tidy .socket-icon-wrapper .sc-sockets-slot-link {

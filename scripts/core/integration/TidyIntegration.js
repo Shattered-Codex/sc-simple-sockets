@@ -6,6 +6,7 @@ import { TransferFilterUI } from "../ui/TransferFilterUI.js";
 import { GemDetailsUI } from "../ui/GemDetailsUI.js";
 import { TidySocketDescriptionsUI } from "../ui/TidySocketDescriptionsUI.js";
 import { ActorGemBadges } from "../ui/ActorGemBadges.js";
+import { ItemActivityBadges } from "../ui/ItemActivityBadges.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketService } from "../services/SocketService.js";
 import { buildSocketLayoutContext } from "../helpers/socketLayout.js";
@@ -86,6 +87,7 @@ export class TidyIntegration {
     TidyIntegration.#registerSocketTab(api);
     TidyIntegration.#registerSocketDetailsToggle(api);
     TidyIntegration.#registerActorBadges(api);
+    TidyIntegration.#registerItemBadges(api);
     TidyIntegration.#registerSocketDescriptions(api);
     TidyIntegration.#registerSocketDescriptionContext();
     TidyIntegration.#associateExistingTabs(api);
@@ -165,6 +167,23 @@ export class TidyIntegration {
         renderScheme: "force",
         onRender: (params) => {
           ActorGemBadges.render(params.app, params.element);
+        }
+      })
+    );
+  }
+
+  static #registerItemBadges(api) {
+    const HtmlContent = api.models?.HtmlContent;
+    if (!HtmlContent) {
+      return;
+    }
+
+    api.registerItemContent(
+      new HtmlContent({
+        html: "",
+        renderScheme: "force",
+        onRender: (params) => {
+          ItemActivityBadges.render(params.app, params.element);
         }
       })
     );
