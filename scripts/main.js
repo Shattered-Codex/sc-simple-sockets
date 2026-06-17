@@ -23,12 +23,14 @@ import { maybeShowSupportCard } from "./core/support/supportCard.js";
 import { DataMigration } from "./core/migration/DataMigration.js";
 import { ItemSheetSync } from "./core/support/ItemSheetSync.js";
 import { DebugTrace } from "./core/support/DebugTrace.js";
+import { ScMoreActivitiesIntegration } from "./core/integrations/sc-more-activities/ScMoreActivitiesIntegration.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
 const lifecycle = new GemLifecycleService();
 MacroAPI.register();
 SocketAPI.register();
+ScMoreActivitiesIntegration.register();
 TidyIntegration.register({
   gemSheetExtension: gemSheet,
   itemSocketExtension: itemSocketSheet
@@ -50,7 +52,10 @@ Hooks.once("init", async function() {
   LootActivitiesExtension.ensure();
 
   await loadTemplates([
-    `modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`
+    `modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`,
+    `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-slot-effect.hbs`,
+    `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-extraction-effect.hbs`,
+    `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/slot-picker.hbs`
   ]);
 
   await settings.register();

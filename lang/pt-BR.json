@@ -312,31 +312,35 @@
         "Patreon": "Patreon",
         "New": "Novo"
       }
-    }
-  },
-  "Notifications": {
-    "Reloading": "Recarregando..."
-  },
-  "RollLayout": {
-    "BaseDamage": "Dano Base",
-    "GemEffects": "Efeitos da Gema"
-  },
-  "Dialogs": {
-    "DeleteSocket": {
-      "Title": "Excluir soquete",
-      "Message": "Tem certeza de que deseja excluir este soquete?",
-      "Warning": "Esta ação não pode ser desfeita.",
-      "Hint": "Segure Shift para pular esta confirmação."
     },
-    "RemoveGem": {
-      "Title": "Remover gema",
-      "Message": "Tem certeza de que deseja remover a gema deste slot?"
+    "Notifications": {
+      "Reloading": "Recarregando..."
+    },
+    "RollLayout": {
+      "BaseDamage": "Dano Base",
+      "GemEffects": "Efeitos da Gema"
+    },
+    "Dialogs": {
+      "DeleteSocket": {
+        "Title": "Excluir soquete",
+        "Message": "Tem certeza de que deseja excluir este soquete?",
+        "Warning": "Esta ação não pode ser desfeita.",
+        "Hint": "Segure Shift para pular esta confirmação."
+      },
+      "RemoveGem": {
+        "Title": "Remover gema",
+        "Message": "Tem certeza de que deseja remover a gema deste slot?"
+      }
     },
     "Macro": {
       "AddSocket": {
         "SelectPrompt": "Clique em um item para adicionar um soquete. Pressione Esc para cancelar.",
         "Cancelled": "Seleção cancelada.",
         "NoPermission": "Você não tem permissão para adicionar soquetes.",
+        "TargetConditionTitle": "Condição de Alvo Falhou",
+        "TargetConditionBody": "Este item não atende à condição de alvo desta activity de socket.",
+        "TargetConditionErrorTitle": "Erro na Condição de Alvo",
+        "TargetConditionErrorBody": "A condição de alvo desta activity de socket não pôde ser avaliada.",
         "ItemPermissionTitle": "Não é possível editar o item",
         "ItemPermissionBody": "Você não tem permissão para editar {name}.",
         "InvalidTypeTitle": "Item incompatível",
@@ -358,6 +362,133 @@
         "ItemPermissionBody": "Você não tem permissão para editar {name}.",
         "Success": "Gema {gem} extraída de {name}.",
         "Error": "Falha ao extrair a gema. Veja o console para detalhes."
+      }
+    },
+    "Integrations": {
+      "ScMoreActivities": {
+        "GroupLabel": "SC Simple Sockets",
+        "Common": {
+          "Select": "Selecionar",
+          "SelectAnother": "Deseja selecionar outro item?",
+          "SelectAnotherTitle": "Selecionar outro item",
+          "SlotLabel": "Slot {slot}",
+          "CursorImage": {
+            "Label": "Imagem do cursor de clique",
+            "Hint": "Caminho ou URL opcional de imagem usada como cursor enquanto esta activity aguarda o próximo alvo clicado. Deixe em branco para usar o cursor padrão de martelo.",
+            "Placeholder": "modules/meu-modulo/assets/cursor.webp"
+          }
+        },
+        "Warnings": {
+          "ActivityDisabled": "{activity} está desativada pelo GM no momento.",
+          "ActivityPermission": "Você não tem permissão para usar esta activity.",
+          "InvalidRequest": "A solicitação desta activity de sockets não é mais válida.",
+          "NoActiveGm": "Um GM ativo é necessário para activities de sockets.",
+          "RequestFailed": "Não foi possível solicitar uma operação de sockets mediada por GM: {error}"
+        },
+        "SocketSlot": {
+          "Title": "Socket Slot",
+          "Hint": "Seleciona o próximo item clicado para adicionar um socket configurado ou remove um slot vazio do item atual.",
+          "Sections": {
+            "Behavior": "Comportamento",
+            "Conditions": "Condições",
+            "Configuration": "Configuração do Slot",
+            "Description": "Descrição"
+          },
+          "Fields": {
+            "EditorTags": {
+              "JavaScript": "JavaScript",
+              "RichText": "Texto rico",
+              "TargetItem": "Item alvo"
+            },
+            "Operation": {
+              "Label": "Operação",
+              "Hint": "Escolha se esta activity usa o próximo item clicado para um novo socket ou remove um slot vazio do item atual.",
+              "Choices": {
+                "Add": "Adicionar socket",
+                "RemoveEmpty": "Remover slot vazio"
+              }
+            },
+            "IgnoreMaxSockets": {
+              "Label": "Ignorar limite de sockets",
+              "Hint": "Quando ativado, esta activity pode adicionar um socket mesmo se o item já estiver no limite global de sockets."
+            },
+            "TargetCondition": {
+              "Label": "Condição do item alvo",
+              "Hint": "Use JavaScript para decidir se o item clicado pode receber este socket. Variáveis disponíveis: item, targetItem, hostItem, actor, user, socketCount, game, getProperty, hasProperty, deepClone.",
+              "Placeholder": "Exemplo: return item.type === 'equipment' && getProperty(item, 'system.type.value') === 'shield' && socketCount === 0;"
+            },
+            "RemoveHint": "Esta activity pede um slot vazio no item e o remove."
+          },
+          "Warnings": {
+            "AddFailed": "Não foi possível adicionar um socket em {item}.",
+            "InvalidSlot": "Escolha um slot vazio válido.",
+            "NoEmptySlots": "Este item não possui slots vazios para remover.",
+            "RemoveFailed": "Não foi possível remover o slot vazio selecionado.",
+            "SlotNotEmpty": "Somente slots vazios podem ser removidos com esta activity.",
+            "TargetConditionError": "A condição do item alvo desta activity de socket não pôde ser avaliada.",
+            "TargetConditionFailed": "O item clicado não atende à condição de alvo desta activity de socket.",
+            "TargetConditionInvalid": "A condição do item alvo contém código inválido."
+          },
+          "Info": {
+            "Added": "Um socket foi adicionado a {item}.",
+            "Removed": "Um slot vazio foi removido de {item}."
+          },
+          "App": {
+            "Confirm": "Remover slot vazio",
+            "Subtitle": "{item} possui {count} slots vazios disponíveis.",
+            "Title": "Escolher Slot Vazio"
+          }
+        },
+        "SocketExtraction": {
+          "Title": "Socket Extraction",
+          "Hint": "Use a activity e depois clique no item alvo. A activity remove uma gema socketada e decide se ela é extraída ou deletada.",
+          "Sections": {
+            "Configuration": "Configuração da Extração"
+          },
+          "Fields": {
+            "TargetingHint": "Ao usar esta activity, o próximo item clicado vira o alvo. O resultado abaixo sobrescreve as configurações globais e do slot.",
+            "Mode": {
+              "Label": "Resultado da gema removida",
+              "Hint": "Escolha se a gema removida volta ao inventário ou é destruída. Isso ignora as configurações globais e do slot.",
+              "Choices": {
+                "Delete": "Extrair e destruir",
+                "Keep": "Extrair e preservar"
+              }
+            }
+          },
+          "Selection": {
+            "Prompt": "Clique no item cuja gema socketada deve ser removida. Pressione Esc para cancelar.",
+            "Cancelled": "Seleção cancelada."
+          },
+          "Dialogs": {
+            "ConfirmBodyDelete": "Usar {name} como alvo e deletar a gema removida?",
+            "ConfirmBodyKeep": "Usar {name} como alvo e preservar a gema removida?",
+            "ConfirmTitleDelete": "Deletar gema socketada",
+            "ConfirmTitleKeep": "Extrair gema socketada",
+            "InvalidTypeBody": "{name} não pode usar sockets.",
+            "InvalidTypeTitle": "Item incompatível",
+            "ItemPermissionBody": "Você não tem permissão para editar {name}.",
+            "ItemPermissionTitle": "Não é possível editar o item",
+            "NoSocketedGemsBody": "{name} não possui gemas socketadas para remover.",
+            "NoSocketedGemsTitle": "Sem gemas socketadas",
+            "OverrideHint": "Esta activity ignora as configurações globais e do slot ao remover a gema."
+          },
+          "Warnings": {
+            "EmptySlot": "O slot selecionado não contém gema.",
+            "ExtractionFailed": "Não foi possível extrair a gema selecionada.",
+            "InvalidSlot": "Escolha uma gema socketada válida.",
+            "NoSocketedGems": "O item alvo não possui gemas socketadas para remover."
+          },
+          "Info": {
+            "Deleted": "A activity removeu uma gema socketada de {item} e a destruiu.",
+            "Extracted": "A activity removeu uma gema socketada de {item} e a preservou."
+          },
+          "App": {
+            "Confirm": "Remover gema selecionada",
+            "Subtitle": "{item} possui {count} gemas socketadas. Escolha qual remover.",
+            "Title": "Escolher Gema para Remover"
+          }
+        }
       }
     }
   }

@@ -6,10 +6,13 @@ import { SelectionController } from "./SelectionController.js";
 import { normalizeSlotConfig, normalizeSlotColor } from "../helpers/socketSlotConfig.js";
 
 export const DEFAULT_OPTIONS = {
+  bypassWorldSocketLimit: false,
+  ignoreMaxSockets: false,
   renderSheet: true,
   notifications: true,
   promptSlotConfig: false,
-  slotConfig: {}
+  slotConfig: {},
+  targetValidator: null
 };
 
 const escapeHtml = (str) => {
@@ -91,6 +94,61 @@ export class AddSocketWorkflow {
       : invalidConditionLabel;
     ui.notifications?.warn?.(errorMessage);
     return false;
+  }
+
+  async #validateTargetItem(item) {
+    if (typeof this.options.targetValidator !== "function") {
+      return { ok: true };
+    }
+
+    try {
+      const result = await this.options.targetValidator(item);
+      if (result === false) {
+        return {
+          ok: false,
+          reason: "target-validator-rejected",
+          title: Constants.localize(
+            "SCSockets.Macro.AddSocket.TargetConditionTitle",
+            "Target Condition Failed"
+          ),
+          message: Constants.localize(
+            "SCSockets.Macro.AddSocket.TargetConditionBody",
+            "This item does not meet the socket activity target condition."
+          )
+        };
+      }
+
+      if (result && typeof result === "object") {
+        return {
+          ok: result.ok !== false,
+          reason: result.reason ?? "target-validator-rejected",
+          title: result.title ?? Constants.localize(
+            "SCSockets.Macro.AddSocket.TargetConditionTitle",
+            "Target Condition Failed"
+          ),
+          message: result.message ?? Constants.localize(
+            "SCSockets.Macro.AddSocket.TargetConditionBody",
+            "This item does not meet the socket activity target condition."
+          )
+        };
+      }
+
+      return { ok: true };
+    } catch (error) {
+      console.error(`[${Constants.MODULE_ID}] targetValidator failed`, error);
+      return {
+        ok: false,
+        reason: "target-validator-error",
+        title: Constants.localize(
+          "SCSockets.Macro.AddSocket.TargetConditionErrorTitle",
+          "Target Condition Error"
+        ),
+        message: `${Constants.localize(
+          "SCSockets.Macro.AddSocket.TargetConditionErrorBody",
+          "The target condition for this socket activity could not be evaluated."
+        )} ${error?.message ?? ""}`.trim()
+      };
+    }
   }
 
   async #resolveSlotConfig() {
@@ -226,6 +284,7 @@ export class AddSocketWorkflow {
 
   async run() {
     const hasModulePermission = ModuleSettings.canAddOrRemoveSocket(game.user);
+    const bypassWorldSocketLimit = this.options.bypassWorldSocketLimit === true || this.options.ignoreMaxSockets === true;
 
     const { DialogV2 } = foundry.applications.api;
 
@@ -295,7 +354,7 @@ export class AddSocketWorkflow {
 
       const max = ModuleSettings.getMaxSockets();
       const count = getSocketCount(item);
-      if (Number.isFinite(max) && count >= max) {
+      if (!bypassWorldSocketLimit && Number.isFinite(max) && count >= max) {
         const retry = await DialogV2.confirm({
           window: {
             title: Constants.localize(
@@ -317,6 +376,29 @@ export class AddSocketWorkflow {
         });
 
         if (!retry) return { success: false, reason: "max-reached" };
+        continue;
+      }
+
+      const targetValidation = await this.#validateTargetItem(item);
+      if (targetValidation.ok === false) {
+        const retry = await DialogV2.confirm({
+          window: {
+            title: targetValidation.title
+          },
+          content: `
+            <p>${escapeHtml(targetValidation.message ?? Constants.localize(
+              "SCSockets.Macro.AddSocket.TargetConditionBody",
+              "This item does not meet the socket activity target condition."
+            ))}</p>
+            <p>${Constants.localize(
+              "SCSockets.Macro.AddSocket.SelectAnother",
+              "Do you want to select another item?"
+            )}</p>
+          `,
+          modal: true
+        });
+
+        if (!retry) return { success: false, reason: targetValidation.reason ?? "target-condition" };
         continue;
       }
 
@@ -364,6 +446,8 @@ export class AddSocketWorkflow {
         }
 
         await SocketService.addSlot(item, {
+          ignoreMaxSockets: bypassWorldSocketLimit,
+          bypassWorldSocketLimit,
           bypassPermission: !hasModulePermission,
           slotConfig
         });

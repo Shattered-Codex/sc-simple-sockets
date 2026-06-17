@@ -92,6 +92,11 @@
                 "id": "lib-wrapper",
                 "type": "module",
                 "compatibility": {}
+            },
+            {
+                "id": "sc-more-activities",
+                "type": "module",
+                "compatibility": {}
             }
         ]
     },

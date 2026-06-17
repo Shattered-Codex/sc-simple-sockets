@@ -1062,6 +1062,361 @@ body.sc-sockets-extract-cursor * {
   background: color-mix(in srgb, var(--sf-panel-bg, #221f26) 92%, #4a394f 8%);
 }
 
+.sc-sockets-scma-activity .sc-sockets-scma-grid {
+  display: grid;
+  gap: 0.85rem 1rem;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-grid--two > .form-group {
+  min-width: 0;
+  margin: 0;
+  align-self: start;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-config-field--full {
+  grid-column: 1 / -1;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-config-field > label {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-text-light-highlight, currentColor);
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-config-field .form-fields,
+.sc-sockets-scma-activity .sc-sockets-scma-color-group .form-fields {
+  width: 100%;
+  min-width: 0;
+}
+
+.sc-sockets-scma-activity fieldset > :not(legend) {
+  margin-top: 0;
+}
+
+.sc-sockets-scma-activity fieldset > :not(legend) + :not(legend) {
+  margin-top: 0.75rem;
+}
+
+.sc-sockets-scma-activity .form-group.stacked.sc-sockets-scma-editor-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.sc-sockets-scma-activity .form-group.stacked.sc-sockets-scma-editor-group > label {
+  margin: 0;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-inline-label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-field-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-field-label--strong {
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  color: var(--color-text-light-highlight, currentColor);
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-inline-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-info {
+  flex: 0 0 auto;
+  color: var(--color-text-light-6);
+  cursor: help;
+  margin-top: 0.1rem;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-color-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.sc-sockets-scma-activity .form-group.sc-sockets-scma-color-field > label {
+  flex: 2;
+  margin: 0;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-color-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3rem;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-color-picker {
+  width: 100%;
+  min-width: 0;
+  height: 2rem;
+  padding: 0.15rem;
+}
+
+.sc-sockets-scma-activity code-mirror.sc-sockets-scma-code-editor {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 10rem;
+  overflow: hidden;
+}
+
+.sc-sockets-scma-activity code-mirror.sc-sockets-scma-code-editor .cm-editor {
+  width: 100%;
+  min-height: inherit;
+  overflow: hidden;
+}
+
+.sc-sockets-scma-activity code-mirror.sc-sockets-scma-code-editor .cm-scroller {
+  width: 100%;
+  min-height: inherit;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.sc-sockets-scma-activity prose-mirror.sc-sockets-scma-description-editor,
+.sc-sockets-scma-activity prose-mirror.sc-sockets-scma-description-editor .editor-container {
+  min-height: 13rem;
+}
+
+.sc-sockets-scma-activity prose-mirror.sc-sockets-scma-description-editor {
+  display: flex;
+  flex-direction: column;
+  max-height: 18rem;
+  overflow: hidden;
+}
+
+.sc-sockets-scma-activity prose-mirror.sc-sockets-scma-description-editor .editor-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  padding-right: 0.35rem;
+}
+
+.sc-sockets-scma-activity prose-mirror.sc-sockets-scma-description-editor .editor-content {
+  line-height: 1.5;
+  overflow: visible;
+  padding: 0.45rem 0.95rem 0.85rem;
+}
+
+.sc-sockets-scma-activity prose-mirror.sc-sockets-scma-description-editor .ProseMirror {
+  margin: 0;
+  overflow: visible;
+}
+
+.sc-sockets-scma-activity prose-mirror.sc-sockets-scma-description-editor .editor-content > :first-child,
+.sc-sockets-scma-activity prose-mirror.sc-sockets-scma-description-editor .ProseMirror > :first-child {
+  margin-top: 0;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-description-fallback,
+.sc-sockets-scma-activity .sc-sockets-scma-code-fallback {
+  width: 100%;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-description-fallback {
+  min-height: 13rem;
+}
+
+.sc-sockets-scma-activity code-mirror.sc-sockets-scma-code-editor--primary,
+.sc-sockets-scma-activity code-mirror.sc-sockets-scma-code-editor--primary .cm-editor,
+.sc-sockets-scma-activity code-mirror.sc-sockets-scma-code-editor--primary .cm-scroller,
+.sc-sockets-scma-activity .sc-sockets-scma-code-fallback--primary {
+  min-height: 10rem;
+}
+
+.sc-sockets-scma-activity code-mirror.sc-sockets-scma-code-editor--secondary,
+.sc-sockets-scma-activity code-mirror.sc-sockets-scma-code-editor--secondary .cm-editor,
+.sc-sockets-scma-activity code-mirror.sc-sockets-scma-code-editor--secondary .cm-scroller,
+.sc-sockets-scma-activity .sc-sockets-scma-code-fallback--secondary {
+  min-height: 8rem;
+}
+
+.sc-sockets-scma-activity .sc-sockets-scma-code-fallback {
+  font-family: var(--font-monospace, "Monaco", "Consolas", monospace);
+  font-size: 0.85rem;
+}
+
+.sc-sockets-scma-activity .form-group.stacked.sc-sockets-scma-editor-group > .form-fields,
+.sc-sockets-scma-activity .form-group.stacked.sc-sockets-scma-editor-group > .form-fields > code-mirror,
+.sc-sockets-scma-activity .form-group.stacked.sc-sockets-scma-editor-group > .form-fields > prose-mirror,
+.sc-sockets-scma-activity .form-group.stacked.sc-sockets-scma-editor-group > .form-fields > textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+.sc-sockets-scma-activity .form-group.stacked.sc-sockets-scma-editor-group > .form-fields {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.sc-sockets-scma-picker {
+  --sc-sockets-slot-icon-size: 2.7rem;
+  --sc-sockets-slot-radius: 4px;
+}
+
+.sc-sockets-scma-picker .window-content {
+  padding: 0.9rem 1rem 1rem;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__subtitle {
+  margin: 0;
+  line-height: 1.4;
+  color: var(--color-text-light-2, inherit);
+  font-size: 0.92rem;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__item {
+  margin: 0;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 3.1rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--dnd5e-color-gold, #9f9275) 18%, var(--color-border-light-2, #70788a) 82%);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--dnd5e-color-card, var(--dnd5e-background-card, var(--sf-panel-bg, #231f2a))) 22%, transparent);
+  box-shadow: none;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option:hover,
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option:focus-visible {
+  border-color: color-mix(in srgb, var(--dnd5e-color-gold, #9f9275) 60%, var(--color-border-highlight, #8aa6ff) 40%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0)),
+    color-mix(in srgb, var(--dnd5e-background-card, var(--sf-panel-bg, #231f2a)) 24%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dnd5e-color-gold, #9f9275) 18%, transparent);
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option.is-destructive:hover,
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option.is-destructive:focus-visible {
+  border-color: color-mix(in srgb, #ca5a5a 66%, var(--color-border-highlight, #8aa6ff) 34%);
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option:disabled {
+  opacity: 0.72;
+  cursor: wait;
+  box-shadow: none;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option-main {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__slot-visual {
+  flex: 0 0 var(--sc-sockets-slot-icon-size);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__slot-label {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.38rem;
+  border: 1px solid color-mix(in srgb, var(--pill-border-color, #666) 60%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--pill-background-color, rgba(255, 255, 255, 0.08)) 32%, transparent);
+  color: var(--color-text-light-3, inherit);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__gem-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+  color: var(--color-text-light-highlight, var(--color-text-light-1, inherit));
+  letter-spacing: 0.01em;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__footer {
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 720px) {
+  .sc-sockets-scma-activity .sc-sockets-scma-grid--two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sc-sockets-scma-activity .sc-sockets-scma-color-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sc-sockets-scma-picker .sc-sockets-scma-picker__option {
+    padding-inline: 0.65rem;
+  }
+
+  .sc-sockets-scma-picker .sc-sockets-scma-picker__option-main {
+    gap: 0.5rem;
+  }
+
+  .sc-sockets-scma-picker .sc-sockets-scma-picker__slot-label {
+    padding-inline: 0.38rem;
+    font-size: 0.68rem;
+  }
+}
+
 .socket-slot-config-app .socket-slot-config-name-row {
   display: flex;
   flex-direction: column;

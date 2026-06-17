@@ -337,6 +337,10 @@
         "SelectPrompt": "Click an item to add a socket. Press Esc to cancel.",
         "Cancelled": "Selection cancelled.",
         "NoPermission": "You do not have permission to add sockets.",
+        "TargetConditionTitle": "Target Condition Failed",
+        "TargetConditionBody": "This item does not meet the socket activity target condition.",
+        "TargetConditionErrorTitle": "Target Condition Error",
+        "TargetConditionErrorBody": "The target condition for this socket activity could not be evaluated.",
         "ItemPermissionTitle": "Cannot Edit Item",
         "ItemPermissionBody": "You do not have permission to edit {name}.",
         "InvalidTypeTitle": "Unsupported Item",
@@ -358,6 +362,133 @@
         "ItemPermissionBody": "You do not have permission to edit {name}.",
         "Success": "Extracted {gem} from {name}.",
         "Error": "Failed to extract gem. See console for details."
+      }
+    },
+    "Integrations": {
+      "ScMoreActivities": {
+        "GroupLabel": "SC Simple Sockets",
+        "Common": {
+          "Select": "Select",
+          "SelectAnother": "Do you want to select another item?",
+          "SelectAnotherTitle": "Select Another Item",
+          "SlotLabel": "Slot {slot}",
+          "CursorImage": {
+            "Label": "Click cursor image",
+            "Hint": "Optional image path or URL used as the cursor while this activity waits for the next clicked target. Leave blank to use the default hammer cursor.",
+            "Placeholder": "modules/my-module/assets/cursor.webp"
+          }
+        },
+        "Warnings": {
+          "ActivityDisabled": "{activity} is currently disabled by the GM.",
+          "ActivityPermission": "You do not have permission to use this activity.",
+          "InvalidRequest": "The socket activity request is no longer valid.",
+          "NoActiveGm": "An active GM is required for socket activities.",
+          "RequestFailed": "Could not request a GM-mediated socket operation: {error}"
+        },
+        "SocketSlot": {
+          "Title": "Socket Slot",
+          "Hint": "Select the next clicked item to add a configured socket, or remove one empty slot from the current item.",
+          "Sections": {
+            "Behavior": "Behavior",
+            "Conditions": "Conditions",
+            "Configuration": "Slot Configuration",
+            "Description": "Description"
+          },
+          "Fields": {
+            "EditorTags": {
+              "JavaScript": "JavaScript",
+              "RichText": "Rich Text",
+              "TargetItem": "Target Item"
+            },
+            "Operation": {
+              "Label": "Operation",
+              "Hint": "Choose whether this activity targets the next clicked item for a new socket or removes one empty slot from the current item.",
+              "Choices": {
+                "Add": "Add socket",
+                "RemoveEmpty": "Remove empty slot"
+              }
+            },
+            "IgnoreMaxSockets": {
+              "Label": "Ignore socket limit",
+              "Hint": "When enabled, this activity can add a socket even if the item is already at the world socket limit."
+            },
+            "TargetCondition": {
+              "Label": "Target item condition",
+              "Hint": "Use JavaScript to decide whether the clicked item can receive this socket. Available variables: item, targetItem, hostItem, actor, user, socketCount, game, getProperty, hasProperty, deepClone.",
+              "Placeholder": "Example: return item.type === 'equipment' && getProperty(item, 'system.type.value') === 'shield' && socketCount === 0;"
+            },
+            "RemoveHint": "This activity prompts for one empty slot on the item and removes it."
+          },
+          "Warnings": {
+            "AddFailed": "Could not add a socket to {item}.",
+            "InvalidSlot": "Choose a valid empty slot.",
+            "NoEmptySlots": "This item has no empty slots to remove.",
+            "RemoveFailed": "Could not remove the selected empty slot.",
+            "SlotNotEmpty": "Only empty slots can be removed with this activity.",
+            "TargetConditionError": "The target item condition for this socket activity could not be evaluated.",
+            "TargetConditionFailed": "The clicked item does not match the target condition for this socket activity.",
+            "TargetConditionInvalid": "The target item condition has invalid code."
+          },
+          "Info": {
+            "Added": "Added a socket to {item}.",
+            "Removed": "Removed an empty slot from {item}."
+          },
+          "App": {
+            "Confirm": "Remove empty slot",
+            "Subtitle": "{item} has {count} empty slots available.",
+            "Title": "Choose Empty Slot"
+          }
+        },
+        "SocketExtraction": {
+          "Title": "Socket Extraction",
+          "Hint": "Use the activity, then click the target item. The activity removes one socketed gem and decides whether it is kept or deleted.",
+          "Sections": {
+            "Configuration": "Extraction Configuration"
+          },
+          "Fields": {
+            "TargetingHint": "When used, this activity targets the next clicked item. The selected result below overrides global and slot removal settings.",
+            "Mode": {
+              "Label": "Removed Gem Outcome",
+              "Hint": "Choose whether the removed gem is returned or destroyed. This ignores global and slot removal settings.",
+              "Choices": {
+                "Delete": "Extract and destroy",
+                "Keep": "Extract and keep"
+              }
+            }
+          },
+          "Selection": {
+            "Prompt": "Click the item whose socketed gem should be removed. Press Esc to cancel.",
+            "Cancelled": "Selection cancelled."
+          },
+          "Dialogs": {
+            "ConfirmBodyDelete": "Use {name} as the target and delete the removed gem?",
+            "ConfirmBodyKeep": "Use {name} as the target and keep the removed gem?",
+            "ConfirmTitleDelete": "Delete Socketed Gem",
+            "ConfirmTitleKeep": "Extract Socketed Gem",
+            "InvalidTypeBody": "{name} cannot use sockets.",
+            "InvalidTypeTitle": "Unsupported Item",
+            "ItemPermissionBody": "You do not have permission to edit {name}.",
+            "ItemPermissionTitle": "Cannot Edit Item",
+            "NoSocketedGemsBody": "{name} has no socketed gems to remove.",
+            "NoSocketedGemsTitle": "No Socketed Gems",
+            "OverrideHint": "This activity ignores global and slot removal settings."
+          },
+          "Warnings": {
+            "EmptySlot": "The selected slot does not contain a gem.",
+            "ExtractionFailed": "Could not extract the selected gem.",
+            "InvalidSlot": "Choose a valid socketed gem.",
+            "NoSocketedGems": "The target item has no socketed gems to remove."
+          },
+          "Info": {
+            "Deleted": "The activity removed a socketed gem from {item} and destroyed it.",
+            "Extracted": "The activity removed a socketed gem from {item} and kept it."
+          },
+          "App": {
+            "Confirm": "Remove selected gem",
+            "Subtitle": "{item} has {count} socketed gems. Choose which one to remove.",
+            "Title": "Choose Gem to Remove"
+          }
+        }
       }
     }
   }

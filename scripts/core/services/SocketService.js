@@ -56,10 +56,10 @@ export class SocketService {
     return SocketStore.peekSlots(SocketService.#resolveHostItem(hostItem));
   }
 
-  static async updateSlotConfig(hostItem, idx, config) {
+  static async updateSlotConfig(hostItem, idx, config, options = {}) {
     return SocketService.#enqueueHostOperation(
       hostItem,
-      (currentHostItem) => SocketSlotConfigService.updateConfig(currentHostItem, idx, config)
+      (currentHostItem) => SocketService.#updateSlotConfig(currentHostItem, idx, config, options)
     );
   }
 
@@ -328,15 +328,23 @@ export class SocketService {
       actor: DebugTrace.describeActor(hostItem?.actor ?? hostItem?.parent),
       options: DebugTrace.describeOptions(options)
     });
-    const { bypassPermission = false, slotConfig = {} } = options;
+    const {
+      ignoreMaxSockets = false,
+      bypassPermission = false,
+      bypassWorldSocketLimit = false,
+      slotConfig = {}
+    } = options;
+    const canBypassWorldSocketLimit = ignoreMaxSockets || bypassWorldSocketLimit;
 
     if (!SocketService.#isHostTypeSocketable(hostItem)) {
-      ui.notifications?.warn?.(
-        Constants.localize(
-          "SCSockets.Notifications.HostNotSocketable",
-          "This item type cannot receive sockets."
-        )
-      );
+      if (options?.notify !== false) {
+        ui.notifications?.warn?.(
+          Constants.localize(
+            "SCSockets.Notifications.HostNotSocketable",
+            "This item type cannot receive sockets."
+          )
+        );
+      }
       return;
     }
 
@@ -345,10 +353,12 @@ export class SocketService {
     }
     const currentSlots = SocketStore.peekSlots(hostItem);
     const maxSlots = ModuleSettings.getMaxSockets();
-    if (currentSlots.length >= maxSlots) {
-      ui.notifications?.warn?.(
-        Constants.localize("SCSockets.Notifications.MaxReached", "Maximum number of sockets reached.")
-      );
+    if (!canBypassWorldSocketLimit && currentSlots.length >= maxSlots) {
+      if (options?.notify !== false) {
+        ui.notifications?.warn?.(
+          Constants.localize("SCSockets.Notifications.MaxReached", "Maximum number of sockets reached.")
+        );
+      }
       return;
     }
     const slot = SocketSlot.makeDefault(slotConfig);
@@ -378,7 +388,7 @@ export class SocketService {
       slotIndex: idx,
       options: DebugTrace.describeOptions(options)
     });
-    if (!ModuleSettings.canAddOrRemoveSocket()) {
+    if (!SocketService.#canMutateSockets(options)) {
       return;
     }
     const currentSlots = SocketStore.peekSlots(hostItem);
@@ -434,6 +444,22 @@ export class SocketService {
       });
       throw error;
     }
+  }
+
+  static async #updateSlotConfig(hostItem, idx, config, options = {}) {
+    if (!SocketService.#canMutateSockets(options)) {
+      if (options?.notify !== false) {
+        ui.notifications?.warn?.(
+          Constants.localize(
+            "SCSockets.Notifications.EditPermissionDenied",
+            "You do not have permission to modify sockets on this item."
+          )
+        );
+      }
+      return false;
+    }
+
+    return SocketSlotConfigService.updateConfig(hostItem, idx, config, options);
   }
 
   static async #removeDerivedSlotData(hostItem, idx, options = {}) {

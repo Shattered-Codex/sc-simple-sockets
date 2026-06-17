@@ -4,6 +4,97 @@ const ITEM_SELECTORS = "[data-item-id],[data-document-id],[data-entry-id],[data-
 const SOCKET_SLOT_SELECTORS = '[data-dropzone="socket-slot"][data-index]';
 const CURSOR_CLASS = "sc-sockets-target-cursor";
 const EXTRACT_CURSOR_CLASS = "sc-sockets-extract-cursor";
+const CURSOR_VARIABLES = Object.freeze({
+  [CURSOR_CLASS]: "--sc-sockets-cursor",
+  [EXTRACT_CURSOR_CLASS]: "--sc-sockets-extract-cursor"
+});
+const CURSOR_FALLBACKS = Object.freeze({
+  [CURSOR_CLASS]: "crosshair",
+  [EXTRACT_CURSOR_CLASS]: "pointer"
+});
+const MAX_CURSOR_SIZE = 48;
+
+const ROOT_ASSET_PREFIXES = /^(?:modules|systems|worlds|icons|ui|scripts)\//;
+const ABSOLUTE_URL_PREFIXES = /^(?:[a-z]+:|\/\/|\/)/i;
+
+const escapeCursorUrl = (value) => String(value ?? "").replace(/["\\\n\r]/g, "\\$&");
+const normalizeCursorUrl = (cursorUrl) => {
+  const value = String(cursorUrl ?? "").trim();
+  if (!value.length) return "";
+  if (ABSOLUTE_URL_PREFIXES.test(value)) return value;
+  if (ROOT_ASSET_PREFIXES.test(value)) return `/${value}`;
+  if (value.startsWith("./assets/")) return `/modules/${Constants.MODULE_ID}/${value.slice(2)}`;
+  if (value.startsWith("assets/")) return `/${value}`;
+  return value;
+};
+
+const buildCursorValue = (value, cursorClass, hotspotX = 16, hotspotY = 16) => {
+  const fallback = CURSOR_FALLBACKS[cursorClass] ?? "crosshair";
+  return `url("${escapeCursorUrl(value)}") ${hotspotX} ${hotspotY}, ${fallback}`;
+};
+
+const rasterizeCursorUrl = async (cursorUrl) => {
+  const value = normalizeCursorUrl(cursorUrl);
+  if (!value.length) return "";
+
+  const image = new Image();
+  image.decoding = "async";
+
+  const loaded = await new Promise((resolve, reject) => {
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Failed to load cursor image: ${value}`));
+    image.src = value;
+  });
+
+  const width = Number(loaded.naturalWidth ?? loaded.width ?? 0);
+  const height = Number(loaded.naturalHeight ?? loaded.height ?? 0);
+  if (!width || !height) {
+    return buildCursorValue(value, CURSOR_CLASS);
+  }
+
+  if (width <= MAX_CURSOR_SIZE && height <= MAX_CURSOR_SIZE) {
+    return buildCursorValue(value, CURSOR_CLASS, Math.min(16, width - 1), Math.min(16, height - 1));
+  }
+
+  const scale = Math.min(MAX_CURSOR_SIZE / width, MAX_CURSOR_SIZE / height);
+  const targetWidth = Math.max(1, Math.round(width * scale));
+  const targetHeight = Math.max(1, Math.round(height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return buildCursorValue(value, CURSOR_CLASS);
+  }
+
+  context.clearRect(0, 0, targetWidth, targetHeight);
+  context.drawImage(loaded, 0, 0, targetWidth, targetHeight);
+  const dataUrl = canvas.toDataURL("image/png");
+  return buildCursorValue(
+    dataUrl,
+    CURSOR_CLASS,
+    Math.min(16, targetWidth - 1),
+    Math.min(16, targetHeight - 1)
+  );
+};
+
+const toCursorValue = async (cursorUrl, cursorClass) => {
+  const value = normalizeCursorUrl(cursorUrl);
+  if (!value.length) return "";
+  try {
+    const rasterized = await rasterizeCursorUrl(value);
+    if (rasterized.length) {
+      return rasterized.replace(
+        `, ${CURSOR_FALLBACKS[CURSOR_CLASS] ?? "crosshair"}`,
+        `, ${CURSOR_FALLBACKS[cursorClass] ?? "crosshair"}`
+      );
+    }
+  } catch {
+    // Fall back to the original URL if rasterization fails.
+  }
+  return buildCursorValue(value, cursorClass);
+};
 
 const findRelatedElement = (element, selector) => {
   if (!(element instanceof HTMLElement)) return null;
@@ -125,8 +216,8 @@ export class SelectionController {
     return SelectionController.#runSelection({
       ...options,
       cursorClass: options.cursorClass ?? CURSOR_CLASS,
-      messageKey: "SCSockets.Macro.AddSocket.SelectPrompt",
-      messageFallback: "Click an item to add a socket. Press Esc to cancel.",
+      messageKey: options.messageKey ?? "SCSockets.Macro.AddSocket.SelectPrompt",
+      messageFallback: options.messageFallback ?? "Click an item to add a socket. Press Esc to cancel.",
       selector: ITEM_SELECTORS,
       resolveSelection: async (target) => resolveItemFromElement(target)
     });
@@ -150,9 +241,10 @@ export class SelectionController {
     });
   }
 
-  static #runSelection({
+  static async #runSelection({
     notifications = true,
     cursorClass = CURSOR_CLASS,
+    cursorUrl = "",
     messageKey,
     messageFallback,
     selector,
@@ -165,11 +257,24 @@ export class SelectionController {
 
     const root = document.documentElement;
     const body = document.body;
-    root?.classList.add(cursorClass);
-    body?.classList.add(cursorClass);
+    const cursorVariable = CURSOR_VARIABLES[cursorClass] ?? CURSOR_VARIABLES[CURSOR_CLASS];
+    let customCursorValue = "";
+    if (cursorUrl) {
+      try {
+        customCursorValue = await toCursorValue(cursorUrl, cursorClass);
+      } catch {
+        customCursorValue = "";
+      }
+    }
 
     return new Promise((resolve) => {
       let finished = false;
+      if (customCursorValue) {
+        root?.style?.setProperty?.(cursorVariable, customCursorValue);
+        body?.style?.setProperty?.(cursorVariable, customCursorValue);
+      }
+      root?.classList.add(cursorClass);
+      body?.classList.add(cursorClass);
 
       const finish = (value) => {
         if (finished) return;
@@ -188,6 +293,10 @@ export class SelectionController {
         const docBody = document.body;
         docRoot?.classList.remove(CURSOR_CLASS, EXTRACT_CURSOR_CLASS);
         docBody?.classList.remove(CURSOR_CLASS, EXTRACT_CURSOR_CLASS);
+        if (customCursorValue) {
+          docRoot?.style?.removeProperty?.(cursorVariable);
+          docBody?.style?.removeProperty?.(cursorVariable);
+        }
       };
 
       const onKeyDown = (event) => {

@@ -75,6 +75,17 @@ Once a gem is inserted, the module can:
 - Exposes an API for macros and automations.
 - Includes ready-to-use gem compendium content.
 
+## SC More Activities Integration
+
+When `sc-more-activities` is also active, `sc-simple-sockets` registers its own
+socket activities directly from this module:
+
+- `sc-socket-slot`
+- `sc-socket-extraction`
+
+That integration lives entirely inside `sc-simple-sockets`, so the socket
+behavior stays scoped to the module that owns it.
+
 > **Want even more content?**  
 > If you want **120+ ready-to-use gems**, you can get the **SC - More Gems** module as a **Patreon supporter**.
 

@@ -1,0 +1,199 @@
+<section class="tab activity-{{ tab.id }} {{ tab.cssClass }} sc-sockets-scma-activity sc-sockets-scma-effect sc-sockets-scma-effect--slot" data-tab="{{ tab.id }}" data-group="{{ tab.group }}">
+  {{#if appliedEffects}}{{> "systems/dnd5e/templates/activity/parts/activity-effects.hbs" }}{{/if}}
+
+  <fieldset class="sc-sockets-scma-fieldset sc-sockets-scma-fieldset--configuration">
+    <legend>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketSlot.Sections.Configuration" }}</legend>
+
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketSlot.Fields.Operation.Label" }}</label>
+      <div class="form-fields">
+        <select name="slot.operation">
+          {{ selectOptions operationOptions selected=slot.operation valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketSlot.Fields.Operation.Hint" }}</p>
+    </div>
+
+    {{#if isAddOperation}}
+        <div class="form-group">
+          <label>{{ localize "SCSockets.SocketSlotConfig.SlotNameLabel" }}</label>
+          <div class="form-fields">
+            <input type="text" name="slot.name" value="{{ slot.name }}" placeholder="{{ localize "SCSockets.SocketSlotConfig.SlotNameLabel" }}">
+          </div>
+        </div>
+
+        <div class="form-group sc-sockets-scma-color-field">
+          <label class="sc-sockets-scma-inline-label">
+            <span>{{ localize "SCSockets.SocketSlotConfig.Color.Label" }}</span>
+            <i
+              class="fa-solid fa-circle-info sc-sockets-scma-info"
+              data-tooltip="{{ colorHint }}"
+              aria-label="{{ colorHint }}"
+            ></i>
+          </label>
+          <div class="form-fields sc-sockets-scma-color-row">
+            <input
+              type="text"
+              name="slot.color"
+              value="{{ slot.color }}"
+              placeholder="#C44D24"
+              data-slot-color-text
+            >
+            <input
+              type="color"
+              value="{{ colorPickerValue }}"
+              class="sc-sockets-scma-color-picker"
+              data-slot-color-picker
+              aria-label="{{ colorPickerLabel }}"
+              data-tooltip="{{ colorPickerLabel }}"
+            >
+          </div>
+        </div>
+
+        <div class="form-group sc-sockets-scma-cursor-image-field">
+          <label>{{ localize "SCSockets.Integrations.ScMoreActivities.Common.CursorImage.Label" }}</label>
+          <div class="form-fields">
+            <file-picker
+              name="slot.cursorImage"
+              type="image"
+              value="{{ slot.cursorImage }}"
+              placeholder="{{ localize "SCSockets.Integrations.ScMoreActivities.Common.CursorImage.Placeholder" }}"
+            ></file-picker>
+          </div>
+          <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.Common.CursorImage.Hint" }}</p>
+        </div>
+    {{else}}
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketSlot.Fields.RemoveHint" }}</p>
+    {{/if}}
+  </fieldset>
+
+  {{#if isAddOperation}}
+    <fieldset class="sc-sockets-scma-fieldset sc-sockets-scma-fieldset--description">
+      <legend>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketSlot.Sections.Description" }}</legend>
+
+      <div class="form-group stacked sc-sockets-scma-editor-group">
+        <label>{{ localize "SCSockets.SocketSlotConfig.Description.Label" }}</label>
+        <p class="hint">{{ localize "SCSockets.SocketSlotConfig.Description.Hint" }}</p>
+        <div class="form-fields">
+          {{#if hasProseMirrorEditor}}
+            <prose-mirror
+              name="slot.description"
+              value="{{ slot.description }}"
+              document-uuid="{{ hostItemUuid }}"
+              class="sized socket-slot-config-description-editor sc-sockets-scma-description-editor"
+              compact
+            >{{{descriptionEnriched}}}</prose-mirror>
+          {{else}}
+            <textarea
+              name="slot.description"
+              rows="8"
+              class="sc-sockets-settings-control sc-sockets-scma-description-fallback"
+            >{{ slot.description }}</textarea>
+          {{/if}}
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="sc-sockets-scma-fieldset sc-sockets-scma-fieldset--conditions">
+      <legend>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketSlot.Sections.Conditions" }}</legend>
+
+      <div class="form-group stacked sc-sockets-scma-editor-group">
+        <div class="sc-sockets-scma-inline-label">
+          <label class="sc-sockets-scma-field-label sc-sockets-scma-field-label--strong">{{ conditionLabel }}</label>
+          <div class="sc-sockets-scma-inline-actions">
+            <i
+              class="fa-solid fa-circle-info sc-sockets-scma-info"
+              data-tooltip="{{ conditionHint }}"
+              aria-label="{{ conditionHint }}"
+            ></i>
+          </div>
+        </div>
+        <p class="hint">
+          <a
+            href="{{ conditionWikiUrl }}"
+            target="_blank"
+            rel="noopener"
+            class="socket-slot-config-help-link"
+          >{{ conditionWiki }}</a>
+        </p>
+        <div class="form-fields">
+          {{#if hasCodeMirrorEditor}}
+            <code-mirror
+              name="slot.condition"
+              language="javascript"
+              indent="2"
+              class="socket-slot-config-code sc-sockets-scma-code-editor sc-sockets-scma-code-editor--primary"
+              aria-label="{{ conditionLabel }}"
+            >{{ slot.condition }}</code-mirror>
+          {{else}}
+            <textarea
+              name="slot.condition"
+              class="sc-sockets-settings-control socket-slot-config-code sc-sockets-scma-code-fallback sc-sockets-scma-code-fallback--primary"
+              rows="10"
+              placeholder="{{ conditionPlaceholder }}"
+            >{{ slot.condition }}</textarea>
+          {{/if}}
+        </div>
+      </div>
+
+      <div class="form-group stacked sc-sockets-scma-editor-group">
+        <div class="sc-sockets-scma-inline-label">
+          <label class="sc-sockets-scma-field-label sc-sockets-scma-field-label--strong">{{ targetConditionLabel }}</label>
+          <div class="sc-sockets-scma-inline-actions">
+            <i
+              class="fa-solid fa-circle-info sc-sockets-scma-info"
+              data-tooltip="{{ targetConditionHint }}"
+              aria-label="{{ targetConditionHint }}"
+            ></i>
+          </div>
+        </div>
+        <div class="form-fields">
+          {{#if hasCodeMirrorEditor}}
+            <code-mirror
+              name="slot.targetCondition"
+              language="javascript"
+              indent="2"
+              class="socket-slot-config-code sc-sockets-scma-code-editor sc-sockets-scma-code-editor--secondary"
+              aria-label="{{ targetConditionLabel }}"
+            >{{ slot.targetCondition }}</code-mirror>
+          {{else}}
+            <textarea
+              name="slot.targetCondition"
+              class="sc-sockets-settings-control socket-slot-config-code sc-sockets-scma-code-fallback sc-sockets-scma-code-fallback--secondary"
+              rows="8"
+              placeholder="{{ targetConditionPlaceholder }}"
+            >{{ slot.targetCondition }}</textarea>
+          {{/if}}
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="sc-sockets-scma-fieldset sc-sockets-scma-fieldset--behavior">
+      <legend>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketSlot.Sections.Behavior" }}</legend>
+
+      <div class="form-group">
+        <label>{{ localize "SCSockets.SocketSlotConfig.Hidden.Label" }}</label>
+        <div class="form-fields">
+          <input type="checkbox" name="slot.hidden" {{#if slot.hidden}}checked{{/if}}>
+        </div>
+        <p class="hint">{{ localize "SCSockets.SocketSlotConfig.Hidden.Hint" }}</p>
+      </div>
+
+      <div class="form-group">
+        <label>{{ localize "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Label" }}</label>
+        <div class="form-fields">
+          <input type="checkbox" name="slot.deleteGemOnRemoval" {{#if slot.deleteGemOnRemoval}}checked{{/if}}>
+        </div>
+        <p class="hint">{{ localize "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Hint" }}</p>
+      </div>
+
+      <div class="form-group">
+        <label>{{ ignoreMaxSocketsLabel }}</label>
+        <div class="form-fields">
+          <input type="checkbox" name="slot.ignoreMaxSockets" {{#if slot.ignoreMaxSockets}}checked{{/if}}>
+        </div>
+        <p class="hint">{{ ignoreMaxSocketsHint }}</p>
+      </div>
+    </fieldset>
+  {{/if}}
+</section>

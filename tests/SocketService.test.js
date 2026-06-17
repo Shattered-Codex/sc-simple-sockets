@@ -388,4 +388,48 @@ describe("SocketService", () => {
     assert.equal(allowed.success, true);
     assert.equal(allowed.changed, true);
   });
+
+  test("blocks addSlot at the world limit by default", async () => {
+    game.settings.set(Constants.MODULE_ID, "maxSockets", 1);
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        name: "Sword",
+        type: "weapon",
+        system: { activities: {} },
+        flags: {
+          [Constants.MODULE_ID]: {
+            sockets: [SocketSlot.makeDefault()]
+          }
+        }
+      }]
+    });
+    const hostItem = actor.items.get("host-1");
+
+    await SocketService.addSlot(hostItem);
+
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets.length, 1);
+  });
+
+  test("allows addSlot above the world limit when ignoreMaxSockets is explicit", async () => {
+    game.settings.set(Constants.MODULE_ID, "maxSockets", 1);
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        name: "Sword",
+        type: "weapon",
+        system: { activities: {} },
+        flags: {
+          [Constants.MODULE_ID]: {
+            sockets: [SocketSlot.makeDefault()]
+          }
+        }
+      }]
+    });
+    const hostItem = actor.items.get("host-1");
+
+    await SocketService.addSlot(hostItem, { ignoreMaxSockets: true });
+
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets.length, 2);
+  });
 });
