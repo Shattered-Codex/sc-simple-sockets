@@ -400,7 +400,7 @@ export class TidyIntegration {
   }
 
   static async #syncTabConfiguration(item) {
-    if (!TidyIntegration.#isTidyActive()) {
+    if (!TidyIntegration.#isTidyActive() || !TidyIntegration.#shouldSyncItem(item)) {
       return;
     }
 
@@ -412,15 +412,24 @@ export class TidyIntegration {
     const runtime = TidyIntegration.#api?.runtime?.ItemSheetQuadroneRuntime;
     const defaults = runtime?.getDefaultTabIds?.(item?.type) ?? [];
     const allTabs = runtime?.getAllRegisteredTabs?.(item?.type) ?? [];
+    const allTabIds = allTabs
+      .map((tab) => typeof tab === "string" ? tab : tab?.id)
+      .filter((id) => typeof id === "string" && id.length);
+    const current = item?.getFlag?.("tidy5e-sheet", "tab-configuration") ?? {};
+    const selected = Array.isArray(current.selected) ? current.selected : [];
+
+    if (!selected.length && !defaults.length && !allTabIds.length) {
+      return;
+    }
+
     const baseList = (() => {
-      const current = item?.getFlag?.("tidy5e-sheet", "tab-configuration") ?? {};
-      if (Array.isArray(current.selected) && current.selected.length) {
-        return current.selected;
+      if (selected.length) {
+        return selected;
       }
       if (defaults.length) {
         return defaults;
       }
-      return allTabs.map((t) => t.id);
+      return allTabIds;
     })();
 
     const desired = [];
@@ -462,8 +471,6 @@ export class TidyIntegration {
       desired.push(...filtered);
     }
 
-    const current = item?.getFlag?.("tidy5e-sheet", "tab-configuration") ?? {};
-    const selected = Array.isArray(current.selected) ? current.selected : [];
     const changed = desired.length !== selected.length ||
       desired.some((id) => !selected.includes(id));
 
