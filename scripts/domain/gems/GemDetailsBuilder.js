@@ -244,6 +244,12 @@ export class GemDetailsBuilder {
       ? entry.die.toLowerCase()
       : defaults.die;
     const bonus = Number(entry.bonus ?? defaults.bonus ?? 0);
+    const customEnabled = entry?.custom?.enabled === true;
+    const customFormula = typeof entry?.custom?.formula === "string"
+      ? entry.custom.formula.trim()
+      : customEnabled && typeof entry?.formula === "string"
+        ? entry.formula.trim()
+        : "";
     const legacyType = typeof entry.type === "string" && allowedTypes.has(entry.type)
       ? entry.type
       : "";
@@ -275,6 +281,10 @@ export class GemDetailsBuilder {
       number: Number.isFinite(number) ? number : defaults.number,
       die,
       bonus: Number.isFinite(bonus) ? bonus : defaults.bonus,
+      custom: {
+        enabled: customEnabled,
+        formula: customFormula
+      },
       typeMode,
       types: resolvedTypes,
       type: resolvedType,
@@ -288,6 +298,10 @@ export class GemDetailsBuilder {
       number: 1,
       die,
       bonus: 0,
+      custom: {
+        enabled: false,
+        formula: ""
+      },
       typeMode: "inherit",
       types: [Constants.GEM_DAMAGE_INHERIT_TYPE],
       type: "",

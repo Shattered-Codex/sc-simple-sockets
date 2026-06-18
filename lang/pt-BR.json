@@ -50,6 +50,8 @@
         "Hint": "Adicione um ou mais danos extras aplicados quando esta gema for encaixada em armas ou magias.",
         "Damage": "Dano",
         "Type": "Tipo",
+        "FormulaHint": "Ative isto para informar uma fórmula de rolagem em vez de escolher manualmente quantidade, dado e bônus.",
+        "FormulaPlaceholder": "1d@scale.monk.martial-arts.faces",
         "TypeHint": "Escolha um ou mais tipos de dano. Mesmo do item é exclusivo e limpa as outras seleções. Se vários tipos fixos forem selecionados, a janela de rolagem permitirá escolher um deles.",
         "TypeMode": "Tipo de dano",
         "TypeModeHint": "Mesmo do item usa o tipo de dano rolado pelo item socketado. Tipo(s) fixo(s) permite que a gema defina um ou mais tipos de dano para a rolagem.",

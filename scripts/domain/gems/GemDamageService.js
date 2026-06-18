@@ -177,6 +177,20 @@ export class GemDamageService {
   }
 
   static buildFormula(entry) {
+    const customEnabled = entry?.custom?.enabled === true;
+    const customFormula = typeof entry?.custom?.formula === "string"
+      ? entry.custom.formula.trim()
+      : "";
+    if (customEnabled) {
+      if (!customFormula) {
+        return null;
+      }
+      if (typeof Roll?.validate === "function") {
+        return Roll.validate(customFormula) ? customFormula : null;
+      }
+      return customFormula;
+    }
+
     const number = Math.max(0, Number(entry?.number ?? 0));
     const die = typeof entry?.die === "string" ? entry.die.toLowerCase() : "";
     const bonus = Number(entry?.bonus ?? 0);

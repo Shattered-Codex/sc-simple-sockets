@@ -1793,7 +1793,7 @@ body.sc-sockets-extract-cursor * {
 .sc-sockets-gem-damage-row-top,
 .sc-sockets-gem-damage-row-header {
   display: grid;
-  grid-template-columns: minmax(0, 4.8rem) minmax(0, 5.6rem) minmax(0, 4.8rem) minmax(0, 1fr) 2.1rem;
+  grid-template-columns: 4rem minmax(0, 4rem) minmax(0, 5.6rem) minmax(0, 4.8rem) minmax(0, 1fr) 2.1rem;
   gap: 0.3rem 0.45rem;
   align-items: end;
   width: 100%;
@@ -1819,6 +1819,52 @@ body.sc-sockets-extract-cursor * {
 }
 
 .sc-sockets-gem-damage-row select {
+  width: 100%;
+  min-width: 0;
+}
+
+.sc-sockets-gem-damage-formula-toggle-field {
+  min-width: 0;
+}
+
+.sc-sockets-gem-damage-formula-toggle-field > label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.sc-sockets-gem-damage-formula-toggle-field .form-fields {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 26px;
+}
+
+.sc-sockets-gem-damage-formula-toggle-field .checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100%;
+  margin: 0;
+}
+
+.sc-sockets-gem-damage-formula-toggle-field input[type="checkbox"] {
+  margin: 0;
+}
+
+.sc-sockets-gem-damage-formula-input-field {
+  grid-column: 2 / 5;
+  min-width: 0;
+}
+
+.sc-sockets-gem-damage-formula-input-field .form-fields {
+  width: 100%;
+}
+
+.sc-sockets-gem-damage-formula-input-field input[type="text"] {
+  flex: 1 1 auto;
   width: 100%;
   min-width: 0;
 }
@@ -1920,6 +1966,8 @@ body.sc-sockets-extract-cursor * {
     grid-template-columns: 1fr 1fr;
   }
 
+  .sc-sockets-gem-damage-formula-toggle-field,
+  .sc-sockets-gem-damage-formula-input-field,
   .sc-sockets-gem-damage-type-select-field,
   .sc-sockets-gem-damage-row-remove {
     grid-column: 1 / -1;

@@ -96,37 +96,77 @@
                       {{/if}}
                     {{/each}}
                   </div>
-                  <div class="form-fields sc-sockets-gem-damage-row-top sc-sockets-gem-damage-row-header split-group">
-                    <div class="form-group label-top">
-                      <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Number" }}</label>
+                  <div class="sc-sockets-gem-damage-row-top sc-sockets-gem-damage-row-header split-group {{#if entry.custom.enabled}}is-custom{{/if}}">
+                    <div class="form-group label-top sc-sockets-gem-damage-formula-toggle-field">
+                      <label>
+                        {{ localize "DND5E.Formula" }}
+                        <i class="fa-solid fa-circle-info"
+                           data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.FormulaHint' }}"></i>
+                      </label>
                       <div class="form-fields">
-                        <input type="number"
-                               name="{{../details.damage.namePrefix}}.{{i}}.number"
-                               value="{{entry.number}}"
-                               min="0">
+                        <label class="checkbox">
+                          <input type="checkbox"
+                                 name="{{../details.damage.namePrefix}}.{{i}}.custom.enabled"
+                                 {{#if entry.custom.enabled}}checked{{/if}}>
+                        </label>
+                        {{#unless entry.custom.enabled}}
+                          <input type="hidden"
+                                 name="{{../details.damage.namePrefix}}.{{i}}.custom.formula"
+                                 value="{{entry.custom.formula}}">
+                        {{/unless}}
                       </div>
                     </div>
-                    <div class="form-group label-top">
-                      <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Die" }}</label>
-                      <div class="form-fields">
-                        <select name="{{../details.damage.namePrefix}}.{{i}}.die">
-                          {{#each entry.dieOptions as |opt|}}
-                            <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>
-                              {{opt.label}}
-                            </option>
-                          {{/each}}
-                        </select>
+                    {{#if entry.custom.enabled}}
+                      <div class="form-group label-top sc-sockets-gem-damage-formula-input-field">
+                        <label>&nbsp;</label>
+                        <div class="form-fields">
+                          <input type="text"
+                                 name="{{../details.damage.namePrefix}}.{{i}}.custom.formula"
+                                 value="{{entry.custom.formula}}"
+                                 placeholder="{{ localize 'SCSockets.GemDetails.ExtraDamage.FormulaPlaceholder' }}">
+                          <input type="hidden"
+                                 name="{{../details.damage.namePrefix}}.{{i}}.number"
+                                 value="{{entry.number}}">
+                          <input type="hidden"
+                                 name="{{../details.damage.namePrefix}}.{{i}}.die"
+                                 value="{{entry.die}}">
+                          <input type="hidden"
+                                 name="{{../details.damage.namePrefix}}.{{i}}.bonus"
+                                 value="{{entry.bonus}}">
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group label-top">
-                      <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Bonus" }}</label>
-                      <div class="form-fields">
-                        <input type="number"
-                               name="{{../details.damage.namePrefix}}.{{i}}.bonus"
-                               value="{{entry.bonus}}"
-                               step="1">
+                    {{else}}
+                      <div class="form-group label-top">
+                        <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Number" }}</label>
+                        <div class="form-fields">
+                          <input type="number"
+                                 name="{{../details.damage.namePrefix}}.{{i}}.number"
+                                 value="{{entry.number}}"
+                                 min="0">
+                        </div>
                       </div>
-                    </div>
+                      <div class="form-group label-top">
+                        <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Die" }}</label>
+                        <div class="form-fields">
+                          <select name="{{../details.damage.namePrefix}}.{{i}}.die">
+                            {{#each entry.dieOptions as |opt|}}
+                              <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>
+                                {{opt.label}}
+                              </option>
+                            {{/each}}
+                          </select>
+                        </div>
+                      </div>
+                      <div class="form-group label-top">
+                        <label>{{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Bonus" }}</label>
+                        <div class="form-fields">
+                          <input type="number"
+                                 name="{{../details.damage.namePrefix}}.{{i}}.bonus"
+                                 value="{{entry.bonus}}"
+                                 step="1">
+                        </div>
+                      </div>
+                    {{/if}}
                     <div class="form-group label-top sc-sockets-gem-damage-type-select-field">
                       <label>
                         {{ localize "SCSockets.GemDetails.ExtraDamage.Type" }}
