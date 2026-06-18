@@ -103,6 +103,9 @@ const RELEASE_SECTIONS = [
     tone: "fixed",
     items: [
       {
+        text: "Fixed a Tidy 5e Sheets integration bug where creating, duplicating, copying, or importing Class, Subclass, and Feature items could hide their Advancement tab."
+      },
+      {
         text: "Fixed a compendium issue where bundled SC - Simple Sockets gems could fail to show their effects correctly."
       }
     ]
