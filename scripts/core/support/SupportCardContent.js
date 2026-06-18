@@ -84,29 +84,16 @@ const RELEASE_SECTIONS = [
     tone: "added",
     items: [
       {
-        title: "Extract Gem",
-        text: "Added a per-slot configuration that allows a gem to be extracted regardless of whether the global Delete Gem On Removal setting is enabled, giving finer control over socket behavior."
+        title: "SC More Activities integration",
+        text: "Simple Sockets now includes built-in support for SC More Activities. That module is coming soon, so stay tuned. Once it is in your world, you will be able to use dedicated activities to add slots, remove empty slots, and extract gems."
       },
       {
-        title: "Extract Gem Macro",
-        text: "Added a macro that lets you extract a gem from the selected slot regardless of whether destroy-on-removal is enabled, which works well for item interactions, vendors, or roleplay-driven gem recovery."
+        title: "Socket activity options",
+        text: "Those new activities come with extra setup options for things like custom icons and cursor visuals, slot conditions, target conditions, hidden slots, delete-on-removal behavior, and slot-specific overrides."
       },
       {
-        title: "Remove and Extract Icons",
-        html: "<strong>Remove and Extract Icons</strong>: Updated the gem actions with distinct icons so each behavior is easier to identify at a glance: <i class=\"fas fa-burst scsockets-support-popup__inline-icon\" aria-hidden=\"true\"></i> remove gem and <i class=\"fas fa-hammer-crash scsockets-support-popup__inline-icon\" aria-hidden=\"true\"></i> extract gem."
-      },
-      {
-        title: "+Details Damage Types",
-        text: "Reworked the +Details extra damage system so you can select multiple damage types or use the host item's damage type. During the roll, this lets you choose which extra damage type that gem applies."
-      },
-      {
-        text: "Added four damage roll layout options in module settings to make the extra damage granted by gems clearer during rolls."
-      },
-      {
-        text: "Added a debug setting to make troubleshooting easier."
-      },
-      {
-        text: "Added automated tests to support module development and make the system more cohesive and robust."
+        title: "+Details formula support",
+        text: "The +Details damage editor was reorganized and now supports formulas. That makes scaling damage much easier with expressions such as 1d@scale.monk.martial-arts.faces, @scale.barbarian.rage-damage, or 1d8 + @prof."
       }
     ]
   },
@@ -116,13 +103,7 @@ const RELEASE_SECTIONS = [
     tone: "fixed",
     items: [
       {
-        text: "Improved Tidy sheet integration with better layout behavior and badges for activities and active effects."
-      },
-      {
-        text: "Improved the rendering flow for better performance and more stable refresh behavior."
-      },
-      {
-        text: "Resolved several smaller bugs across the module."
+        text: "Fixed a compendium issue where bundled SC - Simple Sockets gems could fail to show their effects correctly."
       }
     ]
   }

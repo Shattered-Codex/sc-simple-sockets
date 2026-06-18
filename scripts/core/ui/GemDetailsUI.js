@@ -210,9 +210,14 @@ export class GemDetailsUI {
       number: Number.isFinite(number) ? number : 1,
       die,
       bonus: Number.isFinite(bonus) ? bonus : 0,
+      custom: {
+        enabled: false,
+        formula: ""
+      },
       typeMode: "inherit",
       types: [Constants.GEM_DAMAGE_INHERIT_TYPE],
-      type: ""
+      type: "",
+      activity: "any"
     };
   }
 
@@ -229,9 +234,11 @@ export class GemDetailsUI {
 
     const entries = [];
     for (const row of rows) {
-      const number = Number(row.querySelector('input[name$=".number"]')?.value ?? 0);
-      const die = row.querySelector('select[name$=".die"]')?.value ?? "";
-      const bonus = Number(row.querySelector('input[name$=".bonus"]')?.value ?? 0);
+      const number = Number(GemDetailsUI.#readNamedFieldValue(row, ".number") ?? 0);
+      const die = String(GemDetailsUI.#readNamedFieldValue(row, ".die") ?? "");
+      const bonus = Number(GemDetailsUI.#readNamedFieldValue(row, ".bonus") ?? 0);
+      const customEnabled = row.querySelector('input[name$=".custom.enabled"]')?.checked === true;
+      const customFormula = String(GemDetailsUI.#readNamedFieldValue(row, ".custom.formula") ?? "").trim();
       const types = GemDetailsUI.#normalizeDamageTypeValues(
         GemDetailsUI.#readSelectedValues(row.querySelector('[name$=".types"]'))
       );
@@ -241,6 +248,10 @@ export class GemDetailsUI {
         number: Number.isFinite(number) ? number : 0,
         die,
         bonus: Number.isFinite(bonus) ? bonus : 0,
+        custom: {
+          enabled: customEnabled,
+          formula: customFormula
+        },
         typeMode,
         types,
         type: typeMode === "fixed" ? (types[0] ?? "") : "",
@@ -297,6 +308,17 @@ export class GemDetailsUI {
       || target instanceof HTMLSelectElement
       || target instanceof HTMLTextAreaElement
       || (target instanceof HTMLElement && target.tagName === "MULTI-SELECT");
+  }
+
+  static #readNamedFieldValue(root, suffix) {
+    if (!root || !suffix) {
+      return undefined;
+    }
+    const field = root.querySelector?.(`[name$="${suffix}"]`);
+    if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)) {
+      return undefined;
+    }
+    return field.value;
   }
 
   static #readSelectedValues(field) {
@@ -415,6 +437,10 @@ export class GemDetailsUI {
     const number = Number(entry?.number ?? 0);
     const bonus = Number(entry?.bonus ?? 0);
     const die = typeof entry?.die === "string" ? entry.die : "";
+    const customEnabled = entry?.custom?.enabled === true;
+    const customFormula = typeof entry?.custom?.formula === "string"
+      ? entry.custom.formula.trim()
+      : "";
     const types = GemDetailsUI.#normalizeDamageTypeValues(entry?.types);
     const typeMode = types.includes(Constants.GEM_DAMAGE_INHERIT_TYPE) ? "inherit" : "fixed";
     const activity = typeof entry?.activity === "string" ? entry.activity : "any";
@@ -423,6 +449,10 @@ export class GemDetailsUI {
       number: Number.isFinite(number) ? number : 0,
       die,
       bonus: Number.isFinite(bonus) ? bonus : 0,
+      custom: {
+        enabled: customEnabled,
+        formula: customFormula
+      },
       typeMode,
       types,
       type: typeMode === "fixed" ? (types[0] ?? "") : "",
@@ -433,6 +463,12 @@ export class GemDetailsUI {
   static #damageEntriesEqual(left, right) {
     if (!left || !right) return false;
     if (left.number !== right.number || left.die !== right.die || left.bonus !== right.bonus) {
+      return false;
+    }
+    if (left.custom?.enabled !== right.custom?.enabled) {
+      return false;
+    }
+    if ((left.custom?.formula ?? "") !== (right.custom?.formula ?? "")) {
       return false;
     }
     if (left.typeMode !== right.typeMode || left.activity !== right.activity) {

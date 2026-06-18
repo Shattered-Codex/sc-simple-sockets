@@ -103,6 +103,138 @@
   color: var(--color-text-accent, inherit);
 }
 
+.sc-sockets-scma-picker {
+  --sc-sockets-slot-icon-size: 2.4rem;
+  --sc-sockets-slot-radius: 10px;
+}
+
+.sc-sockets-scma-picker .standard-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sc-sockets-scma-picker__subtitle {
+  margin: 0;
+}
+
+.sc-sockets-scma-picker__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+}
+
+.sc-sockets-scma-picker__item {
+  margin: 0;
+}
+
+.sc-sockets-scma-picker__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--color-border-light-primary, rgba(0, 0, 0, 0.18)) 78%, #7082a7 22%);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    color-mix(in srgb, var(--dnd5e-color-parchment, #f2ebdb) 92%, #6d7f9a 8%);
+  box-shadow: none;
+  text-align: left;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.sc-sockets-scma-picker__option:hover,
+.sc-sockets-scma-picker__option:focus-visible {
+  border-color: color-mix(in srgb, var(--color-border-highlight, #3b82f6) 72%, #d9e2f5 28%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04)),
+    color-mix(in srgb, var(--dnd5e-color-parchment, #f2ebdb) 88%, #8091ac 12%);
+  transform: translateY(-1px);
+}
+
+.sc-sockets-scma-picker__option.is-destructive:hover,
+.sc-sockets-scma-picker__option.is-destructive:focus-visible {
+  border-color: color-mix(in srgb, var(--color-level-error, #b42318) 65%, #ead2d0 35%);
+}
+
+.sc-sockets-scma-picker__option[disabled] {
+  opacity: 0.68;
+  cursor: wait;
+  transform: none;
+}
+
+.sc-sockets-scma-picker__option-main {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sc-sockets-scma-picker__slot-visual {
+  overflow: hidden;
+}
+
+.sc-sockets-scma-picker__slot-label {
+  flex: 0 0 auto;
+  padding: 0.14rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--color-border-light-primary, rgba(0, 0, 0, 0.18)) 82%, #8f9fb7 18%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
+  color: var(--color-text-dark-primary, inherit);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sc-sockets-scma-picker__gem-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-dark-primary, inherit);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-sockets-scma-picker__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
+  color: color-mix(in srgb, var(--color-text-dark-primary, currentColor) 72%, #6c7e97 28%);
+  font-size: 0.95rem;
+}
+
+.sc-sockets-scma-picker__option.is-destructive .sc-sockets-scma-picker__action {
+  color: color-mix(in srgb, var(--color-level-error, #b42318) 72%, #6c7e97 28%);
+}
+
+.sc-sockets-scma-picker__footer {
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 640px) {
+  .sc-sockets-scma-picker__option {
+    gap: 0.55rem;
+    padding-inline: 0.45rem;
+  }
+
+  .sc-sockets-scma-picker__slot-label {
+    padding-inline: 0.35rem;
+    font-size: 0.68rem;
+  }
+}
+
 .socket-slot-config-app .socket-slot-config-preview-card {
   align-items: center;
 }

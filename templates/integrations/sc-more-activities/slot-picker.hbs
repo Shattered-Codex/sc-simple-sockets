@@ -1,0 +1,40 @@
+<section class="standard-form sc-sockets-scma-picker__body">
+  {{#if subtitle}}
+    <p class="hint sc-sockets-scma-picker__subtitle">{{ subtitle }}</p>
+  {{/if}}
+
+  {{#if hasSlots}}
+    <ol class="unlist sc-sockets-scma-picker__list">
+      {{#each slots as |slot|}}
+      <li class="sc-sockets-scma-picker__item">
+        <button
+          type="button"
+          class="sc-sockets-scma-picker__option {{#if ../destructive}}is-destructive{{/if}}"
+          data-slot-index="{{ slot.slotIndex }}"
+          aria-label="{{ slot.ariaLabel }}"
+          title="{{ slot.titleText }}"
+          {{#if slot.isSubmitting}}disabled{{/if}}>
+          <span class="sc-sockets-scma-picker__option-main">
+            <span class="sc-sockets-slot-visual sc-sockets-scma-picker__slot-visual {{#if slot.hasSlotTint}}has-slot-tint{{/if}}" aria-hidden="true" {{#if slot.hasSlotTint}}style="{{slot.slotMaskStyle}}"{{/if}}>
+              <img class="item-image socket-icon sc-sockets-slot-frame {{#if slot.hasSlotTint}}is-tinted{{/if}}" src="{{slot.slotFrameImg}}" alt="">
+              {{#if slot.hasGemVisual}}
+                <img class="item-image socket-icon sc-sockets-slot-gem" src="{{slot.gemImg}}" alt="">
+              {{/if}}
+            </span>
+            <span class="sc-sockets-scma-picker__slot-label">{{ slot.slotLabel }}</span>
+            <span class="sc-sockets-scma-picker__gem-name">{{ slot.primaryLabel }}</span>
+          </span>
+        </button>
+      </li>
+      {{/each}}
+    </ol>
+  {{else}}
+    <p class="hint">{{ emptyMessage }}</p>
+  {{/if}}
+
+  <footer class="sheet-footer flexrow sc-sockets-scma-picker__footer">
+    <button type="button" data-action="close">
+      {{ closeLabel }}
+    </button>
+  </footer>
+</section>
