@@ -225,7 +225,7 @@ export class ScMoreActivitiesIntegration {
         hostItem: "activity-item",
         mutation: "gm-mediated"
       },
-      source: "external"
+      source: Constants.MODULE_ID
     });
   }
 
@@ -268,7 +268,7 @@ export class ScMoreActivitiesIntegration {
         hostItem: "activity-item",
         mutation: "gm-mediated"
       },
-      source: "external"
+      source: Constants.MODULE_ID
     });
   }
 
