@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Added client-side settings to show socketed gem damage in the Formula column of character sheets, with hidden/current, inline, and tooltip layouts plus an option to show the gem image.
+- Added Formula and Roll column UI for both the default dnd5e actor sheet and Tidy so gem damage breakdowns and gem attack bonuses can be surfaced without changing the underlying roll pipeline.
+- Added automated coverage for gem formula presentation, tooltips, activity filtering, and the new layout settings.
+
+### Changed
+- Formula breakdowns now derive from the same socket snapshot and extra-damage collection logic used during gem damage rolls so sheet display stays aligned with the actual socketed gem effects.
+
+### Fixed
+- Fixed the +Details tab so the critical threshold, critical multiplier, and attack bonus controls no longer duplicate labels or inject extra interface text into the interface.
+
 ## 2.0.7
 
 ### Added
