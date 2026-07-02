@@ -84,16 +84,16 @@ const RELEASE_SECTIONS = [
     tone: "added",
     items: [
       {
-        title: "SC More Activities integration",
-        text: "Simple Sockets now includes built-in support for SC More Activities. That module is coming soon, so stay tuned. Once it is in your world, you will be able to use dedicated activities to add slots, remove empty slots, and extract gems."
+        title: "Gem damage in the Formula column",
+        text: "Simple Sockets can now surface socketed gem damage directly in the Formula column of character sheets. You can keep the current behavior, list every gem damage formula inline, or show the full breakdown in a compact tooltip."
       },
       {
-        title: "Socket activity options",
-        text: "Those new activities come with extra setup options for things like custom icons and cursor visuals, slot conditions, target conditions, hidden slots, delete-on-removal behavior, and slot-specific overrides."
+        title: "Configurable presentation options",
+        text: "The new sheet display can also show gem images and now works on both the default dnd5e actor sheet and Tidy, so players can see socketed gem damage without opening the roll dialog first."
       },
       {
-        title: "+Details formula support",
-        text: "The +Details damage editor was reorganized and now supports formulas. That makes scaling damage much easier with expressions such as 1d@scale.monk.martial-arts.faces, @scale.barbarian.rage-damage, or 1d8 + @prof."
+        title: "Gem attack bonus breakdown",
+        text: "When socketed gems grant flat attack bonuses, the Roll column can now show the summed bonus together with a per-gem tooltip breakdown for quick inspection."
       }
     ]
   },
@@ -103,10 +103,7 @@ const RELEASE_SECTIONS = [
     tone: "fixed",
     items: [
       {
-        text: "Fixed a Tidy 5e Sheets integration bug where creating, duplicating, copying, or importing Class, Subclass, and Feature items could hide their Advancement tab."
-      },
-      {
-        text: "Fixed a compendium issue where bundled SC - Simple Sockets gems could fail to show their effects correctly."
+        text: "Fixed the +Details tab so the critical threshold, critical multiplier, and attack bonus controls no longer duplicate labels or inject extra text into the interface."
       }
     ]
   }

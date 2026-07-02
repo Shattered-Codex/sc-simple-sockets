@@ -18,7 +18,12 @@ export class ModuleSettings {
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
+  static SETTING_GEM_FORMULA_LAYOUT = "gemFormulaLayout";
+  static SETTING_GEM_FORMULA_SHOW_IMAGE = "gemFormulaShowImage";
   static SETTING_SOCKET_TAB_LAYOUT = "socketTabLayout";
+  static GEM_FORMULA_LAYOUT_CURRENT = "current";
+  static GEM_FORMULA_LAYOUT_INLINE = "inline";
+  static GEM_FORMULA_LAYOUT_TOOLTIP = "tooltip";
   static SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS = "enableSocketTabForAllItems";
   static SETTING_SOCKETABLE_ITEM_TYPES = "socketableItemTypes";
   static SETTING_SOCKETABLE_ITEM_TYPES_MENU = "socketableItemTypesSettings";
@@ -145,6 +150,71 @@ export class ModuleSettings {
 
   static getGemRollLayoutChoices() {
     return DamageRollLayoutAdapterRegistry.getSettingsChoices();
+  }
+
+  static getGemFormulaLayoutMode() {
+    if (!ModuleSettings.#isSettingRegistered(ModuleSettings.SETTING_GEM_FORMULA_LAYOUT)) {
+      return ModuleSettings.GEM_FORMULA_LAYOUT_CURRENT;
+    }
+    const value = String(
+      game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_FORMULA_LAYOUT) ?? ""
+    ).trim().toLowerCase();
+    return ModuleSettings.getGemFormulaLayoutModes().includes(value)
+      ? value
+      : ModuleSettings.GEM_FORMULA_LAYOUT_CURRENT;
+  }
+
+  static getGemFormulaLayoutModes() {
+    return [
+      ModuleSettings.GEM_FORMULA_LAYOUT_CURRENT,
+      ModuleSettings.GEM_FORMULA_LAYOUT_INLINE,
+      ModuleSettings.GEM_FORMULA_LAYOUT_TOOLTIP
+    ];
+  }
+
+  static shouldShowGemFormulaImages() {
+    if (!ModuleSettings.#isSettingRegistered(ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE)) {
+      return true;
+    }
+    return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE) !== false;
+  }
+
+  static getGemFormulaLayoutChoices() {
+    return [
+      {
+        value: ModuleSettings.GEM_FORMULA_LAYOUT_CURRENT,
+        label: Constants.localize(
+          "SCSockets.Settings.GemFormulaLayout.Options.Current.Label",
+          "Hidden (current behavior)"
+        ),
+        description: Constants.localize(
+          "SCSockets.Settings.GemFormulaLayout.Options.Current.Description",
+          "The Formula column only shows the item's own damage, exactly as before."
+        )
+      },
+      {
+        value: ModuleSettings.GEM_FORMULA_LAYOUT_INLINE,
+        label: Constants.localize(
+          "SCSockets.Settings.GemFormulaLayout.Options.Inline.Label",
+          "Inline"
+        ),
+        description: Constants.localize(
+          "SCSockets.Settings.GemFormulaLayout.Options.Inline.Description",
+          "Every gem damage formula and its type are listed directly in the Formula column."
+        )
+      },
+      {
+        value: ModuleSettings.GEM_FORMULA_LAYOUT_TOOLTIP,
+        label: Constants.localize(
+          "SCSockets.Settings.GemFormulaLayout.Options.Tooltip.Label",
+          "Tooltip"
+        ),
+        description: Constants.localize(
+          "SCSockets.Settings.GemFormulaLayout.Options.Tooltip.Description",
+          "The Formula column stays compact; hovering or focusing a small gem badge reveals the full breakdown."
+        )
+      }
+    ];
   }
 
   static getSocketTabLayout() {

@@ -20,7 +20,8 @@
       "GemRequiresSocket": "This gem must be socketed before it can be used.",
       "HostNotSocketable": "This item type cannot receive sockets.",
       "SocketConditionFailed": "That gem does not meet this socket's requirements.",
-      "SocketConditionError": "This socket condition could not be evaluated."
+      "SocketConditionError": "This socket condition could not be evaluated.",
+      "Reloading": "Reloading..."
     },
     "Effects": {
       "DefaultName": "Gem Effect"
@@ -94,6 +95,10 @@
         "Label": "Attack Bonus",
         "Hint": "Flat bonus added to attack rolls when this gem is socketed. Bonuses from multiple gems stack. Leave blank for none."
       }
+    },
+    "GemFormula": {
+      "TooltipTitle": "Socketed gem damage",
+      "AttackBonusTooltipTitle": "Gem attack bonus"
     },
     "SocketDescription": {
       "Label": "Socket Description"
@@ -248,6 +253,28 @@
           }
         }
       },
+      "GemFormulaLayout": {
+        "Name": "Gem damage in the sheet Formula column",
+        "Hint": "Choose how the extra damage from socketed gems appears in the Formula column of the character sheet.",
+        "Options": {
+          "Current": {
+            "Label": "Hidden (current behavior)",
+            "Description": "The Formula column only shows the item's own damage, exactly as before."
+          },
+          "Inline": {
+            "Label": "Inline",
+            "Description": "Every gem damage formula and its type are listed directly in the Formula column."
+          },
+          "Tooltip": {
+            "Label": "Tooltip",
+            "Description": "The Formula column stays compact; hovering or focusing a small gem badge reveals the full breakdown."
+          }
+        }
+      },
+      "GemFormulaShowImage": {
+        "Name": "Show gem image in the Formula breakdown",
+        "Hint": "If enabled, gems in the Formula breakdown are identified by a small image; otherwise the gem name is used. The tooltip breakdown always shows the image and this option only hides the gem name there."
+      },
       "SocketTabLayout": {
         "Name": "Socket tab layout",
         "Hint": "Choose how the sockets tab is displayed.",
@@ -314,9 +341,6 @@
         "Patreon": "Patreon",
         "New": "New"
       }
-    },
-    "Notifications": {
-      "Reloading": "Reloading..."
     },
     "RollLayout": {
       "BaseDamage": "Base Damage",
