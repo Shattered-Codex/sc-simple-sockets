@@ -34,6 +34,7 @@ export class ModuleSettingsRegistrar {
     this.#registerMaxSockets();
     this.#registerDeleteOnRemoval();
     this.#registerGemRollLayoutSetting();
+    this.#registerGemFormulaLayoutSettings();
     this.#registerSocketTabLayoutSetting();
     this.#registerEnableSocketTabForAllItems();
     this.#registerLootSubtypeDataSettings();
@@ -259,6 +260,51 @@ export class ModuleSettingsRegistrar {
         const { DamageRollGemLayout } = await import("../ui/DamageRollGemLayout.js");
         DamageRollGemLayout.activate({ mode: value });
       }
+    });
+  }
+
+  #registerGemFormulaLayoutSettings() {
+    const choices = ModuleSettings.getGemFormulaLayoutChoices().reduce((accumulator, choice) => {
+      accumulator[choice.value] = choice.label;
+      return accumulator;
+    }, {});
+
+    const refreshActorSheets = foundry.utils.debounce(
+      () => ModuleSettings.refreshOpenSheets({ item: false, actor: true }),
+      150
+    );
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_FORMULA_LAYOUT, {
+      name: Constants.localize(
+        "SCSockets.Settings.GemFormulaLayout.Name",
+        "Gem damage in the sheet Formula column"
+      ),
+      hint: Constants.localize(
+        "SCSockets.Settings.GemFormulaLayout.Hint",
+        "Choose how the extra damage from socketed gems appears in the Formula column of the character sheet."
+      ),
+      scope: "client",
+      config: false,
+      type: String,
+      choices,
+      default: ModuleSettings.GEM_FORMULA_LAYOUT_CURRENT,
+      onChange: refreshActorSheets
+    });
+
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE, {
+      name: Constants.localize(
+        "SCSockets.Settings.GemFormulaShowImage.Name",
+        "Show gem image in the Formula breakdown"
+      ),
+      hint: Constants.localize(
+        "SCSockets.Settings.GemFormulaShowImage.Hint",
+        "If enabled, gems in the Formula breakdown are identified by a small image; otherwise the gem name is used. The tooltip breakdown always shows the image and this option only hides the gem name there."
+      ),
+      scope: "client",
+      config: false,
+      type: Boolean,
+      default: true,
+      onChange: refreshActorSheets
     });
   }
 

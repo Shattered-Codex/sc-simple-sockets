@@ -2,6 +2,7 @@ import { Constants } from "./core/Constants.js";
 import { GemSheetExtension } from "./core/GemSheetExtension.js";
 import { ItemSocketExtension } from "./core/ItemSocketExtension.js";
 import { ActorGemBadges } from "./core/ui/ActorGemBadges.js";
+import { ActorGemFormulaUI } from "./core/ui/ActorGemFormulaUI.js";
 import { GemLifecycleService } from "./domain/gems/GemLifecycleService.js";
 import { ModuleSettings } from "./core/settings/ModuleSettings.js";
 import { ModuleSettingsRegistrar } from "./core/settings/ModuleSettingsRegistrar.js";
@@ -69,6 +70,7 @@ Hooks.once("setup", () => {
   gemSheet.applyChanges();
   itemSocketSheet.applyChanges();
   ActorGemBadges.activate();
+  ActorGemFormulaUI.activate();
   ItemActivityBadges.activate();
   TransferFilterUI.activate();
   SocketTooltipUI.activate();

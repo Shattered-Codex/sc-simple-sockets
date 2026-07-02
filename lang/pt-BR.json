@@ -20,7 +20,8 @@
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada.",
       "HostNotSocketable": "Este tipo de item não pode receber soquetes.",
       "SocketConditionFailed": "Essa gema não atende aos requisitos deste slot.",
-      "SocketConditionError": "A condição deste slot não pôde ser avaliada."
+      "SocketConditionError": "A condição deste slot não pôde ser avaliada.",
+      "Reloading": "Recarregando..."
     },
     "Effects": {
       "DefaultName": "Efeito de Gema"
@@ -94,6 +95,10 @@
         "Label": "Bônus de ataque",
         "Hint": "Bônus fixo adicionado às rolagens de ataque quando esta gema está encaixada. Bônus de várias gemas se somam. Deixe em branco para nenhum."
       }
+    },
+    "GemFormula": {
+      "TooltipTitle": "Dano de gemas encaixadas",
+      "AttackBonusTooltipTitle": "Bônus de ataque das gemas"
     },
     "SocketDescription": {
       "Label": "Descrição do Socket"
@@ -248,6 +253,28 @@
           }
         }
       },
+      "GemFormulaLayout": {
+        "Name": "Dano das gemas na coluna Fórmula da ficha",
+        "Hint": "Escolha como o dano extra das gemas encaixadas aparece na coluna Fórmula da ficha do personagem.",
+        "Options": {
+          "Current": {
+            "Label": "Oculto (comportamento atual)",
+            "Description": "A coluna Fórmula mostra apenas o dano do próprio item, exatamente como antes."
+          },
+          "Inline": {
+            "Label": "Na linha",
+            "Description": "Cada fórmula de dano de gema e seu tipo são listados diretamente na coluna Fórmula."
+          },
+          "Tooltip": {
+            "Label": "Tooltip",
+            "Description": "A coluna Fórmula permanece compacta; passar o mouse ou focar o pequeno badge de gema revela o detalhamento completo."
+          }
+        }
+      },
+      "GemFormulaShowImage": {
+        "Name": "Mostrar imagem da gema no detalhamento da Fórmula",
+        "Hint": "Se habilitado, as gemas no detalhamento da Fórmula são identificadas por uma pequena imagem; caso contrário, o nome da gema é usado. O detalhamento do tooltip sempre mostra a imagem e esta opção apenas oculta o nome da gema nele."
+      },
       "SocketTabLayout": {
         "Name": "Layout da aba de soquetes",
         "Hint": "Escolha como a aba de soquetes será exibida.",
@@ -314,9 +341,6 @@
         "Patreon": "Patreon",
         "New": "Novo"
       }
-    },
-    "Notifications": {
-      "Reloading": "Recarregando..."
     },
     "RollLayout": {
       "BaseDamage": "Dano Base",

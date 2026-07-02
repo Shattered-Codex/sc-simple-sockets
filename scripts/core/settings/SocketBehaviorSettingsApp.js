@@ -128,6 +128,14 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
     }));
     const gemRollLayoutChoice = DamageRollLayoutAdapterRegistry.getSettingsChoice(gemRollLayoutMode);
 
+    const gemFormulaLayoutMode = ModuleSettings.getGemFormulaLayoutMode();
+    const gemFormulaLayoutChoices = ModuleSettings.getGemFormulaLayoutChoices().map((choice) => ({
+      ...choice,
+      selected: choice.value === gemFormulaLayoutMode
+    }));
+    const gemFormulaLayoutChoice = gemFormulaLayoutChoices.find((choice) => choice.selected)
+      ?? gemFormulaLayoutChoices[0];
+
     return {
       description: Constants.localize(
         "SCSockets.Settings.SocketBehaviorMenu.Description",
@@ -171,6 +179,34 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
               isDynamicDescription: true,
               selectedDescription: gemRollLayoutChoice.description,
               choices: gemRollLayoutChoices
+            },
+            {
+              key: ModuleSettings.SETTING_GEM_FORMULA_LAYOUT,
+              name: Constants.localize(
+                "SCSockets.Settings.GemFormulaLayout.Name",
+                "Gem damage in the sheet Formula column"
+              ),
+              hint: Constants.localize(
+                "SCSockets.Settings.GemFormulaLayout.Hint",
+                "Choose how the extra damage from socketed gems appears in the Formula column of the character sheet."
+              ),
+              isSelect: true,
+              isDynamicDescription: true,
+              selectedDescription: gemFormulaLayoutChoice?.description ?? "",
+              choices: gemFormulaLayoutChoices
+            },
+            {
+              key: ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE,
+              name: Constants.localize(
+                "SCSockets.Settings.GemFormulaShowImage.Name",
+                "Show gem image in the Formula breakdown"
+              ),
+              hint: Constants.localize(
+                "SCSockets.Settings.GemFormulaShowImage.Hint",
+                "If enabled, gems in the Formula breakdown are identified by a small image; otherwise the gem name is used. The tooltip breakdown always shows the image and this option only hides the gem name there."
+              ),
+              isCheckbox: true,
+              checked: ModuleSettings.shouldShowGemFormulaImages()
             },
             {
               key: ModuleSettings.SETTING_SOCKET_TAB_LAYOUT,
@@ -249,6 +285,8 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
     const maxSocketsField = form.elements.namedItem(ModuleSettings.SETTING_MAX_SOCKETS);
     const deleteOnRemovalField = form.elements.namedItem(ModuleSettings.SETTING_DELETE_ON_REMOVE);
     const gemRollLayoutField = form.elements.namedItem(ModuleSettings.SETTING_GEM_ROLL_LAYOUT);
+    const gemFormulaLayoutField = form.elements.namedItem(ModuleSettings.SETTING_GEM_FORMULA_LAYOUT);
+    const gemFormulaShowImageField = form.elements.namedItem(ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE);
     const socketTabLayoutField = form.elements.namedItem(ModuleSettings.SETTING_SOCKET_TAB_LAYOUT);
     const socketTabGlobalField = form.elements.namedItem(ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS);
 
@@ -265,6 +303,13 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
       ? deleteOnRemovalField.checked
       : false;
     const gemRollLayout = DamageRollLayoutAdapterRegistry.normalizeMode(gemRollLayoutField?.value);
+    const gemFormulaLayoutValue = String(gemFormulaLayoutField?.value ?? "").trim().toLowerCase();
+    const normalizedGemFormulaLayout = ModuleSettings.getGemFormulaLayoutModes().includes(gemFormulaLayoutValue)
+      ? gemFormulaLayoutValue
+      : ModuleSettings.GEM_FORMULA_LAYOUT_CURRENT;
+    const gemFormulaShowImage = gemFormulaShowImageField instanceof HTMLInputElement
+      ? gemFormulaShowImageField.checked
+      : true;
     const enableSocketTabForAllItems = socketTabGlobalField instanceof HTMLInputElement
       ? socketTabGlobalField.checked
       : true;
@@ -285,6 +330,8 @@ export class SocketBehaviorSettingsApp extends BaseApplication {
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_MAX_SOCKETS, normalizedMaxSockets);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE, deleteOnRemoval);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT, gemRollLayout);
+    await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_FORMULA_LAYOUT, normalizedGemFormulaLayout);
+    await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE, gemFormulaShowImage);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_TAB_LAYOUT, normalizedSocketTabLayout);
     await game.settings.set(
       Constants.MODULE_ID,
