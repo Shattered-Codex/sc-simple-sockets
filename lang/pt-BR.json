@@ -566,6 +566,8 @@
         "SlotShort": "slot {slot}"
       },
       "FromLabel": "Origem",
+      "FromHintCharge": "O recovery do item não restaura automaticamente as cargas socketadas.",
+      "FromHintGem": "O recovery do item não restaura automaticamente gemas socketadas consumidas.",
       "Mode": {
         "sourceSlot": "Gema de origem (desta atividade)",
         "any": "Qualquer gema com o recurso",

@@ -10,7 +10,10 @@ export class ItemSheetSync {
       return;
     }
 
-    ItemSheetSync.#updateHandler = (item, changes) => {
+    ItemSheetSync.#updateHandler = (item, changes, options = {}) => {
+      if (options?.[Constants.MODULE_ID]?.[Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]) {
+        return;
+      }
       if (!ItemSheetSync.hasSocketUpdate(changes)) {
         return;
       }

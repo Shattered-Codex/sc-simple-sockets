@@ -3,7 +3,6 @@ import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js"
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
 import { normalizeSlotColor } from "../helpers/socketSlotConfig.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
-import { SocketStore } from "../SocketStore.js";
 import { DebugTrace } from "../support/DebugTrace.js";
 
 const api = foundry?.applications?.api ?? {};
@@ -105,14 +104,17 @@ export class SocketSlotConfigApp extends BaseApplication {
       return false;
     }
 
-    const updated = await SocketSlotConfigService.updateConfig(
+    const updated = await SocketSlotConfigService.updateConfigAndResource(
       this.#hostItem,
       this.#slotIndex,
-      payload
+      payload,
+      payload.gemResourceValue,
+      {
+        [Constants.MODULE_ID]: {
+          [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
+        }
+      }
     );
-    if (updated) {
-      await this.#persistGemResourceValue(payload.gemResourceValue);
-    }
     if (!updated) {
       ui.notifications?.warn?.(
         Constants.localize(
@@ -127,10 +129,6 @@ export class SocketSlotConfigApp extends BaseApplication {
       hostItem: DebugTrace.describeItem(this.#hostItem),
       slotIndex: this.#slotIndex,
       parentApp: DebugTrace.describeApp(this.#parentApp)
-    });
-    DebugTrace.render(this.#parentApp, true, "socket-slot-config.save.parentRefresh", {
-      hostItem: DebugTrace.describeItem(this.#hostItem),
-      slotIndex: this.#slotIndex
     });
     ui.notifications?.info?.(
       Constants.localize(
@@ -161,27 +159,6 @@ export class SocketSlotConfigApp extends BaseApplication {
   deactivateListeners(html) {
     this.#unbindRoot();
     super.deactivateListeners?.(html);
-  }
-
-  async #persistGemResourceValue(rawValue) {
-    if (rawValue === undefined || rawValue === null || rawValue === "") {
-      return;
-    }
-
-    const slots = SocketStore.getSlots(this.#hostItem);
-    const slot = slots[this.#slotIndex];
-    const current = GemResourceService.getSlotResource(slot);
-    if (!current) {
-      return;
-    }
-
-    const nextSlot = GemResourceService.withSlotResourceValue(slot, Number(rawValue));
-    if (nextSlot === slot) {
-      return;
-    }
-
-    slots[this.#slotIndex] = nextSlot;
-    await SocketStore.setSlots(this.#hostItem, slots);
   }
 
   async #buildContext() {

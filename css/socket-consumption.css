@@ -170,6 +170,12 @@
   flex: 1;
 }
 
+.sc-sockets-consumption-target .sc-sockets-consumption-target-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .sc-sockets-consumption-target .sc-sockets-consumption-target-value.hidden {
   display: none;
 }

@@ -566,6 +566,8 @@
         "SlotShort": "slot {slot}"
       },
       "FromLabel": "From",
+      "FromHintCharge": "Item recovery does not automatically restore socketed charges.",
+      "FromHintGem": "Item recovery does not automatically restore consumed socketed gems.",
       "Mode": {
         "sourceSlot": "Source gem (this activity)",
         "any": "Any gem with resource",

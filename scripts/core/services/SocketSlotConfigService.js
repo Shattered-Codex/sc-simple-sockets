@@ -2,6 +2,7 @@ import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
 import { SocketSlot } from "../model/SocketSlot.js";
 import { getSlotConfig } from "../helpers/socketSlotConfig.js";
+import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 
 const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
 
@@ -22,14 +23,27 @@ export class SocketSlotConfigService {
   }
 
   static async updateConfig(hostItem, slotIndex, config, options = {}) {
-    const slots = SocketStore.getSlots(hostItem);
-    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
-      return false;
-    }
+    return SocketSlotConfigService.#saveSlot(
+      hostItem,
+      slotIndex,
+      (slot) => SocketSlot.applyConfig(slot, config, slotIndex),
+      options
+    );
+  }
 
-    slots[slotIndex] = SocketSlot.applyConfig(slots[slotIndex], config, slotIndex);
-    await SocketStore.setSlots(hostItem, slots, options);
-    return true;
+  static async updateConfigAndResource(hostItem, slotIndex, config, gemResourceValue, options = {}) {
+    return SocketSlotConfigService.#saveSlot(
+      hostItem,
+      slotIndex,
+      (slot) => {
+        let nextSlot = SocketSlot.applyConfig(slot, config, slotIndex);
+        if (gemResourceValue !== undefined && gemResourceValue !== null && gemResourceValue !== "") {
+          nextSlot = GemResourceService.withSlotResourceValue(nextSlot, Number(gemResourceValue));
+        }
+        return nextSlot;
+      },
+      options
+    );
   }
 
   static async toggleHidden(hostItem, slotIndex, options = {}) {
@@ -43,9 +57,30 @@ export class SocketSlotConfigService {
       ...config,
       hidden: !config.hidden
     };
-    slots[slotIndex] = SocketSlot.applyConfig(slots[slotIndex], nextConfig, slotIndex);
-    await SocketStore.setSlots(hostItem, slots, options);
+    await SocketSlotConfigService.#saveSlot(
+      hostItem,
+      slotIndex,
+      (slot) => SocketSlot.applyConfig(slot, nextConfig, slotIndex),
+      options
+    );
     return nextConfig.hidden;
+  }
+
+  static async #saveSlot(hostItem, slotIndex, buildNextSlot, options = {}) {
+    const slots = SocketStore.getSlots(hostItem);
+    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
+      return false;
+    }
+
+    const previousSlot = slots[slotIndex];
+    const nextSlot = buildNextSlot(previousSlot);
+    if (SocketSlotConfigService.#stableStringify(previousSlot) === SocketSlotConfigService.#stableStringify(nextSlot)) {
+      return true;
+    }
+
+    slots[slotIndex] = nextSlot;
+    await SocketStore.setSlots(hostItem, slots, options);
+    return true;
   }
 
   static validateCondition(code) {
@@ -153,5 +188,9 @@ ${body}`
       source: foundry.utils.deepClone(source ?? null),
       user: game.user ?? null
     };
+  }
+
+  static #stableStringify(value) {
+    return JSON.stringify(value ?? null);
   }
 }

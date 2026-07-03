@@ -85,13 +85,23 @@ export class SocketConsumptionTargetUI {
 
     const group = document.createElement("div");
     group.className = `field-group ${SocketConsumptionTargetUI.FIELD_CLASS}`;
+    const fromHint = Constants.localize(
+      isCharge
+        ? "SCSockets.Consumption.FromHintCharge"
+        : "SCSockets.Consumption.FromHintGem",
+      isCharge
+        ? "Item recovery does not automatically restore socketed charges."
+        : "Item recovery does not automatically restore consumed socketed gems."
+    );
+
     group.innerHTML = SocketConsumptionTargetUI.#buildFieldsHtml({
       index,
       stored,
       spec,
       mode,
       modes,
-      editable
+      editable,
+      fromHint
     });
 
     const anchor = typeSelect?.closest(".field-group");
@@ -121,7 +131,7 @@ export class SocketConsumptionTargetUI {
     return modes;
   }
 
-  static #buildFieldsHtml({ index, stored, spec, mode, modes, editable }) {
+  static #buildFieldsHtml({ index, stored, spec, mode, modes, editable, fromHint }) {
     const disabled = editable ? "" : " disabled";
     const escape = SocketConsumptionTargetUI.#escapeHtml;
     const valueMeta = SocketConsumptionTargetUI.#valueMeta(mode);
@@ -134,7 +144,12 @@ export class SocketConsumptionTargetUI {
 
     return `
       <div class="form-group label-top">
-        <label>${escape(Constants.localize("SCSockets.Consumption.FromLabel", "From"))}</label>
+        <label class="sc-sockets-consumption-target-label">
+          <span>${escape(Constants.localize("SCSockets.Consumption.FromLabel", "From"))}</span>
+          <i class="fa-solid fa-circle-info"
+             data-tooltip="${escape(fromHint)}"
+             aria-label="${escape(fromHint)}"></i>
+        </label>
         <div class="form-fields">
           <select data-sc-sockets-field="mode"${disabled}>${modeOptions}</select>
         </div>
