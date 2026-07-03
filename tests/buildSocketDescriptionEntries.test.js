@@ -67,30 +67,66 @@ describe("buildSocketDescriptionEntries", () => {
             socketDescription: "gem description",
             data: "{\"name\":\"Ruby\"}"
           }
+        },
+        {
+          name: "Socketed Battery Gem",
+          gem: {
+            name: "Battery Gem",
+            img: "icons/battery.webp"
+          },
+          _gemData: {
+            name: "Battery Gem",
+            img: "icons/battery.webp",
+            socketDescription: "battery description",
+            data: JSON.stringify({
+              name: "Battery Gem",
+              img: "icons/battery.webp",
+              flags: {
+                "sc-simple-sockets": {
+                  gemResource: {
+                    key: "battery",
+                    value: 10,
+                    max: 10,
+                    destroyOnEmpty: true
+                  }
+                }
+              }
+            })
+          }
         }
       ]
     );
 
-    assert.equal(entries.length, 2);
+    assert.equal(entries.length, 3);
     assert.deepEqual(entries[0], {
       name: "Open Slot",
       img: Constants.SOCKET_SLOT_IMG,
       description: "<section>slot description</section>",
       isEmptySlot: true,
-      slotColor: "#AABBCC"
+      slotColor: "#AABBCC",
+      resourceLabel: ""
     });
     assert.deepEqual(entries[1], {
       name: "Ruby",
       img: "icons/ruby.webp",
       description: "<section>gem description</section>",
       isEmptySlot: false,
-      slotColor: ""
+      slotColor: "",
+      resourceLabel: ""
+    });
+    assert.deepEqual(entries[2], {
+      name: "Battery Gem",
+      img: "icons/battery.webp",
+      description: "<section>battery description</section>",
+      isEmptySlot: false,
+      slotColor: "",
+      resourceLabel: "(10/10 battery)"
     });
 
-    assert.equal(enrichCalls.length, 2);
+    assert.equal(enrichCalls.length, 3);
     assert.deepEqual(
       enrichCalls.map((call) => call.description),
-      ["slot description", "gem description"]
+      ["slot description", "gem description", "battery description"]
     );
 
     for (const call of enrichCalls) {

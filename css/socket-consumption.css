@@ -1,0 +1,239 @@
+/* Gem socketed resource fieldset (gem details tab). */
+.sc-sockets-gem-resource-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.sc-sockets-gem-resource-row .form-group {
+  margin: 0;
+}
+
+.sc-sockets-gem-resource-row .sc-sockets-gem-resource-key {
+  flex: 2;
+}
+
+.sc-sockets-gem-resource-row .sc-sockets-gem-resource-number {
+  flex: 0 0 4.75rem;
+}
+
+.sc-sockets-gem-resource-row .sc-sockets-gem-resource-number input {
+  text-align: center;
+}
+
+.sc-sockets-gem-resource + .sc-sockets-gem-details {
+  margin-top: 0.65rem;
+}
+
+.sc-sockets-gem-resource-destroy {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+  font-size: var(--font-size-12, 0.75rem);
+}
+
+/* x/y badge shown next to gem names when the gem provides a resource. */
+.sc-sockets-gem-resource-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.25rem;
+  padding: 0 0.375rem;
+  border: 1px solid var(--color-border-light-2, #999);
+  border-radius: 0.625rem;
+  font-size: var(--font-size-11, 0.6875rem);
+  font-weight: normal;
+  line-height: 1.5;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+/* Per-gem resource table under the socket list. */
+.sc-sockets-resource-table {
+  margin: 0.5rem 0.5rem 0.625rem;
+  padding: 0.5rem 0.625rem 0.625rem;
+  border: 1px solid var(--color-border-light-2, #999);
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.12);
+  font-size: var(--font-size-12, 0.75rem);
+}
+
+.sc-sockets-resource-table-title {
+  margin-bottom: 0.375rem;
+  font-size: var(--font-size-11, 0.6875rem);
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.8;
+}
+
+.sc-sockets-resource-table-header,
+.sc-sockets-resource-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(5.5rem, auto) minmax(6rem, auto);
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.25rem 0;
+}
+
+.sc-sockets-resource-table-header {
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: var(--font-size-10, 0.625rem);
+  letter-spacing: 0.03em;
+  opacity: 0.7;
+  border-bottom: 1px solid var(--color-border-light-2, #999);
+}
+
+.sc-sockets-resource-table-row + .sc-sockets-resource-table-row {
+  border-top: 1px solid color-mix(in srgb, var(--color-border-light-2, #999) 40%, transparent 60%);
+}
+
+.sc-sockets-resource-table-gem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.sc-sockets-resource-table-gem img {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  flex: 0 0 1.5rem;
+}
+
+.sc-sockets-resource-table-gem-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sc-sockets-resource-table-gem-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-sockets-resource-table-gem-resource {
+  font-size: var(--font-size-11, 0.6875rem);
+  opacity: 0.72;
+  text-transform: uppercase;
+}
+
+.sc-sockets-resource-table-charges {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sc-sockets-resource-table-destroy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.45rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--color-border-light-2, #999);
+  border-radius: 999px;
+  font-size: var(--font-size-11, 0.6875rem);
+  white-space: nowrap;
+}
+
+.sc-sockets-resource-table-destroy.is-destroy-on-empty {
+  border-color: rgba(200, 96, 84, 0.7);
+  background: rgba(200, 96, 84, 0.16);
+}
+
+.sc-sockets-resource-table-destroy.is-keep-on-empty {
+  border-color: rgba(102, 150, 112, 0.7);
+  background: rgba(102, 150, 112, 0.14);
+}
+
+@media (max-width: 640px) {
+  .sc-sockets-resource-table-header,
+  .sc-sockets-resource-table-row {
+    grid-template-columns: minmax(0, 1fr) minmax(4.75rem, auto) minmax(5.5rem, auto);
+    gap: 0.5rem;
+  }
+}
+
+/* Custom "From"/value fields inside native consumption rows. */
+.sc-sockets-consumption-target {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.sc-sockets-consumption-target .form-group {
+  margin: 0;
+  flex: 1;
+}
+
+.sc-sockets-consumption-target .sc-sockets-consumption-target-value.hidden {
+  display: none;
+}
+
+/* Socket Slot Settings: compact color preview + in-card gem charge control. */
+.socket-slot-config-preview-card .sc-sockets-slot-visual {
+  max-width: 7.5rem;
+  margin-inline: auto;
+}
+
+.socket-slot-config-app .socket-slot-config-gem-charges {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem 0.6rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid color-mix(in srgb, var(--sf-border-soft) 78%, #7082a7 22%);
+}
+
+.socket-slot-config-app .socket-slot-config-gem-charges-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--sf-text-strong);
+  font-weight: 600;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.socket-slot-config-app .socket-slot-config-gem-charges-label .socket-slot-config-info,
+.socket-slot-config-app .socket-slot-config-gem-charges .sc-sockets-gem-resource-badge {
+  margin-left: 0;
+}
+
+.socket-slot-config-app .socket-slot-config-gem-charges-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  justify-self: end;
+}
+
+.socket-slot-config-app .socket-slot-config-gem-charges-control input {
+  width: 3.35rem;
+  min-width: 3.35rem;
+  text-align: center;
+}
+
+.socket-slot-config-app .socket-slot-config-gem-charges-max {
+  color: var(--sf-text-dim);
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+@media (max-width: 740px) {
+  .socket-slot-config-app .socket-slot-config-gem-charges {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .socket-slot-config-app .socket-slot-config-gem-charges-label {
+    white-space: normal;
+  }
+
+  .socket-slot-config-app .socket-slot-config-gem-charges-control {
+    justify-self: start;
+  }
+}

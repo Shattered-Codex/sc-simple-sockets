@@ -2,6 +2,8 @@ import { Constants } from "../Constants.js";
 import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js";
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
 import { normalizeSlotColor } from "../helpers/socketSlotConfig.js";
+import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { SocketStore } from "../SocketStore.js";
 import { DebugTrace } from "../support/DebugTrace.js";
 
 const api = foundry?.applications?.api ?? {};
@@ -108,6 +110,9 @@ export class SocketSlotConfigApp extends BaseApplication {
       this.#slotIndex,
       payload
     );
+    if (updated) {
+      await this.#persistGemResourceValue(payload.gemResourceValue);
+    }
     if (!updated) {
       ui.notifications?.warn?.(
         Constants.localize(
@@ -158,9 +163,31 @@ export class SocketSlotConfigApp extends BaseApplication {
     super.deactivateListeners?.(html);
   }
 
+  async #persistGemResourceValue(rawValue) {
+    if (rawValue === undefined || rawValue === null || rawValue === "") {
+      return;
+    }
+
+    const slots = SocketStore.getSlots(this.#hostItem);
+    const slot = slots[this.#slotIndex];
+    const current = GemResourceService.getSlotResource(slot);
+    if (!current) {
+      return;
+    }
+
+    const nextSlot = GemResourceService.withSlotResourceValue(slot, Number(rawValue));
+    if (nextSlot === slot) {
+      return;
+    }
+
+    slots[this.#slotIndex] = nextSlot;
+    await SocketStore.setSlots(this.#hostItem, slots);
+  }
+
   async #buildContext() {
     const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
     const slotConfig = SocketSlotConfigService.getConfig(slot);
+    const gemResource = GemResourceService.getSlotResource(slot);
     const slotNumber = Number.isInteger(this.#slotIndex) ? this.#slotIndex + 1 : null;
     const canInspectGem = Boolean(slot?.gem || slot?._gemData);
     const textEditor = Constants.getTextEditor();
@@ -183,6 +210,8 @@ export class SocketSlotConfigApp extends BaseApplication {
       gemName: slot?.gem?.name ?? slot?._gemData?.name ?? "",
       gemImg: slot?.gem?.img ?? slot?._gemData?.img ?? "",
       canInspectGem,
+      hasGemResource: Boolean(gemResource),
+      gemResource,
       slotConfigName: slotConfig.name,
       hidden: slotConfig.hidden,
       deleteGemOnRemoval: slotConfig.deleteGemOnRemoval,
@@ -292,6 +321,14 @@ export class SocketSlotConfigApp extends BaseApplication {
         inspectGem: Constants.localize(
           "SCSockets.SocketSlotConfig.InspectGem",
           "Inspect Gem"
+        ),
+        gemChargesLabel: Constants.localize(
+          "SCSockets.SocketSlotConfig.GemCharges.Label",
+          "Gem charges"
+        ),
+        gemChargesHint: Constants.localize(
+          "SCSockets.SocketSlotConfig.GemCharges.Hint",
+          "Current charges of the socketed gem. The maximum is configured on the gem itself."
         ),
         emptySlot: Constants.localize(
           "SCSockets.SocketSlotConfig.EmptySlot",
@@ -410,7 +447,8 @@ export class SocketSlotConfigApp extends BaseApplication {
       deleteGemOnRemoval: this.#readCheckboxValue("slotConfig.deleteGemOnRemoval"),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
-      color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex"))
+      color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex")),
+      gemResourceValue: this.#readFieldValue("gemResource.value")
     };
   }
 

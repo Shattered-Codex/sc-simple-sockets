@@ -9,6 +9,8 @@ import { ModuleSettingsRegistrar } from "./core/settings/ModuleSettingsRegistrar
 import { LootActivitiesExtension } from "./domain/gems/LootActivitiesExtension.js";
 import { GemLootTypeExtension } from "./domain/gems/GemLootTypeExtension.js";
 import { ItemActivityBadges } from "./core/ui/ItemActivityBadges.js";
+import { SocketConsumptionService } from "./core/services/SocketConsumptionService.js";
+import { SocketConsumptionTargetUI } from "./core/ui/SocketConsumptionTargetUI.js";
 import { TransferFilterUI } from "./core/ui/TransferFilterUI.js";
 import { SocketTooltipUI } from "./core/ui/SocketTooltipUI.js";
 import { MacroAPI } from "./core/api/MacroAPI.js";
@@ -32,6 +34,7 @@ const lifecycle = new GemLifecycleService();
 MacroAPI.register();
 SocketAPI.register();
 ScMoreActivitiesIntegration.register();
+SocketConsumptionService.register();
 TidyIntegration.register({
   gemSheetExtension: gemSheet,
   itemSocketExtension: itemSocketSheet
@@ -72,6 +75,7 @@ Hooks.once("setup", () => {
   ActorGemBadges.activate();
   ActorGemFormulaUI.activate();
   ItemActivityBadges.activate();
+  SocketConsumptionTargetUI.activate();
   TransferFilterUI.activate();
   SocketTooltipUI.activate();
   GemDetailsUI.activate();

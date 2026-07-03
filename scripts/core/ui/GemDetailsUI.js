@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
+import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 
 export class GemDetailsUI {
   static #handler = null;
@@ -70,6 +71,12 @@ export class GemDetailsUI {
       if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_ATTACK_BONUS}`)) {
         event.preventDefault();
         await GemDetailsUI.#persistAttackBonus(sheet?.item, target.value);
+        return;
+      }
+
+      if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`)) {
+        event.preventDefault();
+        await GemDetailsUI.#persistGemResource(container, sheet?.item);
         return;
       }
 
@@ -188,6 +195,7 @@ export class GemDetailsUI {
       await GemDetailsUI.#persistCritThreshold(sheet?.item, critThresholdValue);
       await GemDetailsUI.#persistCritMultiplier(sheet?.item, critMultiplierValue);
       await GemDetailsUI.#persistAttackBonus(sheet?.item, attackBonusValue);
+      await GemDetailsUI.#persistGemResource(container, sheet?.item);
     });
     form.dataset.scSocketsGemDetailsSubmitBound = "true";
   }
@@ -526,6 +534,50 @@ export class GemDetailsUI {
       : [];
 
     await GemDetailsUI.#writeEntries(item, baseEntries, Constants.FLAG_GEM_DAMAGE);
+  }
+
+  static async #persistGemResource(container, item) {
+    if (!item || !container) return;
+
+    const prefix = `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`;
+    const readField = (suffix) => {
+      const field = container.querySelector(`[name="${prefix}.${suffix}"]`);
+      return field instanceof HTMLInputElement ? field.value : undefined;
+    };
+    const readCheckbox = (suffix) => {
+      const field = container.querySelector(`[name="${prefix}.${suffix}"]`);
+      return field instanceof HTMLInputElement ? field.checked : false;
+    };
+
+    const key = readField("key");
+    if (key === undefined) {
+      return;
+    }
+
+    const resource = GemResourceService.normalizeResource({
+      key,
+      max: readField("max"),
+      value: readField("value"),
+      destroyOnEmpty: readCheckbox("destroyOnEmpty")
+    });
+
+    const existing = GemResourceService.getGemResource(item);
+    if (!resource) {
+      if (existing) {
+        await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_RESOURCE);
+      }
+      return;
+    }
+
+    if (existing
+      && existing.key === resource.key
+      && existing.max === resource.max
+      && existing.value === resource.value
+      && existing.destroyOnEmpty === resource.destroyOnEmpty) {
+      return;
+    }
+
+    await item.setFlag(Constants.MODULE_ID, Constants.FLAG_GEM_RESOURCE, resource);
   }
 
   static async #persistCritThreshold(item, rawValue) {

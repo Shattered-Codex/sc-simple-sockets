@@ -49,6 +49,9 @@
         },
         {
             "src": "css/support-popup.css"
+        },
+        {
+            "src": "css/socket-consumption.css"
         }
     ],
     "url": "https://github.com/Shattered-Codex/sc-simple-sockets",

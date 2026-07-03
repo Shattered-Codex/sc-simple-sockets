@@ -21,7 +21,12 @@
       "HostNotSocketable": "Este tipo de item não pode receber soquetes.",
       "SocketConditionFailed": "Essa gema não atende aos requisitos deste slot.",
       "SocketConditionError": "A condição deste slot não pôde ser avaliada.",
-      "Reloading": "Recarregando..."
+      "Reloading": "Recarregando...",
+      "InsufficientSocketCharges": "Cargas socketadas de \"{resource}\" insuficientes ({available}/{required}).",
+      "InsufficientSocketGems": "Gemas socketadas insuficientes para consumir ({available}/{required}).",
+      "SourceGemMissing": "A gema que fornece esta atividade não está mais socketada.",
+      "InvalidConsumptionSlot": "O slot de socket configurado para consumo não existe.",
+      "InvalidConsumptionTarget": "Este alvo de consumo socketado não está configurado."
     },
     "Effects": {
       "DefaultName": "Efeito de Gema"
@@ -94,6 +99,16 @@
       "AttackBonus": {
         "Label": "Bônus de ataque",
         "Hint": "Bônus fixo adicionado às rolagens de ataque quando esta gema está encaixada. Bônus de várias gemas se somam. Deixe em branco para nenhum."
+      },
+      "Resource": {
+        "Label": "Recurso Socketado",
+        "Hint": "Recurso customizado que esta gema fornece enquanto socketada (ex.: battery, magic). Atividades podem consumi-lo pelo bloco Consumo Socketado. Deixe a chave em branco para não fornecer nenhum.",
+        "Key": "Chave do Recurso",
+        "KeyPlaceholder": "ex.: battery",
+        "Max": "Máximo",
+        "Value": "Atual",
+        "DestroyOnEmpty": "Destruir ao ficar sem cargas",
+        "DestroyOnEmptyHint": "Quando um consumo zera as cargas desta gema, ela é destruída e removida do slot."
       }
     },
     "GemFormula": {
@@ -153,6 +168,10 @@
       },
       "Validation": {
         "InvalidCondition": "A condição do slot contém código inválido."
+      },
+      "GemCharges": {
+        "Label": "Cargas da gema",
+        "Hint": "Cargas atuais da gema socketada. O máximo é configurado na própria gema."
       }
     },
     "SocketDescriptions": {
@@ -515,6 +534,50 @@
             "Title": "Escolher Gema para Remover"
           }
         }
+      }
+    },
+    "SocketPools": {
+      "Label": "Recursos",
+      "Hint": "Pools de recursos agregados fornecidos pelas gemas socketadas. O item em si não armazena cargas.",
+      "TableLabel": "Cargas das Gemas Socketadas",
+      "GemColumn": "Gem",
+      "ResourceColumn": "ID do Recurso",
+      "ChargesColumn": "Cargas",
+      "DestroyColumn": "Destrói em 0",
+      "DestroyYes": "Sim",
+      "DestroyNo": "Não"
+    },
+    "Consumption": {
+      "Charge": {
+        "Label": "Cargas Socketadas",
+        "PromptDecrease": "Consumir Cargas Socketadas",
+        "PromptIncrease": "Restaurar Cargas Socketadas",
+        "PromptHintDecrease": "Consome {cost} {resource} ({available} disponível).",
+        "PromptHintIncrease": "Restaura {cost} {resource}.",
+        "GenericResource": "cargas socketadas"
+      },
+      "Gem": {
+        "Label": "Gema Socketada",
+        "Prompt": "Consumir Gema Socketada",
+        "PromptHint": "Destrói {cost} gema(s) socketada(s): {target} ({available} disponível)."
+      },
+      "Target": {
+        "SourceSlot": "Gema de origem (desta atividade)",
+        "SlotShort": "slot {slot}"
+      },
+      "FromLabel": "Origem",
+      "Mode": {
+        "sourceSlot": "Gema de origem (desta atividade)",
+        "any": "Qualquer gema com o recurso",
+        "gemName": "Gema por nome",
+        "slot": "Slot específico"
+      },
+      "Value": {
+        "Resource": "Chave do Recurso",
+        "ResourcePlaceholder": "ex.: battery",
+        "GemName": "Nome da Gema",
+        "GemNamePlaceholder": "ex.: Gema de Bateria",
+        "Slot": "Número do Slot"
       }
     }
   }

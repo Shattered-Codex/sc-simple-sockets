@@ -21,7 +21,12 @@
       "HostNotSocketable": "This item type cannot receive sockets.",
       "SocketConditionFailed": "That gem does not meet this socket's requirements.",
       "SocketConditionError": "This socket condition could not be evaluated.",
-      "Reloading": "Reloading..."
+      "Reloading": "Reloading...",
+      "InsufficientSocketCharges": "Not enough socketed \"{resource}\" charges ({available}/{required}).",
+      "InsufficientSocketGems": "Not enough socketed gems to consume ({available}/{required}).",
+      "SourceGemMissing": "The gem that provides this activity is no longer socketed.",
+      "InvalidConsumptionSlot": "The socket slot configured for consumption does not exist.",
+      "InvalidConsumptionTarget": "This socket consumption target is not configured."
     },
     "Effects": {
       "DefaultName": "Gem Effect"
@@ -94,6 +99,16 @@
       "AttackBonus": {
         "Label": "Attack Bonus",
         "Hint": "Flat bonus added to attack rolls when this gem is socketed. Bonuses from multiple gems stack. Leave blank for none."
+      },
+      "Resource": {
+        "Label": "Socketed Resource",
+        "Hint": "Custom resource this gem provides while socketed (e.g. battery, magic). Activities can consume it through the Socket Consumption block. Leave the key blank to provide none.",
+        "Key": "Resource Key",
+        "KeyPlaceholder": "e.g. battery",
+        "Max": "Maximum",
+        "Value": "Current",
+        "DestroyOnEmpty": "Destroy when out of charges",
+        "DestroyOnEmptyHint": "When a consumption drains this gem to zero charges, the gem is destroyed and removed from its socket."
       }
     },
     "GemFormula": {
@@ -153,6 +168,10 @@
       },
       "Validation": {
         "InvalidCondition": "The slot condition has invalid code."
+      },
+      "GemCharges": {
+        "Label": "Gem charges",
+        "Hint": "Current charges of the socketed gem. The maximum is configured on the gem itself."
       }
     },
     "SocketDescriptions": {
@@ -515,6 +534,50 @@
             "Title": "Choose Gem to Remove"
           }
         }
+      }
+    },
+    "SocketPools": {
+      "Label": "Resources",
+      "Hint": "Aggregated resource pools provided by the socketed gems. The item itself stores no charges.",
+      "TableLabel": "Gem Resource Charges",
+      "GemColumn": "Gem",
+      "ResourceColumn": "Resource ID",
+      "ChargesColumn": "Charges",
+      "DestroyColumn": "Destroy At 0",
+      "DestroyYes": "Yes",
+      "DestroyNo": "No"
+    },
+    "Consumption": {
+      "Charge": {
+        "Label": "Socketed Charges",
+        "PromptDecrease": "Consume Socketed Charges",
+        "PromptIncrease": "Restore Socketed Charges",
+        "PromptHintDecrease": "Consumes {cost} {resource} ({available} available).",
+        "PromptHintIncrease": "Restores {cost} {resource}.",
+        "GenericResource": "socketed charges"
+      },
+      "Gem": {
+        "Label": "Socketed Gem",
+        "Prompt": "Consume Socketed Gem",
+        "PromptHint": "Destroys {cost} socketed gem(s): {target} ({available} available)."
+      },
+      "Target": {
+        "SourceSlot": "Source gem (this activity)",
+        "SlotShort": "slot {slot}"
+      },
+      "FromLabel": "From",
+      "Mode": {
+        "sourceSlot": "Source gem (this activity)",
+        "any": "Any gem with resource",
+        "gemName": "Gem by name",
+        "slot": "Specific slot"
+      },
+      "Value": {
+        "Resource": "Resource Key",
+        "ResourcePlaceholder": "e.g. battery",
+        "GemName": "Gem Name",
+        "GemNamePlaceholder": "e.g. Battery Gem",
+        "Slot": "Slot Number"
       }
     }
   }

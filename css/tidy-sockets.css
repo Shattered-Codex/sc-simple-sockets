@@ -391,6 +391,59 @@
   gap: 0.25rem;
 }
 
+.sc-sockets-tidy .sc-sockets-main-section,
+.sc-sockets-tidy .sc-sockets-resource-section {
+  overflow: hidden;
+  border: 1px solid var(--color-border-light-primary, rgba(255, 255, 255, 0.14));
+  border-radius: 6px;
+  background: color-mix(in srgb, rgba(12, 16, 24, 0.96) 86%, transparent);
+}
+
+.sc-sockets-tidy .sc-sockets-main-section {
+  padding: 0;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-section {
+  margin-top: 0.65rem;
+  padding: 0;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-table {
+  padding: 0;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container .tidy-table-row {
+  align-items: center;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container .sc-sockets-resource-header,
+.sc-sockets-tidy .sc-sockets-resource-row-container .sc-sockets-resource-row {
+  grid-template-columns: 3rem minmax(0, 1fr) minmax(6.25rem, 6.9rem) minmax(6rem, 6.75rem);
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container--header {
+  pointer-events: none;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container--header .sc-sockets-resource-header {
+  min-height: 2rem;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container--header .tidy-table-cell {
+  color: rgba(246, 241, 234, 0.96);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .sc-sockets-tidy .sc-sockets-resource-row-container .sc-sockets-resource-header,
+  .sc-sockets-tidy .sc-sockets-resource-row-container .sc-sockets-resource-row {
+    grid-template-columns: 2.75rem minmax(0, 1fr) minmax(5.5rem, 6rem) minmax(5.25rem, 5.9rem);
+  }
+}
+
 /* Keep gem details row layout consistent even with Quadrone theme flex overrides */
 .tidy5e-sheet .sc-sockets-gem-damage-row.form-group,
 .tidy5e-sheet.quadrone .sc-sockets-gem-damage-row.form-group {

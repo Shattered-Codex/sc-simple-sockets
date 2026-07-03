@@ -1,5 +1,6 @@
 import { Constants } from "../../core/Constants.js";
 import { GemCriteria } from "./GemCriteria.js";
+import { GemResourceService } from "./GemResourceService.js";
 
 export class GemDetailsBuilder {
   static #dieOptionsCache = null;
@@ -29,6 +30,7 @@ export class GemDetailsBuilder {
     const critThreshold = this.#buildCritThresholdContext(item, { include: showWeaponDetails });
     const critMultiplier = this.#buildCritMultiplierContext(item, { include: showWeaponDetails });
     const attackBonus = this.#buildAttackBonusContext(item, { include: showWeaponDetails });
+    const resource = this.#buildResourceContext(item);
     const canEdit = Boolean(
       isGem && (
         (editable ?? true) ||
@@ -56,7 +58,8 @@ export class GemDetailsBuilder {
       damage,
       critThreshold,
       critMultiplier,
-      attackBonus
+      attackBonus,
+      resource
     };
 
     if (part) {
@@ -315,6 +318,21 @@ export class GemDetailsBuilder {
       { value: "attack", label: Constants.localize("SCSockets.GemDetails.ExtraDamageActivity.Attack", "Attack only") },
       { value: "spell", label: Constants.localize("SCSockets.GemDetails.ExtraDamageActivity.Spell", "Spell only") }
     ];
+  }
+
+  static #buildResourceContext(item) {
+    const resource = GemResourceService.getGemResource(item);
+    return {
+      namePrefix: `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`,
+      key: resource?.key ?? "",
+      max: resource ? resource.max : "",
+      value: resource ? resource.value : "",
+      destroyOnEmpty: resource?.destroyOnEmpty === true,
+      hint: Constants.localize(
+        "SCSockets.GemDetails.Resource.Hint",
+        "Custom resource this gem provides while socketed (e.g. battery, magic). Activities can consume it through the Socketed Charges consumption type. Leave the key blank to provide none."
+      )
+    };
   }
 
   static #buildCritThresholdContext(item, { include = false } = {}) {

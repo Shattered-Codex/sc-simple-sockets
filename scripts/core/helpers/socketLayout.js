@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
+import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { canUserSeeSlot, getSlotConfig } from "./socketSlotConfig.js";
 
 export function buildSocketLayoutContext(item, {
@@ -10,8 +11,37 @@ export function buildSocketLayoutContext(item, {
 } = {}) {
   const socketTabLayout = ModuleSettings.getSocketTabLayout();
   const useSocketGridLayout = socketTabLayout === ModuleSettings.SOCKET_TAB_LAYOUT_GRID;
+  // The host item has no persistent charge of its own: pools are always derived
+  // from the gems currently socketed into it.
+  const socketPools = GemResourceService.aggregatePools(sockets);
+  const socketResourceRows = (Array.isArray(sockets) ? sockets : []).reduce((rows, slot, index) => {
+    const resource = GemResourceService.getSlotResource(slot);
+    if (resource && canUserSeeSlot({ ...slot, slotConfig: getSlotConfig(slot) })) {
+      rows.push({
+        slotNumber: index + 1,
+        gemName: String(slot?.gem?.name ?? slot?.name ?? "").trim(),
+        gemImg: slot?.gem?.img ?? "",
+        resourceKey: resource.key,
+        value: resource.value,
+        max: resource.max,
+        chargesLabel: `${resource.value}/${resource.max}`,
+        destroyOnEmpty: resource.destroyOnEmpty === true,
+        destroyAtZeroLabel: Constants.localize(
+          resource.destroyOnEmpty === true
+            ? "SCSockets.SocketPools.DestroyYes"
+            : "SCSockets.SocketPools.DestroyNo",
+          resource.destroyOnEmpty === true ? "Yes" : "No"
+        )
+      });
+    }
+    return rows;
+  }, []);
 
   return {
+    socketPools,
+    hasSocketPools: socketPools.length > 0,
+    socketResourceRows,
+    hasSocketResourceRows: socketResourceRows.length > 0,
     editable,
     canManageSockets,
     canConfigureSlots: canManageSockets,

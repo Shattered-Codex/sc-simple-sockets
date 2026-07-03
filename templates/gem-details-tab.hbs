@@ -56,7 +56,54 @@
           </fieldset>
         </div>
 
-        <fieldset class="form-group sc-sockets-gem-details"
+        <fieldset class="form-group sc-sockets-gem-resource" data-sc-sockets="gem-resource">
+          <legend class="form-header">
+            {{ localize "SCSockets.GemDetails.Resource.Label" }}
+            {{#if details.resource.hint}}
+              <i class="fa-solid fa-circle-info" data-tooltip="{{details.resource.hint}}"></i>
+            {{/if}}
+          </legend>
+          <div class="form-group split-group sc-sockets-gem-resource-row">
+            <div class="form-group label-top sc-sockets-gem-resource-key">
+              <label>{{ localize "SCSockets.GemDetails.Resource.Key" }}</label>
+              <div class="form-fields">
+                <input type="text"
+                       name="{{details.resource.namePrefix}}.key"
+                       value="{{details.resource.key}}"
+                       placeholder="{{ localize 'SCSockets.GemDetails.Resource.KeyPlaceholder' }}">
+              </div>
+            </div>
+            <div class="form-group label-top sc-sockets-gem-resource-number sc-sockets-gem-resource-current">
+              <label>{{ localize "SCSockets.GemDetails.Resource.Value" }}</label>
+              <div class="form-fields">
+                <input type="number"
+                       name="{{details.resource.namePrefix}}.value"
+                       value="{{details.resource.value}}"
+                       min="0" step="1">
+              </div>
+            </div>
+            <div class="form-group label-top sc-sockets-gem-resource-number sc-sockets-gem-resource-maximum">
+              <label>{{ localize "SCSockets.GemDetails.Resource.Max" }}</label>
+              <div class="form-fields">
+                <input type="number"
+                       name="{{details.resource.namePrefix}}.max"
+                       value="{{details.resource.max}}"
+                       min="0" step="1">
+              </div>
+            </div>
+          </div>
+          <label class="checkbox sc-sockets-gem-resource-destroy">
+            <input type="checkbox"
+                   name="{{details.resource.namePrefix}}.destroyOnEmpty"
+                   {{#if details.resource.destroyOnEmpty}}checked{{/if}}>
+            <span>
+              {{ localize "SCSockets.GemDetails.Resource.DestroyOnEmpty" }}
+              <i class="fa-solid fa-circle-info" data-tooltip="{{ localize 'SCSockets.GemDetails.Resource.DestroyOnEmptyHint' }}"></i>
+            </span>
+          </label>
+        </fieldset>
+
+        <fieldset class="form-group sc-sockets-gem-details sc-sockets-gem-extra-damage"
                   data-sc-sockets="gem-details"
                   data-default-number="{{details.damage.defaults.number}}"
                   data-default-die="{{details.damage.defaults.die}}"

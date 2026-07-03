@@ -19,6 +19,7 @@ export class Constants {
   static FLAG_GEM_ATTACK_BONUS = "gemAttackBonus";
   static FLAG_SOCKET_DESCRIPTION = "socketDescription";
   static FLAG_SOCKET_TAB_ENABLED = "socketTabEnabled";
+  static FLAG_GEM_RESOURCE = "gemResource";
   static FLAGS = {
     sockets: "sockets",
     gemAllowedTypes: "gemAllowedTypes",
