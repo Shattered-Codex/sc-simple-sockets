@@ -331,7 +331,7 @@ export class ScMoreActivitiesIntegration {
     const effectiveItem = hostItem ?? ScMoreActivitiesIntegration.getHostItem(activity);
     const user = requestUser ?? game?.users?.get?.(payload.requestUserId) ?? game?.user ?? null;
 
-    if (!activity || !effectiveItem) {
+    if (!effectiveItem) {
       return ScMoreActivitiesIntegration.#failure(
         "invalid-request",
         "SCSockets.Integrations.ScMoreActivities.Warnings.InvalidRequest",
