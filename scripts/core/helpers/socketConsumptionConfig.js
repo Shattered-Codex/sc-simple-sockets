@@ -11,19 +11,23 @@ export const CONSUMPTION_TYPE_GEM = "scSocketsGem";
 export const SOCKET_CONSUMPTION_SELECTOR_MODES = Object.freeze({
   SOURCE_SLOT: "sourceSlot",
   ANY: "any",
+  ANY_GEM: "anyGem",
   GEM_NAME: "gemName",
+  GEM_NAME_MATCH: "gemNameMatch",
   SLOT: "slot"
 });
 
 /**
  * Grammar for the consumption target string:
- * - "sourceSlot"        consume from the gem that originated this activity.
- * - "any:<resourceKey>" consume from any socketed gem providing the resource.
- * - "slot:<index>"      consume from the gem in a specific slot (resource implied).
- * - "gemName:<name>"    consume from socketed gems with this name (resource implied).
+ * - "sourceSlot"             consume from the gem that originated this activity.
+ * - "any:<resourceKey>"      consume from any socketed gem providing the resource.
+ * - "anyGem"                 consume from any socketed gem, in slot order.
+ * - "slot:<index>"           consume from the gem in a specific slot (resource implied).
+ * - "gemName:<name>"         consume from socketed gems with exactly this name.
+ * - "gemNameMatch:<pattern>" consume from socketed gems whose name matches the pattern.
  * Only "any" needs an explicit resource key because each gem provides a single resource.
  * @param {string} target
- * @returns {{mode: string, resourceKey?: string, slotIndex?: number, gemName?: string}|null}
+ * @returns {{mode: string, resourceKey?: string, slotIndex?: number, gemName?: string, gemNamePattern?: string}|null}
  */
 export function parseSocketTarget(target) {
   const raw = String(target ?? "").trim();
@@ -33,6 +37,10 @@ export function parseSocketTarget(target) {
 
   if (raw === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT) {
     return { mode: SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT };
+  }
+
+  if (raw === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM) {
+    return { mode: SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM };
   }
 
   const separator = raw.indexOf(":");
@@ -52,22 +60,53 @@ export function parseSocketTarget(target) {
     return value.length ? { mode, gemName: value } : null;
   }
 
+  if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
+    return value.length ? { mode, gemNamePattern: value } : null;
+  }
+
   return null;
 }
 
-export function formatSocketTarget({ mode, resourceKey, slotIndex, gemName } = {}) {
+export function formatSocketTarget({ mode, resourceKey, slotIndex, gemName, gemNamePattern } = {}) {
   switch (mode) {
     case SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT:
-      return SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT;
+    case SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM:
+      return mode;
     case SOCKET_CONSUMPTION_SELECTOR_MODES.ANY:
       return `${mode}:${String(resourceKey ?? "").trim()}`;
     case SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT:
       return `${mode}:${Number(slotIndex)}`;
     case SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME:
       return `${mode}:${String(gemName ?? "").trim()}`;
+    case SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH:
+      return `${mode}:${String(gemNamePattern ?? "").trim()}`;
     default:
       return "";
   }
+}
+
+/**
+ * Matches a gem name against a user-supplied pattern, case-insensitively.
+ * "*" is a wildcard for any sequence; a pattern with wildcards must match the whole
+ * name. Without wildcards the pattern matches as a substring ("Fire" matches
+ * "Greater Fire Gem").
+ * @param {string} pattern
+ * @param {string} name
+ * @returns {boolean}
+ */
+export function matchesGemNamePattern(pattern, name) {
+  const wanted = String(pattern ?? "").trim().toLowerCase();
+  const candidate = String(name ?? "").trim().toLowerCase();
+  if (!wanted.length || !candidate.length) {
+    return false;
+  }
+
+  if (!wanted.includes("*")) {
+    return candidate.includes(wanted);
+  }
+
+  const escaped = wanted.replace(/[.*+?^${}()|[\]\\]/g, (char) => (char === "*" ? ".*" : `\\${char}`));
+  return new RegExp(`^${escaped}$`).test(candidate);
 }
 
 export function getActivitySourceSlotIndex(activity) {

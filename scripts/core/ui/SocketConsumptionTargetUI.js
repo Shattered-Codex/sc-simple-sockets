@@ -125,7 +125,9 @@ export class SocketConsumptionTargetUI {
       modes.push(SOCKET_CONSUMPTION_SELECTOR_MODES.ANY);
     }
     modes.push(
+      SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM,
       SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME,
+      SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH,
       SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT
     );
     return modes;
@@ -183,6 +185,14 @@ export class SocketConsumptionTargetUI {
         placeholder: Constants.localize("SCSockets.Consumption.Value.GemNamePlaceholder", "e.g. Battery Gem")
       };
     }
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
+      return {
+        hidden: false,
+        inputType: "text",
+        label: Constants.localize("SCSockets.Consumption.Value.NamePattern", "Name Pattern"),
+        placeholder: Constants.localize("SCSockets.Consumption.Value.NamePatternPlaceholder", "e.g. Fire* or Battery")
+      };
+    }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT) {
       return {
         hidden: false,
@@ -203,6 +213,9 @@ export class SocketConsumptionTargetUI {
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
       return spec.gemName ?? "";
+    }
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
+      return spec.gemNamePattern ?? "";
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT) {
       // Displayed 1-based for users; stored 0-based in the grammar.
@@ -273,7 +286,8 @@ export class SocketConsumptionTargetUI {
   }
 
   static #composeTarget(mode, rawValue) {
-    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT) {
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT
+      || mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM) {
       return formatSocketTarget({ mode });
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY) {
@@ -281,6 +295,9 @@ export class SocketConsumptionTargetUI {
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
       return rawValue.length ? formatSocketTarget({ mode, gemName: rawValue }) : "";
+    }
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
+      return rawValue.length ? formatSocketTarget({ mode, gemNamePattern: rawValue }) : "";
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT) {
       const displayNumber = Number(rawValue);

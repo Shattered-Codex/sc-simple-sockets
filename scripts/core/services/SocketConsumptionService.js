@@ -8,6 +8,7 @@ import {
   CONSUMPTION_TYPE_GEM,
   SOCKET_CONSUMPTION_SELECTOR_MODES,
   getActivitySourceSlotIndex,
+  matchesGemNamePattern,
   parseSocketTarget
 } from "../helpers/socketConsumptionConfig.js";
 
@@ -289,7 +290,10 @@ export class SocketConsumptionService {
           continue;
         }
         available += slotResource.value;
-        resource ||= slotResource.key;
+        // "Any gem" may mix different resources; keep the generic label there.
+        if (spec.mode !== SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM) {
+          resource ||= slotResource.key;
+        }
       }
     }
 
@@ -316,6 +320,14 @@ export class SocketConsumptionService {
       );
     } else if (spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
       label = spec.gemName;
+    } else if (spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
+      label = SocketConsumptionService.#format(
+        "SCSockets.Consumption.Target.NameMatch",
+        { pattern: spec.gemNamePattern },
+        `gems matching "${spec.gemNamePattern}"`
+      );
+    } else if (spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM) {
+      label = Constants.localize("SCSockets.Consumption.Target.AnyGem", "any socketed gem (slot order)");
     } else {
       label = target.target || "—";
     }
@@ -335,6 +347,14 @@ export class SocketConsumptionService {
       return slots.reduce((matches, slot, index) => {
         const name = String(ItemResolver.getSlotGemMeta(slot)?.name ?? "").trim().toLowerCase();
         if (wanted.length && name === wanted) {
+          matches.push(index);
+        }
+        return matches;
+      }, []);
+    }
+    if (spec.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
+      return slots.reduce((matches, slot, index) => {
+        if (matchesGemNamePattern(spec.gemNamePattern, ItemResolver.getSlotGemMeta(slot)?.name)) {
           matches.push(index);
         }
         return matches;

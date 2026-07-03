@@ -563,7 +563,9 @@
       },
       "Target": {
         "SourceSlot": "Source gem (this activity)",
-        "SlotShort": "slot {slot}"
+        "SlotShort": "slot {slot}",
+        "AnyGem": "any socketed gem (slot order)",
+        "NameMatch": "gems matching \"{pattern}\""
       },
       "FromLabel": "From",
       "FromHintCharge": "Item recovery does not automatically restore socketed charges.",
@@ -571,7 +573,9 @@
       "Mode": {
         "sourceSlot": "Source gem (this activity)",
         "any": "Any gem with resource",
+        "anyGem": "Any gem (slot order)",
         "gemName": "Gem by name",
+        "gemNameMatch": "Gem name matches",
         "slot": "Specific slot"
       },
       "Value": {
@@ -579,7 +583,9 @@
         "ResourcePlaceholder": "e.g. battery",
         "GemName": "Gem Name",
         "GemNamePlaceholder": "e.g. Battery Gem",
-        "Slot": "Slot Number"
+        "Slot": "Slot Number",
+        "NamePattern": "Name Pattern",
+        "NamePatternPlaceholder": "e.g. Fire* or Battery"
       }
     }
   }

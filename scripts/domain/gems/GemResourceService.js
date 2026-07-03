@@ -1,6 +1,9 @@
 import { Constants } from "../../core/Constants.js";
 import { ItemResolver } from "../../core/ItemResolver.js";
-import { SOCKET_CONSUMPTION_SELECTOR_MODES } from "../../core/helpers/socketConsumptionConfig.js";
+import {
+  SOCKET_CONSUMPTION_SELECTOR_MODES,
+  matchesGemNamePattern
+} from "../../core/helpers/socketConsumptionConfig.js";
 
 export class GemResourceService {
   static normalizeResource(raw) {
@@ -292,7 +295,18 @@ export class GemResourceService {
       return { ok: true, indices };
     }
 
-    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY) {
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
+      const indices = slots.reduce((matches, slot, index) => {
+        if (matchesGemNamePattern(spec?.gemNamePattern, ItemResolver.getSlotGemMeta(slot)?.name)) {
+          matches.push(index);
+        }
+        return matches;
+      }, []);
+      return { ok: true, indices };
+    }
+
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY
+      || mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM) {
       return { ok: true, indices: slots.map((_, index) => index) };
     }
 
