@@ -20,8 +20,8 @@ export const SC_MORE_ACTIVITIES_GROUP = Object.freeze({
 });
 
 export const SC_MORE_ACTIVITIES_ICONS = Object.freeze({
-  SOCKET_EXTRACTION: `modules/${Constants.MODULE_ID}/assets/gems/normal-topaz.webp`,
-  SOCKET_POOL_RECHARGE: `modules/${Constants.MODULE_ID}/assets/gems/flawless-emerald.webp`,
-  SOCKET_RECHARGE: `modules/${Constants.MODULE_ID}/assets/gems/flawless-sapphire.webp`,
-  SOCKET_SLOT: Constants.SOCKET_SLOT_IMG
+  SOCKET_EXTRACTION: `modules/${Constants.MODULE_ID}/assets/activity-icons/scma-socket-extraction-pincers.svg`,
+  SOCKET_POOL_RECHARGE: `modules/${Constants.MODULE_ID}/assets/activity-icons/scma-socket-pool-recharge-energy-tank.svg`,
+  SOCKET_RECHARGE: `modules/${Constants.MODULE_ID}/assets/activity-icons/scma-socket-recharge-charging.svg`,
+  SOCKET_SLOT: `modules/${Constants.MODULE_ID}/assets/activity-icons/scma-socket-slot-power-ring.svg`
 });

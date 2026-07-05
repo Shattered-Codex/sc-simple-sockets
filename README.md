@@ -82,9 +82,15 @@ socket activities directly from this module:
 
 - `sc-socket-slot`
 - `sc-socket-extraction`
+- `sc-socket-recharge`
+- `sc-socket-pool-recharge`
 
 That integration lives entirely inside `sc-simple-sockets`, so the socket
 behavior stays scoped to the module that owns it.
+
+The activity icons used by that integration ship locally in
+`assets/activity-icons/` and are based on artwork from
+[Game-icons.net](https://game-icons.net/).
 
 > **Want even more content?**  
 > If you want **120+ ready-to-use gems**, you can get the **SC - More Gems** module as a **Patreon supporter**.
@@ -648,6 +654,17 @@ For automations, the module also triggers:
 - **System:** dnd5e
 - **Sheets:** default dnd5e sheet and **Tidy5e Sheet**
 - **Recommended module:** [`libWrapper`](https://github.com/ruipin/fvtt-lib-wrapper)
+
+## Icon Credits
+
+The `sc-more-activities` socket activity icons bundled in this repository are
+based on [Game-icons.net](https://game-icons.net/) artwork and are used under
+the [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) license.
+
+- `Power Ring` by Delapouite, used for `sc-socket-slot`
+- `Pincers` by Lorc, used for `sc-socket-extraction`
+- `Charging` by Delapouite, used for `sc-socket-recharge`
+- `Energy Tank` by Delapouite, used for `sc-socket-pool-recharge`
 
 ## Useful Links
 
