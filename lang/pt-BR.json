@@ -533,6 +533,119 @@
             "Subtitle": "{item} possui {count} gemas socketadas. Escolha qual remover.",
             "Title": "Escolher Gema para Remover"
           }
+        },
+        "SocketRecharge": {
+          "Title": "Recarga de Gema Socketada",
+          "Hint": "Use a atividade, depois clique no item alvo e escolha uma gema socketada para restaurar suas cargas. Ela pode exigir um teste e rolar a quantidade restaurada.",
+          "RollFlavor": "Recarga de Gema Socketada",
+          "Sections": {
+            "Configuration": "Configuração da Recarga",
+            "Check": "Teste de Recarga"
+          },
+          "Fields": {
+            "TargetingHint": "Ao usar esta atividade, o próximo item clicado vira o alvo e uma de suas gemas socketadas tem as cargas restauradas.",
+            "Formula": {
+              "Label": "Fórmula de recarga",
+              "Hint": "Fórmula de dados rolada para determinar quantas cargas são restauradas (aceita roll data do actor, ex.: 1d4 + @abilities.int.mod). Deixe em branco para recarregar a gema por completo.",
+              "Placeholder": "1d4"
+            },
+            "Check": {
+              "Type": {
+                "Label": "Teste exigido",
+                "Hint": "Opcionalmente exija um teste de atributo ou perícia antes da recarga. Em caso de falha, nenhuma carga é restaurada.",
+                "Choices": {
+                  "None": "Sem teste",
+                  "Ability": "Teste de atributo",
+                  "Skill": "Teste de perícia"
+                }
+              },
+              "Ability": {
+                "Label": "Atributo"
+              },
+              "Skill": {
+                "Label": "Perícia"
+              },
+              "Dc": {
+                "Label": "CD do teste",
+                "Hint": "A classe de dificuldade que o teste precisa igualar ou superar para a recarga funcionar. Aceita um número fixo ou uma fórmula determinística usando o roll data do actor (ex.: 8 + @prof ou 10 + @abilities.int.mod).",
+                "Placeholder": "10 ou 8 + @prof"
+              }
+            },
+            "ResourceKey": {
+              "Label": "Filtro de recurso",
+              "Hint": "Nome de carga opcional. Quando preenchido, apenas gemas socketadas com esse recurso são oferecidas para recarga. Deixe em branco para permitir qualquer gema com cargas faltando.",
+              "Placeholder": "ex.: mana"
+            }
+          },
+          "Selection": {
+            "Prompt": "Clique no item cuja gema socketada deve ser recarregada. Pressione Esc para cancelar.",
+            "Cancelled": "Seleção cancelada."
+          },
+          "Dialogs": {
+            "InvalidTypeBody": "{name} não pode usar sockets.",
+            "InvalidTypeTitle": "Item incompatível",
+            "ItemPermissionBody": "Você não tem permissão para editar {name}.",
+            "ItemPermissionTitle": "Não é possível editar o item",
+            "NoMatchingGemsBody": "{name} não possui gemas socketadas com cargas de \"{key}\" faltando.",
+            "NoRechargeableGemsBody": "{name} não possui gemas socketadas com cargas faltando.",
+            "NoRechargeableGemsTitle": "Sem gemas para recarregar"
+          },
+          "Warnings": {
+            "AlreadyFull": "{gem} já está com as cargas completas.",
+            "CheckFailed": "A tentativa de recarga falhou. Nenhuma carga foi restaurada.",
+            "InvalidDcFormula": "Não foi possível resolver a fórmula de CD \"{formula}\"; usando CD 10.",
+            "InvalidFormula": "Não foi possível rolar a fórmula de recarga \"{formula}\".",
+            "InvalidSlot": "Escolha uma gema socketada válida.",
+            "NoActor": "Esta atividade precisa de um ator para rolar o teste de recarga.",
+            "NoRechargeableGems": "O item alvo não possui gemas socketadas com cargas faltando.",
+            "NoResource": "{gem} não possui cargas para recarregar.",
+            "NothingRestored": "A rolagem de recarga não restaurou nenhuma carga."
+          },
+          "Info": {
+            "Recharged": "Restaurou {restored} cargas de {gem} em {item} ({value}/{max})."
+          },
+          "App": {
+            "Confirm": "Recarregar gema selecionada",
+            "Subtitle": "{item} possui {count} gemas recarregáveis. Escolha qual recarregar.",
+            "Title": "Escolher Gema para Recarregar"
+          }
+        },
+        "SocketPoolRecharge": {
+          "Title": "Recarga de Pool de Cargas",
+          "Hint": "Use a atividade, depois clique no item alvo e escolha um dos pools de carga dele. As cargas restauradas são distribuídas entre todas as gemas socketadas que fornecem aquele recurso, em ordem de slot.",
+          "Sections": {
+            "Configuration": "Configuração da Recarga de Pool"
+          },
+          "Fields": {
+            "TargetingHint": "Ao usar esta atividade, o próximo item clicado vira o alvo e um pool de recurso inteiro tem as cargas restauradas, distribuídas entre as gemas socketadas em ordem de slot.",
+            "Formula": {
+              "Hint": "Fórmula de dados rolada para determinar quantas cargas são restauradas no pool (aceita os dados de rolagem do ator). Deixe em branco para recarregar o pool por completo."
+            },
+            "ResourceKey": {
+              "Hint": "Nome de carga opcional. Quando preenchido, esta atividade sempre recarrega aquele pool. Deixe em branco para o usuário escolher entre os pools do item com cargas faltando."
+            }
+          },
+          "Selection": {
+            "Prompt": "Clique no item cujo pool de cargas socketado deve ser recarregado. Pressione Esc para cancelar."
+          },
+          "Dialogs": {
+            "NoMatchingPoolBody": "{name} não possui cargas de \"{key}\" faltando.",
+            "NoPoolsBody": "{name} não possui pools de carga socketados com cargas faltando.",
+            "NoPoolsTitle": "Sem pools para recarregar"
+          },
+          "Warnings": {
+            "AlreadyFull": "O pool de cargas \"{key}\" já está cheio.",
+            "InvalidResourceKey": "Nenhum pool de cargas foi selecionado.",
+            "NoPool": "O item alvo não possui cargas de \"{key}\" socketadas."
+          },
+          "Info": {
+            "Recharged": "Restaurou {restored} cargas de \"{key}\" em {gems} gemas de {item} ({value}/{max})."
+          },
+          "App": {
+            "Confirm": "Recarregar pool",
+            "Subtitle": "{item} possui {count} pools de carga com cargas faltando. Escolha qual recarregar.",
+            "Title": "Escolher Pool de Cargas"
+          }
         }
       }
     },

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, test } from "node:test";
 
+import { Constants } from "../scripts/core/Constants.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
 import { createTestActor } from "./support/testDocuments.js";
 
@@ -246,6 +247,143 @@ describe("ScMoreActivitiesIntegration", () => {
     } finally {
       SocketAPI.getItemSlots = originalGetItemSlots;
       SocketAPI.removeGem = originalRemoveGem;
+    }
+  });
+
+  test("recharges the selected pool even when the dialog confirm button is not inside a form", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        uuid: "Actor.actor-1.Item.host-1",
+        name: "Socketed Sword",
+        type: "weapon",
+        system: { activities: {} },
+        flags: {
+          [Constants.MODULE_ID]: {
+            sockets: []
+          }
+        }
+      }]
+    });
+    const hostItem = actor.items.get("host-1");
+
+    const { SelectionController } = await import("../scripts/core/api/SelectionController.js");
+    const { SocketAPI } = await import("../scripts/core/api/SocketAPI.js");
+    const { ModuleSettings } = await import("../scripts/core/settings/ModuleSettings.js");
+    const { ScMoreActivitiesIntegration } = await import(
+      "../scripts/core/integrations/sc-more-activities/ScMoreActivitiesIntegration.js"
+    );
+    const { ScMoreActivitiesRechargeRolls } = await import(
+      "../scripts/core/integrations/sc-more-activities/activities/shared/ScMoreActivitiesRechargeRolls.js"
+    );
+    const { ScMoreActivitiesSocketPoolRechargeActivityService } = await import(
+      "../scripts/core/integrations/sc-more-activities/activities/socket-pool-recharge/ScMoreActivitiesSocketPoolRechargeActivityService.js"
+    );
+
+    const originalSelectItem = SelectionController.selectItem;
+    const originalGetItemSlots = SocketAPI.getItemSlots;
+    const originalIsItemSocketableByType = ModuleSettings.isItemSocketableByType;
+    const originalEnsureActorForCheck = ScMoreActivitiesRechargeRolls.ensureActorForCheck;
+    const originalPerformCheck = ScMoreActivitiesRechargeRolls.performCheck;
+    const originalRollAmount = ScMoreActivitiesRechargeRolls.rollAmount;
+    const originalRechargePool = ScMoreActivitiesIntegration.rechargePool;
+    const originalPrompt = foundry.applications.api.DialogV2.prompt;
+
+    SelectionController.selectItem = async () => hostItem;
+    SocketAPI.getItemSlots = async () => [{
+      slotIndex: 0,
+      hasGem: true,
+      slot: {
+        gem: { name: "Sapphire", img: "icons/sapphire.webp" },
+        _gemData: {
+          name: "Sapphire",
+          img: "icons/sapphire.webp",
+          data: JSON.stringify({
+            name: "Sapphire",
+            flags: {
+              [Constants.MODULE_ID]: {
+                [Constants.FLAG_GEM_RESOURCE]: {
+                  key: "mana",
+                  max: 5,
+                  value: 1
+                }
+              }
+            }
+          })
+        }
+      }
+    }, {
+      slotIndex: 1,
+      hasGem: true,
+      slot: {
+        gem: { name: "Ruby", img: "icons/ruby.webp" },
+        _gemData: {
+          name: "Ruby",
+          img: "icons/ruby.webp",
+          data: JSON.stringify({
+            name: "Ruby",
+            flags: {
+              [Constants.MODULE_ID]: {
+                [Constants.FLAG_GEM_RESOURCE]: {
+                  key: "stamina",
+                  max: 3,
+                  value: 1
+                }
+              }
+            }
+          })
+        }
+      }
+    }];
+    ModuleSettings.isItemSocketableByType = () => true;
+    ScMoreActivitiesRechargeRolls.ensureActorForCheck = () => true;
+    ScMoreActivitiesRechargeRolls.performCheck = async () => ({ ok: true, success: true });
+    ScMoreActivitiesRechargeRolls.rollAmount = async () => 2;
+    ScMoreActivitiesIntegration.rechargePool = async (activity, { item, resourceKey, amount }) => {
+      assert.equal(item, hostItem);
+      assert.equal(resourceKey, "mana");
+      assert.equal(amount, 2);
+      return {
+        ok: true,
+        changed: true,
+        message: "Restored charges."
+      };
+    };
+    foundry.applications.api.DialogV2.prompt = async (config) => config.ok.callback(
+      {
+        currentTarget: {
+          ownerDocument: {
+            querySelector(selector) {
+              return selector === '[name="poolKey"]' ? { value: "mana" } : null;
+            }
+          }
+        }
+      },
+      {}
+    );
+
+    try {
+      const result = await ScMoreActivitiesSocketPoolRechargeActivityService.execute({
+        item: { actor },
+        recharge: {}
+      }, {
+        results: { ok: true }
+      });
+
+      assert.deepEqual(result, {
+        ok: true,
+        changed: true,
+        message: "Restored charges."
+      });
+    } finally {
+      SelectionController.selectItem = originalSelectItem;
+      SocketAPI.getItemSlots = originalGetItemSlots;
+      ModuleSettings.isItemSocketableByType = originalIsItemSocketableByType;
+      ScMoreActivitiesRechargeRolls.ensureActorForCheck = originalEnsureActorForCheck;
+      ScMoreActivitiesRechargeRolls.performCheck = originalPerformCheck;
+      ScMoreActivitiesRechargeRolls.rollAmount = originalRollAmount;
+      ScMoreActivitiesIntegration.rechargePool = originalRechargePool;
+      foundry.applications.api.DialogV2.prompt = originalPrompt;
     }
   });
 });

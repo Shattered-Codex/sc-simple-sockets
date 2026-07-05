@@ -1,12 +1,21 @@
 import { Constants } from "../../Constants.js";
 import { SocketAPI } from "../../api/SocketAPI.js";
+import { SocketStore } from "../../SocketStore.js";
 import { getSlotConfig, normalizeSlotConfig } from "../../helpers/socketSlotConfig.js";
 import { ModuleSettings } from "../../settings/ModuleSettings.js";
 import { SocketService } from "../../services/SocketService.js";
 import { SocketSlotConfigService } from "../../services/SocketSlotConfigService.js";
+import { GemResourceService } from "../../../domain/gems/GemResourceService.js";
+import { SOCKET_CONSUMPTION_SELECTOR_MODES } from "../../helpers/socketConsumptionConfig.js";
 import { ScMoreActivitiesSocketExtractionActivity } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivity.js";
 import { ScMoreActivitiesSocketExtractionActivityData } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivityData.js";
 import { ScMoreActivitiesSocketExtractionActivitySheet } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivitySheet.js";
+import { ScMoreActivitiesSocketPoolRechargeActivity } from "./activities/socket-pool-recharge/ScMoreActivitiesSocketPoolRechargeActivity.js";
+import { ScMoreActivitiesSocketPoolRechargeActivityData } from "./activities/socket-pool-recharge/ScMoreActivitiesSocketPoolRechargeActivityData.js";
+import { ScMoreActivitiesSocketPoolRechargeActivitySheet } from "./activities/socket-pool-recharge/ScMoreActivitiesSocketPoolRechargeActivitySheet.js";
+import { ScMoreActivitiesSocketRechargeActivity } from "./activities/socket-recharge/ScMoreActivitiesSocketRechargeActivity.js";
+import { ScMoreActivitiesSocketRechargeActivityData } from "./activities/socket-recharge/ScMoreActivitiesSocketRechargeActivityData.js";
+import { ScMoreActivitiesSocketRechargeActivitySheet } from "./activities/socket-recharge/ScMoreActivitiesSocketRechargeActivitySheet.js";
 import { ScMoreActivitiesSocketSlotActivity } from "./activities/socket-slot/ScMoreActivitiesSocketSlotActivity.js";
 import { ScMoreActivitiesSocketSlotActivityData } from "./activities/socket-slot/ScMoreActivitiesSocketSlotActivityData.js";
 import { ScMoreActivitiesSocketSlotActivitySheet } from "./activities/socket-slot/ScMoreActivitiesSocketSlotActivitySheet.js";
@@ -173,10 +182,40 @@ export class ScMoreActivitiesIntegration {
     );
   }
 
+  static async rechargeGem(activity, slotIndex, { item = null, amount = null } = {}) {
+    return ScMoreActivitiesIntegration.#dispatchRequest(
+      ScMoreActivitiesIntegration.#buildRequest("recharge-gem", activity, {
+        amount: amount ?? null,
+        itemUuid: item?.uuid ?? null,
+        slotIndex: Number(slotIndex)
+      }),
+      {
+        hostItem: item ?? ScMoreActivitiesIntegration.getHostItem(activity),
+        type: SC_MORE_ACTIVITIES_ACTIVITY_TYPES.SOCKET_RECHARGE
+      }
+    );
+  }
+
+  static async rechargePool(activity, { item = null, resourceKey = "", amount = null } = {}) {
+    return ScMoreActivitiesIntegration.#dispatchRequest(
+      ScMoreActivitiesIntegration.#buildRequest("recharge-pool", activity, {
+        amount: amount ?? null,
+        itemUuid: item?.uuid ?? null,
+        resourceKey: String(resourceKey ?? "").trim()
+      }),
+      {
+        hostItem: item ?? ScMoreActivitiesIntegration.getHostItem(activity),
+        type: SC_MORE_ACTIVITIES_ACTIVITY_TYPES.SOCKET_POOL_RECHARGE
+      }
+    );
+  }
+
   static #registerActivities(activitiesApi) {
     const registrations = [
       ScMoreActivitiesIntegration.#registerSocketSlotActivity(activitiesApi),
-      ScMoreActivitiesIntegration.#registerSocketExtractionActivity(activitiesApi)
+      ScMoreActivitiesIntegration.#registerSocketExtractionActivity(activitiesApi),
+      ScMoreActivitiesIntegration.#registerSocketRechargeActivity(activitiesApi),
+      ScMoreActivitiesIntegration.#registerSocketPoolRechargeActivity(activitiesApi)
     ];
 
     for (const result of registrations) {
@@ -272,6 +311,92 @@ export class ScMoreActivitiesIntegration {
     });
   }
 
+  static #registerSocketRechargeActivity(activitiesApi) {
+    return activitiesApi.registerType({
+      moduleId: Constants.MODULE_ID,
+      type: SC_MORE_ACTIVITIES_ACTIVITY_TYPES.SOCKET_RECHARGE,
+      label: "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Title",
+      hint: "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Hint",
+      icon: SC_MORE_ACTIVITIES_ICONS.SOCKET_RECHARGE,
+      documentClass: ScMoreActivitiesSocketRechargeActivity,
+      dataModel: ScMoreActivitiesSocketRechargeActivityData,
+      sheetClass: ScMoreActivitiesSocketRechargeActivitySheet,
+      configurable: true,
+      category: "sockets",
+      ui: {
+        scope: "external",
+        group: "sockets",
+        groupId: SC_MORE_ACTIVITIES_GROUP.id,
+        groupLabel: SC_MORE_ACTIVITIES_GROUP.label,
+        groupIcon: SC_MORE_ACTIVITIES_GROUP.icon,
+        groupOrder: SC_MORE_ACTIVITIES_GROUP.order,
+        order: 160
+      },
+      tags: ["sockets", "gem", "charges", "inventory"],
+      compatibility: {
+        dnd5e: "5.x",
+        scMoreActivities: {
+          moduleId: SC_MORE_ACTIVITIES_MODULE_ID,
+          required: true
+        },
+        scSimpleSockets: {
+          moduleId: Constants.MODULE_ID,
+          required: true
+        }
+      },
+      templates: [`modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-recharge-effect.hbs`],
+      ownership: {
+        execute: "item-owner",
+        hostItem: "activity-item",
+        mutation: "gm-mediated"
+      },
+      source: Constants.MODULE_ID
+    });
+  }
+
+  static #registerSocketPoolRechargeActivity(activitiesApi) {
+    return activitiesApi.registerType({
+      moduleId: Constants.MODULE_ID,
+      type: SC_MORE_ACTIVITIES_ACTIVITY_TYPES.SOCKET_POOL_RECHARGE,
+      label: "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Title",
+      hint: "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Hint",
+      icon: SC_MORE_ACTIVITIES_ICONS.SOCKET_POOL_RECHARGE,
+      documentClass: ScMoreActivitiesSocketPoolRechargeActivity,
+      dataModel: ScMoreActivitiesSocketPoolRechargeActivityData,
+      sheetClass: ScMoreActivitiesSocketPoolRechargeActivitySheet,
+      configurable: true,
+      category: "sockets",
+      ui: {
+        scope: "external",
+        group: "sockets",
+        groupId: SC_MORE_ACTIVITIES_GROUP.id,
+        groupLabel: SC_MORE_ACTIVITIES_GROUP.label,
+        groupIcon: SC_MORE_ACTIVITIES_GROUP.icon,
+        groupOrder: SC_MORE_ACTIVITIES_GROUP.order,
+        order: 170
+      },
+      tags: ["sockets", "gem", "charges", "pool", "inventory"],
+      compatibility: {
+        dnd5e: "5.x",
+        scMoreActivities: {
+          moduleId: SC_MORE_ACTIVITIES_MODULE_ID,
+          required: true
+        },
+        scSimpleSockets: {
+          moduleId: Constants.MODULE_ID,
+          required: true
+        }
+      },
+      templates: [`modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-pool-recharge-effect.hbs`],
+      ownership: {
+        execute: "item-owner",
+        hostItem: "activity-item",
+        mutation: "gm-mediated"
+      },
+      source: Constants.MODULE_ID
+    });
+  }
+
   static #buildRequest(operation, activity, data = {}) {
     const payload = data && typeof data === "object" ? { ...data } : {};
     const itemUuid = payload.itemUuid ?? ScMoreActivitiesIntegration.getHostItem(activity)?.uuid ?? null;
@@ -355,6 +480,12 @@ export class ScMoreActivitiesIntegration {
     }
     if (payload.operation === "extract-gem") {
       return ScMoreActivitiesIntegration.#executeExtractGem(effectiveItem, payload, { bypassPermission });
+    }
+    if (payload.operation === "recharge-gem") {
+      return ScMoreActivitiesIntegration.#executeRechargeGem(effectiveItem, payload, { bypassPermission });
+    }
+    if (payload.operation === "recharge-pool") {
+      return ScMoreActivitiesIntegration.#executeRechargePool(effectiveItem, payload, { bypassPermission });
     }
 
     return ScMoreActivitiesIntegration.#failure(
@@ -458,6 +589,196 @@ export class ScMoreActivitiesIntegration {
         : "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Info.Extracted",
       templateData: { item: item.name ?? "" }
     });
+  }
+
+  static async #executeRechargeGem(item, payload, { bypassPermission = false } = {}) {
+    return SocketService.mutateSockets(item, async (currentItem) => {
+      const slotIndex = Number(payload.slotIndex);
+      const slots = SocketStore.getSlots(currentItem);
+      const slot = Number.isInteger(slotIndex) ? slots[slotIndex] : null;
+
+      if (!slot || !GemResourceService.slotHasGem(slot)) {
+        return ScMoreActivitiesIntegration.#failure(
+          "invalid-slot-index",
+          "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Warnings.InvalidSlot",
+          "Choose a valid socketed gem."
+        );
+      }
+
+      const resource = GemResourceService.getSlotResource(slot);
+      const gemName = slot?.gem?.name ?? slot?._gemData?.name ?? "";
+      if (!resource || resource.max <= 0) {
+        return ScMoreActivitiesIntegration.#failure(
+          "no-gem-resource",
+          "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Warnings.NoResource",
+          "The selected gem has no charges to recharge.",
+          { gem: gemName }
+        );
+      }
+
+      if (resource.value >= resource.max) {
+        // The gem was already full (usually a race with another update). The roll
+        // already happened client-side, so report a completed-but-unchanged use
+        // instead of a retryable failure.
+        return Object.freeze({
+          ok: true,
+          changed: false,
+          reason: "already-full",
+          message: ScMoreActivitiesIntegration.#format(
+            "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Warnings.AlreadyFull",
+            { gem: gemName },
+            "The selected gem is already fully charged."
+          )
+        });
+      }
+
+      const rawAmount = payload.amount;
+      const amount = rawAmount === null || rawAmount === undefined
+        ? null
+        : Math.max(Math.trunc(Number(rawAmount) || 0), 0);
+      if (amount === 0) {
+        return Object.freeze({
+          ok: true,
+          changed: false,
+          reason: "nothing-restored",
+          message: ScMoreActivitiesIntegration.#format(
+            "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Warnings.NothingRestored",
+            { gem: gemName },
+            "The recharge roll did not restore any charges."
+          )
+        });
+      }
+
+      const targetValue = amount === null
+        ? resource.max
+        : Math.min(resource.max, resource.value + amount);
+      slots[slotIndex] = GemResourceService.withSlotResourceValue(slot, targetValue);
+      await SocketStore.setSlots(currentItem, slots);
+
+      const restored = targetValue - resource.value;
+      return Object.freeze({
+        ok: true,
+        changed: true,
+        reason: "success",
+        restored,
+        message: ScMoreActivitiesIntegration.#format(
+          "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Info.Recharged",
+          {
+            gem: gemName,
+            item: currentItem.name ?? "",
+            restored,
+            value: targetValue,
+            max: resource.max
+          },
+          `Restored ${restored} charges to ${gemName || "the gem"} in ${currentItem.name ?? "the item"} (${targetValue}/${resource.max}).`
+        )
+      });
+    }, { bypassPermission });
+  }
+
+  static async #executeRechargePool(item, payload, { bypassPermission = false } = {}) {
+    return SocketService.mutateSockets(item, async (currentItem) => {
+      const resourceKey = String(payload.resourceKey ?? "").trim();
+      if (!resourceKey.length) {
+        return ScMoreActivitiesIntegration.#failure(
+          "invalid-resource-key",
+          "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Warnings.InvalidResourceKey",
+          "No charge pool was selected."
+        );
+      }
+
+      const slots = SocketStore.getSlots(currentItem);
+      const pool = GemResourceService.aggregatePools(slots)
+        .find((entry) => entry.key.toLowerCase() === resourceKey.toLowerCase());
+      if (!pool) {
+        return ScMoreActivitiesIntegration.#failure(
+          "no-pool",
+          "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Warnings.NoPool",
+          `The target item has no socketed "${resourceKey}" charges.`,
+          { key: resourceKey }
+        );
+      }
+
+      const missing = pool.max - pool.value;
+      if (missing <= 0) {
+        return Object.freeze({
+          ok: true,
+          changed: false,
+          reason: "already-full",
+          message: ScMoreActivitiesIntegration.#format(
+            "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Warnings.AlreadyFull",
+            { key: pool.key },
+            `The "${pool.key}" charge pool is already full.`
+          )
+        });
+      }
+
+      const rawAmount = payload.amount;
+      const amount = rawAmount === null || rawAmount === undefined
+        ? null
+        : Math.max(Math.trunc(Number(rawAmount) || 0), 0);
+      if (amount === 0) {
+        return Object.freeze({
+          ok: true,
+          changed: false,
+          reason: "nothing-restored",
+          message: ScMoreActivitiesIntegration.#format(
+            "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Warnings.NothingRestored",
+            { gem: pool.key },
+            "The recharge roll did not restore any charges."
+          )
+        });
+      }
+
+      const restoreAmount = Math.min(amount ?? missing, missing);
+      const plan = GemResourceService.planChargeConsumption(
+        slots,
+        { mode: SOCKET_CONSUMPTION_SELECTOR_MODES.ANY, resourceKey: pool.key },
+        -restoreAmount
+      );
+      if (!plan.ok) {
+        return ScMoreActivitiesIntegration.#failure(
+          plan.reason ?? "recharge-failed",
+          null,
+          plan.message ?? "Could not recharge the selected charge pool."
+        );
+      }
+
+      const restored = (plan.deductions ?? []).reduce((sum, deduction) => sum - deduction.amount, 0);
+      if (restored <= 0) {
+        return Object.freeze({
+          ok: true,
+          changed: false,
+          reason: "nothing-restored",
+          message: ScMoreActivitiesIntegration.#format(
+            "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Warnings.NothingRestored",
+            { gem: pool.key },
+            "The recharge roll did not restore any charges."
+          )
+        });
+      }
+
+      await SocketStore.setSlots(currentItem, plan.updatedSlots);
+
+      return Object.freeze({
+        ok: true,
+        changed: true,
+        reason: "success",
+        restored,
+        message: ScMoreActivitiesIntegration.#format(
+          "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Info.Recharged",
+          {
+            key: pool.key,
+            item: currentItem.name ?? "",
+            restored,
+            gems: (plan.deductions ?? []).length,
+            value: pool.value + restored,
+            max: pool.max
+          },
+          `Restored ${restored} "${pool.key}" charges in ${currentItem.name ?? "the item"} (${pool.value + restored}/${pool.max}).`
+        )
+      });
+    }, { bypassPermission });
   }
 
   static #normalizeMutationResult(result, {

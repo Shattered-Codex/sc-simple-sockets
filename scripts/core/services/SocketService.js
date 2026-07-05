@@ -52,6 +52,37 @@ export class SocketService {
     );
   }
 
+  static async mutateSockets(hostItem, operation, options = {}) {
+    return SocketService.#enqueueHostOperation(
+      hostItem,
+      async (currentHostItem) => {
+        if (!SocketService.#canUseSocketsOnHost(currentHostItem)) {
+          return SocketService.#warnAndReturnResult(
+            "warn",
+            "host-not-socketable",
+            Constants.localize(
+              "SCSockets.Notifications.HostNotSocketable",
+              "This item type cannot receive sockets."
+            )
+          );
+        }
+
+        if (!SocketService.#canMutateSockets(options)) {
+          return SocketService.#warnAndReturnResult(
+            "warn",
+            "permission-denied",
+            Constants.localize(
+              "SCSockets.Notifications.EditPermissionDenied",
+              "You do not have permission to modify sockets on this item."
+            )
+          );
+        }
+
+        return operation(SocketService.#resolveHostItem(currentHostItem));
+      }
+    );
+  }
+
   static getSlots(hostItem) {
     return SocketStore.peekSlots(SocketService.#resolveHostItem(hostItem));
   }

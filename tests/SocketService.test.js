@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, test } from "node:test";
 
 import { Constants } from "../scripts/core/Constants.js";
+import { SocketStore } from "../scripts/core/SocketStore.js";
 import { SocketService } from "../scripts/core/services/SocketService.js";
 import { SocketSlot } from "../scripts/core/model/SocketSlot.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
@@ -387,6 +388,57 @@ describe("SocketService", () => {
     });
     assert.equal(allowed.success, true);
     assert.equal(allowed.changed, true);
+  });
+
+  test("serializes generic socket mutations on the same host item", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        name: "Sword",
+        type: "weapon",
+        system: { activities: {} },
+        flags: {
+          [Constants.MODULE_ID]: {
+            sockets: [SocketSlot.makeDefault()]
+          }
+        }
+      }]
+    });
+    const hostItem = actor.items.get("host-1");
+
+    let releaseFirst = null;
+    let markFirstQueued = null;
+    const firstQueued = new Promise((resolve) => {
+      markFirstQueued = resolve;
+    });
+
+    const firstMutation = SocketService.mutateSockets(hostItem, async (currentHostItem) => {
+      const slots = SocketStore.getSlots(currentHostItem);
+      slots[0].name = "Primed Slot";
+      markFirstQueued();
+      await new Promise((resolve) => {
+        releaseFirst = resolve;
+      });
+      await SocketStore.setSlots(currentHostItem, slots);
+      return "first-complete";
+    }, { bypassPermission: true });
+
+    await firstQueued;
+
+    const secondMutation = SocketService.mutateSockets(hostItem, async (currentHostItem) => {
+      const slots = SocketStore.getSlots(currentHostItem);
+      assert.equal(slots[0].name, "Primed Slot");
+      slots[0].img = "icons/second-pass.webp";
+      await SocketStore.setSlots(currentHostItem, slots);
+      return "second-complete";
+    }, { bypassPermission: true });
+
+    releaseFirst();
+
+    assert.equal(await firstMutation, "first-complete");
+    assert.equal(await secondMutation, "second-complete");
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets[0].name, "Primed Slot");
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets[0].img, "icons/second-pass.webp");
   });
 
   test("blocks addSlot at the world limit by default", async () => {
