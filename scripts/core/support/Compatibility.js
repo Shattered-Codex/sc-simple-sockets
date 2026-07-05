@@ -34,6 +34,19 @@ export class Compatibility {
     return `dnd5e.applications.item.ItemSheet5e.${suffix}`;
   }
 
+  static bringWindowToFront(app) {
+    if (!app) return;
+
+    // ApplicationV2 (v12+) uses bringToFront; ApplicationV1 uses bringToTop.
+    // Calling bringToTop on an AppV2 instance hits a deprecation shim removed in v14.
+    if (typeof app.bringToFront === "function") {
+      app.bringToFront();
+      return;
+    }
+
+    app.bringToTop?.();
+  }
+
   static getPreRollHookName(kind) {
     switch (String(kind ?? "").trim().toLowerCase()) {
       case "damage":

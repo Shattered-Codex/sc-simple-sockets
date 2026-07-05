@@ -55,7 +55,7 @@ Hooks.once("init", async function() {
   GemLootTypeExtension.ensure();
   LootActivitiesExtension.ensure();
 
-  await loadTemplates([
+  await foundry.applications.handlebars.loadTemplates([
     `modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-slot-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-extraction-effect.hbs`,

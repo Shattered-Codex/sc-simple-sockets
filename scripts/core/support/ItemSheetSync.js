@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { Compatibility } from "./Compatibility.js";
 import { DebugTrace } from "./DebugTrace.js";
 
 export class ItemSheetSync {
@@ -162,8 +163,8 @@ export class ItemSheetSync {
         nextWindowElement.style.zIndex = previousZIndex;
       }
 
-      if (hadFocus && typeof app.bringToTop === "function") {
-        app.bringToTop();
+      if (hadFocus) {
+        Compatibility.bringWindowToFront(app);
       }
     };
 
