@@ -23,10 +23,34 @@ export class ScMoreActivitiesSocketExtractionActivitySheet extends dnd5e.applica
 
   async _prepareEffectContext(context, options) {
     context = await super._prepareEffectContext(context, options);
+
+    const targetMode = this.activity?.extraction?.targetMode === "self" ? "self" : "select";
     context.extraction = {
       cursorImage: this.activity?.extraction?.cursorImage ?? "",
-      mode: this.activity?.extraction?.mode ?? "keep"
+      mode: this.activity?.extraction?.mode ?? "keep",
+      targetMode
     };
+    context.targetModeOptions = [
+      {
+        value: "select",
+        label: game.i18n.localize("SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.TargetMode.Choices.Select")
+      },
+      {
+        value: "self",
+        label: game.i18n.localize("SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.TargetMode.Choices.Self")
+      }
+    ];
+    context.isSelfTarget = targetMode === "self";
+    context.targetingHint = game.i18n.localize(
+      targetMode === "self"
+        ? "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.TargetingHintSelf"
+        : "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.TargetingHint"
+    );
+    context.modeHint = game.i18n.localize(
+      targetMode === "self"
+        ? "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.Mode.HintSelf"
+        : "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.Mode.Hint"
+    );
     context.modeOptions = [
       {
         value: "keep",

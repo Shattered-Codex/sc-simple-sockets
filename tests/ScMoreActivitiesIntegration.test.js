@@ -193,6 +193,19 @@ function createReloadActivity({
   };
 }
 
+function createExtractionActivity({
+  actor,
+  item,
+  uuid = "Actor.actor-1.Item.activity-1.Activity.extract-1"
+} = {}) {
+  return {
+    actor,
+    documentName: "Activity",
+    item,
+    uuid
+  };
+}
+
 describe("ScMoreActivitiesIntegration", () => {
   beforeEach(() => {
     originalDnd5e = globalThis.dnd5e;
@@ -336,6 +349,201 @@ describe("ScMoreActivitiesIntegration", () => {
     } finally {
       SocketAPI.getItemSlots = originalGetItemSlots;
       SocketAPI.removeGem = originalRemoveGem;
+    }
+  });
+
+  test("extracts from the activity's own item without a selection when target mode is self", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        uuid: "Actor.actor-1.Item.host-1",
+        name: "Socketed Sword",
+        type: "weapon",
+        system: { activities: {} },
+        flags: {
+          [Constants.MODULE_ID]: {
+            sockets: [{
+              gem: {
+                name: "Ruby",
+                img: "icons/ruby.webp"
+              }
+            }]
+          }
+        }
+      }]
+    });
+    const hostItem = actor.items.get("host-1");
+    const activity = createExtractionActivity({
+      actor,
+      item: hostItem
+    });
+    hostItem.isOwner = true;
+
+    const { SelectionController } = await import("../scripts/core/api/SelectionController.js");
+    const { ModuleSettings } = await import("../scripts/core/settings/ModuleSettings.js");
+    const { ScMoreActivitiesIntegration } = await import(
+      "../scripts/core/integrations/sc-more-activities/ScMoreActivitiesIntegration.js"
+    );
+    const { ScMoreActivitiesSocketExtractionActivityService } = await import(
+      "../scripts/core/integrations/sc-more-activities/activities/socket-extraction/ScMoreActivitiesSocketExtractionActivityService.js"
+    );
+
+    const originalSelectItem = SelectionController.selectItem;
+    const originalIsItemSocketable = ModuleSettings.isItemSocketable;
+    const originalListItemSlots = ScMoreActivitiesIntegration.listItemSlots;
+    const originalExtractGem = ScMoreActivitiesIntegration.extractGem;
+    let selectionAttempted = false;
+
+    SelectionController.selectItem = async () => {
+      selectionAttempted = true;
+      return null;
+    };
+    ModuleSettings.isItemSocketable = () => true;
+    ScMoreActivitiesIntegration.listItemSlots = async (item, options = {}) => {
+      assert.equal(item, hostItem);
+      assert.equal(options.state, "filled");
+      return [{
+        slotIndex: 0,
+        slotLabel: "Slot 1",
+        gemName: "Ruby"
+      }];
+    };
+    ScMoreActivitiesIntegration.extractGem = async (activity, slotIndex, { item, mode } = {}) => {
+      assert.equal(activity.item, hostItem);
+      assert.equal(slotIndex, 0);
+      assert.equal(item, hostItem);
+      assert.equal(mode, "keep");
+      return {
+        ok: true,
+        changed: true,
+        message: "Extracted."
+      };
+    };
+
+    try {
+      const result = await ScMoreActivitiesSocketExtractionActivityService.execute({
+        ...activity,
+        extraction: {
+          mode: "keep",
+          targetMode: "self"
+        }
+      }, {
+        results: { ok: true }
+      });
+
+      assert.equal(selectionAttempted, false);
+      assert.deepEqual(result, {
+        ok: true,
+        changed: true,
+        message: "Extracted."
+      });
+    } finally {
+      SelectionController.selectItem = originalSelectItem;
+      ModuleSettings.isItemSocketable = originalIsItemSocketable;
+      ScMoreActivitiesIntegration.listItemSlots = originalListItemSlots;
+      ScMoreActivitiesIntegration.extractGem = originalExtractGem;
+    }
+  });
+
+  test("keeps legacy socket extraction activities in select mode when targetMode is missing", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "activity-1",
+        uuid: "Actor.actor-1.Item.activity-1",
+        name: "Extractor",
+        type: "loot",
+        system: { activities: {} }
+      }, {
+        id: "host-1",
+        uuid: "Actor.actor-1.Item.host-1",
+        name: "Socketed Sword",
+        type: "weapon",
+        system: { activities: {} },
+        flags: {
+          [Constants.MODULE_ID]: {
+            sockets: [{
+              gem: {
+                name: "Ruby",
+                img: "icons/ruby.webp"
+              }
+            }]
+          }
+        }
+      }]
+    });
+    const activityItem = actor.items.get("activity-1");
+    const hostItem = actor.items.get("host-1");
+    const activity = createExtractionActivity({
+      actor,
+      item: activityItem
+    });
+    hostItem.isOwner = true;
+
+    const { SelectionController } = await import("../scripts/core/api/SelectionController.js");
+    const { ModuleSettings } = await import("../scripts/core/settings/ModuleSettings.js");
+    const { ScMoreActivitiesIntegration } = await import(
+      "../scripts/core/integrations/sc-more-activities/ScMoreActivitiesIntegration.js"
+    );
+    const { ScMoreActivitiesSocketExtractionActivityService } = await import(
+      "../scripts/core/integrations/sc-more-activities/activities/socket-extraction/ScMoreActivitiesSocketExtractionActivityService.js"
+    );
+
+    const originalConfirm = foundry.applications.api.DialogV2.confirm;
+    const originalSelectItem = SelectionController.selectItem;
+    const originalIsItemSocketable = ModuleSettings.isItemSocketable;
+    const originalListItemSlots = ScMoreActivitiesIntegration.listItemSlots;
+    const originalExtractGem = ScMoreActivitiesIntegration.extractGem;
+    let selectionCount = 0;
+
+    foundry.applications.api.DialogV2.confirm = async () => true;
+    SelectionController.selectItem = async () => {
+      selectionCount += 1;
+      return hostItem;
+    };
+    ModuleSettings.isItemSocketable = () => true;
+    ScMoreActivitiesIntegration.listItemSlots = async (item, options = {}) => {
+      assert.equal(item, hostItem);
+      assert.equal(options.state, "filled");
+      return [{
+        slotIndex: 0,
+        slotLabel: "Slot 1",
+        gemName: "Ruby"
+      }];
+    };
+    ScMoreActivitiesIntegration.extractGem = async (activity, slotIndex, { item, mode } = {}) => {
+      assert.equal(activity.item, activityItem);
+      assert.equal(slotIndex, 0);
+      assert.equal(item, hostItem);
+      assert.equal(mode, "keep");
+      return {
+        ok: true,
+        changed: true,
+        message: "Extracted."
+      };
+    };
+
+    try {
+      const result = await ScMoreActivitiesSocketExtractionActivityService.execute({
+        ...activity,
+        extraction: {
+          mode: "keep"
+        }
+      }, {
+        results: { ok: true }
+      });
+
+      assert.equal(selectionCount, 1);
+      assert.deepEqual(result, {
+        ok: true,
+        changed: true,
+        message: "Extracted."
+      });
+    } finally {
+      foundry.applications.api.DialogV2.confirm = originalConfirm;
+      SelectionController.selectItem = originalSelectItem;
+      ModuleSettings.isItemSocketable = originalIsItemSocketable;
+      ScMoreActivitiesIntegration.listItemSlots = originalListItemSlots;
+      ScMoreActivitiesIntegration.extractGem = originalExtractGem;
     }
   });
 

@@ -492,9 +492,19 @@
           },
           "Fields": {
             "TargetingHint": "When used, this activity targets the next clicked item. The selected result below overrides global and slot removal settings.",
+            "TargetingHintSelf": "When used, this activity targets the item that owns it. The selected result below overrides global and slot removal settings.",
+            "TargetMode": {
+              "Label": "Target item",
+              "Hint": "Choose whether the user clicks the item whose gem is removed or the activity extracts from the item that owns it.",
+              "Choices": {
+                "Select": "Click a target item",
+                "Self": "This item (extract self)"
+              }
+            },
             "Mode": {
               "Label": "Removed Gem Outcome",
               "Hint": "Choose whether the removed gem is returned or destroyed. This ignores global and slot removal settings.",
+              "HintSelf": "Choose whether the removed gem is returned or destroyed when extracting from the item that owns this activity. This ignores global and slot removal settings.",
               "Choices": {
                 "Delete": "Extract and destroy",
                 "Keep": "Extract and keep"

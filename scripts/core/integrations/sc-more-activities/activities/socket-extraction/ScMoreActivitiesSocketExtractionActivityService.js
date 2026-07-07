@@ -9,7 +9,9 @@ const canEditItem = (item) => game.user?.isGM === true || item?.isOwner === true
 
 export class ScMoreActivitiesSocketExtractionActivityService {
   static async execute(activity, usageContext = {}) {
-    const selection = await ScMoreActivitiesSocketExtractionActivityService.#selectTargetItem(activity);
+    const selection = ScMoreActivitiesSocketExtractionActivityService.#getTargetMode(activity) === "self"
+      ? await ScMoreActivitiesSocketExtractionActivityService.#selectSelfItem(activity)
+      : await ScMoreActivitiesSocketExtractionActivityService.#selectTargetItem(activity);
     if (!selection) {
       return usageContext.results;
     }
@@ -48,6 +50,10 @@ export class ScMoreActivitiesSocketExtractionActivityService {
     }).render(true);
 
     return usageContext.results;
+  }
+
+  static #getTargetMode(activity) {
+    return activity?.extraction?.targetMode === "self" ? "self" : "select";
   }
 
   static async #selectTargetItem(activity) {
@@ -99,7 +105,7 @@ export class ScMoreActivitiesSocketExtractionActivityService {
         continue;
       }
 
-      if (!ModuleSettings.isItemSocketableByType(item)) {
+      if (!ModuleSettings.isItemSocketable(item)) {
         const retry = await DialogV2.confirm({
           window: {
             title: Constants.localize(
@@ -199,6 +205,54 @@ export class ScMoreActivitiesSocketExtractionActivityService {
 
       return { item, slots };
     }
+  }
+
+  static async #selectSelfItem(activity) {
+    const item = activity?.item ?? null;
+    const itemName = item?.name ?? "";
+
+    if (!item) {
+      ui.notifications?.warn?.(
+        Constants.localize(
+          "SCSockets.Integrations.ScMoreActivities.Warnings.InvalidRequest",
+          "The socket activity request is no longer valid."
+        )
+      );
+      return null;
+    }
+
+    if (!canEditItem(item)) {
+      ui.notifications?.warn?.(
+        game.i18n?.format?.(
+          "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Dialogs.ItemPermissionBody",
+          { name: itemName }
+        ) ?? `You do not have permission to edit ${itemName}.`
+      );
+      return null;
+    }
+
+    if (!ModuleSettings.isItemSocketable(item)) {
+      ui.notifications?.warn?.(
+        game.i18n?.format?.(
+          "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Dialogs.InvalidTypeBody",
+          { name: itemName }
+        ) ?? `${itemName} cannot use sockets.`
+      );
+      return null;
+    }
+
+    const slots = await ScMoreActivitiesSocketExtractionActivityService.#listFilledSlots(item);
+    if (!slots.length) {
+      ui.notifications?.warn?.(
+        game.i18n?.format?.(
+          "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Dialogs.NoSocketedGemsBody",
+          { name: itemName }
+        ) ?? `${itemName} has no socketed gems to remove.`
+      );
+      return null;
+    }
+
+    return { item, slots };
   }
 
   static async #listFilledSlots(item) {

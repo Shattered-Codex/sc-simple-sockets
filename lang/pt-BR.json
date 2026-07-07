@@ -492,9 +492,19 @@
           },
           "Fields": {
             "TargetingHint": "Ao usar esta activity, o próximo item clicado vira o alvo. O resultado abaixo sobrescreve as configurações globais e do slot.",
+            "TargetingHintSelf": "Ao usar esta activity, o próprio item dono dela vira o alvo. O resultado abaixo sobrescreve as configurações globais e do slot.",
+            "TargetMode": {
+              "Label": "Item alvo",
+              "Hint": "Escolha se o usuário clica no item cuja gema será removida ou se a activity extrai do próprio item dono dela.",
+              "Choices": {
+                "Select": "Clicar em um item alvo",
+                "Self": "Este item (extrair de si mesmo)"
+              }
+            },
             "Mode": {
               "Label": "Resultado da gema removida",
               "Hint": "Escolha se a gema removida volta ao inventário ou é destruída. Isso ignora as configurações globais e do slot.",
+              "HintSelf": "Escolha se a gema removida volta ao inventário ou é destruída ao extrair do próprio item dono desta activity. Isso ignora as configurações globais e do slot.",
               "Choices": {
                 "Delete": "Extrair e destruir",
                 "Keep": "Extrair e preservar"
