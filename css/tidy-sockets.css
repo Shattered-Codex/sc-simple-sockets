@@ -223,6 +223,93 @@
   margin-top: 0.15rem;
 }
 
+.sc-sockets-scma-picker__filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--color-border-light-primary, rgba(0, 0, 0, 0.18)) 78%, #7082a7 22%);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.38);
+  color: var(--color-text-dark-primary, inherit);
+}
+
+.sc-sockets-scma-picker__filter i {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  opacity: 0.65;
+}
+
+.sc-sockets-scma-picker__filter input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.sc-sockets-scma-picker__gem-portrait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sc-sockets-slot-icon-size);
+  height: var(--sc-sockets-slot-icon-size);
+  flex: 0 0 var(--sc-sockets-slot-icon-size);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-border-light-primary, rgba(0, 0, 0, 0.18)) 82%, #8f9fb7 18%);
+  border-radius: var(--sc-sockets-slot-radius, 10px);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.sc-sockets-scma-picker__gem-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: none;
+}
+
+.sc-sockets-scma-picker__gem-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sc-sockets-scma-picker__gem-qty {
+  margin-inline-start: 0.3rem;
+  padding: 0.05rem 0.32rem;
+  border: 1px solid color-mix(in srgb, var(--color-border-light-primary, rgba(0, 0, 0, 0.18)) 82%, #8f9fb7 18%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
+  color: var(--color-text-dark-primary, inherit);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sc-sockets-scma-picker__gem-dest {
+  overflow: hidden;
+  color: color-mix(in srgb, var(--color-text-dark-primary, currentColor) 72%, #6c7e97 28%);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-sockets-scma-picker__gem-dest-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+}
+
+.sc-sockets-scma-picker__no-results {
+  margin: 0;
+  font-style: italic;
+  text-align: center;
+}
+
 @media (max-width: 640px) {
   .sc-sockets-scma-picker__option {
     gap: 0.55rem;

@@ -1803,6 +1803,95 @@ body.sc-sockets-extract-cursor * {
   margin-top: 0.15rem;
 }
 
+.sc-sockets-scma-picker .sc-sockets-scma-picker__filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--dnd5e-color-gold, #9f9275) 18%, var(--color-border-light-2, #70788a) 82%);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--dnd5e-color-card, var(--dnd5e-background-card, var(--sf-panel-bg, #231f2a))) 22%, transparent);
+  color: var(--color-text-light-2, inherit);
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__filter i {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__filter input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__gem-portrait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sc-sockets-slot-icon-size);
+  height: var(--sc-sockets-slot-icon-size);
+  flex: 0 0 var(--sc-sockets-slot-icon-size);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--dnd5e-color-gold, #9f9275) 30%, transparent);
+  border-radius: var(--sc-sockets-slot-radius, 4px);
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__gem-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: none;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__gem-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__gem-qty {
+  margin-inline-start: 0.3rem;
+  padding: 0.05rem 0.32rem;
+  border: 1px solid color-mix(in srgb, var(--pill-border-color, #666) 60%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--pill-background-color, rgba(255, 255, 255, 0.08)) 32%, transparent);
+  color: var(--color-text-light-3, inherit);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__gem-dest {
+  overflow: hidden;
+  color: var(--color-text-light-2, inherit);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__gem-dest-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__no-results {
+  margin: 0;
+  color: var(--color-text-light-2, inherit);
+  font-style: italic;
+  text-align: center;
+}
+
 @media (max-width: 720px) {
   .sc-sockets-scma-activity .sc-sockets-scma-grid--two {
     grid-template-columns: minmax(0, 1fr);

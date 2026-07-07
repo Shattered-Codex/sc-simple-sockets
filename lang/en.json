@@ -534,6 +534,91 @@
             "Title": "Choose Gem to Remove"
           }
         },
+        "GemReload": {
+          "Title": "Gem Reload",
+          "Hint": "Use the activity, click the target item, then socket a compatible gem from the user's inventory into one of its empty sockets.",
+          "Sections": {
+            "Configuration": "Gem Reload Configuration"
+          },
+          "Fields": {
+            "TargetingHint": "When used, this activity targets the next clicked socketable item, or an item that already has sockets, then selects a compatible gem from the user's inventory and sockets it into an empty slot.",
+            "TargetingHintSelf": "When used, this activity targets the item that owns it, then selects a compatible gem from the user's inventory and sockets it into one of its empty slots.",
+            "TargetMode": {
+              "Label": "Target item",
+              "Hint": "Choose whether the user clicks the item that receives the gem or the activity reloads the item that owns it.",
+              "Choices": {
+                "Select": "Click a target item",
+                "Self": "This item (reload self)"
+              }
+            },
+            "GemMode": {
+              "Label": "Gem selection",
+              "Hint": "Choose whether the user picks a compatible gem or the activity auto-selects one by exact name or match pattern.",
+              "Choices": {
+                "Prompt": "Prompt compatible gems",
+                "Name": "Exact gem name",
+                "Match": "Gem name match"
+              }
+            },
+            "GemQuery": {
+              "Label": "Gem filter",
+              "HintName": "Case-insensitive exact gem name to auto-select from the actor inventory.",
+              "HintMatch": "Case-insensitive gem name pattern to auto-select from the actor inventory. Use * as a wildcard.",
+              "PlaceholderName": "e.g. Ruby",
+              "PlaceholderMatch": "e.g. Fire* or Ruby"
+            },
+            "SlotMode": {
+              "Label": "Slot selection",
+              "Hint": "Choose whether the first compatible empty slot is used automatically or the user picks a slot.",
+              "Choices": {
+                "Ordered": "First compatible slot",
+                "Prompt": "Prompt compatible slots"
+              }
+            }
+          },
+          "Selection": {
+            "Prompt": "Click the item that should receive a gem. Press Esc to cancel.",
+            "Cancelled": "Selection cancelled."
+          },
+          "Dialogs": {
+            "InvalidTypeBody": "{name} cannot use sockets.",
+            "InvalidTypeTitle": "Unsupported Item",
+            "ItemPermissionBody": "You do not have permission to edit {name}.",
+            "ItemPermissionTitle": "Cannot Edit Item",
+            "NoCompatibleGemsBody": "{actor} has no compatible gems for {name}.",
+            "NoCompatibleGemsTitle": "No Compatible Gems",
+            "NoEmptySlotsBody": "{name} has no empty sockets available.",
+            "NoEmptySlotsTitle": "No Empty Slots",
+            "SlotConditionErrorBody": "Gem Reload could not evaluate one or more socket conditions on {name}: {slots}. Fix the slot condition or choose another item.",
+            "SlotConditionErrorTitle": "Socket Condition Error",
+            "UnknownSlots": "one or more sockets"
+          },
+          "Warnings": {
+            "GemNotFound": "The selected gem is no longer available in the source actor inventory.",
+            "InvalidGemQuery": "Configure a gem name or match pattern before using this activity.",
+            "InvalidSlot": "Choose a valid empty socket.",
+            "NoCompatibleGems": "No compatible gems are available for the selected target.",
+            "NoEmptySlots": "The target item has no empty slots available.",
+            "NoSourceActor": "This activity needs an actor inventory to draw gems from.",
+            "SlotConditionError": "Some sockets on {item} were skipped because their slot conditions could not be evaluated: {slots}.",
+            "SlotOccupied": "The selected socket is already occupied.",
+            "SocketFailed": "Could not socket the selected gem."
+          },
+          "Info": {
+            "Reloaded": "Socketed {gem} into {item} (slot {slot})."
+          },
+          "App": {
+            "GemDestination": "Will socket into {slot}",
+            "GemDestinationChoices": "{count} compatible slots: {slots}",
+            "GemFilterNoResults": "No gems match the current filter.",
+            "GemFilterPlaceholder": "Filter gems by name…",
+            "GemSubtitle": "{actor} has {count} compatible gems for {item}. Choose which one to socket.",
+            "GemTitle": "Choose Gem to Socket",
+            "SlotConfirm": "Socket into selected slot",
+            "SlotSubtitle": "{item} has {count} compatible empty slots for {gem}. Choose one.",
+            "SlotTitle": "Choose Slot"
+          }
+        },
         "SocketRecharge": {
           "Title": "Socket Recharge",
           "Hint": "Use the activity, then click the target item and choose a socketed gem to restore its charges. Can require a check and roll the restored amount.",

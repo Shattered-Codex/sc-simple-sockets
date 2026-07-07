@@ -534,6 +534,91 @@
             "Title": "Escolher Gema para Remover"
           }
         },
+        "GemReload": {
+          "Title": "Gem Reload",
+          "Hint": "Use a atividade, clique no item alvo e então sockete uma gema compatível do inventário do usuário em um dos slots vazios.",
+          "Sections": {
+            "Configuration": "Configuração do Gem Reload"
+          },
+          "Fields": {
+            "TargetingHint": "Ao usar esta atividade, o próximo item clicado vira o alvo se for um item socketável ou um item que já tenha sockets; então uma gema compatível do inventário do usuário é escolhida e socketada em um slot vazio.",
+            "TargetingHintSelf": "Ao usar esta atividade, o próprio item dono dela vira o alvo; então uma gema compatível do inventário do usuário é escolhida e socketada em um dos slots vazios.",
+            "TargetMode": {
+              "Label": "Item alvo",
+              "Hint": "Escolha se o usuário clica no item que recebe a gema ou se a atividade recarrega o próprio item dono dela.",
+              "Choices": {
+                "Select": "Clicar em um item alvo",
+                "Self": "Este item (recarregar a si mesmo)"
+              }
+            },
+            "GemMode": {
+              "Label": "Seleção da gema",
+              "Hint": "Escolha se o usuário seleciona uma gema compatível ou se a atividade escolhe automaticamente por nome exato ou por padrão.",
+              "Choices": {
+                "Prompt": "Escolher entre gemas compatíveis",
+                "Name": "Nome exato da gema",
+                "Match": "Compatibilidade por nome"
+              }
+            },
+            "GemQuery": {
+              "Label": "Filtro da gema",
+              "HintName": "Nome exato da gema, sem diferenciar maiúsculas de minúsculas, para seleção automática no inventário do ator.",
+              "HintMatch": "Padrão do nome da gema, sem diferenciar maiúsculas de minúsculas, para seleção automática no inventário do ator. Use * como coringa.",
+              "PlaceholderName": "ex.: Rubi",
+              "PlaceholderMatch": "ex.: Fogo* ou Rubi"
+            },
+            "SlotMode": {
+              "Label": "Seleção do slot",
+              "Hint": "Escolha se o primeiro slot vazio compatível é usado automaticamente ou se o usuário escolhe o slot.",
+              "Choices": {
+                "Ordered": "Primeiro slot compatível",
+                "Prompt": "Escolher entre slots compatíveis"
+              }
+            }
+          },
+          "Selection": {
+            "Prompt": "Clique no item que deve receber a gema. Pressione Esc para cancelar.",
+            "Cancelled": "Seleção cancelada."
+          },
+          "Dialogs": {
+            "InvalidTypeBody": "{name} não pode usar sockets.",
+            "InvalidTypeTitle": "Item incompatível",
+            "ItemPermissionBody": "Você não tem permissão para editar {name}.",
+            "ItemPermissionTitle": "Não é possível editar o item",
+            "NoCompatibleGemsBody": "{actor} não possui gemas compatíveis para {name}.",
+            "NoCompatibleGemsTitle": "Sem gemas compatíveis",
+            "NoEmptySlotsBody": "{name} não possui slots vazios disponíveis.",
+            "NoEmptySlotsTitle": "Sem slots vazios",
+            "SlotConditionErrorBody": "O Gem Reload não conseguiu avaliar uma ou mais condições de slot em {name}: {slots}. Corrija a condição do slot ou escolha outro item.",
+            "SlotConditionErrorTitle": "Erro na condição do slot",
+            "UnknownSlots": "um ou mais slots"
+          },
+          "Warnings": {
+            "GemNotFound": "A gema selecionada não está mais disponível no inventário do ator de origem.",
+            "InvalidGemQuery": "Configure um nome de gema ou um padrão de busca antes de usar esta atividade.",
+            "InvalidSlot": "Escolha um slot vazio válido.",
+            "NoCompatibleGems": "Não há gemas compatíveis disponíveis para o alvo selecionado.",
+            "NoEmptySlots": "O item alvo não possui slots vazios disponíveis.",
+            "NoSourceActor": "Esta atividade precisa de um inventário de ator de onde retirar gemas.",
+            "SlotConditionError": "Alguns sockets em {item} foram ignorados porque suas condições de slot não puderam ser avaliadas: {slots}.",
+            "SlotOccupied": "O slot selecionado já está ocupado.",
+            "SocketFailed": "Não foi possível socketar a gema selecionada."
+          },
+          "Info": {
+            "Reloaded": "Socketou {gem} em {item} (slot {slot})."
+          },
+          "App": {
+            "GemDestination": "Será socketada em {slot}",
+            "GemDestinationChoices": "{count} slots compatíveis: {slots}",
+            "GemFilterNoResults": "Nenhuma gema corresponde ao filtro atual.",
+            "GemFilterPlaceholder": "Filtrar gemas pelo nome…",
+            "GemSubtitle": "{actor} possui {count} gemas compatíveis para {item}. Escolha qual socketar.",
+            "GemTitle": "Escolher Gema para Socketar",
+            "SlotConfirm": "Socketar no slot selecionado",
+            "SlotSubtitle": "{item} possui {count} slots vazios compatíveis para {gem}. Escolha um.",
+            "SlotTitle": "Escolher Slot"
+          }
+        },
         "SocketRecharge": {
           "Title": "Recarga de Gema Socketada",
           "Hint": "Use a atividade, depois clique no item alvo e escolha uma gema socketada para restaurar suas cargas. Ela pode exigir um teste e rolar a quantidade restaurada.",

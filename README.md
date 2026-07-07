@@ -78,19 +78,106 @@ Once a gem is inserted, the module can:
 ## SC More Activities Integration
 
 When `sc-more-activities` is also active, `sc-simple-sockets` registers its own
-socket activities directly from this module:
+socket activities directly from this module. No extra bridge module is needed.
 
 - `sc-socket-slot`
 - `sc-socket-extraction`
+- `sc-socket-gem-reload`
 - `sc-socket-recharge`
 - `sc-socket-pool-recharge`
 
 That integration lives entirely inside `sc-simple-sockets`, so the socket
 behavior stays scoped to the module that owns it.
 
-The activity icons used by that integration ship locally in
-`assets/activity-icons/` and are based on artwork from
-[Game-icons.net](https://game-icons.net/).
+### How these activities work
+
+All socket activities follow the same general idea:
+
+1. You use an activity created in `sc-more-activities`.
+2. The activity selects or targets an item that contains sockets.
+3. `sc-simple-sockets` performs the socket mutation, compatibility checks,
+   effect transfer, activity transfer, or charge update.
+
+Depending on the activity, the target item can be:
+
+- the next clicked item
+- the item that owns the activity
+- an item chosen from a socket picker dialog
+
+### Available activity types
+
+#### `sc-socket-slot`
+
+Use this activity to add a configured socket to a target item or remove one
+empty socket from an item.
+
+- **Add socket:** click a valid target item and the activity adds a new socket
+  using the configuration defined in the activity.
+- **Remove empty socket:** choose one empty socket from the item and remove it.
+- Supports per-activity socket config, descriptions, colors, conditions, and
+  optional targeting rules.
+
+#### `sc-socket-extraction`
+
+Use this activity to remove a socketed gem from a target item.
+
+- Click the target item.
+- Choose which socketed gem will be removed.
+- The activity can keep the extracted gem and return it to inventory, or
+  destroy the extracted gem immediately.
+
+This ignores the module's normal gem-removal behavior and follows the activity
+configuration instead.
+
+#### `sc-socket-gem-reload`
+
+Use this activity to insert a compatible gem into an empty socket on a target
+item.
+
+- Click the item that should receive the gem.
+- The activity looks for compatible gems in the inventory of the actor that
+  owns the activity item.
+- It can prompt the user to choose a gem, auto-pick a gem by exact name, or
+  auto-pick a gem by name match pattern.
+- It can then place the gem into the first compatible empty socket or prompt
+  the user to choose which compatible empty socket should be used.
+
+The reload still respects socket compatibility, allowed item types, and socket
+conditions.
+
+#### `sc-socket-recharge`
+
+Use this activity to restore charges to one socketed gem on a target item.
+
+- Click the target item.
+- Choose the socketed gem that should be recharged.
+- The activity can optionally require a check before the recharge succeeds.
+- The restored amount can be fully restored or rolled from a formula.
+
+This is useful for gems that carry their own limited-use resource.
+
+#### `sc-socket-pool-recharge`
+
+Use this activity to restore a shared charge pool across multiple socketed gems
+on the same item.
+
+- Click the target item.
+- Choose the resource pool that should be restored.
+- The activity can optionally require a check before the recharge succeeds.
+- The restored amount can be fully restored or rolled from a formula.
+
+This is useful when several socketed gems contribute to the same named charge
+pool.
+
+### Notes
+
+- These activities are registered only when both `sc-simple-sockets` and
+  `sc-more-activities` are active.
+- Socket mutations still use the same compatibility and permission checks as the
+  rest of `sc-simple-sockets`.
+- The activity icons used by this integration ship locally in
+  `assets/activity-icons/` and are based on artwork from
+  [Game-icons.net](https://game-icons.net/).
 
 > **Want even more content?**  
 > If you want **120+ ready-to-use gems**, you can get the **SC - More Gems** module as a **Patreon supporter**.
@@ -663,6 +750,7 @@ the [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) license.
 
 - `Power Ring` by Delapouite, used for `sc-socket-slot`
 - `Pincers` by Lorc, used for `sc-socket-extraction`
+- `Cut Diamond` by Lorc, adapted for `sc-socket-gem-reload`
 - `Charging` by Delapouite, used for `sc-socket-recharge`
 - `Energy Tank` by Delapouite, used for `sc-socket-pool-recharge`
 

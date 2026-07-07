@@ -5,8 +5,16 @@ import { getSlotConfig, normalizeSlotConfig } from "../../helpers/socketSlotConf
 import { ModuleSettings } from "../../settings/ModuleSettings.js";
 import { SocketService } from "../../services/SocketService.js";
 import { SocketSlotConfigService } from "../../services/SocketSlotConfigService.js";
+import { EffectService } from "../../services/EffectService.js";
+import { InventoryService } from "../../services/InventoryService.js";
+import { ActivityTransferService } from "../../services/ActivityTransferService.js";
 import { GemResourceService } from "../../../domain/gems/GemResourceService.js";
 import { SOCKET_CONSUMPTION_SELECTOR_MODES } from "../../helpers/socketConsumptionConfig.js";
+import { ItemResolver } from "../../ItemResolver.js";
+import { SocketSlot } from "../../model/SocketSlot.js";
+import { ScMoreActivitiesGemReloadActivity } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivity.js";
+import { ScMoreActivitiesGemReloadActivityData } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivityData.js";
+import { ScMoreActivitiesGemReloadActivitySheet } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivitySheet.js";
 import { ScMoreActivitiesSocketExtractionActivity } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivity.js";
 import { ScMoreActivitiesSocketExtractionActivityData } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivityData.js";
 import { ScMoreActivitiesSocketExtractionActivitySheet } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivitySheet.js";
@@ -67,8 +75,7 @@ export class ScMoreActivitiesIntegration {
     }
 
     return ScMoreActivitiesIntegration.#executeRequest(payload, {
-      bypassPermission: true,
-      requestUser: game.user
+      bypassPermission: true
     });
   };
 
@@ -210,10 +217,25 @@ export class ScMoreActivitiesIntegration {
     );
   }
 
+  static async reloadGem(activity, { item = null, gemItem = null, slotIndex = null } = {}) {
+    return ScMoreActivitiesIntegration.#dispatchRequest(
+      ScMoreActivitiesIntegration.#buildRequest("reload-gem", activity, {
+        gemUuid: gemItem?.uuid ?? null,
+        itemUuid: item?.uuid ?? null,
+        slotIndex: slotIndex === null || slotIndex === undefined ? null : slotIndex
+      }),
+      {
+        hostItem: item ?? ScMoreActivitiesIntegration.getHostItem(activity),
+        type: SC_MORE_ACTIVITIES_ACTIVITY_TYPES.GEM_RELOAD
+      }
+    );
+  }
+
   static #registerActivities(activitiesApi) {
     const registrations = [
       ScMoreActivitiesIntegration.#registerSocketSlotActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerSocketExtractionActivity(activitiesApi),
+      ScMoreActivitiesIntegration.#registerGemReloadActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerSocketRechargeActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerSocketPoolRechargeActivity(activitiesApi)
     ];
@@ -302,6 +324,49 @@ export class ScMoreActivitiesIntegration {
         }
       },
       templates: [`modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-extraction-effect.hbs`],
+      ownership: {
+        execute: "item-owner",
+        hostItem: "activity-item",
+        mutation: "gm-mediated"
+      },
+      source: Constants.MODULE_ID
+    });
+  }
+
+  static #registerGemReloadActivity(activitiesApi) {
+    return activitiesApi.registerType({
+      moduleId: Constants.MODULE_ID,
+      type: SC_MORE_ACTIVITIES_ACTIVITY_TYPES.GEM_RELOAD,
+      label: "SCSockets.Integrations.ScMoreActivities.GemReload.Title",
+      hint: "SCSockets.Integrations.ScMoreActivities.GemReload.Hint",
+      icon: SC_MORE_ACTIVITIES_ICONS.GEM_RELOAD,
+      documentClass: ScMoreActivitiesGemReloadActivity,
+      dataModel: ScMoreActivitiesGemReloadActivityData,
+      sheetClass: ScMoreActivitiesGemReloadActivitySheet,
+      configurable: true,
+      category: "sockets",
+      ui: {
+        scope: "external",
+        group: "sockets",
+        groupId: SC_MORE_ACTIVITIES_GROUP.id,
+        groupLabel: SC_MORE_ACTIVITIES_GROUP.label,
+        groupIcon: SC_MORE_ACTIVITIES_GROUP.icon,
+        groupOrder: SC_MORE_ACTIVITIES_GROUP.order,
+        order: 155
+      },
+      tags: ["sockets", "gem", "inventory", "reload"],
+      compatibility: {
+        dnd5e: "5.x",
+        scMoreActivities: {
+          moduleId: SC_MORE_ACTIVITIES_MODULE_ID,
+          required: true
+        },
+        scSimpleSockets: {
+          moduleId: Constants.MODULE_ID,
+          required: true
+        }
+      },
+      templates: [`modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-gem-reload-effect.hbs`],
       ownership: {
         execute: "item-owner",
         hostItem: "activity-item",
@@ -454,7 +519,10 @@ export class ScMoreActivitiesIntegration {
     const activity = payload.activityUuid ? await ScMoreActivitiesIntegration.#fromUuid(payload.activityUuid) : null;
     const hostItem = payload.itemUuid ? await ScMoreActivitiesIntegration.#resolveItem(payload.itemUuid) : null;
     const effectiveItem = hostItem ?? ScMoreActivitiesIntegration.getHostItem(activity);
-    const user = requestUser ?? game?.users?.get?.(payload.requestUserId) ?? game?.user ?? null;
+    const requestUserId = ScMoreActivitiesIntegration.#normalizeUserId(payload.requestUserId ?? requestUser?.id ?? null);
+    const user = requestUser?.id === requestUserId
+      ? requestUser
+      : (requestUserId ? game?.users?.get?.(requestUserId) ?? null : null);
 
     if (!effectiveItem) {
       return ScMoreActivitiesIntegration.#failure(
@@ -464,7 +532,18 @@ export class ScMoreActivitiesIntegration {
       );
     }
 
-    if (payload.requestUserId && !ScMoreActivitiesIntegration.#canUseActivity(activity, user, effectiveItem)) {
+    if (!requestUserId || !user) {
+      return ScMoreActivitiesIntegration.#failure(
+        "invalid-request-user",
+        "SCSockets.Integrations.ScMoreActivities.Warnings.InvalidRequest",
+        "The socket activity request is no longer valid."
+      );
+    }
+
+    const canUseActivity = payload.operation === "reload-gem"
+      ? ScMoreActivitiesIntegration.#canUseReloadRequest(activity, user, effectiveItem)
+      : ScMoreActivitiesIntegration.#canUseActivity(activity, user, effectiveItem);
+    if (!canUseActivity) {
       return ScMoreActivitiesIntegration.#failure(
         "activity-permission",
         "SCSockets.Integrations.ScMoreActivities.Warnings.ActivityPermission",
@@ -480,6 +559,9 @@ export class ScMoreActivitiesIntegration {
     }
     if (payload.operation === "extract-gem") {
       return ScMoreActivitiesIntegration.#executeExtractGem(effectiveItem, payload, { bypassPermission });
+    }
+    if (payload.operation === "reload-gem") {
+      return ScMoreActivitiesIntegration.#executeReloadGem(effectiveItem, activity, payload, { bypassPermission });
     }
     if (payload.operation === "recharge-gem") {
       return ScMoreActivitiesIntegration.#executeRechargeGem(effectiveItem, payload, { bypassPermission });
@@ -589,6 +671,187 @@ export class ScMoreActivitiesIntegration {
         : "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Info.Extracted",
       templateData: { item: item.name ?? "" }
     });
+  }
+
+  static async #executeReloadGem(item, activity, payload, { bypassPermission = false } = {}) {
+    const slotIndex = ScMoreActivitiesIntegration.#parseSlotIndex(payload.slotIndex);
+    const gemUuid = String(payload.gemUuid ?? "").trim();
+    const sourceActor = ScMoreActivitiesIntegration.#getReloadSourceActor(activity);
+
+    if (!Number.isInteger(slotIndex)) {
+      return ScMoreActivitiesIntegration.#failure(
+        "invalid-slot-index",
+        "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.InvalidSlot",
+        "Choose a valid empty socket."
+      );
+    }
+
+    if (!sourceActor) {
+      return ScMoreActivitiesIntegration.#failure(
+        "missing-source-actor",
+        "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.NoSourceActor",
+        "This activity needs an actor inventory to draw gems from."
+      );
+    }
+
+    const gemItem = gemUuid.length ? await ScMoreActivitiesIntegration.#resolveItem(gemUuid) : null;
+    if (!gemItem || !ItemResolver.isGem(gemItem) || !ScMoreActivitiesIntegration.#itemBelongsToActor(gemItem, sourceActor)) {
+      return ScMoreActivitiesIntegration.#failure(
+        "gem-not-available",
+        "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.GemNotFound",
+        "The selected gem is no longer available in the source actor inventory."
+      );
+    }
+
+    const result = await SocketService.mutateSockets(item, async (currentItem) => {
+      const slots = SocketStore.getSlots(currentItem);
+      const slot = Number.isInteger(slotIndex) ? slots[slotIndex] ?? null : null;
+      if (!slot) {
+        return ScMoreActivitiesIntegration.#failure(
+          "invalid-slot-index",
+          "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.InvalidSlot",
+          "Choose a valid empty socket."
+        );
+      }
+
+      if (ScMoreActivitiesIntegration.#slotHasGem(slot)) {
+        return ScMoreActivitiesIntegration.#failure(
+          "slot-occupied",
+          "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.SlotOccupied",
+          "The selected socket is already occupied."
+        );
+      }
+
+      const currentGemItem = await ScMoreActivitiesIntegration.#resolveItem(gemUuid);
+      if (!currentGemItem || !ItemResolver.isGem(currentGemItem) || !ScMoreActivitiesIntegration.#itemBelongsToActor(currentGemItem, sourceActor)) {
+        return ScMoreActivitiesIntegration.#failure(
+          "gem-not-available",
+          "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.GemNotFound",
+          "The selected gem is no longer available in the source actor inventory."
+        );
+      }
+
+      if (!ScMoreActivitiesIntegration.#gemMatchesHostType(currentGemItem, currentItem)) {
+        return ScMoreActivitiesIntegration.#failure(
+          "gem-incompatible",
+          "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.SocketFailed",
+          "That item is not compatible with this socket."
+        );
+      }
+
+      const conditionResult = await SocketSlotConfigService.evaluateCondition({
+        hostItem: currentItem,
+        slot,
+        slotIndex,
+        gemItem: currentGemItem,
+        source: currentGemItem
+      });
+      if (!conditionResult.allowed) {
+        return ScMoreActivitiesIntegration.#failure(
+          conditionResult.error ? "socket-condition-error" : "socket-condition-failed",
+          "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.SocketFailed",
+          conditionResult.error
+            ? "This socket condition could not be evaluated."
+            : "That gem does not meet this socket's requirements."
+        );
+      }
+
+      const previousSlots = foundry.utils.deepClone(slots);
+      const nextSlots = foundry.utils.deepClone(slots);
+      const gemSnapshot = ItemResolver.snapshotOne(currentGemItem);
+      nextSlots[slotIndex] = SocketSlot.fillFromGem(nextSlots[slotIndex], currentGemItem, gemSnapshot, slotIndex);
+      ItemResolver.normalizeSocketSlots(nextSlots);
+
+      const mutationOptions = ScMoreActivitiesIntegration.#buildSocketMutationOptions({ bypassPermission });
+      let consumedGem = false;
+
+      try {
+        // Inventory mutations must keep rendering enabled so open actor sheets refresh
+        // immediately; render suppression only applies to the host item's chained updates.
+        await InventoryService.consumeOne(currentGemItem);
+        consumedGem = true;
+
+        const effectIdMap = await EffectService.applyGemEffects(currentItem, slotIndex, currentGemItem, mutationOptions);
+        await ActivityTransferService.applyFromGem(currentItem, slotIndex, currentGemItem, {
+          ...mutationOptions,
+          [Constants.MODULE_ID]: {
+            ...(mutationOptions?.[Constants.MODULE_ID] ?? {}),
+            [ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]: true,
+            [ActivityTransferService.UPDATE_OPTION_EFFECT_ID_MAP]: effectIdMap,
+            [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
+              [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: nextSlots
+            }
+          }
+        });
+      } catch (error) {
+        await ScMoreActivitiesIntegration.#rollbackReloadMutation(
+          currentItem,
+          sourceActor,
+          slotIndex,
+          previousSlots,
+          gemSnapshot,
+          mutationOptions,
+          { consumedGem }
+        );
+        console.error(`[${Constants.MODULE_ID}] reload-gem mutation failed:`, error);
+        return ScMoreActivitiesIntegration.#failure(
+          "gem-reload-failed",
+          "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.SocketFailed",
+          "Could not socket the selected gem."
+        );
+      }
+
+      const gemName = currentGemItem.name ?? "";
+      return Object.freeze({
+        ok: true,
+        changed: true,
+        reason: "gem-added",
+        message: ScMoreActivitiesIntegration.#format(
+          "SCSockets.Integrations.ScMoreActivities.GemReload.Info.Reloaded",
+          {
+            gem: gemName,
+            item: currentItem.name ?? "",
+            slot: slotIndex + 1
+          },
+          `Socketed ${gemName || "the gem"} into ${currentItem.name ?? "the item"} (slot ${slotIndex + 1}).`
+        )
+      });
+    }, { bypassPermission });
+
+    if (result?.ok === true || result?.ok === false) {
+      return result;
+    }
+
+    if (result?.success === true || result?.ok === true) {
+      const gemName = gemItem.name ?? "";
+      return Object.freeze({
+        ok: true,
+        changed: result?.changed !== false,
+        reason: result?.reason ?? "gem-added",
+        result,
+        message: ScMoreActivitiesIntegration.#format(
+          "SCSockets.Integrations.ScMoreActivities.GemReload.Info.Reloaded",
+          {
+            gem: gemName,
+            item: item.name ?? "",
+            slot: slotIndex + 1
+          },
+          `Socketed ${gemName || "the gem"} into ${item.name ?? "the item"} (slot ${slotIndex + 1}).`
+        )
+      });
+    }
+
+    return ScMoreActivitiesIntegration.#failure(
+      result?.reason ?? "gem-reload-failed",
+      "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.SocketFailed",
+      result?.message ?? result?.data?.message ?? "Could not socket the selected gem.",
+      {
+        gem: gemItem.name ?? "",
+        item: item.name ?? "",
+        slot: slotIndex + 1
+      },
+      { result }
+    );
   }
 
   static async #executeRechargeGem(item, payload, { bypassPermission = false } = {}) {
@@ -801,7 +1064,7 @@ export class ScMoreActivitiesIntegration {
     return ScMoreActivitiesIntegration.#failure(
       result?.reason ?? "operation-failed",
       failureKey,
-      result?.message ?? failureFallback,
+      result?.message ?? result?.data?.message ?? failureFallback,
       templateData,
       { result }
     );
@@ -848,6 +1111,152 @@ export class ScMoreActivitiesIntegration {
       .trim();
   }
 
+  static async #rollbackReloadMutation(
+    hostItem,
+    sourceActor,
+    slotIndex,
+    previousSlots,
+    gemSnapshot,
+    options = {},
+    { consumedGem = false } = {}
+  ) {
+    try {
+      await ActivityTransferService.removeForSlot(hostItem, slotIndex, options);
+    } catch (error) {
+      console.warn(`[${Constants.MODULE_ID}] reload-gem rollback could not remove transferred activities:`, error);
+    }
+
+    try {
+      await EffectService.removeGemEffects(hostItem, slotIndex, options);
+    } catch (error) {
+      console.warn(`[${Constants.MODULE_ID}] reload-gem rollback could not remove gem effects:`, error);
+    }
+
+    try {
+      await SocketStore.setSlots(hostItem, previousSlots, options);
+    } catch (error) {
+      console.warn(`[${Constants.MODULE_ID}] reload-gem rollback could not restore slot state:`, error);
+    }
+
+    if (!consumedGem || !gemSnapshot || !sourceActor) {
+      return;
+    }
+
+    try {
+      await InventoryService.returnOne({ actor: sourceActor }, gemSnapshot);
+    } catch (error) {
+      console.warn(`[${Constants.MODULE_ID}] reload-gem rollback could not restore the consumed gem:`, error);
+    }
+  }
+
+  static #buildSocketMutationOptions(options = {}) {
+    return {
+      ...options,
+      notify: false,
+      render: false,
+      [Constants.MODULE_ID]: {
+        ...(options?.[Constants.MODULE_ID] ?? {}),
+        [ActivityTransferService.UPDATE_OPTION_SKIP_RECONCILE]: true
+      }
+    };
+  }
+
+  static #parseSlotIndex(value) {
+    if (typeof value === "number") {
+      return Number.isSafeInteger(value) && value >= 0 ? value : null;
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.trim();
+      if (!/^\d+$/.test(normalized)) {
+        return null;
+      }
+
+      const parsed = Number(normalized);
+      return Number.isSafeInteger(parsed) ? parsed : null;
+    }
+
+    return null;
+  }
+
+  static #normalizeUserId(value) {
+    const normalized = String(value ?? "").trim();
+    return normalized.length ? normalized : null;
+  }
+
+  static #getReloadSourceActor(activity) {
+    return activity?.actor ?? activity?.item?.actor ?? activity?.item?.parent ?? null;
+  }
+
+  static #itemBelongsToActor(item, actor) {
+    if (!item || !actor) {
+      return false;
+    }
+
+    return Boolean(
+      item?.documentName === "Item"
+      && item.actor
+      && (item.actor === actor || item.actor?.uuid === actor?.uuid)
+      && actor?.items?.get?.(item.id)
+    );
+  }
+
+  static #slotHasGem(slot) {
+    return Boolean(slot?.gem || slot?._gemData);
+  }
+
+  static #gemMatchesHostType(gemItem, hostItem) {
+    if (!gemItem || !hostItem) {
+      return false;
+    }
+
+    const allowed = typeof gemItem?.getFlag === "function"
+      ? gemItem.getFlag(Constants.MODULE_ID, Constants.FLAG_GEM_ALLOWED_TYPES)
+      : foundry.utils?.getProperty?.(gemItem, `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_ALLOWED_TYPES}`);
+    if (!Array.isArray(allowed) || !allowed.length) {
+      return true;
+    }
+
+    if (allowed.includes(Constants.GEM_ALLOWED_TYPES_ALL)) {
+      return true;
+    }
+
+    const hostKeys = ScMoreActivitiesIntegration.#resolveHostTypeKeys(hostItem);
+    return hostKeys.some((key) => allowed.includes(key));
+  }
+
+  static #resolveHostTypeKeys(hostItem) {
+    const keys = new Set();
+    if (!hostItem) {
+      return [];
+    }
+
+    const type = typeof hostItem.type === "string"
+      ? hostItem.type
+      : String(hostItem.type ?? "");
+    const getProperty = globalThis?.foundry?.utils?.getProperty;
+    const subtypePaths = [
+      "system.type.value",
+      "system.type.subtype"
+    ];
+
+    for (const path of subtypePaths) {
+      const value = typeof getProperty === "function" ? getProperty(hostItem, path) : undefined;
+      if (!value) {
+        continue;
+      }
+
+      const normalized = typeof value === "string" ? value : String(value);
+      keys.add(`${type}:${normalized}`);
+    }
+
+    if (type) {
+      keys.add(type);
+    }
+
+    return Array.from(keys);
+  }
+
   static async #canEditSockets(item) {
     if (!item?.uuid) {
       return false;
@@ -864,6 +1273,14 @@ export class ScMoreActivitiesIntegration {
 
   static #activeGmUser() {
     return game?.users?.find?.((user) => user.active && user.isGM) ?? null;
+  }
+
+  static #canUseReloadRequest(activity, user, targetItem = null) {
+    return Boolean(
+      activity
+      && ScMoreActivitiesIntegration.#canUseActivity(activity, user)
+      && ScMoreActivitiesIntegration.#canUseActivity(activity, user, targetItem)
+    );
   }
 
   static #canUseActivity(activity, user, targetItem = null) {

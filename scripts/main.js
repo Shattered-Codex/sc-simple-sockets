@@ -59,6 +59,7 @@ Hooks.once("init", async function() {
     `modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-slot-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-extraction-effect.hbs`,
+    `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-gem-reload-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-recharge-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-pool-recharge-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/slot-picker.hbs`
