@@ -269,6 +269,7 @@ export class SelectionController {
 
     return new Promise((resolve) => {
       let finished = false;
+      let clickCleanupTimeout = null;
       if (customCursorValue) {
         root?.style?.setProperty?.(cursorVariable, customCursorValue);
         body?.style?.setProperty?.(cursorVariable, customCursorValue);
@@ -276,18 +277,37 @@ export class SelectionController {
       root?.classList.add(cursorClass);
       body?.classList.add(cursorClass);
 
-      const finish = (value) => {
+      const clearDeferredClickCleanup = () => {
+        if (clickCleanupTimeout === null) {
+          return;
+        }
+
+        clearTimeout(clickCleanupTimeout);
+        clickCleanupTimeout = null;
+      };
+
+      const removeClickSwallow = () => {
+        clearDeferredClickCleanup();
+        document.removeEventListener("click", swallowClick, true);
+      };
+
+      const finish = (value, { preserveClickSwallow = false } = {}) => {
         if (finished) return;
         finished = true;
-        cleanup();
+        cleanup({ preserveClickSwallow });
         resolve(value);
       };
 
-      const cleanup = () => {
+      const cleanup = ({ preserveClickSwallow = false } = {}) => {
         document.removeEventListener("pointerdown", onPointerDown, true);
         document.removeEventListener("mousedown", onPointerDown, true);
         document.removeEventListener("touchstart", onTouchStart, true);
-        document.removeEventListener("click", swallowClick, true);
+        document.removeEventListener("pointerup", onInteractionEnd, true);
+        document.removeEventListener("mouseup", onInteractionEnd, true);
+        document.removeEventListener("touchend", onInteractionEnd, true);
+        if (!preserveClickSwallow) {
+          removeClickSwallow();
+        }
         document.removeEventListener("keydown", onKeyDown, true);
         const docRoot = document.documentElement;
         const docBody = document.body;
@@ -305,6 +325,18 @@ export class SelectionController {
         }
       };
 
+      const onInteractionEnd = () => {
+        if (!finished) {
+          return;
+        }
+
+        clearDeferredClickCleanup();
+        clickCleanupTimeout = setTimeout(() => {
+          clickCleanupTimeout = null;
+          removeClickSwallow();
+        }, 0);
+      };
+
       const resolveFromEvent = async (event) => {
         if (event.button !== undefined && event.button !== 0) return null;
         const target = event.target?.closest?.(selector);
@@ -317,27 +349,32 @@ export class SelectionController {
         if (finished) return;
         const selection = await resolveFromEvent(event);
         if (selection === null || selection === undefined) return;
-        finish(selection);
+        finish(selection, { preserveClickSwallow: true });
       };
 
       const onTouchStart = async (event) => {
         if (finished) return;
         const selection = await resolveFromEvent(event);
         if (selection === null || selection === undefined) return;
-        finish(selection);
+        finish(selection, { preserveClickSwallow: true });
       };
 
       const swallowClick = (event) => {
-        if (finished) return;
-        if (event.button !== 0) return;
+        if (event.button !== undefined && event.button !== 0) return;
         const target = event.target?.closest?.(selector);
         if (!target) return;
         stopEvent(event);
+        if (finished) {
+          removeClickSwallow();
+        }
       };
 
       document.addEventListener("pointerdown", onPointerDown, true);
       document.addEventListener("mousedown", onPointerDown, true);
       document.addEventListener("touchstart", onTouchStart, true);
+      document.addEventListener("pointerup", onInteractionEnd, true);
+      document.addEventListener("mouseup", onInteractionEnd, true);
+      document.addEventListener("touchend", onInteractionEnd, true);
       document.addEventListener("click", swallowClick, true);
       document.addEventListener("keydown", onKeyDown, true);
     });
