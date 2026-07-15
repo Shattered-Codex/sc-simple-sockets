@@ -2268,7 +2268,9 @@ body.sc-sockets-extract-cursor * {
   margin: 0;
 }
 
-.sc-sockets-gem-damage-type-chip {
+.sc-sockets-gem-damage-type-chip,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags .tags.input-element-tags > .tag,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill {
   display: inline-flex;
   align-items: center;
   gap: 0.18rem;
@@ -2284,12 +2286,16 @@ body.sc-sockets-extract-cursor * {
   letter-spacing: 0;
 }
 
-.sc-sockets-gem-damage-type-chip i {
+.sc-sockets-gem-damage-type-chip i,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags .tags.input-element-tags > .tag i,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill i {
   font-size: 0.68em;
   opacity: 0.7;
 }
 
-.sc-sockets-gem-damage-type-chip:hover {
+.sc-sockets-gem-damage-type-chip:hover,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags .tags.input-element-tags > .tag:hover,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill:hover {
   box-shadow: 0 0 0 1px var(--color-border-highlight-alt, rgba(255, 255, 255, 0.22));
 }
 
@@ -2605,6 +2611,66 @@ body.sc-sockets-extract-cursor * {
 
 .sc-sockets-gem-details-container .sc-sockets-gem-resource + .sc-sockets-gem-extra-damage {
   margin-top: 0;
+}
+
+/* Condition-friendly gem tags in +Details. */
+.sc-sockets-gem-details-container .sc-sockets-gem-tags {
+  margin-bottom: 0.65rem;
+}
+
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags-selected,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags .tags.input-element-tags {
+  width: 100%;
+  min-width: 0;
+}
+
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags-selected,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags .tags.input-element-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+}
+
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags .tags.input-element-tags > .tag,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill {
+  min-height: 0;
+  margin: 0;
+  cursor: default;
+}
+
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags .tags.input-element-tags > .tag > :is(button, a.remove, .remove),
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill > :is(button, a.remove, .remove) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill > span {
+  padding: 0;
+  line-height: 1;
+}
+
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags .tags.input-element-tags > .tag > :is(button, a.remove, .remove):hover,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags string-tags .tags.input-element-tags > .tag > :is(button, a.remove, .remove):focus,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill > :is(button, a.remove, .remove):hover,
+.sc-sockets-gem-details-container .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill > :is(button, a.remove, .remove):focus {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 @media (max-width: 640px) {

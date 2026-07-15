@@ -3,6 +3,7 @@ import { SocketStore } from "../SocketStore.js";
 import { SocketSlot } from "../model/SocketSlot.js";
 import { getSlotConfig } from "../helpers/socketSlotConfig.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { GemTagService } from "../../domain/gems/GemTagService.js";
 
 const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
 
@@ -147,7 +148,9 @@ const {
   game,
   gem,
   gemItem,
+  gemTags,
   getProperty,
+  hasGemTag,
   hasProperty,
   hostItem,
   item,
@@ -171,13 +174,16 @@ ${body}`
   }
 
   static #buildContext({ hostItem, slot, slotIndex, gemItem, source }) {
+    const gemTags = GemTagService.getTags(gemItem);
     return {
       actor: hostItem?.actor ?? null,
       deepClone: foundry.utils.deepClone.bind(foundry.utils),
       game,
       gem: gemItem ?? null,
       gemItem: gemItem ?? null,
+      gemTags,
       getProperty: foundry.utils.getProperty.bind(foundry.utils),
+      hasGemTag: (tag) => GemTagService.hasTag(gemTags, tag),
       hasProperty: foundry.utils.hasProperty.bind(foundry.utils),
       hostItem: hostItem ?? null,
       item: hostItem ?? null,
@@ -185,7 +191,7 @@ ${body}`
       slot: foundry.utils.deepClone(slot ?? null),
       slotConfig: getSlotConfig(slot),
       slotIndex: Number.isInteger(slotIndex) ? slotIndex : null,
-      source: foundry.utils.deepClone(source ?? null),
+      source: foundry.utils.deepClone(source?.toObject?.() ?? source ?? null),
       user: game.user ?? null
     };
   }

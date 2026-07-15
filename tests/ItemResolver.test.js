@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, test } from "node:test";
 
 import { ItemResolver } from "../scripts/core/ItemResolver.js";
+import { Constants } from "../scripts/core/Constants.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
 
 describe("ItemResolver", () => {
@@ -39,6 +40,24 @@ describe("ItemResolver", () => {
     const decoded = JSON.parse(compact.data);
     assert.equal(decoded._id, undefined);
     assert.equal(decoded.system.quantity, 1);
+  });
+
+  test("compactSnapshot preserves gem tags in the encoded source", () => {
+    const compact = ItemResolver.compactSnapshot({
+      name: "Venom Shard",
+      system: { quantity: 2 },
+      flags: {
+        [Constants.MODULE_ID]: {
+          [Constants.FLAG_GEM_TAGS]: ["poison", "piercing"]
+        }
+      }
+    });
+
+    const decoded = ItemResolver.expandSnapshot(compact);
+    assert.deepEqual(
+      decoded.flags[Constants.MODULE_ID][Constants.FLAG_GEM_TAGS],
+      ["poison", "piercing"]
+    );
   });
 
   test("expandSnapshot decodes stored envelope snapshots and deep clones raw snapshots", () => {

@@ -45,7 +45,6 @@
       "SelectLabel": "Detalhes adicionais",
       "Hint": "Escolha como esta gema deve ser categorizada.",
       "TypeFieldset": "Tipo de detalhe",
-      "Disclaimer": "Use os campos abaixo para ajustar ataques e dano feitos com o item que contém esta gema (incluindo magias). Active Effects aplicados à ficha do ator afetam globalmente todos os ataques elegíveis. Para armaduras e escudos, use os Active Effects padrão da gema no item.",
       "Options": {
         "None": "Nenhum",
         "Weapons": "Armas",
@@ -53,7 +52,7 @@
       },
       "ExtraDamage": {
         "Label": "Dano extra",
-        "Hint": "Adicione um ou mais danos extras aplicados quando esta gema for encaixada em armas ou magias.",
+        "Hint": "Adicione um ou mais danos extras às rolagens feitas com o item que contém esta gema, incluindo armas e magias. Estes campos se aplicam apenas ao item base; Active Effects no ator continuam globais. Para armaduras e escudos, configure os Active Effects padrão da gema no item.",
         "Damage": "Dano",
         "Type": "Tipo",
         "FormulaHint": "Ative isto para informar uma fórmula de rolagem em vez de escolher manualmente quantidade, dado e bônus.",
@@ -90,15 +89,15 @@
       },
       "CritThreshold": {
         "Label": "Limite de crítico",
-        "Hint": "Menor resultado no d20 que conta como crítico para rolagens de ataque com esta gema encaixada. Se várias gemas ajustarem o crítico, usa-se o menor valor. Deixe em branco para usar o valor padrão."
+        "Hint": "Menor resultado no d20 que conta como crítico nas rolagens de ataque feitas com o item que contém esta gema, incluindo ataques de magia. Se várias gemas encaixadas ajustarem esse valor, usa-se o menor. Diferente de um Active Effect no ator, isto se aplica apenas ao item base. Deixe em branco para usar o valor padrão."
       },
       "CritMultiplier": {
         "Label": "Multiplicador de crítico",
-        "Hint": "Multiplica o dano crítico por esse valor quando esta gema estiver encaixada. Se várias gemas definirem isso, usa-se o maior valor. Deixe em branco para manter o multiplicador padrão."
+        "Hint": "Multiplica o dano crítico rolado pelo item que contém esta gema, incluindo magias. Se várias gemas encaixadas definirem esse valor, usa-se o maior. Diferente de um Active Effect no ator, isto se aplica apenas ao item base. Deixe em branco para manter o multiplicador padrão."
       },
       "AttackBonus": {
         "Label": "Bônus de ataque",
-        "Hint": "Bônus fixo adicionado às rolagens de ataque quando esta gema está encaixada. Bônus de várias gemas se somam. Deixe em branco para nenhum."
+        "Hint": "Bônus fixo adicionado às rolagens de ataque feitas com o item que contém esta gema, incluindo ataques de magia. Bônus de várias gemas encaixadas se somam. Diferente de um Active Effect no ator, isto se aplica apenas ao item base. Deixe em branco para nenhum."
       },
       "Resource": {
         "Label": "Recurso Socketado",
@@ -109,6 +108,10 @@
         "Value": "Atual",
         "DestroyOnEmpty": "Destruir ao ficar sem cargas",
         "DestroyOnEmptyHint": "Quando um consumo zera as cargas desta gema, ela é destruída e removida do slot."
+      },
+      "Tags": {
+        "Label": "Tags da Gema",
+        "Tooltip": "Adicione identificadores estáveis para esta gema. As tags são convertidas para minúsculas; espaços e acentos são normalizados. As condições dos sockets podem verificá-las com gemTags ou hasGemTag(tag). Exemplo: return hasGemTag(\"poison\");"
       }
     },
     "GemFormula": {
@@ -150,8 +153,8 @@
       },
       "Condition": {
         "Label": "Condição do slot",
-        "Hint": "Use JavaScript. Variáveis disponíveis: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
-        "Placeholder": "Exemplo: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';",
+        "Hint": "Use JavaScript. As tags da gema estão disponíveis por gemTags e hasGemTag(tag). Outras variáveis: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
+        "Placeholder": "Exemplo: return hasGemTag('poison');",
         "Wiki": "Abrir wiki"
       },
       "Description": {

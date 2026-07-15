@@ -2,6 +2,7 @@ import { Constants } from "../Constants.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { GemTagService } from "../../domain/gems/GemTagService.js";
 
 export class GemDetailsUI {
   static #handler = null;
@@ -56,6 +57,12 @@ export class GemDetailsUI {
       }
 
       const name = target.getAttribute?.("name") ?? target.name ?? "";
+      if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_TAGS}`)) {
+        event.preventDefault();
+        await GemDetailsUI.#persistGemTags(sheet?.item, target.value);
+        return;
+      }
+
       if (name.includes(`${Constants.MODULE_ID}.${Constants.FLAG_GEM_CRIT_THRESHOLD}`)) {
         event.preventDefault();
         await GemDetailsUI.#persistCritThreshold(sheet?.item, target.value);
@@ -191,10 +198,12 @@ export class GemDetailsUI {
       const critThresholdValue = GemDetailsUI.#readGemFlagInputValue(container, Constants.FLAG_GEM_CRIT_THRESHOLD);
       const critMultiplierValue = GemDetailsUI.#readGemFlagInputValue(container, Constants.FLAG_GEM_CRIT_MULTIPLIER);
       const attackBonusValue = GemDetailsUI.#readGemFlagInputValue(container, Constants.FLAG_GEM_ATTACK_BONUS);
+      const gemTagsValue = GemDetailsUI.#readGemFlagInputValue(container, Constants.FLAG_GEM_TAGS);
       await GemDetailsUI.#persistDamageFlags(container, sheet.item);
       await GemDetailsUI.#persistCritThreshold(sheet?.item, critThresholdValue);
       await GemDetailsUI.#persistCritMultiplier(sheet?.item, critMultiplierValue);
       await GemDetailsUI.#persistAttackBonus(sheet?.item, attackBonusValue);
+      await GemDetailsUI.#persistGemTags(sheet?.item, gemTagsValue);
       await GemDetailsUI.#persistGemResource(container, sheet?.item);
     });
     form.dataset.scSocketsGemDetailsSubmitBound = "true";
@@ -204,7 +213,10 @@ export class GemDetailsUI {
     if (!container || !flag) return undefined;
     const name = `flags.${Constants.MODULE_ID}.${flag}`;
     const field = container.querySelector(`[name="${name}"]`);
-    if (!(field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement)) {
+    if (!(field instanceof HTMLInputElement
+      || field instanceof HTMLSelectElement
+      || field instanceof HTMLTextAreaElement
+      || (field instanceof HTMLElement && field.tagName === "STRING-TAGS"))) {
       return undefined;
     }
     return field.value;
@@ -304,18 +316,19 @@ export class GemDetailsUI {
       return target;
     }
     const path = typeof target.composedPath === "function" ? target.composedPath() : [];
-    const fromPath = path.find((entry) => (
+    const customElement = path.find((entry) => (
       entry instanceof HTMLElement
-      && (entry.tagName === "MULTI-SELECT" || entry.hasAttribute?.("name"))
+      && (entry.tagName === "MULTI-SELECT" || entry.tagName === "STRING-TAGS")
     ));
-    return fromPath ?? target.closest?.("multi-select,[name]") ?? target;
+    const namedElement = path.find((entry) => entry instanceof HTMLElement && entry.hasAttribute?.("name"));
+    return customElement ?? namedElement ?? target.closest?.("multi-select,string-tags,[name]") ?? target;
   }
 
   static #isSupportedInputTarget(target) {
     return target instanceof HTMLInputElement
       || target instanceof HTMLSelectElement
       || target instanceof HTMLTextAreaElement
-      || (target instanceof HTMLElement && target.tagName === "MULTI-SELECT");
+      || (target instanceof HTMLElement && ["MULTI-SELECT", "STRING-TAGS"].includes(target.tagName));
   }
 
   static #readNamedFieldValue(root, suffix) {
@@ -578,6 +591,23 @@ export class GemDetailsUI {
     }
 
     await item.setFlag(Constants.MODULE_ID, Constants.FLAG_GEM_RESOURCE, resource);
+  }
+
+  static async #persistGemTags(item, rawValue) {
+    if (!item || rawValue === undefined) return;
+
+    const tags = GemTagService.normalizeTags(rawValue);
+    const existing = GemTagService.getTags(item);
+    const unchanged = existing.length === tags.length
+      && existing.every((tag, index) => tag === tags[index]);
+    if (unchanged) return;
+
+    if (!tags.length) {
+      await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_TAGS);
+      return;
+    }
+
+    await item.setFlag(Constants.MODULE_ID, Constants.FLAG_GEM_TAGS, tags);
   }
 
   static async #persistCritThreshold(item, rawValue) {

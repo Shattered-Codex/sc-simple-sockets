@@ -74,6 +74,48 @@ describe("SocketService", () => {
     assert.equal(actor.items.has("gem-1"), false);
   });
 
+  test("uses gem tags in slot conditions before consuming the gem", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        name: "Sword",
+        type: "weapon",
+        system: { activities: {} },
+        flags: {
+          [Constants.MODULE_ID]: {
+            sockets: [SocketSlot.makeDefault({ condition: "hasGemTag('poison')" })]
+          }
+        }
+      }]
+    });
+    const hostItem = actor.items.get("host-1");
+    const gemItem = createTestItem({
+      id: "gem-1",
+      name: "Radiant Shard",
+      type: "loot",
+      actor,
+      parent: actor,
+      system: {
+        quantity: 1,
+        type: { value: "gem" },
+        activities: { contents: [] }
+      },
+      flags: {
+        [Constants.MODULE_ID]: {
+          [Constants.FLAG_GEM_TAGS]: ["radiant"]
+        }
+      }
+    });
+    actor.items.set(gemItem.id, gemItem);
+
+    const result = await SocketService.addGem(hostItem, 0, gemItem);
+
+    assert.equal(result.success, false);
+    assert.equal(result.reason, "socket-condition-failed");
+    assert.equal(actor.items.has("gem-1"), true);
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets[0].gem, null);
+  });
+
   test("removes a gem from a socket and returns it to inventory", async () => {
     const actor = createTestActor({
       items: [{

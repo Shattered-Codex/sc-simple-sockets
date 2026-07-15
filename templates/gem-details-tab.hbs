@@ -6,18 +6,12 @@
   {{#if details.isGem}}
 
     <div class="sc-sockets-gem-details-container" data-sc-sockets="gem-details-container">
-      <div class="sc-sockets-gem-details-disclaimer-icon"
-           data-tooltip="{{ localize 'SCSockets.GemDetails.Disclaimer' }}"
-           aria-label="{{ localize 'SCSockets.GemDetails.Disclaimer' }}">
-        <i class="fa-solid fa-circle-info"></i>
-      </div>
-
         <div class="form-group split-group sc-sockets-gem-critical-row">
           <fieldset class="form-group sc-sockets-gem-crit-threshold">
             <legend class="form-header">
               {{ localize "SCSockets.GemDetails.CritThreshold.Label" }}
               {{#if details.critThreshold.hint}}
-                <i class="fa-solid fa-circle-info" data-tooltip="{{details.critThreshold.hint}}"></i>
+                <i class="fa-solid fa-circle-info" data-tooltip="{{details.critThreshold.hint}}" aria-label="{{details.critThreshold.hint}}"></i>
               {{/if}}
             </legend>
             <div class="form-fields">
@@ -31,7 +25,7 @@
             <legend class="form-header">
               {{ localize "SCSockets.GemDetails.CritMultiplier.Label" }}
               {{#if details.critMultiplier.hint}}
-                <i class="fa-solid fa-circle-info" data-tooltip="{{details.critMultiplier.hint}}"></i>
+                <i class="fa-solid fa-circle-info" data-tooltip="{{details.critMultiplier.hint}}" aria-label="{{details.critMultiplier.hint}}"></i>
               {{/if}}
             </legend>
             <div class="form-fields">
@@ -45,7 +39,7 @@
             <legend class="form-header">
               {{ localize "SCSockets.GemDetails.AttackBonus.Label" }}
               {{#if details.attackBonus.hint}}
-                <i class="fa-solid fa-circle-info" data-tooltip="{{details.attackBonus.hint}}"></i>
+                <i class="fa-solid fa-circle-info" data-tooltip="{{details.attackBonus.hint}}" aria-label="{{details.attackBonus.hint}}"></i>
               {{/if}}
             </legend>
             <div class="form-fields">
@@ -103,13 +97,25 @@
           </label>
         </fieldset>
 
+        <fieldset class="form-group sc-sockets-gem-tags" data-sc-sockets="gem-tags">
+          <legend class="form-header">
+            {{ localize "SCSockets.GemDetails.Tags.Label" }}
+            <i class="fa-solid fa-circle-info" data-tooltip="{{details.tags.tooltip}}" aria-label="{{details.tags.tooltip}}"></i>
+          </legend>
+          <string-tags name="{{details.tags.name}}" value="{{details.tags.value}}"></string-tags>
+        </fieldset>
+
         <fieldset class="form-group sc-sockets-gem-details sc-sockets-gem-extra-damage"
                   data-sc-sockets="gem-details"
                   data-default-number="{{details.damage.defaults.number}}"
                   data-default-die="{{details.damage.defaults.die}}"
                   data-default-bonus="{{details.damage.defaults.bonus}}">
-          <legend class="form-header">{{ localize "SCSockets.GemDetails.ExtraDamage.Label" }}</legend>
-          <p class="hint">{{ localize "SCSockets.GemDetails.ExtraDamage.Hint" }}</p>
+          <legend class="form-header">
+            {{ localize "SCSockets.GemDetails.ExtraDamage.Label" }}
+            <i class="fa-solid fa-circle-info"
+               data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.Hint' }}"
+               aria-label="{{ localize 'SCSockets.GemDetails.ExtraDamage.Hint' }}"></i>
+          </legend>
 
           <div class="sc-sockets-gem-damage" data-sc-sockets="gem-damage">
             <div class="sc-sockets-gem-damage-rows">
@@ -137,9 +143,10 @@
                   <div class="sc-sockets-gem-damage-row-top sc-sockets-gem-damage-row-header split-group {{#if entry.custom.enabled}}is-custom{{/if}}">
                     <div class="form-group label-top sc-sockets-gem-damage-formula-toggle-field">
                       <label>
-                        {{ localize "DND5E.Formula" }}
-                        <i class="fa-solid fa-circle-info"
-                           data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.FormulaHint' }}"></i>
+                          {{ localize "DND5E.Formula" }}
+                          <i class="fa-solid fa-circle-info"
+                             data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.FormulaHint' }}"
+                             aria-label="{{ localize 'SCSockets.GemDetails.ExtraDamage.FormulaHint' }}"></i>
                       </label>
                       <div class="form-fields">
                         <label class="checkbox">
@@ -209,7 +216,8 @@
                       <label>
                         {{ localize "SCSockets.GemDetails.ExtraDamage.Type" }}
                         <i class="fa-solid fa-circle-info"
-                           data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.TypeHint' }}"></i>
+                           data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.TypeHint' }}"
+                           aria-label="{{ localize 'SCSockets.GemDetails.ExtraDamage.TypeHint' }}"></i>
                       </label>
                       <div class="form-fields">
                         <multi-select name="{{../details.damage.namePrefix}}.{{i}}.types">
@@ -239,7 +247,8 @@
                       <label>
                         {{ localize "SCSockets.GemDetails.ExtraDamage.Fields.Activity" }}
                         <i class="fa-solid fa-circle-info"
-                           data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.ActivityHint' }}"></i>
+                           data-tooltip="{{ localize 'SCSockets.GemDetails.ExtraDamage.ActivityHint' }}"
+                           aria-label="{{ localize 'SCSockets.GemDetails.ExtraDamage.ActivityHint' }}"></i>
                       </label>
                       <div class="form-fields">
                         <select name="{{../details.damage.namePrefix}}.{{i}}.activity">

@@ -245,11 +245,11 @@ export class SocketSlotConfigApp extends BaseApplication {
         ),
         conditionHint: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Hint",
-          "Use JavaScript. Available variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone."
+          "Use JavaScript. Gem tags are available through gemTags and hasGemTag(tag). Other variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone."
         ),
         conditionPlaceholder: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Placeholder",
-          "Example: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';"
+          "Example: return hasGemTag('poison');"
         ),
         conditionWiki: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Wiki",

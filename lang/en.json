@@ -45,7 +45,6 @@
       "SelectLabel": "Additional Details",
       "Hint": "Choose how this gem should be categorized.",
       "TypeFieldset": "Details Type",
-      "Disclaimer": "Use the fields below to adjust attacks and damage made with the item that holds this gem (including spells). Active Effects applied to the actor affect all eligible attacks globally. For armor and shields, use the gem's standard Active Effects on the item.",
       "Options": {
         "None": "None",
         "Weapons": "Weapons",
@@ -53,7 +52,7 @@
       },
       "ExtraDamage": {
         "Label": "Extra Damage",
-        "Hint": "Add one or more extra damage entries applied when this gem is socketed into weapons or spells.",
+        "Hint": "Add one or more extra damage entries to rolls made with the item holding this gem, including weapons and spells. These fields are scoped to the host item; actor-level Active Effects remain global. For armor and shields, configure the gem's standard Active Effects on the item instead.",
         "Damage": "Damage",
         "Type": "Type",
         "FormulaHint": "Enable this to enter a roll formula instead of manually choosing number, die, and bonus.",
@@ -90,15 +89,15 @@
       },
       "CritThreshold": {
         "Label": "Critical Threshold",
-        "Hint": "Lowest d20 result that counts as a critical hit for attack rolls with this gem socketed. If multiple gems adjust crit, the lowest value is used. Leave blank to use the default value."
+        "Hint": "Lowest d20 result that counts as a critical hit for attack rolls made with the item holding this gem, including spell attacks. If multiple socketed gems adjust it, the lowest value is used. Unlike an actor-level Active Effect, this applies only to the host item. Leave blank to use the default value."
       },
       "CritMultiplier": {
         "Label": "Critical Multiplier",
-        "Hint": "Multiply critical damage by this value when this gem is socketed. If multiple gems set this, the highest value is used. Leave blank to keep the default multiplier."
+        "Hint": "Multiplies critical damage rolled by the item holding this gem, including spells. If multiple socketed gems set it, the highest value is used. Unlike an actor-level Active Effect, this applies only to the host item. Leave blank to keep the default multiplier."
       },
       "AttackBonus": {
         "Label": "Attack Bonus",
-        "Hint": "Flat bonus added to attack rolls when this gem is socketed. Bonuses from multiple gems stack. Leave blank for none."
+        "Hint": "Flat bonus added to attack rolls made with the item holding this gem, including spell attacks. Bonuses from multiple socketed gems stack. Unlike an actor-level Active Effect, this applies only to the host item. Leave blank for none."
       },
       "Resource": {
         "Label": "Socketed Resource",
@@ -109,6 +108,10 @@
         "Value": "Current",
         "DestroyOnEmpty": "Destroy when out of charges",
         "DestroyOnEmptyHint": "When a consumption drains this gem to zero charges, the gem is destroyed and removed from its socket."
+      },
+      "Tags": {
+        "Label": "Gem Tags",
+        "Tooltip": "Add stable identifiers for this gem. Tags are converted to lowercase; spaces and accents are normalized. Socket conditions can check them with gemTags or hasGemTag(tag). Example: return hasGemTag(\"poison\");"
       }
     },
     "GemFormula": {
@@ -150,8 +153,8 @@
       },
       "Condition": {
         "Label": "Slot condition",
-        "Hint": "Use JavaScript. Available variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
-        "Placeholder": "Example: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';",
+        "Hint": "Use JavaScript. Gem tags are available through gemTags and hasGemTag(tag). Other variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
+        "Placeholder": "Example: return hasGemTag('poison');",
         "Wiki": "Open wiki"
       },
       "Description": {

@@ -1,6 +1,7 @@
 import { Constants } from "../../core/Constants.js";
 import { GemCriteria } from "./GemCriteria.js";
 import { GemResourceService } from "./GemResourceService.js";
+import { GemTagService } from "./GemTagService.js";
 
 export class GemDetailsBuilder {
   static #dieOptionsCache = null;
@@ -31,6 +32,7 @@ export class GemDetailsBuilder {
     const critMultiplier = this.#buildCritMultiplierContext(item, { include: showWeaponDetails });
     const attackBonus = this.#buildAttackBonusContext(item, { include: showWeaponDetails });
     const resource = this.#buildResourceContext(item);
+    const tags = this.#buildTagsContext(item);
     const canEdit = Boolean(
       isGem && (
         (editable ?? true) ||
@@ -59,7 +61,8 @@ export class GemDetailsBuilder {
       critThreshold,
       critMultiplier,
       attackBonus,
-      resource
+      resource,
+      tags
     };
 
     if (part) {
@@ -335,6 +338,19 @@ export class GemDetailsBuilder {
     };
   }
 
+  static #buildTagsContext(item) {
+    const entries = GemTagService.getTags(item);
+    return {
+      entries,
+      value: entries.join(","),
+      name: `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_TAGS}`,
+      tooltip: Constants.localize(
+        "SCSockets.GemDetails.Tags.Tooltip",
+        "Add stable identifiers for this gem. Tags are converted to lowercase; spaces and accents are normalized. Socket conditions can check them with gemTags or hasGemTag(tag). Example: return hasGemTag(\"poison\");"
+      )
+    };
+  }
+
   static #buildCritThresholdContext(item, { include = false } = {}) {
     const stored = include ? GemDetailsBuilder.#getStoredCritThreshold(item) : null;
     const value = GemDetailsBuilder.#normalizeCritThreshold(stored);
@@ -344,7 +360,7 @@ export class GemDetailsBuilder {
       label: Constants.localize("SCSockets.GemDetails.CritThreshold.Label", "Critical Threshold"),
       hint: Constants.localize(
         "SCSockets.GemDetails.CritThreshold.Hint",
-        "Lowest d20 result that counts as a critical hit for this gem. If multiple gems adjust this, the lowest value is used. Leave blank for no change."
+        "Lowest d20 result that counts as a critical hit for attack rolls made with the item holding this gem, including spell attacks. If multiple socketed gems adjust it, the lowest value is used. Unlike an actor-level Active Effect, this applies only to the host item. Leave blank to use the default value."
       )
     };
   }
@@ -375,7 +391,7 @@ export class GemDetailsBuilder {
       label: Constants.localize("SCSockets.GemDetails.CritMultiplier.Label", "Critical Multiplier"),
       hint: Constants.localize(
         "SCSockets.GemDetails.CritMultiplier.Hint",
-        "Multiply critical damage by this value when this gem is socketed. If multiple gems set this, the highest value is used. Leave blank to use the normal multiplier."
+        "Multiplies critical damage rolled by the item holding this gem, including spells. If multiple socketed gems set it, the highest value is used. Unlike an actor-level Active Effect, this applies only to the host item. Leave blank to keep the default multiplier."
       )
     };
   }
@@ -406,7 +422,7 @@ export class GemDetailsBuilder {
       label: Constants.localize("SCSockets.GemDetails.AttackBonus.Label", "Attack Bonus"),
       hint: Constants.localize(
         "SCSockets.GemDetails.AttackBonus.Hint",
-        "Flat bonus added to attack rolls when this gem is socketed. Bonuses from multiple gems stack. Leave blank for none."
+        "Flat bonus added to attack rolls made with the item holding this gem, including spell attacks. Bonuses from multiple socketed gems stack. Unlike an actor-level Active Effect, this applies only to the host item. Leave blank for none."
       )
     };
   }

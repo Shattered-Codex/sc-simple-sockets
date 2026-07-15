@@ -5,7 +5,7 @@ import { Constants } from "../scripts/core/Constants.js";
 import { SocketSlotConfigService } from "../scripts/core/services/SocketSlotConfigService.js";
 import { GemResourceService } from "../scripts/domain/gems/GemResourceService.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
-import { createTestActor } from "./support/testDocuments.js";
+import { createTestActor, createTestItem } from "./support/testDocuments.js";
 
 function makeSlot(name, resource, { img = "icons/gem.webp", slotConfig = {}, slotIndex = 0 } = {}) {
   const source = {
@@ -134,5 +134,54 @@ describe("SocketSlotConfigService", () => {
 
     assert.equal(updated, true);
     assert.equal(calls, 0);
+  });
+
+  test("exposes normalized gem tags to slot conditions", async () => {
+    const hostItem = createTestItem({
+      name: "Sword",
+      type: "weapon"
+    });
+    const gemItem = createTestItem({
+      name: "Venom Shard",
+      type: "loot",
+      flags: {
+        [Constants.MODULE_ID]: {
+          [Constants.FLAG_GEM_TAGS]: ["poison", "Ácido Arcano"]
+        }
+      }
+    });
+    const slot = {
+      slotConfig: {
+        condition: "return gemTags.includes('poison') && hasGemTag('acido arcano');"
+      }
+    };
+
+    const result = await SocketSlotConfigService.evaluateCondition({
+      hostItem,
+      slot,
+      slotIndex: 0,
+      gemItem
+    });
+
+    assert.deepEqual(result, { allowed: true, error: null });
+  });
+
+  test("hasGemTag rejects a gem without the requested identifier", async () => {
+    const result = await SocketSlotConfigService.evaluateCondition({
+      hostItem: createTestItem({ type: "weapon" }),
+      slot: { slotConfig: { condition: "hasGemTag('radiant')" } },
+      slotIndex: 0,
+      gemItem: createTestItem({
+        type: "loot",
+        flags: {
+          [Constants.MODULE_ID]: {
+            [Constants.FLAG_GEM_TAGS]: ["poison"]
+          }
+        }
+      })
+    });
+
+    assert.equal(result.allowed, false);
+    assert.equal(result.error, null);
   });
 });
