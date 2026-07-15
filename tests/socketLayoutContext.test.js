@@ -90,4 +90,32 @@ describe("buildSocketLayoutContext", () => {
       }
     ]);
   });
+
+  test("keeps slot tint behind gems in list and grid layouts", async () => {
+    const coloredEmptySlot = {
+      name: "Empty Socket",
+      slotConfig: { color: "#C44D24" }
+    };
+    const coloredFilledSlot = makeSlot("Ruby", null, {
+      slotConfig: { color: "#C44D24" }
+    });
+
+    for (const layout of [
+      ModuleSettings.SOCKET_TAB_LAYOUT_LIST,
+      ModuleSettings.SOCKET_TAB_LAYOUT_GRID
+    ]) {
+      await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_TAB_LAYOUT, layout);
+
+      const context = buildSocketLayoutContext(
+        { uuid: "Item.test" },
+        { sockets: [coloredEmptySlot, coloredFilledSlot] }
+      );
+
+      assert.equal(context.sockets[0].hasSlotTint, true, `${layout}: empty socket keeps its tint`);
+      assert.equal(context.sockets[0].slotColor, "#C44D24");
+      assert.equal(context.sockets[1].hasSlotTint, true, `${layout}: filled socket keeps its tint`);
+      assert.equal(context.sockets[1].slotColor, "#C44D24");
+      assert.equal(context.sockets[1].slotMaskStyle, "--sc-sockets-slot-color:#C44D24;");
+    }
+  });
 });

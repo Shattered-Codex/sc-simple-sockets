@@ -61,9 +61,7 @@ export function buildSocketLayoutContext(item, {
         }
 
         const hasGem = Boolean(slot?.gem);
-        const tintColor = useSocketGridLayout
-          ? slotConfig.color
-          : (hasGem ? "" : slotConfig.color);
+        const tintColor = slotConfig.color;
         const slotMaskStyle = tintColor
           ? `--sc-sockets-slot-color:${tintColor};`
           : "";
