@@ -1,11 +1,14 @@
 import { Constants } from "../Constants.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
+import { SocketConsumptionHostService } from "../services/SocketConsumptionHostService.js";
 import {
   CONSUMPTION_TYPE_CHARGE,
   CONSUMPTION_TYPE_GEM,
+  SOCKET_CONSUMPTION_SCOPES,
   SOCKET_CONSUMPTION_SELECTOR_MODES,
   formatSocketTarget,
   getActivitySourceSlotIndex,
+  getSocketConsumptionScope,
   parseSocketTarget
 } from "../helpers/socketConsumptionConfig.js";
 
@@ -138,11 +141,25 @@ export class SocketConsumptionTargetUI {
     const escape = SocketConsumptionTargetUI.#escapeHtml;
     const valueMeta = SocketConsumptionTargetUI.#valueMeta(mode);
     const currentValue = SocketConsumptionTargetUI.#specValue(spec, mode);
+    const scope = spec
+      ? getSocketConsumptionScope(spec)
+      : (SocketConsumptionTargetUI.#isLocalOnlyMode(mode)
+        ? SOCKET_CONSUMPTION_SCOPES.ITEM
+        : SOCKET_CONSUMPTION_SCOPES.ACTOR_EQUIPPED);
 
     const modeOptions = modes.map((option) => {
       const label = Constants.localize(`SCSockets.Consumption.Mode.${option}`, option);
       return `<option value="${escape(option)}"${option === mode ? " selected" : ""}>${escape(label)}</option>`;
     }).join("");
+    const scopeOptions = Object.values(SOCKET_CONSUMPTION_SCOPES).map((option) => {
+      const label = Constants.localize(`SCSockets.Consumption.Scope.${option}`, option);
+      return `<option value="${escape(option)}"${option === scope ? " selected" : ""}>${escape(label)}</option>`;
+    }).join("");
+    const localOnly = SocketConsumptionTargetUI.#isLocalOnlyMode(mode);
+    const filterHint = Constants.localize(
+      "SCSockets.Consumption.Filter.Hint",
+      "Optional. Only host items for which this condition returns true contribute to the pool."
+    );
 
     return `
       <div class="form-group label-top">
@@ -156,12 +173,30 @@ export class SocketConsumptionTargetUI {
           <select data-sc-sockets-field="mode"${disabled}>${modeOptions}</select>
         </div>
       </div>
+      <div class="form-group label-top sc-sockets-consumption-scope${localOnly ? " hidden" : ""}">
+        <label>${escape(Constants.localize("SCSockets.Consumption.ScopeLabel", "Pool scope"))}</label>
+        <div class="form-fields">
+          <select data-sc-sockets-field="scope"${disabled}>${scopeOptions}</select>
+        </div>
+      </div>
       <div class="form-group label-top sc-sockets-consumption-target-value${valueMeta.hidden ? " hidden" : ""}">
         <label>${escape(valueMeta.label)}</label>
         <div class="form-fields">
           <input type="${valueMeta.inputType}" data-sc-sockets-field="value"
                  value="${escape(currentValue)}" placeholder="${escape(valueMeta.placeholder)}"
                  ${valueMeta.inputType === "number" ? 'min="0" step="1"' : ""}${disabled}>
+        </div>
+      </div>
+      <div class="form-group label-top sc-sockets-consumption-filter">
+        <label class="sc-sockets-consumption-filter-label">
+          <span>${escape(Constants.localize("SCSockets.Consumption.Filter.Label", "Host item filter"))}</span>
+          <i class="fa-solid fa-circle-info"
+             data-tooltip="${escape(filterHint)}"
+             aria-label="${escape(filterHint)}"></i>
+        </label>
+        <div class="form-fields">
+          <textarea rows="3" data-sc-sockets-field="filter"
+                    placeholder="${escape(Constants.localize("SCSockets.Consumption.Filter.Placeholder", "Optional JavaScript condition"))}"${disabled}>${escape(spec?.filter ?? "")}</textarea>
         </div>
       </div>
       <input type="hidden" name="consumption.targets.${index}.target" value="${escape(stored)}">
@@ -240,6 +275,19 @@ export class SocketConsumptionTargetUI {
         return;
       }
 
+      if (field === "filter" && event.target instanceof HTMLTextAreaElement) {
+        const validation = SocketConsumptionHostService.validateFilter(event.target.value);
+        const message = validation.valid ? "" : Constants.localize(
+          "SCSockets.Consumption.Filter.Invalid",
+          "The host item filter contains invalid JavaScript."
+        );
+        event.target.setCustomValidity(message);
+        if (!validation.valid) {
+          event.target.reportValidity();
+          return;
+        }
+      }
+
       SocketConsumptionTargetUI.#syncTarget(group);
     });
   }
@@ -248,6 +296,8 @@ export class SocketConsumptionTargetUI {
     const modeSelect = group.querySelector('[data-sc-sockets-field="mode"]');
     const valueGroup = group.querySelector(".sc-sockets-consumption-target-value");
     const valueInput = group.querySelector('[data-sc-sockets-field="value"]');
+    const scopeGroup = group.querySelector(".sc-sockets-consumption-scope");
+    const scopeSelect = group.querySelector('[data-sc-sockets-field="scope"]');
     if (!(modeSelect instanceof HTMLSelectElement) || !(valueGroup instanceof HTMLElement)) {
       return;
     }
@@ -263,11 +313,18 @@ export class SocketConsumptionTargetUI {
       valueInput.placeholder = meta.placeholder;
       valueInput.value = "";
     }
+    const localOnly = SocketConsumptionTargetUI.#isLocalOnlyMode(modeSelect.value);
+    scopeGroup?.classList.toggle("hidden", localOnly);
+    if (localOnly && scopeSelect instanceof HTMLSelectElement) {
+      scopeSelect.value = SOCKET_CONSUMPTION_SCOPES.ITEM;
+    }
   }
 
   static #syncTarget(group, { onlyWhenComplete = false } = {}) {
     const modeSelect = group.querySelector('[data-sc-sockets-field="mode"]');
     const valueInput = group.querySelector('[data-sc-sockets-field="value"]');
+    const scopeSelect = group.querySelector('[data-sc-sockets-field="scope"]');
+    const filterInput = group.querySelector('[data-sc-sockets-field="filter"]');
     const hidden = group.querySelector('input[type="hidden"][name^="consumption.targets."]');
     if (!(modeSelect instanceof HTMLSelectElement) || !(hidden instanceof HTMLInputElement)) {
       return;
@@ -275,7 +332,11 @@ export class SocketConsumptionTargetUI {
 
     const mode = modeSelect.value;
     const rawValue = valueInput instanceof HTMLInputElement ? valueInput.value.trim() : "";
-    const composed = SocketConsumptionTargetUI.#composeTarget(mode, rawValue);
+    const scope = scopeSelect instanceof HTMLSelectElement
+      ? scopeSelect.value
+      : SOCKET_CONSUMPTION_SCOPES.ITEM;
+    const filter = filterInput instanceof HTMLTextAreaElement ? filterInput.value.trim() : "";
+    const composed = SocketConsumptionTargetUI.#composeTarget(mode, rawValue, scope, filter);
     if (onlyWhenComplete && !composed.length) {
       hidden.value = "";
       return;
@@ -285,27 +346,33 @@ export class SocketConsumptionTargetUI {
     hidden.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  static #composeTarget(mode, rawValue) {
+  static #composeTarget(mode, rawValue, scope, filter) {
+    const shared = { mode, scope, filter };
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT
       || mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM) {
-      return formatSocketTarget({ mode });
+      return formatSocketTarget(shared);
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY) {
-      return rawValue.length ? formatSocketTarget({ mode, resourceKey: rawValue }) : "";
+      return rawValue.length ? formatSocketTarget({ ...shared, resourceKey: rawValue }) : "";
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
-      return rawValue.length ? formatSocketTarget({ mode, gemName: rawValue }) : "";
+      return rawValue.length ? formatSocketTarget({ ...shared, gemName: rawValue }) : "";
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
-      return rawValue.length ? formatSocketTarget({ mode, gemNamePattern: rawValue }) : "";
+      return rawValue.length ? formatSocketTarget({ ...shared, gemNamePattern: rawValue }) : "";
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT) {
       const displayNumber = Number(rawValue);
       return Number.isInteger(displayNumber) && displayNumber >= 1
-        ? formatSocketTarget({ mode, slotIndex: displayNumber - 1 })
+        ? formatSocketTarget({ ...shared, slotIndex: displayNumber - 1 })
         : "";
     }
     return "";
+  }
+
+  static #isLocalOnlyMode(mode) {
+    return mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT
+      || mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT;
   }
 
   static #escapeHtml(value) {

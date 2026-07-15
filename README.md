@@ -63,6 +63,8 @@ Once a gem is inserted, the module can:
 - Supports **drag and drop** gem socketing.
 - Automatically transfers **Active Effects** from the gem to the host item.
 - Automatically mirrors **Activities** from the gem to the host item.
+- Lets activities consume gem charges from the current item or from socketed items across the character.
+- Supports optional host-item filters so resources can stay isolated by set, category, or custom rule.
 - Lets each gem restrict which items it can be used on.
 - Lets each socket have its own rule, description, and color.
 - Adds **Socket Descriptions** to the item sheet, with a button to send them to chat.
@@ -480,6 +482,49 @@ Right now it can include things such as:
 
 In simple terms: this is where you place the more advanced combat details for the gem.
 
+### Socketed charges and character pools
+
+Each gem can provide a named resource such as `energy`, `battery`, or `magic`.
+The current and maximum charges remain stored on that gem. The module does not
+create a second charge balance on the character.
+
+Activities can use the **Socketed Charges** consumption type and choose where the
+resource may come from:
+
+| Pool scope | What contributes |
+| --- | --- |
+| **Sockets on this item** | Socketed gems on the item that owns the activity |
+| **Equipped sockets on this character** | Socketed gems on equipped items belonging to the same character |
+| **All sockets on this character** | Socketed gems on every item belonging to the same character |
+
+Slot-specific consumption and **Source gem** consumption always stay on the
+activity's own item. For character pools, charges are consumed in a stable order:
+the activity's item first when eligible, followed by the character's other items
+and each item's sockets in order.
+
+Removing a gem removes its charges from the available pool. If the gem is returned
+to inventory, it keeps its remaining charges.
+
+#### Restricting a pool with a host item filter
+
+An activity can optionally use a JavaScript **Host item filter**. Only socketed
+items for which the filter returns `true` contribute charges. Available variables
+include `item`, `hostItem`, `sourceItem`, `actor`, `activity`, `user`, `game`,
+`getProperty`, and `hasProperty`.
+
+For example, an activity granted by **SC - Setforge** can consume charges only
+from equipped items that belong to the same set. Choose **Equipped sockets on this
+character** and use:
+
+```js
+return getProperty(item, "flags.sc-setforge.setId")
+  === getProperty(sourceItem, "flags.sc-setforge.setId");
+```
+
+Here, `item` is a possible socket host and `sourceItem` is the item that owns the
+activity. If the filter has invalid code or throws an error, the consumption is
+blocked instead of drawing charges from an unintended item.
+
 ## Example Gem Setup
 
 | Field | Simple example |
@@ -657,13 +702,30 @@ You can call:
 
 - `getItemSlots(itemOrUuid)`
 - `getItemGems(itemOrUuid)`
+- `hasItemGemTag(itemOrUuid, tag)`
 - `removeGem(itemOrUuid, slotIndex, options)`
 - `removeGemKeepingItem(itemOrUuid, slotIndex)`
 
 In simple terms:
 
 - one function lists all sockets on an item
-- the other lists only the gems currently socketed in that item
+- another lists only the gems currently socketed in that item, including their normalized `tags`
+- `hasItemGemTag` checks whether at least one socketed gem has a specific tag
+
+Example for **SC - Conditional Activities**:
+
+```js
+const sockets = game.modules.get("sc-simple-sockets")?.api?.sockets;
+
+if (!sockets || item?.system?.equipped !== true || item?.system?.attuned !== true) {
+  return false;
+}
+
+return sockets.hasItemGemTag(item, "dynamo-battery");
+```
+
+The helper normalizes the requested tag in the same way as the gem sheet. For
+example, `Dynamo Battery` and `dynamo-battery` resolve to the same identifier.
 
 ### Macro functions
 

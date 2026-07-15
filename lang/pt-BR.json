@@ -781,6 +781,19 @@
       "FromLabel": "Origem",
       "FromHintCharge": "O recovery do item não restaura automaticamente as cargas socketadas.",
       "FromHintGem": "O recovery do item não restaura automaticamente gemas socketadas consumidas.",
+      "ScopeLabel": "Escopo do pool",
+      "Scope": {
+        "item": "Sockets deste item",
+        "actorEquipped": "Sockets equipados deste personagem",
+        "actorAll": "Todos os sockets deste personagem"
+      },
+      "Filter": {
+        "Label": "Filtro dos itens hospedeiros",
+        "Hint": "Condição JavaScript opcional. Somente itens socketados para os quais ela retornar true contribuem para este pool. Variáveis disponíveis: item, hostItem, sourceItem, actor, activity, user, game, getProperty e hasProperty.",
+        "Placeholder": "Exemplo: return getProperty(item, 'flags.sc-setforge.setId') === getProperty(sourceItem, 'flags.sc-setforge.setId');",
+        "Invalid": "O filtro dos itens hospedeiros contém JavaScript inválido.",
+        "Error": "Não foi possível avaliar o filtro de itens do consumo socketado: {error}"
+      },
       "Mode": {
         "sourceSlot": "Gema de origem (desta atividade)",
         "any": "Qualquer gema com o recurso",

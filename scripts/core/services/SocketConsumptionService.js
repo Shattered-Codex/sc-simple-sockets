@@ -3,6 +3,7 @@ import { SocketStore } from "../SocketStore.js";
 import { SocketService } from "./SocketService.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { SocketConsumptionHostService } from "./SocketConsumptionHostService.js";
 import {
   CONSUMPTION_TYPE_CHARGE,
   CONSUMPTION_TYPE_GEM,
@@ -73,9 +74,12 @@ export class SocketConsumptionService {
     const spec = SocketConsumptionService.#requireSpec(target);
     const cost = (await target.resolveCost({ config, rolls: updates.rolls })).total;
 
-    const slots = SocketConsumptionService.#currentSlots(target.item, updates);
-    const plan = GemResourceService.planChargeConsumption(slots, spec, cost, {
-      sourceSlotIndex: getActivitySourceSlotIndex(target.activity)
+    const combined = SocketConsumptionService.#combinedHosts(target, spec, updates);
+    if (!combined.ok) {
+      throw SocketConsumptionService.#consumptionError(combined.message);
+    }
+    const plan = GemResourceService.planChargeConsumption(combined.slots, spec, cost, {
+      sourceSlotIndex: combined.sourceSlotIndex
     });
     if (!plan.ok) {
       throw SocketConsumptionService.#consumptionError(plan.message);
@@ -84,20 +88,21 @@ export class SocketConsumptionService {
       return;
     }
 
-    SocketConsumptionService.#writeSlotsUpdate(target.item, updates, plan.updatedSlots);
-    SocketConsumptionService.#queueEmptiedGems(target.activity, plan);
+    SocketConsumptionService.#writeCombinedSlotsUpdates(updates, combined, plan);
+    SocketConsumptionService.#queueEmptiedGems(target.activity, plan, combined);
   }
 
   /**
    * Gems flagged with destroyOnEmpty are destroyed after the use when a charge
    * consumption drains them to zero.
    */
-  static #queueEmptiedGems(activity, plan) {
+  static #queueEmptiedGems(activity, plan, combined) {
     const emptied = [];
     for (const deduction of plan.deductions) {
       const resource = GemResourceService.getSlotResource(plan.updatedSlots[deduction.slotIndex]);
       if (resource?.destroyOnEmpty && resource.value === 0) {
-        emptied.push(deduction.slotIndex);
+        const location = SocketConsumptionService.#locationFor(combined, deduction.slotIndex);
+        if (location) emptied.push(location);
       }
     }
     if (!emptied.length) {
@@ -106,10 +111,10 @@ export class SocketConsumptionService {
 
     const key = SocketConsumptionService.#keyFor(activity);
     const pending = SocketConsumptionService.#pendingGemRemovals.get(key)
-      ?? { slotIndexes: [], createdAt: Date.now() };
-    for (const slotIndex of emptied) {
-      if (!pending.slotIndexes.includes(slotIndex)) {
-        pending.slotIndexes.push(slotIndex);
+      ?? { targets: [], createdAt: Date.now() };
+    for (const target of emptied) {
+      if (!SocketConsumptionService.#hasPendingTarget(pending.targets, target)) {
+        pending.targets.push(target);
       }
     }
     pending.createdAt = Date.now();
@@ -127,12 +132,18 @@ export class SocketConsumptionService {
 
     const key = SocketConsumptionService.#keyFor(target.activity);
     const pending = SocketConsumptionService.#pendingGemRemovals.get(key)
-      ?? { slotIndexes: [], createdAt: Date.now() };
+      ?? { targets: [], createdAt: Date.now() };
 
-    const slots = SocketConsumptionService.#currentSlots(target.item, updates);
-    const plan = GemResourceService.planGemConsumption(slots, spec, cost, {
-      sourceSlotIndex: getActivitySourceSlotIndex(target.activity),
-      excluded: new Set(pending.slotIndexes)
+    const combined = SocketConsumptionService.#combinedHosts(target, spec, updates);
+    if (!combined.ok) {
+      throw SocketConsumptionService.#consumptionError(combined.message);
+    }
+    const excluded = new Set(combined.locations
+      .map((location, index) => SocketConsumptionService.#hasPendingTarget(pending.targets, location) ? index : null)
+      .filter(Number.isInteger));
+    const plan = GemResourceService.planGemConsumption(combined.slots, spec, cost, {
+      sourceSlotIndex: combined.sourceSlotIndex,
+      excluded
     });
     if (!plan.ok) {
       throw SocketConsumptionService.#consumptionError(plan.message);
@@ -141,7 +152,12 @@ export class SocketConsumptionService {
       return;
     }
 
-    pending.slotIndexes.push(...plan.removals);
+    for (const index of plan.removals) {
+      const location = combined.locations[index];
+      if (location && !SocketConsumptionService.#hasPendingTarget(pending.targets, location)) {
+        pending.targets.push(location);
+      }
+    }
     pending.createdAt = Date.now();
     SocketConsumptionService.#pendingGemRemovals.set(key, pending);
   }
@@ -205,15 +221,15 @@ export class SocketConsumptionService {
     const key = SocketConsumptionService.#keyFor(activity);
     const pending = SocketConsumptionService.#pendingGemRemovals.get(key);
     SocketConsumptionService.#pendingGemRemovals.delete(key);
-    if (!pending?.slotIndexes?.length) {
+    if (!pending?.targets?.length) {
       return;
     }
 
-    void SocketConsumptionService.#consumeGems(activity?.item, pending.slotIndexes);
+    void SocketConsumptionService.#consumeGems(pending.targets);
   };
 
-  static async #consumeGems(item, slotIndexes) {
-    for (const slotIndex of slotIndexes) {
+  static async #consumeGems(targets) {
+    for (const { item, slotIndex } of targets) {
       try {
         await SocketService.removeGem(item, slotIndex, {
           mode: SocketService.REMOVE_GEM_MODE_DELETE,
@@ -252,6 +268,58 @@ export class SocketConsumptionService {
     return existing ? existing[flagPath] : SocketStore.peekSlots(item);
   }
 
+  static #combinedHosts(target, spec, updates = null) {
+    const resolved = SocketConsumptionHostService.resolve(target, spec, {
+      readSlots: (item) => updates
+        ? SocketConsumptionService.#currentSlots(item, updates)
+        : SocketStore.peekSlots(item)
+    });
+    if (!resolved.ok) return resolved;
+
+    const ranges = [];
+    const locations = [];
+    const slots = [];
+    for (const host of resolved.hosts) {
+      const start = slots.length;
+      slots.push(...host.slots);
+      for (let slotIndex = 0; slotIndex < host.slots.length; slotIndex += 1) {
+        locations.push({ item: host.item, slotIndex });
+      }
+      ranges.push({ ...host, start, end: slots.length });
+    }
+
+    const sourceLocalIndex = getActivitySourceSlotIndex(target?.activity);
+    const sourceRange = ranges.find((range) => range.item === target?.item
+      || (range.item?.id && range.item.id === target?.item?.id));
+    const sourceSlotIndex = Number.isInteger(sourceLocalIndex) && sourceRange
+      ? sourceRange.start + sourceLocalIndex
+      : null;
+    return { ...resolved, ranges, locations, slots, sourceSlotIndex };
+  }
+
+  static #writeCombinedSlotsUpdates(updates, combined, plan) {
+    const affected = new Set(plan.deductions.map((deduction) => combined.locations[deduction.slotIndex]?.item));
+    for (const range of combined.ranges) {
+      if (!affected.has(range.item)) continue;
+      SocketConsumptionService.#writeSlotsUpdate(
+        range.item,
+        updates,
+        plan.updatedSlots.slice(range.start, range.end)
+      );
+    }
+  }
+
+  static #locationFor(combined, combinedSlotIndex) {
+    return combined.locations[combinedSlotIndex] ?? null;
+  }
+
+  static #hasPendingTarget(targets, candidate) {
+    return targets.some((entry) => (
+      (entry.item === candidate.item || entry.item?.id === candidate.item?.id)
+      && entry.slotIndex === candidate.slotIndex
+    ));
+  }
+
   static #writeSlotsUpdate(item, updates, updatedSlots) {
     const flagPath = SocketConsumptionService.#slotsFlagPath();
     if (!Array.isArray(updates.item)) {
@@ -270,8 +338,9 @@ export class SocketConsumptionService {
   }
 
   static #describeChargeTarget(target, spec) {
-    const slots = SocketStore.peekSlots(target.item);
-    const sourceSlotIndex = getActivitySourceSlotIndex(target.activity);
+    const combined = spec ? SocketConsumptionService.#combinedHosts(target, spec) : null;
+    const slots = combined?.ok ? combined.slots : [];
+    const sourceSlotIndex = combined?.ok ? combined.sourceSlotIndex : null;
     const plan = spec
       ? GemResourceService.planChargeConsumption(slots, spec, 0, { sourceSlotIndex })
       : null;
@@ -304,8 +373,9 @@ export class SocketConsumptionService {
   }
 
   static #describeGemTarget(target, spec) {
-    const slots = SocketStore.peekSlots(target.item);
-    const sourceSlotIndex = getActivitySourceSlotIndex(target.activity);
+    const combined = spec ? SocketConsumptionService.#combinedHosts(target, spec) : null;
+    const slots = combined?.ok ? combined.slots : [];
+    const sourceSlotIndex = combined?.ok ? combined.sourceSlotIndex : null;
     const indices = spec ? SocketConsumptionService.#candidateIndices(slots, spec, sourceSlotIndex) : [];
     const available = indices.filter((index) => GemResourceService.slotHasGem(slots[index])).length;
 

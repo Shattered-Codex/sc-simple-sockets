@@ -781,6 +781,19 @@
       "FromLabel": "From",
       "FromHintCharge": "Item recovery does not automatically restore socketed charges.",
       "FromHintGem": "Item recovery does not automatically restore consumed socketed gems.",
+      "ScopeLabel": "Pool scope",
+      "Scope": {
+        "item": "Sockets on this item",
+        "actorEquipped": "Equipped sockets on this character",
+        "actorAll": "All sockets on this character"
+      },
+      "Filter": {
+        "Label": "Host item filter",
+        "Hint": "Optional JavaScript condition. Only socketed host items for which it returns true contribute to this pool. Available variables: item, hostItem, sourceItem, actor, activity, user, game, getProperty, and hasProperty.",
+        "Placeholder": "Example: return getProperty(item, 'flags.sc-setforge.setId') === getProperty(sourceItem, 'flags.sc-setforge.setId');",
+        "Invalid": "The host item filter contains invalid JavaScript.",
+        "Error": "The socket consumption item filter could not be evaluated: {error}"
+      },
       "Mode": {
         "sourceSlot": "Source gem (this activity)",
         "any": "Any gem with resource",

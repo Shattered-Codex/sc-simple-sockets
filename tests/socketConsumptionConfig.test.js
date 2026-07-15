@@ -5,6 +5,7 @@ import { Constants } from "../scripts/core/Constants.js";
 import {
   formatSocketTarget,
   getActivitySourceSlotIndex,
+  getSocketConsumptionScope,
   parseSocketTarget
 } from "../scripts/core/helpers/socketConsumptionConfig.js";
 
@@ -38,6 +39,28 @@ describe("socketConsumptionConfig", () => {
       assert.equal(parseSocketTarget(""), null);
       assert.equal(parseSocketTarget(null), null);
       assert.equal(parseSocketTarget("bogus:thing"), null);
+    });
+
+    test("parses structured actor scope and host filter targets", () => {
+      const target = formatSocketTarget({
+        mode: "any",
+        resourceKey: "energy",
+        scope: "actorEquipped",
+        filter: "return item.flags?.setId === sourceItem.flags?.setId;"
+      });
+      assert.deepEqual(parseSocketTarget(target), {
+        mode: "any",
+        resourceKey: "energy",
+        scope: "actorEquipped",
+        filter: "return item.flags?.setId === sourceItem.flags?.setId;"
+      });
+    });
+  });
+
+  describe("getSocketConsumptionScope", () => {
+    test("defaults legacy targets and slot-specific selectors to the current item", () => {
+      assert.equal(getSocketConsumptionScope(parseSocketTarget("any:energy")), "item");
+      assert.equal(getSocketConsumptionScope({ mode: "slot", slotIndex: 0, scope: "actorAll" }), "item");
     });
   });
 

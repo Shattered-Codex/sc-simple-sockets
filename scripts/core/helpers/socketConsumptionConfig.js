@@ -17,6 +17,14 @@ export const SOCKET_CONSUMPTION_SELECTOR_MODES = Object.freeze({
   SLOT: "slot"
 });
 
+export const SOCKET_CONSUMPTION_SCOPES = Object.freeze({
+  ITEM: "item",
+  ACTOR_EQUIPPED: "actorEquipped",
+  ACTOR_ALL: "actorAll"
+});
+
+const STRUCTURED_TARGET_PREFIX = "v2:";
+
 /**
  * Grammar for the consumption target string:
  * - "sourceSlot"             consume from the gem that originated this activity.
@@ -34,6 +42,31 @@ export function parseSocketTarget(target) {
   if (!raw.length) {
     return null;
   }
+
+  if (raw.startsWith(STRUCTURED_TARGET_PREFIX)) {
+    try {
+      const payload = JSON.parse(raw.slice(STRUCTURED_TARGET_PREFIX.length));
+      const selector = parseLegacySocketTarget(formatLegacySocketTarget(payload));
+      const scope = Object.values(SOCKET_CONSUMPTION_SCOPES).includes(payload?.scope)
+        ? payload.scope
+        : SOCKET_CONSUMPTION_SCOPES.ITEM;
+      if (!selector) {
+        return null;
+      }
+      return {
+        ...selector,
+        scope,
+        filter: String(payload?.filter ?? "").trim()
+      };
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  return parseLegacySocketTarget(raw);
+}
+
+function parseLegacySocketTarget(raw) {
 
   if (raw === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT) {
     return { mode: SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT };
@@ -67,7 +100,42 @@ export function parseSocketTarget(target) {
   return null;
 }
 
-export function formatSocketTarget({ mode, resourceKey, slotIndex, gemName, gemNamePattern } = {}) {
+export function formatSocketTarget({
+  mode,
+  resourceKey,
+  slotIndex,
+  gemName,
+  gemNamePattern,
+  scope = SOCKET_CONSUMPTION_SCOPES.ITEM,
+  filter = ""
+} = {}) {
+  const legacy = formatLegacySocketTarget({ mode, resourceKey, slotIndex, gemName, gemNamePattern });
+  if (!legacy.length) {
+    return "";
+  }
+
+  const normalizedFilter = String(filter ?? "").trim();
+  const normalizedScope = Object.values(SOCKET_CONSUMPTION_SCOPES).includes(scope)
+    ? scope
+    : SOCKET_CONSUMPTION_SCOPES.ITEM;
+  if (normalizedScope === SOCKET_CONSUMPTION_SCOPES.ITEM && !normalizedFilter.length) {
+    return legacy;
+  }
+
+  return `${STRUCTURED_TARGET_PREFIX}${JSON.stringify({
+    mode,
+    ...(mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY ? { resourceKey: String(resourceKey ?? "").trim() } : {}),
+    ...(mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT ? { slotIndex: Number(slotIndex) } : {}),
+    ...(mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME ? { gemName: String(gemName ?? "").trim() } : {}),
+    ...(mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH
+      ? { gemNamePattern: String(gemNamePattern ?? "").trim() }
+      : {}),
+    scope: normalizedScope,
+    filter: normalizedFilter
+  })}`;
+}
+
+function formatLegacySocketTarget({ mode, resourceKey, slotIndex, gemName, gemNamePattern } = {}) {
   switch (mode) {
     case SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT:
     case SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM:
@@ -83,6 +151,16 @@ export function formatSocketTarget({ mode, resourceKey, slotIndex, gemName, gemN
     default:
       return "";
   }
+}
+
+export function getSocketConsumptionScope(spec) {
+  if (spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT
+    || spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT) {
+    return SOCKET_CONSUMPTION_SCOPES.ITEM;
+  }
+  return Object.values(SOCKET_CONSUMPTION_SCOPES).includes(spec?.scope)
+    ? spec.scope
+    : SOCKET_CONSUMPTION_SCOPES.ITEM;
 }
 
 /**
