@@ -30,6 +30,18 @@ It is built to keep the workflow simple during play.
 
 ---
 
+## New in This Update
+
+Gems can now do more than provide passive bonuses:
+
+- A gem can carry its own limited resource, such as energy, ammunition, or magic charges.
+- Actions can spend charges from one gem, several gems on the same item, or compatible socketed items across the character.
+- Charges remain with the gem when it is removed and returned to inventory.
+- Gem tags make it easier to create sockets that accept a category such as `fire`, `poison`, or `healing`.
+- The optional **SC More Activities** integration can insert gems, extract gems, recharge one gem, or recharge a shared pool.
+
+Existing gems continue to work without configuring resources or tags. These new fields are optional.
+
 ## Preview Image
 
 ![Module overview image](https://i.imgur.com/xdOJCip.png)
@@ -505,6 +517,33 @@ and each item's sockets in order.
 Removing a gem removes its charges from the available pool. If the gem is returned
 to inventory, it keeps its remaining charges.
 
+#### Give a gem its own charges
+
+1. Open the gem item.
+2. Open its **+Details** tab.
+3. Under **Socketed Resource**, enter a short resource name such as `battery`.
+4. Set the **Current** and **Maximum** charges.
+5. Optionally enable **Destroy when out of charges** if the gem should disappear when its last charge is spent.
+
+The resource is active only while the gem is inside a socket. The host item's
+**Sockets** tab shows the resource and its remaining charges.
+
+#### Let an activity spend socketed charges
+
+In the activity's consumption settings, choose **Socketed Charges** and select
+where the charges should come from. The simplest options are:
+
+| Choose | Result |
+| --- | --- |
+| **Source gem (this activity)** | Spends charges from the gem that provided the activity |
+| **Any gem with resource** | Spends the named resource from compatible socketed gems |
+| **Specific slot** | Spends charges only from one socket position |
+| **Gem by name** | Spends charges from gems with that exact name |
+| **Gem name matches** | Finds gems by a simple name pattern, such as `Fire*` |
+
+You can also choose whether the activity searches only its own item, equipped
+socketed items on the character, or all socketed items on the character.
+
 #### Restricting a pool with a host item filter
 
 An activity can optionally use a JavaScript **Host item filter**. Only socketed
@@ -617,6 +656,24 @@ return getProperty(gemItem, "flags.world.element") === "fire";
 ```
 
 If the rule is invalid or cannot be read, the module blocks the gem and shows a warning.
+
+### Gem tags for simpler socket rules
+
+Tags let you group gems without depending on their exact names. For example,
+several differently named gems can all use the tag `fire`.
+
+1. Open a gem and go to its **+Details** tab.
+2. Add one or more values under **Gem Tags**.
+3. Open a socket's settings and use the tag in **Slot condition**.
+
+To accept only gems tagged `fire`, use:
+
+```js
+return hasGemTag("fire");
+```
+
+Tags are normalized automatically. For example, `Dynamo Battery` becomes
+`dynamo-battery`. Existing name-based conditions continue to work.
 
 ## Socket Configuration Image
 

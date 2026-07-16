@@ -143,8 +143,6 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           VERSION: ${{ steps.tag_version.outputs.new_version }}
-          TAG: ${{ steps.tag_version.outputs.new_tag }}
-          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         shell: bash
         run: |
           if [ -z "${DISCORD_WEBHOOK_URL}" ]; then
@@ -153,10 +151,10 @@ jobs:
           fi
 
           MODULE_TITLE=$(jq -r '.title // .id // env.MODULE_ID' module.json)
-          RELEASE_URL="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
-          COMMIT_MESSAGE=$(printf '%s' "${HEAD_COMMIT_MESSAGE}")
+          DOWNLOAD_HUB_URL="https://app.shattered-codex.com/"
+          COMMIT_MESSAGE=$(git log -1 --pretty=%B "${GITHUB_SHA}" 2>/dev/null || true)
 
-          if [ -z "${COMMIT_MESSAGE}" ]; then
+          if [ -z "${COMMIT_MESSAGE//[$'\t\r\n ']}" ]; then
             COMMIT_MESSAGE=$(gh api \
               -H "Accept: application/vnd.github+json" \
               "/repos/${GITHUB_REPOSITORY}/commits/${GITHUB_SHA}/pulls" \
@@ -167,47 +165,47 @@ jobs:
             COMMIT_MESSAGE="Release published"
           fi
 
-          COMMIT_SUBJECT=$(printf '%s\n' "${COMMIT_MESSAGE}" | sed '1,/^$/d' | sed '/^[[:space:]]*$/d' | head -n 1)
-          if [ -z "${COMMIT_SUBJECT}" ]; then
-            COMMIT_SUBJECT=$(printf '%s\n' "${COMMIT_MESSAGE}" | head -n 1)
+          COVER_IMAGE=""
+          if [ -f "assets/img/cover.webp" ]; then
+            COVER_IMAGE="assets/img/cover.webp"
+          elif [ -f "assets/imgs/cover.webp" ]; then
+            COVER_IMAGE="assets/imgs/cover.webp"
           fi
 
-          COMMIT_BODY=$(printf '%s' "${COMMIT_SUBJECT}" | head -c 3200)
-          if [ "${#COMMIT_SUBJECT}" -gt "${#COMMIT_BODY}" ]; then
-            COMMIT_BODY=$(printf '%s\n\n[truncated]' "${COMMIT_BODY}")
+          if [ -n "${COVER_IMAGE}" ]; then
+            EMBED_IMAGE_URL="attachment://cover.webp"
+          else
+            EMBED_IMAGE_URL=$(jq -r 'first(.media[]? | select(.type == "cover") | .url) // empty' module.json)
           fi
-
-          DESCRIPTION=$(printf '%s\n\n**Version:** `%s`\n\n```text\n%s\n```' \
-            '**A new release has been published.**' \
-            "${VERSION}" \
-            "${COMMIT_BODY}")
 
           payload=$(jq -n \
             --arg content "@everyone" \
             --arg title "${MODULE_TITLE} v${VERSION}" \
-            --arg url "${RELEASE_URL}" \
-            --arg description "${DESCRIPTION}" \
-            '{
+            --arg url "${DOWNLOAD_HUB_URL}" \
+            --arg version "${VERSION}" \
+            --arg commit "${COMMIT_MESSAGE}" \
+            --arg image_url "${EMBED_IMAGE_URL}" \
+            '($commit | if length > 3800 then .[0:3800] + "\n\n*… truncated by Discord limit*" else . end) as $commit_body
+            | {
               content: $content,
               allowed_mentions: { parse: ["everyone"] },
               embeds: [
                 {
                   title: $title,
                   url: $url,
-                  description: $description,
-                  color: 3447003,
-                  image: { url: "attachment://cover.webp" }
+                  description: "**A new release has been published.**\n\n**Version:** `\($version)`\n\n\($commit_body)",
+                  color: 15418782
                 }
               ]
-            }')
+            }
+            | if $image_url != "" then .embeds[0].image = { url: $image_url } else . end')
 
-          if [ -f "assets/imgs/cover.webp" ]; then
+          if [ -n "${COVER_IMAGE}" ]; then
             curl -sSf \
               -F "payload_json=${payload}" \
-              -F "files[0]=@assets/imgs/cover.webp;filename=cover.webp;type=image/webp" \
+              -F "files[0]=@${COVER_IMAGE};filename=cover.webp;type=image/webp" \
               "${DISCORD_WEBHOOK_URL}"
           else
-            payload=$(printf '%s' "${payload}" | jq 'del(.embeds[0].image)')
             curl -sSf \
               -H "Content-Type: application/json" \
               -d "${payload}" \
