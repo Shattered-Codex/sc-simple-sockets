@@ -215,6 +215,19 @@ describe("GemResourceService", () => {
       assert.deepEqual(plan.deductions, [{ slotIndex: 1, resourceKey: "battery", amount: 1 }]);
     });
 
+    test("subtracts charges reserved by an overlapping use", () => {
+      const slots = [makeSlot("Cell", { key: "battery", max: 1, value: 1 })];
+      const plan = GemResourceService.planChargeConsumption(
+        slots,
+        { mode: "any", resourceKey: "battery" },
+        1,
+        { reserved: new Map([[0, 1]]) }
+      );
+
+      assert.equal(plan.ok, false);
+      assert.equal(plan.reason, "insufficient-socket-charges");
+    });
+
     test("sourceSlot consumes the originating gem's own resource (implied key)", () => {
       const slots = [
         makeSlot("Battery Gem", { key: "battery", max: 10, value: 5 }),

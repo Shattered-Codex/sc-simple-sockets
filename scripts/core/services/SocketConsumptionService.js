@@ -30,7 +30,7 @@ import {
  */
 export class SocketConsumptionService {
   static #registered = false;
-  static #pendingGemRemovals = new Map();
+  static #pendingConsumptions = new Map();
   static PENDING_TTL_MS = 60_000;
 
   static register() {
@@ -82,9 +82,11 @@ export class SocketConsumptionService {
     const excluded = new Set(combined.locations
       .map((location, index) => SocketConsumptionService.#hasPendingTarget(reserved, location) ? index : null)
       .filter(Number.isInteger));
+    const reservedCharges = SocketConsumptionService.#reservedChargeAmounts(combined, config);
     const plan = GemResourceService.planChargeConsumption(combined.slots, spec, cost, {
       sourceSlotIndex: combined.sourceSlotIndex,
-      excluded
+      excluded,
+      reserved: reservedCharges
     });
     if (!plan.ok) {
       throw SocketConsumptionService.#consumptionError(plan.message);
@@ -94,7 +96,28 @@ export class SocketConsumptionService {
     }
 
     SocketConsumptionService.#writeCombinedSlotsUpdates(updates, combined, plan);
+    SocketConsumptionService.#queueChargeReservations(config, plan, combined);
     SocketConsumptionService.#queueEmptiedGems(config, plan, combined);
+  }
+
+  static #queueChargeReservations(usageConfig, plan, combined) {
+    const pending = SocketConsumptionService.#pendingConsumptions.get(usageConfig)
+      ?? { targets: [], charges: [], createdAt: Date.now(), consuming: false };
+    for (const deduction of plan.deductions) {
+      const location = SocketConsumptionService.#locationFor(combined, deduction.slotIndex);
+      if (!location) continue;
+      const existing = pending.charges.find((entry) => (
+        SocketConsumptionService.#sameItem(entry.item, location.item)
+        && entry.slotIndex === location.slotIndex
+      ));
+      if (existing) {
+        existing.amount += deduction.amount;
+      } else {
+        pending.charges.push({ ...location, amount: deduction.amount });
+      }
+    }
+    pending.createdAt = Date.now();
+    SocketConsumptionService.#pendingConsumptions.set(usageConfig, pending);
   }
 
   /**
@@ -114,15 +137,15 @@ export class SocketConsumptionService {
       return;
     }
 
-    const pending = SocketConsumptionService.#pendingGemRemovals.get(usageConfig)
-      ?? { targets: [], createdAt: Date.now(), consuming: false };
+    const pending = SocketConsumptionService.#pendingConsumptions.get(usageConfig)
+      ?? { targets: [], charges: [], createdAt: Date.now(), consuming: false };
     for (const target of emptied) {
       if (!SocketConsumptionService.#hasPendingTarget(pending.targets, target)) {
         pending.targets.push(target);
       }
     }
     pending.createdAt = Date.now();
-    SocketConsumptionService.#pendingGemRemovals.set(usageConfig, pending);
+    SocketConsumptionService.#pendingConsumptions.set(usageConfig, pending);
   }
 
   /** @this {ConsumptionTargetData} */
@@ -134,8 +157,8 @@ export class SocketConsumptionService {
       return;
     }
 
-    const pending = SocketConsumptionService.#pendingGemRemovals.get(config)
-      ?? { targets: [], createdAt: Date.now(), consuming: false };
+    const pending = SocketConsumptionService.#pendingConsumptions.get(config)
+      ?? { targets: [], charges: [], createdAt: Date.now(), consuming: false };
 
     const combined = SocketConsumptionService.#combinedHosts(target, spec, updates);
     if (!combined.ok) {
@@ -163,7 +186,7 @@ export class SocketConsumptionService {
       }
     }
     pending.createdAt = Date.now();
-    SocketConsumptionService.#pendingGemRemovals.set(config, pending);
+    SocketConsumptionService.#pendingConsumptions.set(config, pending);
   }
 
   /* -------------------------------------------- */
@@ -218,20 +241,24 @@ export class SocketConsumptionService {
   static #onPreConsumption = (activity, usageConfig) => {
     // usageConfig is unique to this activation and is passed unchanged through
     // consumption and postUseActivity, so overlapping uses cannot share state.
-    SocketConsumptionService.#pendingGemRemovals.delete(usageConfig);
+    SocketConsumptionService.#pendingConsumptions.delete(usageConfig);
     SocketConsumptionService.#purgeStale();
   };
 
   static #onPostUse = (activity, usageConfig) => {
-    const pending = SocketConsumptionService.#pendingGemRemovals.get(usageConfig);
-    if (!pending?.targets?.length || pending.consuming) {
+    const pending = SocketConsumptionService.#pendingConsumptions.get(usageConfig);
+    if (!pending || pending.consuming) {
+      return;
+    }
+    if (!pending.targets.length) {
+      SocketConsumptionService.#pendingConsumptions.delete(usageConfig);
       return;
     }
 
     pending.consuming = true;
     void SocketConsumptionService.#consumeGems(pending.targets).finally(() => {
-      if (SocketConsumptionService.#pendingGemRemovals.get(usageConfig) === pending) {
-        SocketConsumptionService.#pendingGemRemovals.delete(usageConfig);
+      if (SocketConsumptionService.#pendingConsumptions.get(usageConfig) === pending) {
+        SocketConsumptionService.#pendingConsumptions.delete(usageConfig);
       }
     });
   };
@@ -337,8 +364,25 @@ export class SocketConsumptionService {
   }
 
   static #reservedTargets() {
-    return Array.from(SocketConsumptionService.#pendingGemRemovals.values())
+    return Array.from(SocketConsumptionService.#pendingConsumptions.values())
       .flatMap((pending) => pending.targets);
+  }
+
+  static #reservedChargeAmounts(combined, currentUsageConfig) {
+    const amounts = new Map();
+    for (const [usageConfig, pending] of SocketConsumptionService.#pendingConsumptions.entries()) {
+      if (usageConfig === currentUsageConfig) continue;
+      for (const reservation of pending.charges ?? []) {
+        const index = combined.locations.findIndex((location) => (
+          SocketConsumptionService.#sameItem(reservation.item, location.item)
+          && reservation.slotIndex === location.slotIndex
+        ));
+        if (index >= 0) {
+          amounts.set(index, (amounts.get(index) ?? 0) + reservation.amount);
+        }
+      }
+    }
+    return amounts;
   }
 
   static #writeSlotsUpdate(item, updates, updatedSlots) {
@@ -461,9 +505,9 @@ export class SocketConsumptionService {
 
   static #purgeStale() {
     const now = Date.now();
-    for (const [usageConfig, pending] of SocketConsumptionService.#pendingGemRemovals.entries()) {
+    for (const [usageConfig, pending] of SocketConsumptionService.#pendingConsumptions.entries()) {
       if (!pending.consuming && now - pending.createdAt > SocketConsumptionService.PENDING_TTL_MS) {
-        SocketConsumptionService.#pendingGemRemovals.delete(usageConfig);
+        SocketConsumptionService.#pendingConsumptions.delete(usageConfig);
       }
     }
   }

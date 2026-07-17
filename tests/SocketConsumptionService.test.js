@@ -99,7 +99,7 @@ describe("SocketConsumptionService actor pools", () => {
     assert.equal(updatedCharge(updates, "dragon"), 1);
   });
 
-  test("keeps pending gem removals isolated across overlapping uses of one activity", async () => {
+  test("isolates gem and charge reservations across overlapping uses of one activity", async () => {
     const hookHandlers = new Map();
     game.system = { id: "dnd5e" };
     CONFIG.DND5E = { activityConsumptionTypes: {} };
@@ -151,6 +151,33 @@ describe("SocketConsumptionService actor pools", () => {
       await SocketConsumptionService.consumeCharge.call(target, useD, { item: [], rolls: [] });
       hookHandlers.get("dnd5e.postUseActivity")(activity, useC, {});
       hookHandlers.get("dnd5e.postUseActivity")(activity, useD, {});
+
+      const normalActor = createTestActor({ items: [
+        { id: "normal-ability", type: "feat", flags: socketFlags([chargedSlot("Normal Cell", 1)]) }
+      ] });
+      const normalAbility = normalActor.items.get("normal-ability");
+      const normalActivity = {
+        id: "normal-blast",
+        uuid: "Actor.test.Item.normal-ability.Activity.normal-blast",
+        item: normalAbility,
+        flags: {}
+      };
+      const normalTarget = {
+        item: normalAbility,
+        activity: normalActivity,
+        target: formatSocketTarget({ mode: "any", resourceKey: "energy" }),
+        async resolveCost() { return { total: 1 }; }
+      };
+      const useE = { consume: { resources: true } };
+      const useF = { consume: { resources: true } };
+      hookHandlers.get("dnd5e.preActivityConsumption")(normalActivity, useE, {});
+      await SocketConsumptionService.consumeCharge.call(normalTarget, useE, { item: [], rolls: [] });
+      hookHandlers.get("dnd5e.preActivityConsumption")(normalActivity, useF, {});
+      await assert.rejects(
+        SocketConsumptionService.consumeCharge.call(normalTarget, useF, { item: [], rolls: [] }),
+        /Not enough socketed "energy" charges \(0\/1\)/
+      );
+      hookHandlers.get("dnd5e.postUseActivity")(normalActivity, useE, {});
     } finally {
       SocketService.removeGem = originalRemoveGem;
     }

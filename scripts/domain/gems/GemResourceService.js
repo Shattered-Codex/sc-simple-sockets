@@ -112,16 +112,30 @@ export class GemResourceService {
    * @param {object} [options]
    * @param {number|null} [options.sourceSlotIndex] Slot that originated a transferred activity.
    * @param {Set<number>} [options.excluded] Slots already reserved for deferred gem removal.
+   * @param {Map<number, number>} [options.reserved] Signed charge changes reserved by overlapping uses.
    * @returns {{ok: boolean, reason?: string, message?: string, deductions?: Array, updatedSlots?: Array}}
    */
-  static planChargeConsumption(slots, spec, cost, { sourceSlotIndex = null, excluded = new Set() } = {}) {
+  static planChargeConsumption(
+    slots,
+    spec,
+    cost,
+    { sourceSlotIndex = null, excluded = new Set(), reserved = new Map() } = {}
+  ) {
     const workingSlots = Array.isArray(slots) ? slots : [];
     const selection = GemResourceService.#selectSlots(workingSlots, spec, { sourceSlotIndex });
     if (!selection.ok) {
       return selection;
     }
 
-    const resources = workingSlots.map((slot) => GemResourceService.getSlotResource(slot));
+    const resources = workingSlots.map((slot, index) => {
+      const resource = GemResourceService.getSlotResource(slot);
+      if (!resource) return null;
+      const reservedAmount = Number(reserved.get(index)) || 0;
+      return {
+        ...resource,
+        value: Math.min(Math.max(resource.value - reservedAmount, 0), resource.max)
+      };
+    });
     const wantedKey = spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY
       ? String(spec?.resourceKey ?? "").trim().toLowerCase()
       : null;
@@ -187,7 +201,10 @@ export class GemResourceService {
     return {
       ok: true,
       deductions,
-      updatedSlots: GemResourceService.applyDeductions(workingSlots, deductions)
+      updatedSlots: GemResourceService.applyDeductions(workingSlots, [
+        ...Array.from(reserved.entries(), ([slotIndex, amount]) => ({ slotIndex, amount })),
+        ...deductions
+      ])
     };
   }
 
