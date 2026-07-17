@@ -5,6 +5,11 @@ export class ScMoreActivitiesSocketExtractionActivityData extends dnd5e.dataMode
     return {
       ...super.defineSchema(),
       extraction: new fields.SchemaField({
+        targetMode: new fields.StringField({
+          required: false,
+          initial: "select",
+          choices: ["select", "self"]
+        }),
         cursorImage: new fields.StringField({
           required: false,
           blank: true,

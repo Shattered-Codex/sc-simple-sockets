@@ -1,0 +1,62 @@
+<section class="standard-form sc-sockets-scma-picker__body">
+  {{#if subtitle}}
+    <p class="hint sc-sockets-scma-picker__subtitle">{{ subtitle }}</p>
+  {{/if}}
+
+  {{#if showFilter}}
+    <div class="sc-sockets-scma-picker__filter">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <input type="search" data-role="gem-filter" placeholder="{{ filterPlaceholder }}" aria-label="{{ filterPlaceholder }}">
+    </div>
+  {{/if}}
+
+  {{#if hasGems}}
+    <ol class="unlist sc-sockets-scma-picker__list">
+      {{#each gems as |gem|}}
+      <li class="sc-sockets-scma-picker__item" data-gem-name="{{ gem.filterName }}">
+        <button
+          type="button"
+          class="sc-sockets-scma-picker__option"
+          data-gem-uuid="{{ gem.uuid }}"
+          aria-label="{{ gem.ariaLabel }}"
+          title="{{ gem.titleText }}"
+          {{#if gem.isSubmitting}}disabled{{/if}}>
+          <span class="sc-sockets-scma-picker__option-main">
+            <span class="sc-sockets-scma-picker__gem-portrait" aria-hidden="true">
+              {{#if gem.img}}
+                <img class="item-image" src="{{ gem.img }}" alt="">
+              {{/if}}
+            </span>
+            <span class="sc-sockets-scma-picker__gem-info">
+              <span class="sc-sockets-scma-picker__gem-name">
+                {{ gem.name }}
+                {{#if gem.quantityLabel}}<span class="sc-sockets-scma-picker__gem-qty">{{ gem.quantityLabel }}</span>{{/if}}
+              </span>
+              {{#if gem.destinationLabel}}
+                <span class="sc-sockets-scma-picker__gem-dest">{{ gem.destinationLabel }}</span>
+              {{/if}}
+            </span>
+          </span>
+          {{#if gem.destinationSlot}}
+            <span class="sc-sockets-scma-picker__gem-dest-visual">
+              <span class="sc-sockets-slot-visual sc-sockets-scma-picker__slot-visual {{#if gem.destinationSlot.hasSlotTint}}has-slot-tint{{/if}}" aria-hidden="true" {{#if gem.destinationSlot.hasSlotTint}}style="{{ gem.destinationSlot.slotMaskStyle }}"{{/if}}>
+                <img class="item-image socket-icon sc-sockets-slot-frame {{#if gem.destinationSlot.hasSlotTint}}is-tinted{{/if}}" src="{{ gem.destinationSlot.slotFrameImg }}" alt="">
+              </span>
+              <span class="sc-sockets-scma-picker__slot-label">{{ gem.destinationSlot.slotLabel }}</span>
+            </span>
+          {{/if}}
+        </button>
+      </li>
+      {{/each}}
+    </ol>
+    {{#if showFilter}}
+      <p class="hint sc-sockets-scma-picker__no-results" data-role="gem-filter-empty" hidden>{{ noResultsMessage }}</p>
+    {{/if}}
+  {{/if}}
+
+  <footer class="sheet-footer flexrow sc-sockets-scma-picker__footer">
+    <button type="button" data-action="close">
+      {{ closeLabel }}
+    </button>
+  </footer>
+</section>

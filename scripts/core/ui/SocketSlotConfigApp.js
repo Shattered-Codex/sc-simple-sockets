@@ -2,6 +2,7 @@ import { Constants } from "../Constants.js";
 import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js";
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
 import { normalizeSlotColor } from "../helpers/socketSlotConfig.js";
+import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { DebugTrace } from "../support/DebugTrace.js";
 
 const api = foundry?.applications?.api ?? {};
@@ -103,10 +104,16 @@ export class SocketSlotConfigApp extends BaseApplication {
       return false;
     }
 
-    const updated = await SocketSlotConfigService.updateConfig(
+    const updated = await SocketSlotConfigService.updateConfigAndResource(
       this.#hostItem,
       this.#slotIndex,
-      payload
+      payload,
+      payload.gemResourceValue,
+      {
+        [Constants.MODULE_ID]: {
+          [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
+        }
+      }
     );
     if (!updated) {
       ui.notifications?.warn?.(
@@ -122,10 +129,6 @@ export class SocketSlotConfigApp extends BaseApplication {
       hostItem: DebugTrace.describeItem(this.#hostItem),
       slotIndex: this.#slotIndex,
       parentApp: DebugTrace.describeApp(this.#parentApp)
-    });
-    DebugTrace.render(this.#parentApp, true, "socket-slot-config.save.parentRefresh", {
-      hostItem: DebugTrace.describeItem(this.#hostItem),
-      slotIndex: this.#slotIndex
     });
     ui.notifications?.info?.(
       Constants.localize(
@@ -161,6 +164,7 @@ export class SocketSlotConfigApp extends BaseApplication {
   async #buildContext() {
     const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
     const slotConfig = SocketSlotConfigService.getConfig(slot);
+    const gemResource = GemResourceService.getSlotResource(slot);
     const slotNumber = Number.isInteger(this.#slotIndex) ? this.#slotIndex + 1 : null;
     const canInspectGem = Boolean(slot?.gem || slot?._gemData);
     const textEditor = Constants.getTextEditor();
@@ -183,6 +187,8 @@ export class SocketSlotConfigApp extends BaseApplication {
       gemName: slot?.gem?.name ?? slot?._gemData?.name ?? "",
       gemImg: slot?.gem?.img ?? slot?._gemData?.img ?? "",
       canInspectGem,
+      hasGemResource: Boolean(gemResource),
+      gemResource,
       slotConfigName: slotConfig.name,
       hidden: slotConfig.hidden,
       deleteGemOnRemoval: slotConfig.deleteGemOnRemoval,
@@ -239,11 +245,11 @@ export class SocketSlotConfigApp extends BaseApplication {
         ),
         conditionHint: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Hint",
-          "Use JavaScript. Available variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone."
+          "Use JavaScript. Gem tags are available through gemTags and hasGemTag(tag). Other variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone."
         ),
         conditionPlaceholder: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Placeholder",
-          "Example: return gem.name?.includes('Ruby') && getProperty(gem, 'flags.world.rarity') === 'rare';"
+          "Example: return hasGemTag('poison');"
         ),
         conditionWiki: Constants.localize(
           "SCSockets.SocketSlotConfig.Condition.Wiki",
@@ -292,6 +298,14 @@ export class SocketSlotConfigApp extends BaseApplication {
         inspectGem: Constants.localize(
           "SCSockets.SocketSlotConfig.InspectGem",
           "Inspect Gem"
+        ),
+        gemChargesLabel: Constants.localize(
+          "SCSockets.SocketSlotConfig.GemCharges.Label",
+          "Gem charges"
+        ),
+        gemChargesHint: Constants.localize(
+          "SCSockets.SocketSlotConfig.GemCharges.Hint",
+          "Current charges of the socketed gem. The maximum is configured on the gem itself."
         ),
         emptySlot: Constants.localize(
           "SCSockets.SocketSlotConfig.EmptySlot",
@@ -410,7 +424,8 @@ export class SocketSlotConfigApp extends BaseApplication {
       deleteGemOnRemoval: this.#readCheckboxValue("slotConfig.deleteGemOnRemoval"),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
-      color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex"))
+      color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex")),
+      gemResourceValue: this.#readFieldValue("gemResource.value")
     };
   }
 

@@ -1,0 +1,12 @@
+<!--
+  Gem silhouette adapted from "Cut diamond" by Lorc, from Game-icons.net.
+  License: CC BY 3.0 - https://creativecommons.org/licenses/by/3.0/
+  Source: https://game-icons.net/1x1/lorc/cut-diamond.html
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <path fill="#C89B3C" d="M256 246c-76.1 0-138 61.9-138 138s61.9 138 138 138 138-61.9 138-138-61.9-138-138-138zm0 60c43 0 78 35 78 78s-35 78-78 78-78-35-78-78 35-78 78-78z"/>
+  <path fill="#F1C550" d="M234 180h-52l74 88 74-88h-52v-68h-44v68z"/>
+  <g transform="translate(156 18) scale(.39)">
+    <path fill="#4B86DB" d="m92.906 94.813 60.438 79.75 78.125-79.75H92.905zm189.25 0L359.25 173.5l58.688-78.688H282.155zm-25.344.843-84.718 86.47H341.53l-84.717-86.47zm177.907 7.906-58.626 78.563H494.53l-59.81-78.563zm-358.064.75-57.78 77.813h116.78l-59-77.813zm-58.5 96.5L226.562 429.22l-83.218-228.41H18.156zm145.063 0 93.593 256.844 93.593-256.844H163.22zm207.06 0L287.064 429.22l208.405-228.41H370.28z"/>
+  </g>
+</svg>

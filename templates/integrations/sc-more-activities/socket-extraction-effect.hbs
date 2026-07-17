@@ -3,7 +3,17 @@
 
   <fieldset class="sc-sockets-scma-fieldset sc-sockets-scma-fieldset--configuration">
     <legend>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Sections.Configuration" }}</legend>
-    <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.TargetingHint" }}</p>
+    <p class="hint">{{ targetingHint }}</p>
+
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.TargetMode.Label" }}</label>
+      <div class="form-fields">
+        <select name="extraction.targetMode">
+          {{ selectOptions targetModeOptions selected=extraction.targetMode valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.TargetMode.Hint" }}</p>
+    </div>
 
     <div class="form-group">
       <label>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.Mode.Label" }}</label>
@@ -12,9 +22,10 @@
           {{ selectOptions modeOptions selected=extraction.mode valueAttr="value" labelAttr="label" }}
         </select>
       </div>
-      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketExtraction.Fields.Mode.Hint" }}</p>
+      <p class="hint">{{ modeHint }}</p>
     </div>
 
+    {{#unless isSelfTarget}}
     <div class="form-group sc-sockets-scma-cursor-image-field">
       <label>{{ localize "SCSockets.Integrations.ScMoreActivities.Common.CursorImage.Label" }}</label>
       <div class="form-fields">
@@ -27,5 +38,6 @@
       </div>
       <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.Common.CursorImage.Hint" }}</p>
     </div>
+    {{/unless}}
   </fieldset>
 </section>

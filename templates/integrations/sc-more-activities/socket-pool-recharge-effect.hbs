@@ -1,0 +1,86 @@
+<section class="tab activity-{{ tab.id }} {{ tab.cssClass }} sc-sockets-scma-activity sc-sockets-scma-effect sc-sockets-scma-effect--pool-recharge" data-tab="{{ tab.id }}" data-group="{{ tab.group }}">
+  {{#if appliedEffects}}{{> "systems/dnd5e/templates/activity/parts/activity-effects.hbs" }}{{/if}}
+
+  <fieldset class="sc-sockets-scma-fieldset sc-sockets-scma-fieldset--configuration">
+    <legend>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Sections.Configuration" }}</legend>
+    <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Fields.TargetingHint" }}</p>
+
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.Formula.Label" }}</label>
+      <div class="form-fields">
+        <input type="text" name="recharge.formula" value="{{ recharge.formula }}"
+          placeholder="{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.Formula.Placeholder" }}">
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Fields.Formula.Hint" }}</p>
+    </div>
+
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.ResourceKey.Label" }}</label>
+      <div class="form-fields">
+        <input type="text" name="recharge.resourceKey" value="{{ recharge.resourceKey }}"
+          placeholder="{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.ResourceKey.Placeholder" }}">
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketPoolRecharge.Fields.ResourceKey.Hint" }}</p>
+    </div>
+
+    <div class="form-group sc-sockets-scma-cursor-image-field">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.Common.CursorImage.Label" }}</label>
+      <div class="form-fields">
+        <file-picker
+          name="recharge.cursorImage"
+          type="image"
+          value="{{ recharge.cursorImage }}"
+          placeholder="{{ localize "SCSockets.Integrations.ScMoreActivities.Common.CursorImage.Placeholder" }}"
+        ></file-picker>
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.Common.CursorImage.Hint" }}</p>
+    </div>
+  </fieldset>
+
+  <fieldset class="sc-sockets-scma-fieldset sc-sockets-scma-fieldset--check">
+    <legend>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Sections.Check" }}</legend>
+
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.Check.Type.Label" }}</label>
+      <div class="form-fields">
+        <select name="recharge.check.type">
+          {{ selectOptions checkTypeOptions selected=recharge.check.type valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.Check.Type.Hint" }}</p>
+    </div>
+
+    {{#if isAbilityCheck}}
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.Check.Ability.Label" }}</label>
+      <div class="form-fields">
+        <select name="recharge.check.ability">
+          {{ selectOptions abilityOptions selected=recharge.check.ability valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if isSkillCheck}}
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.Check.Skill.Label" }}</label>
+      <div class="form-fields">
+        <select name="recharge.check.skill">
+          {{ selectOptions skillOptions selected=recharge.check.skill valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if hasCheck}}
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.Check.Dc.Label" }}</label>
+      <div class="form-fields">
+        <input type="text" name="recharge.check.dc" value="{{ recharge.check.dc }}"
+          placeholder="{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.Check.Dc.Placeholder" }}">
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.SocketRecharge.Fields.Check.Dc.Hint" }}</p>
+    </div>
+    {{/if}}
+  </fieldset>
+</section>

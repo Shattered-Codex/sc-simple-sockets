@@ -13,17 +13,20 @@ export class Constants {
   static FLAG_GEM_ALLOWED_TYPES = "gemAllowedTypes";
   static FLAG_GEM_DETAIL_TYPE = "gemDetailType";
   static FLAG_GEM_DAMAGE = "gemDamage";
+  static FLAG_GEM_TAGS = "gemTags";
   static GEM_DAMAGE_INHERIT_TYPE = "__inherit__";
   static FLAG_GEM_CRIT_THRESHOLD = "gemCritThreshold";
   static FLAG_GEM_CRIT_MULTIPLIER = "gemCritMultiplier";
   static FLAG_GEM_ATTACK_BONUS = "gemAttackBonus";
   static FLAG_SOCKET_DESCRIPTION = "socketDescription";
   static FLAG_SOCKET_TAB_ENABLED = "socketTabEnabled";
+  static FLAG_GEM_RESOURCE = "gemResource";
   static FLAGS = {
     sockets: "sockets",
     gemAllowedTypes: "gemAllowedTypes",
     gemDetailType: "gemDetailType",
     gemDamage: "gemDamage",
+    gemTags: "gemTags",
     gemCritThreshold: "gemCritThreshold",
     gemCritMultiplier: "gemCritMultiplier",
     gemAttackBonus: "gemAttackBonus",

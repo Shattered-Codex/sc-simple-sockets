@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { Compatibility } from "./Compatibility.js";
 import { DebugTrace } from "./DebugTrace.js";
 
 export class ItemSheetSync {
@@ -10,7 +11,10 @@ export class ItemSheetSync {
       return;
     }
 
-    ItemSheetSync.#updateHandler = (item, changes) => {
+    ItemSheetSync.#updateHandler = (item, changes, options = {}) => {
+      if (options?.[Constants.MODULE_ID]?.[Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]) {
+        return;
+      }
       if (!ItemSheetSync.hasSocketUpdate(changes)) {
         return;
       }
@@ -159,8 +163,8 @@ export class ItemSheetSync {
         nextWindowElement.style.zIndex = previousZIndex;
       }
 
-      if (hadFocus && typeof app.bringToTop === "function") {
-        app.bringToTop();
+      if (hadFocus) {
+        Compatibility.bringWindowToFront(app);
       }
     };
 

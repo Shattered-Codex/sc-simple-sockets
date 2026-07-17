@@ -2,6 +2,8 @@ import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
 import { SocketSlot } from "../model/SocketSlot.js";
 import { getSlotConfig } from "../helpers/socketSlotConfig.js";
+import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { GemTagService } from "../../domain/gems/GemTagService.js";
 
 const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
 
@@ -22,14 +24,27 @@ export class SocketSlotConfigService {
   }
 
   static async updateConfig(hostItem, slotIndex, config, options = {}) {
-    const slots = SocketStore.getSlots(hostItem);
-    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
-      return false;
-    }
+    return SocketSlotConfigService.#saveSlot(
+      hostItem,
+      slotIndex,
+      (slot) => SocketSlot.applyConfig(slot, config, slotIndex),
+      options
+    );
+  }
 
-    slots[slotIndex] = SocketSlot.applyConfig(slots[slotIndex], config, slotIndex);
-    await SocketStore.setSlots(hostItem, slots, options);
-    return true;
+  static async updateConfigAndResource(hostItem, slotIndex, config, gemResourceValue, options = {}) {
+    return SocketSlotConfigService.#saveSlot(
+      hostItem,
+      slotIndex,
+      (slot) => {
+        let nextSlot = SocketSlot.applyConfig(slot, config, slotIndex);
+        if (gemResourceValue !== undefined && gemResourceValue !== null && gemResourceValue !== "") {
+          nextSlot = GemResourceService.withSlotResourceValue(nextSlot, Number(gemResourceValue));
+        }
+        return nextSlot;
+      },
+      options
+    );
   }
 
   static async toggleHidden(hostItem, slotIndex, options = {}) {
@@ -43,9 +58,30 @@ export class SocketSlotConfigService {
       ...config,
       hidden: !config.hidden
     };
-    slots[slotIndex] = SocketSlot.applyConfig(slots[slotIndex], nextConfig, slotIndex);
-    await SocketStore.setSlots(hostItem, slots, options);
+    await SocketSlotConfigService.#saveSlot(
+      hostItem,
+      slotIndex,
+      (slot) => SocketSlot.applyConfig(slot, nextConfig, slotIndex),
+      options
+    );
     return nextConfig.hidden;
+  }
+
+  static async #saveSlot(hostItem, slotIndex, buildNextSlot, options = {}) {
+    const slots = SocketStore.getSlots(hostItem);
+    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
+      return false;
+    }
+
+    const previousSlot = slots[slotIndex];
+    const nextSlot = buildNextSlot(previousSlot);
+    if (SocketSlotConfigService.#stableStringify(previousSlot) === SocketSlotConfigService.#stableStringify(nextSlot)) {
+      return true;
+    }
+
+    slots[slotIndex] = nextSlot;
+    await SocketStore.setSlots(hostItem, slots, options);
+    return true;
   }
 
   static validateCondition(code) {
@@ -112,7 +148,9 @@ const {
   game,
   gem,
   gemItem,
+  gemTags,
   getProperty,
+  hasGemTag,
   hasProperty,
   hostItem,
   item,
@@ -136,13 +174,16 @@ ${body}`
   }
 
   static #buildContext({ hostItem, slot, slotIndex, gemItem, source }) {
+    const gemTags = GemTagService.getTags(gemItem);
     return {
       actor: hostItem?.actor ?? null,
       deepClone: foundry.utils.deepClone.bind(foundry.utils),
       game,
       gem: gemItem ?? null,
       gemItem: gemItem ?? null,
+      gemTags,
       getProperty: foundry.utils.getProperty.bind(foundry.utils),
+      hasGemTag: (tag) => GemTagService.hasTag(gemTags, tag),
       hasProperty: foundry.utils.hasProperty.bind(foundry.utils),
       hostItem: hostItem ?? null,
       item: hostItem ?? null,
@@ -150,8 +191,12 @@ ${body}`
       slot: foundry.utils.deepClone(slot ?? null),
       slotConfig: getSlotConfig(slot),
       slotIndex: Number.isInteger(slotIndex) ? slotIndex : null,
-      source: foundry.utils.deepClone(source ?? null),
+      source: foundry.utils.deepClone(source?.toObject?.() ?? source ?? null),
       user: game.user ?? null
     };
+  }
+
+  static #stableStringify(value) {
+    return JSON.stringify(value ?? null);
   }
 }

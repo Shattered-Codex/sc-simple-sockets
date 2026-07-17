@@ -66,4 +66,37 @@ describe("ItemSheetSync", () => {
 
     assert.deepEqual(renders, [true]);
   });
+
+  test("skips automatic sheet refresh when the update opts out", () => {
+    const actor = createTestActor({
+      items: [{ id: "host-1", name: "Sword", type: "weapon", includeActivitiesField: true }]
+    });
+    const item = actor.items.get("host-1");
+
+    const calls = [];
+    const originalRefresh = ItemSheetSync.refreshOpenSheets;
+    const originalHooksOn = Hooks.on;
+    let updateHandler = null;
+    ItemSheetSync.refreshOpenSheets = (updatedItem) => {
+      calls.push(updatedItem?.id ?? null);
+    };
+    Hooks.on = (hook, handler) => {
+      if (hook === "updateItem") {
+        updateHandler = handler;
+      }
+    };
+
+    try {
+      ItemSheetSync.activate();
+      updateHandler(
+        item,
+        { "flags.sc-simple-sockets.sockets": [] },
+        { "sc-simple-sockets": { skipItemSheetSync: true } }
+      );
+      assert.deepEqual(calls, []);
+    } finally {
+      ItemSheetSync.refreshOpenSheets = originalRefresh;
+      Hooks.on = originalHooksOn;
+    }
+  });
 });

@@ -81,7 +81,7 @@
               </div>
             </article>
 
-            <article class="socket-slot-config-document-card">
+            <article class="socket-slot-config-document-card socket-slot-config-document-card--gem">
               {{#if hasGem}}
                 <div class="socket-slot-config-document-body">
                   <div class="socket-slot-config-image-card socket-slot-config-image-card--compact">
@@ -107,6 +107,28 @@
                     ></i>
                   {{/if}}
                 </div>
+                {{#if hasGemResource}}
+                <div class="socket-slot-config-gem-charges">
+                  <span class="socket-slot-config-gem-charges-label">
+                    {{strings.gemChargesLabel}}
+                    <i class="fa-solid fa-circle-info socket-slot-config-info" data-tooltip="{{strings.gemChargesHint}}"></i>
+                    <span class="sc-sockets-gem-resource-badge">{{gemResource.key}}</span>
+                  </span>
+                  <div class="socket-slot-config-gem-charges-control">
+                    <input
+                      type="number"
+                      name="gemResource.value"
+                      class="sc-sockets-settings-control socket-slot-config-gem-charges-input"
+                      value="{{gemResource.value}}"
+                      min="0"
+                      max="{{gemResource.max}}"
+                      step="1"
+                      {{#unless editable}}disabled{{/unless}}
+                    />
+                    <span class="socket-slot-config-gem-charges-max">/ {{gemResource.max}}</span>
+                  </div>
+                </div>
+                {{/if}}
               {{else}}
                 <div class="socket-slot-config-document-body socket-slot-config-document-body--empty">
                   <div class="socket-slot-config-image-card socket-slot-config-image-card--compact socket-slot-config-image-card--empty"></div>

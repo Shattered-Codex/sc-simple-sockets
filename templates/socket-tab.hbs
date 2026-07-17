@@ -2,7 +2,7 @@
   data-group="{{tab.group}}" data-application-part="{{partId}}" data-sc-sockets-layout="{{socketTabVariant}}">
 
   <section class="items-list sockets-list sc-sockets-list" data-item-list="sockets">
-    <div class="items-section card sc-sockets-panel" data-socket-type="default">
+    <section class="items-section card sc-sockets-panel sc-sockets-main-section" data-socket-type="default">
 
       <div class="items-header header sc-sockets-header">
         <h3 class="item-name socket-name">{{ localize "SCSockets.TabLabel" }}</h3>
@@ -158,6 +158,50 @@
       </ol>
       {{/if}}
 
-    </div>
+    </section>
+
+    {{#if hasSocketResourceRows}}
+    <section class="items-section card sc-sockets-panel sc-sockets-resource-section"
+             data-sc-sockets="socket-resource-table">
+      <div class="items-header header sc-sockets-resource-header">
+        <h3 class="item-name sc-sockets-resource-name-col">
+          {{ localize "SCSockets.SocketPools.GemColumn" }}
+        </h3>
+        <div class="item-header sc-sockets-resource-id-col">{{ localize "SCSockets.SocketPools.ResourceColumn" }}</div>
+        <div class="item-header sc-sockets-resource-charges-col">{{ localize "SCSockets.SocketPools.ChargesColumn" }}</div>
+        <div class="item-header sc-sockets-resource-destroy-col">{{ localize "SCSockets.SocketPools.DestroyColumn" }}</div>
+      </div>
+      <ol class="item-list unlist sc-sockets-resource-rows">
+        {{#each socketResourceRows as |row|}}
+        <li class="item flexrow sc-sockets-resource-row">
+          <div class="item-name sc-sockets-resource-name-col">
+            {{#if row.gemImg}}
+            <img class="item-image"
+                 src="{{row.gemImg}}"
+                 alt="{{row.gemName}}"
+                 aria-label="{{row.gemName}}"
+                 data-tooltip="{{row.gemName}}"
+                 data-tooltip-direction="UP">
+            {{else}}
+            <div class="item-image sc-sockets-resource-image-fallback"
+                 aria-label="{{row.gemName}}"
+                 data-tooltip="{{row.gemName}}"
+                 data-tooltip-direction="UP">
+              <i class="fa-solid fa-gem"></i>
+            </div>
+            {{/if}}
+          </div>
+          <div class="item-detail sc-sockets-resource-id-col">{{row.resourceKey}}</div>
+          <div class="item-detail sc-sockets-resource-charges-col">{{row.chargesLabel}}</div>
+          <div class="item-detail sc-sockets-resource-destroy-col">
+            <span class="sc-sockets-resource-destroy-badge {{#if row.destroyOnEmpty}}is-destroy-on-empty{{else}}is-keep-on-empty{{/if}}">
+              {{row.destroyAtZeroLabel}}
+            </span>
+          </div>
+        </li>
+        {{/each}}
+      </ol>
+    </section>
+    {{/if}}
   </section>
 </section>

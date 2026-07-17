@@ -132,7 +132,7 @@ export class SocketDescriptionsUI {
         ${SocketDescriptionsUI.#buildIcon(entry)}
         <div class="sc-sockets-socket-description-body">
           <div class="sc-sockets-socket-description-header">
-            <strong class="sc-sockets-socket-description-title">${SocketDescriptionsUI.#escapeHtml(entry.name)}</strong>
+            <strong class="sc-sockets-socket-description-title">${SocketDescriptionsUI.#escapeHtml(entry.name)}${entry.resourceLabel ? ` <span class="sc-sockets-gem-resource-badge">${SocketDescriptionsUI.#escapeHtml(entry.resourceLabel)}</span>` : ""}</strong>
             <button type="button"
                     class="unbutton control-button always-interactive sc-sockets-socket-description-chat"
                     data-action="sendSocketDescription"

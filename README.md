@@ -30,6 +30,18 @@ It is built to keep the workflow simple during play.
 
 ---
 
+## New in This Update
+
+Gems can now do more than provide passive bonuses:
+
+- A gem can carry its own limited resource, such as energy, ammunition, or magic charges.
+- Actions can spend charges from one gem, several gems on the same item, or compatible socketed items across the character.
+- Charges remain with the gem when it is removed and returned to inventory.
+- Gem tags make it easier to create sockets that accept a category such as `fire`, `poison`, or `healing`.
+- The optional **SC More Activities** integration can insert gems, extract gems, recharge one gem, or recharge a shared pool.
+
+Existing gems continue to work without configuring resources or tags. These new fields are optional.
+
 ## Preview Image
 
 ![Module overview image](https://i.imgur.com/xdOJCip.png)
@@ -63,6 +75,8 @@ Once a gem is inserted, the module can:
 - Supports **drag and drop** gem socketing.
 - Automatically transfers **Active Effects** from the gem to the host item.
 - Automatically mirrors **Activities** from the gem to the host item.
+- Lets activities consume gem charges from the current item or from socketed items across the character.
+- Supports optional host-item filters so resources can stay isolated by set, category, or custom rule.
 - Lets each gem restrict which items it can be used on.
 - Lets each socket have its own rule, description, and color.
 - Adds **Socket Descriptions** to the item sheet, with a button to send them to chat.
@@ -78,13 +92,106 @@ Once a gem is inserted, the module can:
 ## SC More Activities Integration
 
 When `sc-more-activities` is also active, `sc-simple-sockets` registers its own
-socket activities directly from this module:
+socket activities directly from this module. No extra bridge module is needed.
 
 - `sc-socket-slot`
 - `sc-socket-extraction`
+- `sc-socket-gem-reload`
+- `sc-socket-recharge`
+- `sc-socket-pool-recharge`
 
 That integration lives entirely inside `sc-simple-sockets`, so the socket
 behavior stays scoped to the module that owns it.
+
+### How these activities work
+
+All socket activities follow the same general idea:
+
+1. You use an activity created in `sc-more-activities`.
+2. The activity selects or targets an item that contains sockets.
+3. `sc-simple-sockets` performs the socket mutation, compatibility checks,
+   effect transfer, activity transfer, or charge update.
+
+Depending on the activity, the target item can be:
+
+- the next clicked item
+- the item that owns the activity
+- an item chosen from a socket picker dialog
+
+### Available activity types
+
+#### `sc-socket-slot`
+
+Use this activity to add a configured socket to a target item or remove one
+empty socket from an item.
+
+- **Add socket:** click a valid target item and the activity adds a new socket
+  using the configuration defined in the activity.
+- **Remove empty socket:** choose one empty socket from the item and remove it.
+- Supports per-activity socket config, descriptions, colors, conditions, and
+  optional targeting rules.
+
+#### `sc-socket-extraction`
+
+Use this activity to remove a socketed gem from a target item.
+
+- Click the target item.
+- Choose which socketed gem will be removed.
+- The activity can keep the extracted gem and return it to inventory, or
+  destroy the extracted gem immediately.
+
+This ignores the module's normal gem-removal behavior and follows the activity
+configuration instead.
+
+#### `sc-socket-gem-reload`
+
+Use this activity to insert a compatible gem into an empty socket on a target
+item.
+
+- Click the item that should receive the gem.
+- The activity looks for compatible gems in the inventory of the actor that
+  owns the activity item.
+- It can prompt the user to choose a gem, auto-pick a gem by exact name, or
+  auto-pick a gem by name match pattern.
+- It can then place the gem into the first compatible empty socket or prompt
+  the user to choose which compatible empty socket should be used.
+
+The reload still respects socket compatibility, allowed item types, and socket
+conditions.
+
+#### `sc-socket-recharge`
+
+Use this activity to restore charges to one socketed gem on a target item.
+
+- Click the target item.
+- Choose the socketed gem that should be recharged.
+- The activity can optionally require a check before the recharge succeeds.
+- The restored amount can be fully restored or rolled from a formula.
+
+This is useful for gems that carry their own limited-use resource.
+
+#### `sc-socket-pool-recharge`
+
+Use this activity to restore a shared charge pool across multiple socketed gems
+on the same item.
+
+- Click the target item.
+- Choose the resource pool that should be restored.
+- The activity can optionally require a check before the recharge succeeds.
+- The restored amount can be fully restored or rolled from a formula.
+
+This is useful when several socketed gems contribute to the same named charge
+pool.
+
+### Notes
+
+- These activities are registered only when both `sc-simple-sockets` and
+  `sc-more-activities` are active.
+- Socket mutations still use the same compatibility and permission checks as the
+  rest of `sc-simple-sockets`.
+- The activity icons used by this integration ship locally in
+  `assets/activity-icons/` and are based on artwork from
+  [Game-icons.net](https://game-icons.net/).
 
 > **Want even more content?**  
 > If you want **120+ ready-to-use gems**, you can get the **SC - More Gems** module as a **Patreon supporter**.
@@ -387,6 +494,76 @@ Right now it can include things such as:
 
 In simple terms: this is where you place the more advanced combat details for the gem.
 
+### Socketed charges and character pools
+
+Each gem can provide a named resource such as `energy`, `battery`, or `magic`.
+The current and maximum charges remain stored on that gem. The module does not
+create a second charge balance on the character.
+
+Activities can use the **Socketed Charges** consumption type and choose where the
+resource may come from:
+
+| Pool scope | What contributes |
+| --- | --- |
+| **Sockets on this item** | Socketed gems on the item that owns the activity |
+| **Equipped sockets on this character** | Socketed gems on equipped items belonging to the same character |
+| **All sockets on this character** | Socketed gems on every item belonging to the same character |
+
+Slot-specific consumption and **Source gem** consumption always stay on the
+activity's own item. For character pools, charges are consumed in a stable order:
+the activity's item first when eligible, followed by the character's other items
+and each item's sockets in order.
+
+Removing a gem removes its charges from the available pool. If the gem is returned
+to inventory, it keeps its remaining charges.
+
+#### Give a gem its own charges
+
+1. Open the gem item.
+2. Open its **+Details** tab.
+3. Under **Socketed Resource**, enter a short resource name such as `battery`.
+4. Set the **Current** and **Maximum** charges.
+5. Optionally enable **Destroy when out of charges** if the gem should disappear when its last charge is spent.
+
+The resource is active only while the gem is inside a socket. The host item's
+**Sockets** tab shows the resource and its remaining charges.
+
+#### Let an activity spend socketed charges
+
+In the activity's consumption settings, choose **Socketed Charges** and select
+where the charges should come from. The simplest options are:
+
+| Choose | Result |
+| --- | --- |
+| **Source gem (this activity)** | Spends charges from the gem that provided the activity |
+| **Any gem with resource** | Spends the named resource from compatible socketed gems |
+| **Specific slot** | Spends charges only from one socket position |
+| **Gem by name** | Spends charges from gems with that exact name |
+| **Gem name matches** | Finds gems by a simple name pattern, such as `Fire*` |
+
+You can also choose whether the activity searches only its own item, equipped
+socketed items on the character, or all socketed items on the character.
+
+#### Restricting a pool with a host item filter
+
+An activity can optionally use a JavaScript **Host item filter**. Only socketed
+items for which the filter returns `true` contribute charges. Available variables
+include `item`, `hostItem`, `sourceItem`, `actor`, `activity`, `user`, `game`,
+`getProperty`, and `hasProperty`.
+
+For example, an activity granted by **SC - Setforge** can consume charges only
+from equipped items that belong to the same set. Choose **Equipped sockets on this
+character** and use:
+
+```js
+return getProperty(item, "flags.sc-setforge.setId")
+  === getProperty(sourceItem, "flags.sc-setforge.setId");
+```
+
+Here, `item` is a possible socket host and `sourceItem` is the item that owns the
+activity. If the filter has invalid code or throws an error, the consumption is
+blocked instead of drawing charges from an unintended item.
+
 ## Example Gem Setup
 
 | Field | Simple example |
@@ -480,6 +657,24 @@ return getProperty(gemItem, "flags.world.element") === "fire";
 
 If the rule is invalid or cannot be read, the module blocks the gem and shows a warning.
 
+### Gem tags for simpler socket rules
+
+Tags let you group gems without depending on their exact names. For example,
+several differently named gems can all use the tag `fire`.
+
+1. Open a gem and go to its **+Details** tab.
+2. Add one or more values under **Gem Tags**.
+3. Open a socket's settings and use the tag in **Slot condition**.
+
+To accept only gems tagged `fire`, use:
+
+```js
+return hasGemTag("fire");
+```
+
+Tags are normalized automatically. For example, `Dynamo Battery` becomes
+`dynamo-battery`. Existing name-based conditions continue to work.
+
 ## Socket Configuration Image
 
 Replace only the link below with your own image:
@@ -564,13 +759,30 @@ You can call:
 
 - `getItemSlots(itemOrUuid)`
 - `getItemGems(itemOrUuid)`
+- `hasItemGemTag(itemOrUuid, tag)`
 - `removeGem(itemOrUuid, slotIndex, options)`
 - `removeGemKeepingItem(itemOrUuid, slotIndex)`
 
 In simple terms:
 
 - one function lists all sockets on an item
-- the other lists only the gems currently socketed in that item
+- another lists only the gems currently socketed in that item, including their normalized `tags`
+- `hasItemGemTag` checks whether at least one socketed gem has a specific tag
+
+Example for **SC - Conditional Activities**:
+
+```js
+const sockets = game.modules.get("sc-simple-sockets")?.api?.sockets;
+
+if (!sockets || item?.system?.equipped !== true || item?.system?.attuned !== true) {
+  return false;
+}
+
+return sockets.hasItemGemTag(item, "dynamo-battery");
+```
+
+The helper normalizes the requested tag in the same way as the gem sheet. For
+example, `Dynamo Battery` and `dynamo-battery` resolve to the same identifier.
 
 ### Macro functions
 
@@ -648,6 +860,18 @@ For automations, the module also triggers:
 - **System:** dnd5e
 - **Sheets:** default dnd5e sheet and **Tidy5e Sheet**
 - **Recommended module:** [`libWrapper`](https://github.com/ruipin/fvtt-lib-wrapper)
+
+## Icon Credits
+
+The `sc-more-activities` socket activity icons bundled in this repository are
+based on [Game-icons.net](https://game-icons.net/) artwork and are used under
+the [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) license.
+
+- `Power Ring` by Delapouite, used for `sc-socket-slot`
+- `Pincers` by Lorc, used for `sc-socket-extraction`
+- `Cut Diamond` by Lorc, adapted for `sc-socket-gem-reload`
+- `Charging` by Delapouite, used for `sc-socket-recharge`
+- `Energy Tank` by Delapouite, used for `sc-socket-pool-recharge`
 
 ## Useful Links
 

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, test } from "node:test";
 
 import { Constants } from "../scripts/core/Constants.js";
 import { SocketAPI } from "../scripts/core/api/SocketAPI.js";
+import { ItemResolver } from "../scripts/core/ItemResolver.js";
 import { SocketSlot } from "../scripts/core/model/SocketSlot.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
 import { createTestActor } from "./support/testDocuments.js";
@@ -92,5 +93,41 @@ describe("SocketAPI", () => {
     assert.equal(result.success, true);
     assert.equal(result.changed, true);
     assert.equal(result.reason, "gem-removed");
+  });
+
+  test("exposes normalized gem tags and checks them without expanding public snapshots", async () => {
+    const gemSource = {
+      name: "Dynamo Core",
+      type: "loot",
+      system: { quantity: 1, type: { value: "gem" } },
+      flags: {
+        [Constants.MODULE_ID]: {
+          [Constants.FLAG_GEM_TAGS]: ["Dynamo Battery", "Lightning"]
+        }
+      }
+    };
+    const actor = createTestActor({
+      items: [{
+        id: "host-tags",
+        name: "Dynamo Blade",
+        type: "weapon",
+        flags: {
+          [Constants.MODULE_ID]: {
+            sockets: [{
+              ...SocketSlot.makeDefault(),
+              gem: { name: gemSource.name, img: "icons/dynamo.webp" },
+              _gemData: ItemResolver.compactSnapshot(gemSource)
+            }]
+          }
+        }
+      }]
+    });
+    const hostItem = actor.items.get("host-tags");
+
+    const gems = await SocketAPI.getItemGems(hostItem);
+
+    assert.deepEqual(gems[0].tags, ["dynamo-battery", "lightning"]);
+    assert.equal(await SocketAPI.hasItemGemTag(hostItem, "Dynamo Battery"), true);
+    assert.equal(await SocketAPI.hasItemGemTag(hostItem, "frost"), false);
   });
 });

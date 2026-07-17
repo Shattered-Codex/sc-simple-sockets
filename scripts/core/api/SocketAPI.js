@@ -2,6 +2,8 @@ import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketService } from "../services/SocketService.js";
+import { ItemResolver } from "../ItemResolver.js";
+import { GemTagService } from "../../domain/gems/GemTagService.js";
 
 export class SocketAPI {
   static register() {
@@ -16,6 +18,8 @@ export class SocketAPI {
         SocketAPI.getItemSlots(itemOrUuid, options);
       module.api.sockets.getItemGems = async (itemOrUuid, options = {}) =>
         SocketAPI.getItemGems(itemOrUuid, options);
+      module.api.sockets.hasItemGemTag = async (itemOrUuid, tag) =>
+        SocketAPI.hasItemGemTag(itemOrUuid, tag);
       module.api.sockets.removeGem = async (itemOrUuid, slotIndex, options = {}) =>
         SocketAPI.removeGem(itemOrUuid, slotIndex, options);
       module.api.sockets.removeGemKeepingItem = async (itemOrUuid, slotIndex, options = {}) =>
@@ -59,6 +63,7 @@ export class SocketAPI {
         slotIndex,
         name: slot?.gem?.name ?? slot?.name ?? null,
         img: slot?.gem?.img ?? slot?.img ?? null,
+        tags: SocketAPI.#getSlotGemTags(slot),
         uuid: null,
         sourceUuid: null,
         slot: SocketAPI.#sanitizeSlot(slot, { includeSnapshots })
@@ -66,6 +71,22 @@ export class SocketAPI {
     }
 
     return gems;
+  }
+
+  static async hasItemGemTag(itemOrUuid, tag) {
+    const normalizedTag = GemTagService.normalizeTag(tag);
+    if (!normalizedTag.length) {
+      return false;
+    }
+
+    const item = await SocketAPI.#resolveItem(itemOrUuid);
+    if (!item) {
+      return false;
+    }
+
+    return SocketStore.peekSlots(item).some((slot) => (
+      Boolean(slot?.gem) && SocketAPI.#getSlotGemTags(slot).includes(normalizedTag)
+    ));
   }
 
   static async canEditSockets(itemOrUuid, { userId = null } = {}) {
@@ -204,6 +225,10 @@ export class SocketAPI {
       delete cloned._gemData;
     }
     return cloned;
+  }
+
+  static #getSlotGemTags(slot) {
+    return GemTagService.getTags(ItemResolver.expandSnapshot(slot?._gemData));
   }
 
   static async #resolveItem(itemOrUuid) {

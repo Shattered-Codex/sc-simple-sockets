@@ -203,7 +203,7 @@ export class AddSocketWorkflow {
             <div class="form-group">
               <label>${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.Condition.Label", "Slot condition"))}</label>
               <div class="form-fields">
-                <textarea name="slotCondition" rows="6" placeholder="${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.Condition.Placeholder", "Example: return gem.name?.includes('Ruby');"))}">${escapeHtml(defaults.condition)}</textarea>
+                <textarea name="slotCondition" rows="6" placeholder="${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.Condition.Placeholder", "Example: return hasGemTag('poison');"))}">${escapeHtml(defaults.condition)}</textarea>
               </div>
             </div>
             <div class="form-group">

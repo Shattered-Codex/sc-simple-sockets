@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
+import { Compatibility } from "./Compatibility.js";
 
 export class DebugTrace {
   static #active = false;
@@ -79,9 +80,9 @@ export class DebugTrace {
     });
 
     try {
-      app?.bringToTop?.({ force: true, focus: true });
+      Compatibility.bringWindowToFront(app);
     } catch {
-      app?.bringToTop?.();
+      // Keep the z-index/focus fallbacks below.
     }
 
     DebugTrace.#forceHighestZIndex(app);

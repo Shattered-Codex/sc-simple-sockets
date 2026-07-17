@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { Compatibility } from "./Compatibility.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SupportCardApp } from "../ui/SupportCardApp.js";
 
@@ -53,7 +54,7 @@ export async function openSupportCard({ force = false } = {}) {
 
   const sharedState = getSharedState();
   if (sharedState.app?.rendered) {
-    sharedState.app.bringToTop?.();
+    Compatibility.bringWindowToFront(sharedState.app);
     return sharedState.app;
   }
 

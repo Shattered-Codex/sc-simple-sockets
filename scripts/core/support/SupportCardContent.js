@@ -84,16 +84,55 @@ const RELEASE_SECTIONS = [
     tone: "added",
     items: [
       {
-        title: "Gem damage in the Formula column",
-        text: "Simple Sockets can now surface socketed gem damage directly in the Formula column of character sheets. You can keep the current behavior, list every gem damage formula inline, or show the full breakdown in a compact tooltip."
+        title: "Charges for socketed gems",
+        text: "A gem can now hold its own resource, such as energy, ammunition, or magic charges. Set its current and maximum charges, and optionally destroy the gem when its last charge is spent."
       },
       {
-        title: "Configurable presentation options",
-        text: "The new sheet display can also show gem images and now works on both the default dnd5e actor sheet and Tidy, so players can see socketed gem damage without opening the roll dialog first."
+        title: "Activities can consume charges or gems",
+        text: "An Activity can spend charges from its source gem, a specific socket, a named gem, or any gem that provides the required resource. Activities can also consume an entire socketed gem when needed."
       },
       {
-        title: "Gem attack bonus breakdown",
-        text: "When socketed gems grant flat attack bonuses, the Roll column can now show the summed bonus together with a per-gem tooltip breakdown for quick inspection."
+        title: "Shared resources across a character",
+        text: "Charges can come from the current item, equipped socketed items, or every socketed item owned by the character. Optional filters can keep resources separated by equipment set or other custom rules."
+      },
+      {
+        title: "Gem tags",
+        text: "Add simple labels such as fire, poison, or healing to gems. Socket conditions and automations can use these tags instead of depending on each gem's exact name."
+      },
+      {
+        title: "Gem Reload Activity",
+        text: "The SC More Activities integration can now insert a compatible gem into an empty socket. It can choose automatically by name, use a name pattern, or let the player pick the gem and socket."
+      },
+      {
+        title: "Recharge Activities",
+        text: "New Activities can recharge one socketed gem or a shared resource pool. A recharge can restore everything, roll a formula, and optionally require a successful check."
+      },
+      {
+        title: "More flexible Socket Extraction",
+        text: "Socket Extraction can now target the next item you click or extract a gem directly from the item that owns the Activity."
+      },
+      {
+        title: "Gem details in character sheets",
+        text: "The Formula and Roll columns can show socketed gem damage, gem images, and attack bonus breakdowns on both the default dnd5e sheet and Tidy."
+      }
+    ]
+  },
+  {
+    id: "improved",
+    title: "Improved",
+    tone: "improved",
+    items: [
+      {
+        title: "Clearer charge tracking",
+        text: "The Sockets tab now shows each gem's resource and remaining charges. Charges stay with a gem when it is removed and returned to inventory."
+      },
+      {
+        title: "Better socket visuals",
+        text: "Filled sockets keep their configured color behind the gem image, making special socket types easier to recognize."
+      },
+      {
+        title: "Smoother configuration",
+        text: "Socket settings now avoid unnecessary sheet refreshes, and item selection prevents accidental follow-up clicks after a target is chosen."
       }
     ]
   },
@@ -103,7 +142,13 @@ const RELEASE_SECTIONS = [
     tone: "fixed",
     items: [
       {
-        text: "Fixed the +Details tab so the critical threshold, critical multiplier, and attack bonus controls no longer duplicate labels or inject extra text into the interface."
+        text: "Fixed Socket Extraction validation when its original Activity document is no longer available."
+      },
+      {
+        text: "Updated support windows and sheet refresh behavior for Foundry VTT v14."
+      },
+      {
+        text: "Fixed the +Details tab so critical threshold, critical multiplier, and attack bonus controls no longer show duplicate labels or extra interface text."
       }
     ]
   }

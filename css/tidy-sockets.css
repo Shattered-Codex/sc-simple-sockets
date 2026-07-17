@@ -223,6 +223,93 @@
   margin-top: 0.15rem;
 }
 
+.sc-sockets-scma-picker__filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--color-border-light-primary, rgba(0, 0, 0, 0.18)) 78%, #7082a7 22%);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.38);
+  color: var(--color-text-dark-primary, inherit);
+}
+
+.sc-sockets-scma-picker__filter i {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  opacity: 0.65;
+}
+
+.sc-sockets-scma-picker__filter input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.sc-sockets-scma-picker__gem-portrait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sc-sockets-slot-icon-size);
+  height: var(--sc-sockets-slot-icon-size);
+  flex: 0 0 var(--sc-sockets-slot-icon-size);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-border-light-primary, rgba(0, 0, 0, 0.18)) 82%, #8f9fb7 18%);
+  border-radius: var(--sc-sockets-slot-radius, 10px);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.sc-sockets-scma-picker__gem-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border: none;
+}
+
+.sc-sockets-scma-picker__gem-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sc-sockets-scma-picker__gem-qty {
+  margin-inline-start: 0.3rem;
+  padding: 0.05rem 0.32rem;
+  border: 1px solid color-mix(in srgb, var(--color-border-light-primary, rgba(0, 0, 0, 0.18)) 82%, #8f9fb7 18%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
+  color: var(--color-text-dark-primary, inherit);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sc-sockets-scma-picker__gem-dest {
+  overflow: hidden;
+  color: color-mix(in srgb, var(--color-text-dark-primary, currentColor) 72%, #6c7e97 28%);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-sockets-scma-picker__gem-dest-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  flex: 0 0 auto;
+}
+
+.sc-sockets-scma-picker__no-results {
+  margin: 0;
+  font-style: italic;
+  text-align: center;
+}
+
 @media (max-width: 640px) {
   .sc-sockets-scma-picker__option {
     gap: 0.55rem;
@@ -391,6 +478,59 @@
   gap: 0.25rem;
 }
 
+.sc-sockets-tidy .sc-sockets-main-section,
+.sc-sockets-tidy .sc-sockets-resource-section {
+  overflow: hidden;
+  border: 1px solid var(--color-border-light-primary, rgba(255, 255, 255, 0.14));
+  border-radius: 6px;
+  background: color-mix(in srgb, rgba(12, 16, 24, 0.96) 86%, transparent);
+}
+
+.sc-sockets-tidy .sc-sockets-main-section {
+  padding: 0;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-section {
+  margin-top: 0.65rem;
+  padding: 0;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-table {
+  padding: 0;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container .tidy-table-row {
+  align-items: center;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container .sc-sockets-resource-header,
+.sc-sockets-tidy .sc-sockets-resource-row-container .sc-sockets-resource-row {
+  grid-template-columns: 3rem minmax(0, 1fr) minmax(6.25rem, 6.9rem) minmax(6rem, 6.75rem);
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container--header {
+  pointer-events: none;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container--header .sc-sockets-resource-header {
+  min-height: 2rem;
+}
+
+.sc-sockets-tidy .sc-sockets-resource-row-container--header .tidy-table-cell {
+  color: rgba(246, 241, 234, 0.96);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .sc-sockets-tidy .sc-sockets-resource-row-container .sc-sockets-resource-header,
+  .sc-sockets-tidy .sc-sockets-resource-row-container .sc-sockets-resource-row {
+    grid-template-columns: 2.75rem minmax(0, 1fr) minmax(5.5rem, 6rem) minmax(5.25rem, 5.9rem);
+  }
+}
+
 /* Keep gem details row layout consistent even with Quadrone theme flex overrides */
 .tidy5e-sheet .sc-sockets-gem-damage-row.form-group,
 .tidy5e-sheet.quadrone .sc-sockets-gem-damage-row.form-group {
@@ -415,13 +555,25 @@
 }
 
 .tidy5e-sheet .sc-sockets-gem-damage-row-chips .tag.sc-sockets-gem-damage-type-chip,
-.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-chips .tag.sc-sockets-gem-damage-type-chip {
+.tidy5e-sheet.quadrone .sc-sockets-gem-damage-row-chips .tag.sc-sockets-gem-damage-type-chip,
+.tidy5e-sheet .sc-sockets-gem-tags string-tags .tags.input-element-tags > .tag,
+.tidy5e-sheet.quadrone .sc-sockets-gem-tags string-tags .tags.input-element-tags > .tag,
+.tidy5e-sheet .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill,
+.tidy5e-sheet.application.quadrone .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill {
   min-height: 1.1rem;
   padding: 0.04rem 0.22rem;
   gap: 0.16rem;
+  border: 1px solid var(--color-border-light-primary, rgba(255, 255, 255, 0.18));
+  background: var(--color-bg-option, rgba(255, 255, 255, 0.06));
+  color: inherit;
   font-size: 0.66rem;
   line-height: 1;
   border-radius: 2px;
+}
+
+.tidy5e-sheet.application.quadrone .sc-sockets-gem-tags .string-tags > .string-tags-selected > .pill > span {
+  padding: 0;
+  line-height: 1;
 }
 
 .tidy5e-sheet .sc-sockets-gem-damage-row-top,
