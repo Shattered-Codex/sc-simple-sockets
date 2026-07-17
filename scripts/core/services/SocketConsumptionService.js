@@ -74,6 +74,16 @@ export class SocketConsumptionService {
     const spec = SocketConsumptionService.#requireSpec(target);
     const cost = (await target.resolveCost({ config, rolls: updates.rolls })).total;
 
+    return SocketConsumptionService.consumeFormulaCharge(target, config, updates, { spec, cost });
+  }
+
+  /**
+   * Consumes a socket pool on behalf of a native item-uses formula binding.
+   * This shares the same planning, update chaining, and deferred cleanup used by
+   * the explicit Socketed Charges consumption type.
+   */
+  static consumeFormulaCharge(target, config, updates, { spec, cost }) {
+
     const combined = SocketConsumptionService.#combinedHosts(target, spec, updates);
     if (!combined.ok) {
       throw SocketConsumptionService.#consumptionError(combined.message);
@@ -423,7 +433,8 @@ export class SocketConsumptionService {
           continue;
         }
         if (spec.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY
-          && slotResource.key.toLowerCase() !== String(spec.resourceKey ?? "").toLowerCase()) {
+          && GemResourceService.normalizeResourceLookupKey(slotResource.key)
+            !== GemResourceService.normalizeResourceLookupKey(spec.resourceKey)) {
           continue;
         }
         available += slotResource.value;
