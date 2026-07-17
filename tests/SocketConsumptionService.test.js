@@ -126,6 +126,7 @@ describe("SocketConsumptionService actor pools", () => {
     const useB = { consume: { resources: true } };
     const removals = [];
     const originalRemoveGem = SocketService.removeGem;
+    let releaseRemoval = () => {};
     SocketService.removeGem = async (item, slotIndex) => {
       removals.push({ item, slotIndex });
     };
@@ -178,11 +179,65 @@ describe("SocketConsumptionService actor pools", () => {
         /Not enough socketed "energy" charges \(0\/1\)/
       );
       hookHandlers.get("dnd5e.postUseActivity")(normalActivity, useE, {});
+
+      assert.deepEqual(removals.map(({ slotIndex }) => slotIndex), [0, 1]);
+      removals.length = 0;
+
+      const delayedActor = createTestActor({ items: [
+        {
+          id: "delayed-ability",
+          type: "feat",
+          flags: socketFlags([
+            chargedSlot("Disposable Cell", 2, 2, true),
+            chargedSlot("Reserve Cell", 10, 10, false)
+          ])
+        }
+      ] });
+      const delayedAbility = delayedActor.items.get("delayed-ability");
+      const delayedActivity = {
+        id: "delayed-blast",
+        uuid: "Actor.test.Item.delayed-ability.Activity.delayed-blast",
+        item: delayedAbility,
+        flags: {}
+      };
+      const delayedTarget = {
+        item: delayedAbility,
+        activity: delayedActivity,
+        target: formatSocketTarget({ mode: "any", resourceKey: "energy" }),
+        async resolveCost() { return { total: 3 }; }
+      };
+      const removalGate = new Promise((resolve) => {
+        releaseRemoval = resolve;
+      });
+      SocketService.removeGem = async (item, slotIndex) => {
+        removals.push({ item, slotIndex });
+        await removalGate;
+      };
+
+      const useG = { consume: { resources: true } };
+      const firstUpdates = { item: [], rolls: [] };
+      hookHandlers.get("dnd5e.preActivityConsumption")(delayedActivity, useG, {});
+      await SocketConsumptionService.consumeCharge.call(delayedTarget, useG, firstUpdates);
+      await delayedActor.updateEmbeddedDocuments("Item", firstUpdates.item);
+      hookHandlers.get("dnd5e.postUseActivity")(delayedActivity, useG, {});
+
+      assert.deepEqual(removals.map(({ slotIndex }) => slotIndex), [0]);
+
+      const useH = { consume: { resources: true } };
+      const secondUpdates = { item: [], rolls: [] };
+      delayedTarget.resolveCost = async () => ({ total: 1 });
+      hookHandlers.get("dnd5e.preActivityConsumption")(delayedActivity, useH, {});
+      await SocketConsumptionService.consumeCharge.call(delayedTarget, useH, secondUpdates);
+
+      assert.equal(updatedCharge(secondUpdates, "delayed-ability", 1), 8);
+      hookHandlers.get("dnd5e.postUseActivity")(delayedActivity, useH, {});
+      releaseRemoval();
+      await new Promise((resolve) => setImmediate(resolve));
     } finally {
+      releaseRemoval();
       SocketService.removeGem = originalRemoveGem;
     }
 
-    assert.equal(removals.length, 2);
-    assert.deepEqual(removals.map(({ slotIndex }) => slotIndex), [0, 1]);
+    assert.deepEqual(removals.map(({ slotIndex }) => slotIndex), [0]);
   });
 });

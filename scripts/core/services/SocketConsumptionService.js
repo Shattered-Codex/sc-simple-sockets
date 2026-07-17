@@ -250,6 +250,9 @@ export class SocketConsumptionService {
     if (!pending || pending.consuming) {
       return;
     }
+    // Charge updates have already been applied by dnd5e before postUseActivity.
+    // Keep only whole-gem reservations while their asynchronous removal finishes.
+    pending.charges = [];
     if (!pending.targets.length) {
       SocketConsumptionService.#pendingConsumptions.delete(usageConfig);
       return;
