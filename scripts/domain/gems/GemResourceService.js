@@ -6,6 +6,17 @@ import {
 } from "../../core/helpers/socketConsumptionConfig.js";
 
 export class GemResourceService {
+  static normalizeResourceLookupKey(value) {
+    return String(value ?? "")
+      .trim()
+      .normalize("NFKD")
+      .replace(/\p{M}/gu, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/-{2,}/g, "-")
+      .replace(/^[-_]+|[-_]+$/g, "");
+  }
+
   static normalizeResource(raw) {
     const key = String(raw?.key ?? "").trim();
     if (!key.length) {
@@ -137,7 +148,7 @@ export class GemResourceService {
       };
     });
     const wantedKey = spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY
-      ? String(spec?.resourceKey ?? "").trim().toLowerCase()
+      ? GemResourceService.normalizeResourceLookupKey(spec?.resourceKey)
       : null;
     const candidates = selection.indices.filter((index) => {
       if (excluded.has(index)) {
@@ -147,7 +158,8 @@ export class GemResourceService {
       if (!resource) {
         return false;
       }
-      return wantedKey === null || resource.key.toLowerCase() === wantedKey;
+      return wantedKey === null
+        || GemResourceService.normalizeResourceLookupKey(resource.key) === wantedKey;
     });
 
     const amount = Math.trunc(Number(cost) || 0);

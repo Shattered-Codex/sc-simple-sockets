@@ -528,6 +528,58 @@ to inventory, it keeps its remaining charges.
 The resource is active only while the gem is inside a socket. The host item's
 **Sockets** tab shows the resource and its remaining charges.
 
+#### Use socket charges in formulas and Limited Uses
+
+The module adds socket resource pools to dnd5e item and activity roll data. This
+allows formula fields such as **Usage → Limited Uses → Max** to show the charges
+provided by socketed gems.
+
+For a resource named `Soul Harvest`, use the normalized key `soul-harvest`:
+
+| Formula | Value |
+| --- | --- |
+| `@sockets.soul-harvest.total` | Maximum capacity across all items owned by the character |
+| `@sockets.soul-harvest.item` | Maximum capacity on this item only |
+
+Use one of those exact formulas in **Limited Uses → Max**. The module makes
+**Spent** read-only and derives its numeric value as `capacity - current charges`.
+dnd5e therefore continues to calculate the available uses as `Max - Spent`, which
+is exactly the number of socket charges that remain.
+
+When dnd5e consumes the item's native Limited Uses, the same cost is deducted
+from socketed gems that provide the named resource. Character-wide pools consume
+the activity item's charged gems first, then the character's other items and
+their sockets in stable order. Item pools never leave the current item.
+
+If the activity already has an explicit **Socketed Charges** consumption target,
+that target remains responsible for the deduction and the automatic item-uses
+update is suppressed, preventing a double charge. dnd5e's **Spent** value remains
+numeric; it is recalculated from the gems whenever item data is prepared, so
+recharging, inserting, extracting, or destroying a gem also updates the counter.
+
+Resource keys are converted to lowercase formula-safe slugs: accents are removed,
+spaces and punctuation become hyphens. These values are always recalculated from
+the socketed gem snapshots; no duplicate balance is stored on the item or actor.
+For an unowned item, the character-wide scope falls back to that item.
+
+##### Important behavior and limitations
+
+- Use the formula exactly as shown. Additional arithmetic, alternative suffixes,
+  and partial paths do not create a Limited Uses socket binding.
+- The `.total` scope includes every owned item, including unequipped and unattuned
+  items. Use `.item` when charges must stay on the activity's item.
+- Native dnd5e Limited Uses recovery changes the numeric counter but does not
+  recharge socketed gems. Recharge the gems through their socket resource controls
+  or a socket recharge activity; the derived **Spent** value will then update.
+- Formula-safe names that normalize to the same slug share one pool. For example,
+  `Soul Harvest`, `Soul.Harvest`, and `soul-harvest` all resolve as `soul-harvest`.
+- If the activity also has an explicit **Socketed Charges** target for the same
+  resource, that target controls the deduction and the automatic binding does not
+  deduct a second time.
+
+After installing or updating the module, reload the Foundry world before testing
+these formulas so the roll-data and consumption integrations are active.
+
 #### Let an activity spend socketed charges
 
 In the activity's consumption settings, choose **Socketed Charges** and select
@@ -883,4 +935,3 @@ the [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) license.
 ---
 
 SC - Simple Sockets is a Shattered Codex project. Pull requests, suggestions, and bug reports are welcome.
-

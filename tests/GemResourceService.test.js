@@ -187,6 +187,22 @@ describe("GemResourceService", () => {
       assert.deepEqual(plan.deductions, [{ slotIndex: 1, resourceKey: "battery", amount: 2 }]);
     });
 
+    test("matches formula-safe resource slugs against names with spaces and punctuation", () => {
+      const slots = [
+        makeSlot("Soul Cell", { key: "Soul Harvest", max: 3, value: 3 }),
+        makeSlot("Other Cell", { key: "other", max: 3, value: 3 })
+      ];
+
+      const plan = GemResourceService.planChargeConsumption(
+        slots,
+        { mode: "any", resourceKey: "soul-harvest" },
+        2
+      );
+
+      assert.equal(plan.ok, true);
+      assert.deepEqual(plan.deductions, [{ slotIndex: 0, resourceKey: "Soul Harvest", amount: 2 }]);
+    });
+
     test("fails when the aggregated pool cannot cover the amount", () => {
       const slots = [makeSlot("Battery Gem", { key: "battery", max: 10, value: 3 })];
       const plan = GemResourceService.planChargeConsumption(

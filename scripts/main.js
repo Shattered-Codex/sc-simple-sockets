@@ -27,6 +27,9 @@ import { DataMigration } from "./core/migration/DataMigration.js";
 import { ItemSheetSync } from "./core/support/ItemSheetSync.js";
 import { DebugTrace } from "./core/support/DebugTrace.js";
 import { ScMoreActivitiesIntegration } from "./core/integrations/sc-more-activities/ScMoreActivitiesIntegration.js";
+import { SocketRollDataService } from "./core/services/SocketRollDataService.js";
+import { SocketUsesBridgeService } from "./core/services/SocketUsesBridgeService.js";
+import { SocketUsesUI } from "./core/ui/SocketUsesUI.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -35,6 +38,7 @@ MacroAPI.register();
 SocketAPI.register();
 ScMoreActivitiesIntegration.register();
 SocketConsumptionService.register();
+SocketUsesBridgeService.register();
 TidyIntegration.register({
   gemSheetExtension: gemSheet,
   itemSocketExtension: itemSocketSheet
@@ -86,6 +90,8 @@ Hooks.once("setup", () => {
   SocketDescriptionsUI.activate();
   ItemSheetSync.activate();
   DebugTrace.activate();
+  SocketRollDataService.activate();
+  SocketUsesUI.activate();
 
 });
 
