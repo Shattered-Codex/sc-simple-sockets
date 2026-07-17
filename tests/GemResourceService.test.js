@@ -199,6 +199,22 @@ describe("GemResourceService", () => {
       assert.equal(plan.reason, "insufficient-socket-charges");
     });
 
+    test("skips gems already reserved for deferred removal", () => {
+      const slots = [
+        makeSlot("Cell A", { key: "battery", max: 1, value: 1, destroyOnEmpty: true }),
+        makeSlot("Cell B", { key: "battery", max: 1, value: 1, destroyOnEmpty: true })
+      ];
+      const plan = GemResourceService.planChargeConsumption(
+        slots,
+        { mode: "any", resourceKey: "battery" },
+        1,
+        { excluded: new Set([0]) }
+      );
+
+      assert.equal(plan.ok, true);
+      assert.deepEqual(plan.deductions, [{ slotIndex: 1, resourceKey: "battery", amount: 1 }]);
+    });
+
     test("sourceSlot consumes the originating gem's own resource (implied key)", () => {
       const slots = [
         makeSlot("Battery Gem", { key: "battery", max: 10, value: 5 }),

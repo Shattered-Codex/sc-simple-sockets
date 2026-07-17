@@ -111,9 +111,10 @@ export class GemResourceService {
    * @param {number} cost Signed amount of charges to consume.
    * @param {object} [options]
    * @param {number|null} [options.sourceSlotIndex] Slot that originated a transferred activity.
+   * @param {Set<number>} [options.excluded] Slots already reserved for deferred gem removal.
    * @returns {{ok: boolean, reason?: string, message?: string, deductions?: Array, updatedSlots?: Array}}
    */
-  static planChargeConsumption(slots, spec, cost, { sourceSlotIndex = null } = {}) {
+  static planChargeConsumption(slots, spec, cost, { sourceSlotIndex = null, excluded = new Set() } = {}) {
     const workingSlots = Array.isArray(slots) ? slots : [];
     const selection = GemResourceService.#selectSlots(workingSlots, spec, { sourceSlotIndex });
     if (!selection.ok) {
@@ -125,6 +126,9 @@ export class GemResourceService {
       ? String(spec?.resourceKey ?? "").trim().toLowerCase()
       : null;
     const candidates = selection.indices.filter((index) => {
+      if (excluded.has(index)) {
+        return false;
+      }
       const resource = resources[index];
       if (!resource) {
         return false;
