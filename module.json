@@ -52,6 +52,9 @@
         },
         {
             "src": "css/socket-consumption.css"
+        },
+        {
+            "src": "css/socket-slot-config.css"
         }
     ],
     "url": "https://github.com/Shattered-Codex/sc-simple-sockets",

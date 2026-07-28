@@ -39,6 +39,8 @@ function emptySlot() {
   return { gem: null, name: "Empty", img: Constants.SOCKET_SLOT_IMG, slotConfig: {}, _gemData: null };
 }
 
+const NO_RECOVERY = { period: "", type: "recoverAll", formula: "", threshold: 6 };
+
 describe("GemResourceService", () => {
   beforeEach(() => {
     installFoundryStubs();
@@ -57,18 +59,18 @@ describe("GemResourceService", () => {
     test("clamps the current value between zero and max", () => {
       assert.deepEqual(
         GemResourceService.normalizeResource({ key: "battery", max: 5, value: 42 }),
-        { key: "battery", max: 5, value: 5, destroyOnEmpty: false }
+        { key: "battery", max: 5, value: 5, destroyOnEmpty: false, recovery: NO_RECOVERY }
       );
       assert.deepEqual(
         GemResourceService.normalizeResource({ key: "battery", max: 5, value: -3 }),
-        { key: "battery", max: 5, value: 0, destroyOnEmpty: false }
+        { key: "battery", max: 5, value: 0, destroyOnEmpty: false, recovery: NO_RECOVERY }
       );
     });
 
     test("treats an empty value as a full resource", () => {
       assert.deepEqual(
         GemResourceService.normalizeResource({ key: "magic", max: "4", value: "" }),
-        { key: "magic", max: 4, value: 4, destroyOnEmpty: false }
+        { key: "magic", max: 4, value: 4, destroyOnEmpty: false, recovery: NO_RECOVERY }
       );
     });
 
@@ -86,6 +88,74 @@ describe("GemResourceService", () => {
         false
       );
     });
+
+    test("keeps a valid recovery period and trims the formula", () => {
+      assert.deepEqual(
+        GemResourceService.normalizeResource({
+          key: "battery",
+          max: 5,
+          recovery: { period: "lr", type: "formula", formula: " 1d4 " }
+        }).recovery,
+        { period: "lr", type: "formula", formula: "1d4", threshold: 6 }
+      );
+    });
+
+    test("falls back to recoverAll for unknown recovery types", () => {
+      assert.deepEqual(
+        GemResourceService.normalizeResource({
+          key: "battery",
+          max: 5,
+          recovery: { period: "sr", type: "explode", formula: "1d4" }
+        }).recovery,
+        { period: "sr", type: "recoverAll", formula: "1d4", threshold: 6 }
+      );
+    });
+
+    test("coerces loseAll to recoverAll for the recharge period", () => {
+      assert.equal(
+        GemResourceService.normalizeResource({
+          key: "battery",
+          max: 5,
+          recovery: { period: "recharge", type: "loseAll" }
+        }).recovery.type,
+        "recoverAll"
+      );
+      assert.equal(
+        GemResourceService.normalizeResource({
+          key: "battery",
+          max: 5,
+          recovery: { period: "day", type: "loseAll" }
+        }).recovery.type,
+        "loseAll"
+      );
+    });
+
+    test("clamps the recharge threshold between 1 and 6, defaulting to 6", () => {
+      const recoveryWith = (threshold) => GemResourceService.normalizeResource({
+        key: "battery",
+        max: 5,
+        recovery: { period: "recharge", threshold }
+      }).recovery.threshold;
+      assert.equal(recoveryWith("5"), 5);
+      assert.equal(recoveryWith(""), 6);
+      assert.equal(recoveryWith("9"), 6);
+      assert.equal(recoveryWith("0"), 1);
+    });
+
+    test("rejects unknown recovery periods, discarding the formula", () => {
+      assert.deepEqual(
+        GemResourceService.normalizeResource({
+          key: "battery",
+          max: 5,
+          recovery: { period: "week", formula: "1d4" }
+        }).recovery,
+        NO_RECOVERY
+      );
+      assert.deepEqual(
+        GemResourceService.normalizeResource({ key: "battery", max: 5 }).recovery,
+        NO_RECOVERY
+      );
+    });
   });
 
   describe("withSlotResourceValue", () => {
@@ -96,7 +166,7 @@ describe("GemResourceService", () => {
       assert.notEqual(updated, slot);
       assert.deepEqual(
         GemResourceService.getSlotResource(updated),
-        { key: "battery", max: 10, value: 10, destroyOnEmpty: false }
+        { key: "battery", max: 10, value: 10, destroyOnEmpty: false, recovery: NO_RECOVERY }
       );
       // The original slot snapshot is untouched.
       assert.equal(GemResourceService.getSlotResource(slot).value, 7);
@@ -109,6 +179,63 @@ describe("GemResourceService", () => {
       const sameValue = makeSlot("Battery Gem", { key: "battery", max: 10, value: 7 });
       assert.equal(GemResourceService.withSlotResourceValue(sameValue, 7), sameValue);
     });
+
+    test("preserves the recovery config when changing the value", () => {
+      const slot = makeSlot("Battery Gem", {
+        key: "battery",
+        max: 10,
+        value: 7,
+        recovery: { period: "sr", type: "formula", formula: "1d4" }
+      });
+      const updated = GemResourceService.withSlotResourceValue(slot, 3);
+      assert.deepEqual(
+        GemResourceService.getSlotResource(updated).recovery,
+        { period: "sr", type: "formula", formula: "1d4", threshold: 6 }
+      );
+    });
+  });
+
+  describe("withSlotResourceRecovery", () => {
+    test("writes the recovery config back into the slot snapshot", () => {
+      const slot = makeSlot("Battery Gem", { key: "battery", max: 10, value: 7 });
+      const updated = GemResourceService.withSlotResourceRecovery(
+        slot,
+        { period: "lr", type: "formula", formula: "1d6", threshold: 4 }
+      );
+
+      assert.notEqual(updated, slot);
+      assert.deepEqual(
+        GemResourceService.getSlotResource(updated),
+        {
+          key: "battery",
+          max: 10,
+          value: 7,
+          destroyOnEmpty: false,
+          recovery: { period: "lr", type: "formula", formula: "1d6", threshold: 4 }
+        }
+      );
+      // The original slot snapshot is untouched.
+      assert.deepEqual(GemResourceService.getSlotResource(slot).recovery, NO_RECOVERY);
+    });
+
+    test("returns the slot unchanged when there is nothing to update", () => {
+      const noResource = makeSlot("Plain Gem", null);
+      assert.equal(
+        GemResourceService.withSlotResourceRecovery(noResource, { period: "lr", type: "recoverAll", formula: "" }),
+        noResource
+      );
+
+      const same = makeSlot("Battery Gem", {
+        key: "battery",
+        max: 10,
+        value: 7,
+        recovery: { period: "lr", type: "formula", formula: "1d6" }
+      });
+      assert.equal(
+        GemResourceService.withSlotResourceRecovery(same, { period: "lr", type: "formula", formula: "1d6", threshold: 6 }),
+        same
+      );
+    });
   });
 
   describe("getSlotResource", () => {
@@ -116,7 +243,7 @@ describe("GemResourceService", () => {
       const slot = makeSlot("Battery Gem", { key: "battery", max: 10, value: 7 });
       assert.deepEqual(
         GemResourceService.getSlotResource(slot),
-        { key: "battery", max: 10, value: 7, destroyOnEmpty: false }
+        { key: "battery", max: 10, value: 7, destroyOnEmpty: false, recovery: NO_RECOVERY }
       );
     });
 

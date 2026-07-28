@@ -6,6 +6,19 @@ import {
 } from "../../core/helpers/socketConsumptionConfig.js";
 
 export class GemResourceService {
+  /**
+   * Recovery periods gems support, matching the dnd5e period keys: rest/time
+   * periods, combat periods, and the manual d6 recharge check.
+   */
+  static RECOVERY_PERIODS = [
+    "sr", "lr", "day", "dawn", "dusk",
+    "initiative", "turnStart", "turnEnd", "turn",
+    "recharge"
+  ];
+
+  /** Recovery types, mirroring the native dnd5e uses recovery profiles. */
+  static RECOVERY_TYPES = ["recoverAll", "loseAll", "formula"];
+
   static normalizeResourceLookupKey(value) {
     return String(value ?? "")
       .trim()
@@ -38,8 +51,34 @@ export class GemResourceService {
       key,
       max: normalizedMax,
       value: normalizedValue,
-      destroyOnEmpty: raw?.destroyOnEmpty === true || raw?.destroyOnEmpty === "true"
+      destroyOnEmpty: raw?.destroyOnEmpty === true || raw?.destroyOnEmpty === "true",
+      recovery: GemResourceService.normalizeRecovery(raw?.recovery)
     };
+  }
+
+  /**
+   * An empty period means the gem only recharges manually. The formula is kept
+   * even for the recoverAll/loseAll types so switching types is lossless.
+   * The threshold is the minimum d6 result of the recharge period's check.
+   */
+  static normalizeRecovery(raw) {
+    const parsedThreshold = Number.parseInt(raw?.threshold, 10);
+    const threshold = Number.isFinite(parsedThreshold)
+      ? Math.min(Math.max(parsedThreshold, 1), 6)
+      : 6;
+
+    const period = String(raw?.period ?? "").trim();
+    if (!GemResourceService.RECOVERY_PERIODS.includes(period)) {
+      return { period: "", type: "recoverAll", formula: "", threshold };
+    }
+
+    const rawType = String(raw?.type ?? "").trim();
+    let type = GemResourceService.RECOVERY_TYPES.includes(rawType) ? rawType : "recoverAll";
+    // A successful recharge check restores charges; losing them makes no sense there.
+    if (period === "recharge" && type === "loseAll") {
+      type = "recoverAll";
+    }
+    return { period, type, formula: String(raw?.formula ?? "").trim(), threshold };
   }
 
   /**
@@ -62,6 +101,33 @@ export class GemResourceService {
       source,
       `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`,
       { ...resource, value: nextValue }
+    );
+    return { ...slot, _gemData: ItemResolver.compactSnapshot(source) };
+  }
+
+  /**
+   * Returns a copy of the slot with the gem's recovery configuration replaced,
+   * written back into the snapshot.
+   */
+  static withSlotResourceRecovery(slot, recovery) {
+    const source = GemResourceService.getSlotGemSource(slot);
+    const resource = GemResourceService.getGemResource(source);
+    if (!source || !resource) {
+      return slot;
+    }
+
+    const nextRecovery = GemResourceService.normalizeRecovery(recovery);
+    if (nextRecovery.period === resource.recovery.period
+      && nextRecovery.type === resource.recovery.type
+      && nextRecovery.formula === resource.recovery.formula
+      && nextRecovery.threshold === resource.recovery.threshold) {
+      return slot;
+    }
+
+    foundry.utils.setProperty(
+      source,
+      `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`,
+      { ...resource, recovery: nextRecovery }
     );
     return { ...slot, _gemData: ItemResolver.compactSnapshot(source) };
   }

@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
 import { buildSocketDescriptionEntries } from "../helpers/socketDescriptionEntries.js";
+import { GemRecoveryService } from "../services/GemRecoveryService.js";
 
 export class TidySocketDescriptionsUI {
   static SELECTOR = '[data-sc-sockets="socket-descriptions-tidy"]';
@@ -44,12 +45,26 @@ export class TidySocketDescriptionsUI {
       "Send to Chat"
     );
     const escapedSendLabel = TidySocketDescriptionsUI.#escapeHtml(sendLabel);
+    const rollLabel = Constants.localize(
+      "SCSockets.GemDetails.Resource.Recovery.Roll",
+      "Roll Recharge"
+    );
+    const escapedRollLabel = TidySocketDescriptionsUI.#escapeHtml(rollLabel);
     const rows = entries.map((entry) => `
       <div class="sc-sockets-socket-description">
         ${TidySocketDescriptionsUI.#buildIcon(entry)}
         <div class="sc-sockets-socket-description-body">
           <div class="sc-sockets-socket-description-header">
             <strong class="sc-sockets-socket-description-title">${TidySocketDescriptionsUI.#escapeHtml(entry.name)}${entry.resourceLabel ? ` <span class="sc-sockets-gem-resource-badge">${TidySocketDescriptionsUI.#escapeHtml(entry.resourceLabel)}</span>` : ""}</strong>
+            ${entry.canRecharge ? `
+            <button type="button"
+                    class="unbutton control-button always-interactive sc-sockets-gem-recharge-roll"
+                    data-action="rollSocketRecharge"
+                    data-slot-index="${Number(entry.slotIndex)}"
+                    data-tooltip="${escapedRollLabel}"
+                    aria-label="${escapedRollLabel}">
+              <i class="fas fa-dice-six" inert></i>
+            </button>` : ""}
             <button type="button"
                     class="unbutton control-button always-interactive sc-sockets-socket-description-chat"
                     data-action="sendSocketDescription"
@@ -126,7 +141,7 @@ export class TidySocketDescriptionsUI {
       root.append(section);
     }
 
-    TidySocketDescriptionsUI.#bindActions(section);
+    TidySocketDescriptionsUI.#bindActions(section, item);
 
     Hooks.callAll(Constants.HOOK_TIDY_SOCKET_DESCRIPTIONS_RENDERED, {
       app,
@@ -139,7 +154,7 @@ export class TidySocketDescriptionsUI {
     // No-op: keep the original node to avoid removing the sheet root.
   }
 
-  static #bindActions(section) {
+  static #bindActions(section, item = null) {
     if (section?.dataset?.scSocketsBound === "true") {
       return;
     }
@@ -148,6 +163,13 @@ export class TidySocketDescriptionsUI {
       const target = event.target instanceof HTMLElement
         ? event.target.closest("[data-action]")
         : null;
+
+      if (target?.dataset.action === "rollSocketRecharge") {
+        event.preventDefault();
+        event.stopPropagation();
+        await GemRecoveryService.rollSlotRecharge(item, Number(target.dataset.slotIndex));
+        return;
+      }
 
       if (target?.dataset.action === "sendSocketDescription") {
         event.preventDefault();

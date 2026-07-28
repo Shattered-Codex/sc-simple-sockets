@@ -12,7 +12,7 @@ export async function buildSocketDescriptionEntries(item, slots) {
   };
 
   const entries = [];
-  for (const slot of slots) {
+  for (const [slotIndex, slot] of (Array.isArray(slots) ? slots : []).entries()) {
     const slotConfig = getSlotConfig(slot);
     if (!canUserSeeSlot({ ...slot, slotConfig })) {
       continue;
@@ -35,7 +35,12 @@ export async function buildSocketDescriptionEntries(item, slots) {
       description: enriched,
       isEmptySlot: !slot?.gem,
       slotColor: slot?.gem ? "" : (slotConfig.color || ""),
-      resourceLabel: resource ? `(${resource.value}/${resource.max} ${resource.key})` : ""
+      resourceLabel: resource ? `(${resource.value}/${resource.max} ${resource.key})` : "",
+      slotIndex,
+      canRecharge: Boolean(resource)
+        && resource.recovery.period === "recharge"
+        && resource.value < resource.max
+        && (item?.isOwner ?? false)
     });
   }
 

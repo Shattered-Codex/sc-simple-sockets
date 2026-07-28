@@ -322,27 +322,6 @@
   }
 }
 
-.socket-slot-config-app .socket-slot-config-preview-card {
-  align-items: center;
-}
-
-.socket-slot-config-app .socket-slot-config-preview-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  border: 1px solid color-mix(in srgb, var(--sf-border-soft) 82%, #7082a7 18%);
-  border-radius: 8px;
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 58%),
-    color-mix(in srgb, var(--sf-bg-card-soft) 90%, #0b1020 10%);
-}
-
-.socket-slot-config-app .socket-slot-config-preview-wrap .sc-sockets-slot-visual {
-  --sc-sockets-slot-icon-size: 7.25rem;
-  --sc-sockets-slot-radius: 16px;
-}
-
 .sc-sockets-slot-link {
   display: inline-flex;
   align-items: center;

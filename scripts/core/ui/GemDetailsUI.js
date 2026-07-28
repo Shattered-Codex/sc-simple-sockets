@@ -3,11 +3,15 @@ import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { GemTagService } from "../../domain/gems/GemTagService.js";
+import { GemRecoveryService } from "../services/GemRecoveryService.js";
 
 export class GemDetailsUI {
   static #handler = null;
   static SELECTOR = '[data-sc-sockets="gem-details-container"]';
   static DAMAGE_SECTION_SELECTOR = '[data-sc-sockets="gem-details"]';
+  static PANES = ["combat", "resource", "tags"];
+  /** Remembers the active +Details pane per gem so it survives sheet re-renders. */
+  static #activePanes = new Map();
 
   static activate() {
     if (GemDetailsUI.#handler) {
@@ -122,6 +126,14 @@ export class GemDetailsUI {
           event.preventDefault();
           await GemDetailsUI.#handleRemoveDamageType(sheet, target);
           break;
+        case "rollGemRecharge":
+          event.preventDefault();
+          await GemRecoveryService.rollItemRecharge(sheet?.item);
+          break;
+        case "showGemPane":
+          event.preventDefault();
+          GemDetailsUI.#activatePane(container, target.dataset.pane, sheet?.item);
+          break;
         default:
           break;
       }
@@ -129,6 +141,27 @@ export class GemDetailsUI {
 
     container.dataset.scSocketsGemDetailsBound = "true";
     GemDetailsUI.#normalizeDamageTypeSelections(container);
+    GemDetailsUI.#activatePane(container, GemDetailsUI.#activePanes.get(item?.uuid), item);
+  }
+
+  static #activatePane(container, pane, item) {
+    const pills = container?.querySelectorAll?.('[data-action="showGemPane"]') ?? [];
+    const panes = container?.querySelectorAll?.("[data-sc-sockets-pane]") ?? [];
+    if (!pills.length && !panes.length) {
+      return;
+    }
+
+    const active = GemDetailsUI.PANES.includes(pane) ? pane : GemDetailsUI.PANES[0];
+    for (const pill of pills) {
+      pill.classList.toggle("active", pill.dataset.pane === active);
+    }
+    for (const element of panes) {
+      element.hidden = element.dataset.scSocketsPane !== active;
+    }
+
+    if (item?.uuid) {
+      GemDetailsUI.#activePanes.set(item.uuid, active);
+    }
   }
 
   static async #handleAddDamage(sheet, container, { sectionSelector, flag }) {
@@ -555,7 +588,9 @@ export class GemDetailsUI {
     const prefix = `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`;
     const readField = (suffix) => {
       const field = container.querySelector(`[name="${prefix}.${suffix}"]`);
-      return field instanceof HTMLInputElement ? field.value : undefined;
+      return field instanceof HTMLInputElement || field instanceof HTMLSelectElement
+        ? field.value
+        : undefined;
     };
     const readCheckbox = (suffix) => {
       const field = container.querySelector(`[name="${prefix}.${suffix}"]`);
@@ -567,14 +602,21 @@ export class GemDetailsUI {
       return;
     }
 
+    const existing = GemResourceService.getGemResource(item);
     const resource = GemResourceService.normalizeResource({
       key,
       max: readField("max"),
       value: readField("value"),
-      destroyOnEmpty: readCheckbox("destroyOnEmpty")
+      destroyOnEmpty: readCheckbox("destroyOnEmpty"),
+      recovery: {
+        period: readField("recovery.period"),
+        type: readField("recovery.type"),
+        // The formula and threshold inputs only render for their modes; keep
+        // the stored values so switching modes back and forth is lossless.
+        formula: readField("recovery.formula") ?? existing?.recovery?.formula,
+        threshold: readField("recovery.threshold") ?? existing?.recovery?.threshold
+      }
     });
-
-    const existing = GemResourceService.getGemResource(item);
     if (!resource) {
       if (existing) {
         await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_RESOURCE);
@@ -586,7 +628,11 @@ export class GemDetailsUI {
       && existing.key === resource.key
       && existing.max === resource.max
       && existing.value === resource.value
-      && existing.destroyOnEmpty === resource.destroyOnEmpty) {
+      && existing.destroyOnEmpty === resource.destroyOnEmpty
+      && existing.recovery.period === resource.recovery.period
+      && existing.recovery.type === resource.recovery.type
+      && existing.recovery.formula === resource.recovery.formula
+      && existing.recovery.threshold === resource.recovery.threshold) {
       return;
     }
 

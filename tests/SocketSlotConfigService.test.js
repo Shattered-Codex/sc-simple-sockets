@@ -86,7 +86,42 @@ describe("SocketSlotConfigService", () => {
     assert.equal(slot.slotConfig.color, "#AABBCC");
     assert.deepEqual(
       GemResourceService.getSlotResource(slot),
-      { key: "battery", max: 10, value: 3, destroyOnEmpty: false }
+      { key: "battery", max: 10, value: 3, destroyOnEmpty: false, recovery: { period: "", type: "recoverAll", formula: "", threshold: 6 } }
+    );
+  });
+
+  test("updates the gem recovery config alongside charges", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        name: "Sword",
+        type: "weapon",
+        includeActivitiesField: true,
+        flags: {
+          [Constants.MODULE_ID]: {
+            [Constants.FLAGS.sockets]: [
+              makeSlot("Battery Gem", { key: "battery", max: 10, value: 7 })
+            ]
+          }
+        }
+      }]
+    });
+    const item = actor.items.get("host-1");
+
+    const updated = await SocketSlotConfigService.updateConfigAndResource(item, 0, {
+      name: "Charged Slot",
+      hidden: false,
+      deleteGemOnRemoval: false,
+      condition: "",
+      description: "",
+      color: ""
+    }, { value: 5, recovery: { period: "lr", type: "formula", formula: "1d4", threshold: 3 } });
+
+    assert.equal(updated, true);
+    const slot = item.getFlag(Constants.MODULE_ID, Constants.FLAGS.sockets)[0];
+    assert.deepEqual(
+      GemResourceService.getSlotResource(slot),
+      { key: "battery", max: 10, value: 5, destroyOnEmpty: false, recovery: { period: "lr", type: "formula", formula: "1d4", threshold: 3 } }
     );
   });
 

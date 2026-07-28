@@ -44,6 +44,16 @@
       "TabLabel": "+Details",
       "SelectLabel": "Additional Details",
       "Hint": "Choose how this gem should be categorized.",
+      "Panes": {
+        "Combat": "Combat",
+        "Resource": "Resource",
+        "Tags": "Tags",
+        "Filled": "Configured"
+      },
+      "AttackCrit": {
+        "Label": "Attack & Crit",
+        "Hint": "Leave blank to inherit from the host item."
+      },
       "TypeFieldset": "Details Type",
       "Options": {
         "None": "None",
@@ -107,7 +117,30 @@
         "Max": "Maximum",
         "Value": "Current",
         "DestroyOnEmpty": "Destroy when out of charges",
-        "DestroyOnEmptyHint": "When a consumption drains this gem to zero charges, the gem is destroyed and removed from its socket."
+        "DestroyOnEmptyHint": "When a consumption drains this gem to zero charges, the gem is destroyed and removed from its socket.",
+        "Recovery": {
+          "Period": "Recharges on",
+          "PeriodHint": "When these charges change automatically: during rests, in combat (initiative and turns), or through a manual Recharge die roll. Applies to the actor carrying the gem, whether it is socketed or loose in the inventory.",
+          "PeriodNone": "Never (manual only)",
+          "PeriodShortRest": "Short Rest",
+          "PeriodLongRest": "Long Rest",
+          "PeriodDay": "Daily (new day)",
+          "Type": "Recovery",
+          "TypeHint": "What happens when the period triggers: recover all charges, lose all charges, or roll a custom formula.",
+          "TypeRecoverAll": "Recover All Charges",
+          "TypeLoseAll": "Lose All Charges",
+          "TypeFormula": "Custom Formula",
+          "Formula": "Formula",
+          "FormulaPlaceholder": "e.g. 1d4",
+          "FormulaHint": "Formula rolled to determine how many charges return.",
+          "Threshold": "Recharge On",
+          "ThresholdHint": "Minimum d6 result for a successful recharge check, e.g. 5 means 5–6. On a success the selected recovery applies (all charges or the formula amount). Roll it with the die button here or in the Socket Descriptions.",
+          "Roll": "Roll Recharge",
+          "RechargeFlavor": "{name} recharge check - {result}",
+          "RechargeSuccess": "Success!",
+          "RechargeFailure": "Failure.",
+          "RechargeFull": "{name} is already fully charged."
+        }
       },
       "Tags": {
         "Label": "Gem Tags",
@@ -130,32 +163,64 @@
     "SocketSlotConfig": {
       "Title": "Socket Slot Settings",
       "Subtitle": "Configure rules, description, and tint for this slot.",
+      "Sockets": "Sockets",
+      "AddSocket": "Add socket",
       "SlotLabel": "Slot",
       "SlotNameLabel": "Slot name",
+      "SlotNameHint": "Leave blank to number it automatically.",
       "HostLabel": "Host item",
       "GemLabel": "Gem in slot",
+      "Contents": "Contents",
+      "Rules": "Rules",
+      "SocketedBadge": "Socketed",
+      "EmptyBadge": "Empty",
+      "UnsocketGem": "Unsocket gem",
       "InspectHost": "Open Host Item",
       "InspectHostHint": "Opens the host item sheet.",
       "InspectGem": "Inspect Gem",
       "InspectHint": "Opens the socketed gem in read-only mode.",
       "EmptySlot": "Empty slot",
       "NoGem": "No gem is currently socketed in this slot.",
+      "DropGemHint": "Drag a gem here to socket it.",
       "Save": "Save and Close",
       "Cancel": "Cancel",
       "Saved": "Slot settings saved.",
+      "Tabs": {
+        "Description": "Description",
+        "Condition": "Condition"
+      },
       "Hidden": {
         "Label": "Hide slot",
-        "Hint": "Only GMs can see this slot and its socket description."
+        "Hint": "Only GMs can see this slot and its socket description.",
+        "Badge": "GM only"
       },
       "DeleteGemOnRemoval": {
         "Label": "Delete gem on removal",
-        "Hint": "When enabled, this slot deletes its gem when unsocketed even if the global setting is disabled."
+        "Hint": "When enabled, this slot deletes its gem when unsocketed even if the global setting is disabled.",
+        "Badge": "Destructive"
       },
       "Condition": {
         "Label": "Slot condition",
         "Hint": "Use JavaScript. Gem tags are available through gemTags and hasGemTag(tag). Other variables: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
         "Placeholder": "Example: return hasGemTag('poison');",
-        "Wiki": "Open wiki"
+        "Wiki": "Open wiki",
+        "Insert": {
+          "Label": "Click to insert",
+          "Vars": {
+            "Gem": "The gem item document being socketed (alias of gemItem).",
+            "GemTags": "Array with the gem's tags.",
+            "HasGemTag": "Returns true when the gem has the given tag.",
+            "HostItem": "The item that owns this socket (alias: item).",
+            "Actor": "The actor holding the host item, or null.",
+            "User": "The user socketing the gem.",
+            "Slot": "Raw data of this slot.",
+            "SlotConfig": "This slot's configuration (name, color, hidden…).",
+            "SlotIndex": "Zero-based index of this slot.",
+            "Source": "Source data of the gem before it is socketed.",
+            "GetProperty": "Reads a property by path, e.g. getProperty(gem, 'system.rarity').",
+            "HasProperty": "Checks whether a property exists at the given path."
+          }
+        }
       },
       "Description": {
         "Label": "Slot description",
@@ -174,7 +239,14 @@
       },
       "GemCharges": {
         "Label": "Gem charges",
-        "Hint": "Current charges of the socketed gem. The maximum is configured on the gem itself."
+        "Hint": "Current charges of the socketed gem. The maximum is configured on the gem itself.",
+        "CopyKeyHint": "Click to copy the charge identifier.",
+        "KeyCopied": "\"{key}\" copied to clipboard."
+      },
+      "GemRecovery": {
+        "Label": "Recharge",
+        "Hint": "When and how this gem's charges change automatically — rests, combat periods, or the Recharge d6 check — recovering all charges, losing all charges, or rolling a custom formula.",
+        "FormulaPlaceholder": "e.g. 1d4"
       }
     },
     "SocketDescriptions": {

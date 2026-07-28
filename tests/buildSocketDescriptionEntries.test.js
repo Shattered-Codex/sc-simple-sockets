@@ -104,7 +104,9 @@ describe("buildSocketDescriptionEntries", () => {
       description: "<section>slot description</section>",
       isEmptySlot: true,
       slotColor: "#AABBCC",
-      resourceLabel: ""
+      resourceLabel: "",
+      slotIndex: 1,
+      canRecharge: false
     });
     assert.deepEqual(entries[1], {
       name: "Ruby",
@@ -112,7 +114,9 @@ describe("buildSocketDescriptionEntries", () => {
       description: "<section>gem description</section>",
       isEmptySlot: false,
       slotColor: "",
-      resourceLabel: ""
+      resourceLabel: "",
+      slotIndex: 2,
+      canRecharge: false
     });
     assert.deepEqual(entries[2], {
       name: "Battery Gem",
@@ -120,7 +124,9 @@ describe("buildSocketDescriptionEntries", () => {
       description: "<section>battery description</section>",
       isEmptySlot: false,
       slotColor: "",
-      resourceLabel: "(10/10 battery)"
+      resourceLabel: "(10/10 battery)",
+      slotIndex: 3,
+      canRecharge: false
     });
 
     assert.equal(enrichCalls.length, 3);

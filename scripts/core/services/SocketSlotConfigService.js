@@ -32,14 +32,20 @@ export class SocketSlotConfigService {
     );
   }
 
-  static async updateConfigAndResource(hostItem, slotIndex, config, gemResourceValue, options = {}) {
+  static async updateConfigAndResource(hostItem, slotIndex, config, gemResource, options = {}) {
+    const { value, recovery } = gemResource && typeof gemResource === "object"
+      ? gemResource
+      : { value: gemResource, recovery: null };
     return SocketSlotConfigService.#saveSlot(
       hostItem,
       slotIndex,
       (slot) => {
         let nextSlot = SocketSlot.applyConfig(slot, config, slotIndex);
-        if (gemResourceValue !== undefined && gemResourceValue !== null && gemResourceValue !== "") {
-          nextSlot = GemResourceService.withSlotResourceValue(nextSlot, Number(gemResourceValue));
+        if (value !== undefined && value !== null && value !== "") {
+          nextSlot = GemResourceService.withSlotResourceValue(nextSlot, Number(value));
+        }
+        if (recovery) {
+          nextSlot = GemResourceService.withSlotResourceRecovery(nextSlot, recovery);
         }
         return nextSlot;
       },
