@@ -835,32 +835,67 @@
 }
 
 .socket-slot-config-app .slotcfg-recovery-controls {
-  display: flex;
-  align-items: center;
+  display: grid;
+  align-items: end;
   gap: 6px;
-  flex-wrap: wrap;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-periodic {
+  grid-template-columns: minmax(8rem, 1.8fr) minmax(8rem, 1fr);
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-periodic .slotcfg-recovery-period {
+  grid-column: 1;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-periodic .slotcfg-recovery-type {
+  grid-column: 2;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-periodic .slotcfg-recovery-formula {
+  grid-column: 1 / -1;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge {
+  grid-template-columns: minmax(8rem, 1fr) minmax(5rem, 1fr) auto;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge .slotcfg-recovery-period {
+  grid-column: 1 / 3;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge .slotcfg-recovery-threshold {
+  grid-column: 3;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge .slotcfg-recovery-type {
+  grid-column: 1;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge .slotcfg-recovery-formula {
+  grid-column: 2 / -1;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge:not(.has-formula) .slotcfg-recovery-type {
+  grid-column: 1 / -1;
 }
 
 .socket-slot-config-app select.slotcfg-recovery-period {
-  flex: 1 1 8rem;
-  width: auto;
+  width: 100%;
   min-width: 8rem;
 }
 
 .socket-slot-config-app input.slotcfg-recovery-threshold {
-  flex: 0 0 3.4rem;
   width: 3.4rem;
 }
 
 .socket-slot-config-app select.slotcfg-recovery-type {
-  flex: 1 1 8rem;
-  width: auto;
+  width: 100%;
   min-width: 8rem;
 }
 
 .socket-slot-config-app input.slotcfg-recovery-formula {
-  flex: 1 1 5rem;
-  width: auto;
+  width: 100%;
   font-family: var(--slotcfg-font-mono);
   font-size: 0.72rem;
 }

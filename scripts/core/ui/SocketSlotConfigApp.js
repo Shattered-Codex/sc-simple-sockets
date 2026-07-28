@@ -927,7 +927,9 @@ export class SocketSlotConfigApp extends BaseApplication {
     const typeField = this.form?.querySelector?.('[name="gemResource.recovery.type"]');
     const thresholdInput = this.form?.querySelector?.('[name="gemResource.recovery.threshold"]');
     const formulaInput = this.form?.querySelector?.('[name="gemResource.recovery.formula"]');
+    const controls = this.form?.querySelector?.(".slotcfg-recovery-controls");
     const isRecharge = periodField?.value === "recharge";
+    const hasFormula = typeField?.value === "formula";
 
     if (thresholdInput instanceof HTMLInputElement) {
       thresholdInput.hidden = !isRecharge;
@@ -943,7 +945,12 @@ export class SocketSlotConfigApp extends BaseApplication {
       }
     }
     if (formulaInput instanceof HTMLInputElement) {
-      formulaInput.hidden = typeField?.value !== "formula";
+      formulaInput.hidden = !hasFormula;
+    }
+    if (controls instanceof HTMLElement) {
+      controls.classList.toggle("is-recharge", isRecharge);
+      controls.classList.toggle("is-periodic", !isRecharge);
+      controls.classList.toggle("has-formula", hasFormula);
     }
   }
 

@@ -11,6 +11,65 @@
   --sc-sockets-slot-radius: 8px;
 }
 
+/*
+ * Tidy gem recovery layout.
+ *
+ * Recharge keeps the roll threshold beside the period on the first row, then
+ * moves the recovery mode and its optional formula to the second row. Other
+ * periods let the recovery mode consume the remaining first-row width and
+ * place the optional formula across the full row below.
+ */
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery.is-periodic {
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr);
+}
+
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery.is-recharge
+  .sc-sockets-gem-resource-recovery-period,
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery.is-periodic
+  .sc-sockets-gem-resource-recovery-period {
+  grid-column: 1;
+}
+
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery.is-recharge
+  .sc-sockets-gem-resource-recovery-threshold,
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery.is-periodic
+  .sc-sockets-gem-resource-recovery-type {
+  grid-column: 2;
+}
+
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery.is-recharge
+  .sc-sockets-gem-resource-recovery-type {
+  grid-column: 1;
+}
+
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery.is-recharge
+  .sc-sockets-gem-resource-recovery-formula {
+  grid-column: 2;
+}
+
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery.is-recharge:not(.has-formula)
+  .sc-sockets-gem-resource-recovery-type,
+.tidy-tab-contents.sc-sockets-gem-details-tab
+  .sc-sockets-gem-resource-recovery.is-periodic
+  .sc-sockets-gem-resource-recovery-formula {
+  grid-column: 1 / -1;
+}
+
 .sc-sockets-slot-visual {
   position: relative;
   isolation: isolate;

@@ -212,7 +212,7 @@
                   {{strings.gemRecoveryLabel}}
                   <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.gemRecoveryHint}}"></i>
                 </span>
-                <div class="slotcfg-recovery-controls">
+                <div class="slotcfg-recovery-controls {{#if gemRecoveryIsRecharge}}is-recharge{{else}}is-periodic{{/if}} {{#if gemRecoveryShowFormula}}has-formula{{/if}}">
                   <select
                     name="gemResource.recovery.period"
                     class="slotcfg-input slotcfg-recovery-period"
