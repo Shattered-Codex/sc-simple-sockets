@@ -603,6 +603,20 @@ export class SocketsConfigApp extends BaseApplication {
         isCheckbox: true,
         defaultChecked: "true",
         checked: ModuleSettings.shouldShowGemFormulaImages()
+      },
+      {
+        key: ModuleSettings.SETTING_GEM_BADGES_FAVORITES,
+        name: Constants.localize(
+          "SCSockets.Settings.GemBadgesFavorites.Name",
+          "Show gem badges in Favorites"
+        ),
+        hint: Constants.localize(
+          "SCSockets.Settings.GemBadgesFavorites.Hint",
+          "If enabled, items with socketed gems also show their gem badges in the Favorites section of the character sheet."
+        ),
+        isCheckbox: true,
+        defaultChecked: "true",
+        checked: ModuleSettings.shouldShowGemBadgesInFavorites()
       }
     ];
   }
@@ -827,6 +841,7 @@ export class SocketsConfigApp extends BaseApplication {
       ),
       gemFormulaLayout,
       gemFormulaShowImage: checkboxValue(ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE, true),
+      gemBadgesFavorites: checkboxValue(ModuleSettings.SETTING_GEM_BADGES_FAVORITES, true),
       socketTabLayout,
       enableSocketTabForAllItems: checkboxValue(ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS, true)
     };
@@ -858,6 +873,11 @@ export class SocketsConfigApp extends BaseApplication {
       Constants.MODULE_ID,
       ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE,
       behavior.gemFormulaShowImage
+    );
+    await game.settings.set(
+      Constants.MODULE_ID,
+      ModuleSettings.SETTING_GEM_BADGES_FAVORITES,
+      behavior.gemBadgesFavorites
     );
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_TAB_LAYOUT, behavior.socketTabLayout);
     await game.settings.set(
@@ -921,7 +941,8 @@ export class SocketsConfigApp extends BaseApplication {
           behavior.socketTabLayout,
           behavior.gemRollLayout,
           behavior.gemFormulaLayout,
-          behavior.gemFormulaShowImage
+          behavior.gemFormulaShowImage,
+          behavior.gemBadgesFavorites
         ]);
       }
       case TAB_TYPES:

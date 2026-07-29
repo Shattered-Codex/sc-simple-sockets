@@ -371,6 +371,10 @@
         "Name": "Mostrar imagem da gema no detalhamento da Fórmula",
         "Hint": "Se habilitado, as gemas no detalhamento da Fórmula são identificadas por uma pequena imagem; caso contrário, o nome da gema é usado. O detalhamento do tooltip sempre mostra a imagem e esta opção apenas oculta o nome da gema nele."
       },
+      "GemBadgesFavorites": {
+        "Name": "Mostrar badges de gemas nos Favoritos",
+        "Hint": "Se habilitado, itens com gemas encaixadas também mostram os badges das gemas na seção de Favoritos da ficha de personagem."
+      },
       "SocketTabLayout": {
         "Name": "Layout da aba de soquetes",
         "Hint": "Escolha como a aba de soquetes será exibida.",

@@ -371,6 +371,10 @@
         "Name": "Show gem image in the Formula breakdown",
         "Hint": "If enabled, gems in the Formula breakdown are identified by a small image; otherwise the gem name is used. The tooltip breakdown always shows the image and this option only hides the gem name there."
       },
+      "GemBadgesFavorites": {
+        "Name": "Show gem badges in Favorites",
+        "Hint": "If enabled, items with socketed gems also show their gem badges in the Favorites section of the character sheet."
+      },
       "SocketTabLayout": {
         "Name": "Socket tab layout",
         "Hint": "Choose how the sockets tab is displayed.",

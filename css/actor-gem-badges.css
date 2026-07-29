@@ -372,6 +372,19 @@
   order: initial;
 }
 
+/* Favorites sidebar (default dnd5e sheet) */
+.favorites .sc-sockets-badges.sc-sockets-badges-favorite {
+  width: 100%;
+  margin-top: 2px;
+  gap: 3px;
+  justify-content: flex-start;
+}
+
+.favorites .sc-sockets-badges.sc-sockets-badges-favorite .gem img {
+  width: 14px;
+  height: 14px;
+}
+
 .sc-sockets-entry-name-with-badges {
   display: flex;
   flex-direction: column;

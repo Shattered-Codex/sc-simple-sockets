@@ -34,6 +34,7 @@ export class ModuleSettingsRegistrar {
     this.#registerDeleteOnRemoval();
     this.#registerGemRollLayoutSetting();
     this.#registerGemFormulaLayoutSettings();
+    this.#registerGemBadgesFavoritesSetting();
     this.#registerSocketTabLayoutSetting();
     this.#registerEnableSocketTabForAllItems();
     this.#registerLootSubtypeDataSettings();
@@ -288,6 +289,27 @@ export class ModuleSettingsRegistrar {
       type: Boolean,
       default: true,
       onChange: refreshActorSheets
+    });
+  }
+
+  #registerGemBadgesFavoritesSetting() {
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_BADGES_FAVORITES, {
+      name: Constants.localize(
+        "SCSockets.Settings.GemBadgesFavorites.Name",
+        "Show gem badges in Favorites"
+      ),
+      hint: Constants.localize(
+        "SCSockets.Settings.GemBadgesFavorites.Hint",
+        "If enabled, items with socketed gems also show their gem badges in the Favorites section of the character sheet."
+      ),
+      scope: "client",
+      config: false,
+      type: Boolean,
+      default: true,
+      onChange: foundry.utils.debounce(
+        () => ModuleSettings.refreshOpenSheets({ item: false, actor: true }),
+        150
+      )
     });
   }
 
