@@ -26,7 +26,8 @@ export class GemFormulaPresentation {
       : GemFormulaPresentation.resolveActivityType(item);
 
     const raw = GemDamageService.collectGemDamage(item, { activityType: resolvedActivityType });
-    return raw.map((entry) => GemFormulaPresentation.#toPresentationEntry(entry));
+    const inheritTypeDetails = GemFormulaPresentation.#inheritTypeDetails(item);
+    return raw.map((entry) => GemFormulaPresentation.#toPresentationEntry(entry, inheritTypeDetails));
   }
 
   /**
@@ -188,13 +189,13 @@ export class GemFormulaPresentation {
       .join(" + ");
   }
 
-  static #toPresentationEntry(entry) {
+  static #toPresentationEntry(entry, inheritTypeDetails = []) {
     const source = entry?.source ?? {};
     const typeMode = entry?.typeMode === "fixed" ? "fixed" : "inherit";
     const types = Array.isArray(entry?.types) ? [...entry.types] : [];
     const typeDetails = typeMode === "fixed"
       ? GemFormulaPresentation.#formatTypeDetails(types)
-      : [];
+      : inheritTypeDetails.map((detail) => ({ ...detail }));
     const typeLabels = typeDetails.length
       ? typeDetails.map((detail) => detail.label)
       : [GemFormulaPresentation.inheritTypeLabel()];
@@ -219,6 +220,71 @@ export class GemFormulaPresentation {
    */
   static inheritTypeLabel() {
     return Constants.localize("SCSockets.GemDetails.ExtraDamage.TypeOptions.Inherit", "Same as host");
+  }
+
+  /**
+   * Resolves the host item's own damage types into icon metadata so inherit
+   * entries can display the type the gem damage will actually inherit. The
+   * labels keep the "Same as host" wording so the origin stays clear.
+   * @param {Item|object|null} item
+   * @returns {Array<{value: string, label: string, icon: string|null}>}
+   */
+  static #inheritTypeDetails(item) {
+    const inheritLabel = GemFormulaPresentation.inheritTypeLabel();
+    return GemFormulaPresentation.#formatTypeDetails(GemFormulaPresentation.#hostDamageTypes(item))
+      .map((detail) => ({
+        ...detail,
+        label: `${inheritLabel} (${detail.label})`
+      }));
+  }
+
+  /**
+   * Reads the damage types the host item rolls by default: the weapon's base
+   * damage when present, otherwise the first typed damage part found on its
+   * activities (spells keep their damage on activities).
+   * @param {Item|object|null} item
+   * @returns {string[]}
+   */
+  static #hostDamageTypes(item) {
+    const base = GemFormulaPresentation.#coerceTypes(item?.system?.damage?.base?.types);
+    if (base.length) {
+      return base;
+    }
+    for (const activity of GemFormulaPresentation.#activityList(item)) {
+      const parts = GemFormulaPresentation.#damagePartList(activity);
+      for (const part of parts) {
+        const types = GemFormulaPresentation.#coerceTypes(part?.types);
+        if (types.length) {
+          return types;
+        }
+      }
+    }
+    return [];
+  }
+
+  static #damagePartList(activity) {
+    const parts = activity?.damage?.parts;
+    if (Array.isArray(parts)) {
+      return parts;
+    }
+    if (parts && typeof parts.values === "function") {
+      return Array.from(parts.values());
+    }
+    return [];
+  }
+
+  static #coerceTypes(value) {
+    if (!value || typeof value === "string") {
+      return typeof value === "string" && value.trim() ? [value.trim()] : [];
+    }
+    const list = Array.isArray(value)
+      ? value
+      : typeof value[Symbol.iterator] === "function"
+        ? Array.from(value)
+        : [];
+    return Array.from(new Set(
+      list.map((type) => String(type ?? "").trim()).filter(Boolean)
+    ));
   }
 
   /**

@@ -84,36 +84,16 @@ const RELEASE_SECTIONS = [
     tone: "added",
     items: [
       {
-        title: "Charges for socketed gems",
-        text: "A gem can now hold its own resource, such as energy, ammunition, or magic charges. Set its current and maximum charges, and optionally destroy the gem when its last charge is spent."
+        title: "Automatic gem charge recovery",
+        text: "Loose and socketed gems can now recover or lose charges on rests, at dawn or dusk, during combat turns, or through a Recharge d6 check. Recovery can restore everything or use a custom formula."
       },
       {
-        title: "Activities can consume charges or gems",
-        text: "An Activity can spend charges from its source gem, a specific socket, a named gem, or any gem that provides the required resource. Activities can also consume an entire socketed gem when needed."
+        title: "Recharge controls",
+        text: "Configure each gem's recovery profile from its Resource details or directly from a filled socket. Recharge profiles also get a die button that rolls the check in chat and applies the configured recovery on a success."
       },
       {
-        title: "Shared resources across a character",
-        text: "Charges can come from the current item, equipped socketed items, or every socketed item owned by the character. Optional filters can keep resources separated by equipment set or other custom rules."
-      },
-      {
-        title: "Gem tags",
-        text: "Add simple labels such as fire, poison, or healing to gems. Socket conditions and automations can use these tags instead of depending on each gem's exact name."
-      },
-      {
-        title: "Gem Reload Activity",
-        text: "The SC More Activities integration can now insert a compatible gem into an empty socket. It can choose automatically by name, use a name pattern, or let the player pick the gem and socket."
-      },
-      {
-        title: "Recharge Activities",
-        text: "New Activities can recharge one socketed gem or a shared resource pool. A recharge can restore everything, roll a formula, and optionally require a successful check."
-      },
-      {
-        title: "More flexible Socket Extraction",
-        text: "Socket Extraction can now target the next item you click or extract a gem directly from the item that owns the Activity."
-      },
-      {
-        title: "Gem details in character sheets",
-        text: "The Formula and Roll columns can show socketed gem damage, gem images, and attack bonus breakdowns on both the default dnd5e sheet and Tidy."
+        title: "Unified module configuration",
+        text: "Socket rules, display options, socketable item types, and gem subtypes now live in one configuration window. Changes are saved together, each tab can be reset, and custom gem subtypes update the selection list immediately."
       }
     ]
   },
@@ -123,16 +103,20 @@ const RELEASE_SECTIONS = [
     tone: "improved",
     items: [
       {
-        title: "Clearer charge tracking",
-        text: "The Sockets tab now shows each gem's resource and remaining charges. Charges stay with a gem when it is removed and returned to inventory."
+        title: "Safer Socket Slot Settings",
+        text: "Unsaved edits are now marked on each slot and in the footer, multiple slots save in one item update, and socketing or unsocketing validates and saves the visible slot draft before applying the action."
       },
       {
-        title: "Better socket visuals",
-        text: "Filled sockets keep their configured color behind the gem image, making special socket types easier to recognize."
+        title: "More faithful recovery formulas",
+        text: "Socketed-gem formulas receive the gem as @item and the host item as @host, daily recovery respects dnd5e rest options, and gritty realism applies the same daily multiplier used by the system."
       },
       {
-        title: "Smoother configuration",
-        text: "Socket settings now avoid unnecessary sheet refreshes, and item selection prevents accidental follow-up clicks after a target is chosen."
+        title: "Better keyboard and small-screen support",
+        text: "Configuration tabs support arrow, Home, and End navigation, controls have clearer accessible labels, and the Socket Slot Settings window now stays within the available viewport."
+      },
+      {
+        title: "Reliable socketed-gem inspection",
+        text: "Opening a socketed gem now uses a read-only snapshot while actions such as Recharge safely write back to the real socket only when the same gem is still there."
       }
     ]
   },
@@ -142,13 +126,13 @@ const RELEASE_SECTIONS = [
     tone: "fixed",
     items: [
       {
-        text: "Fixed Socket Extraction validation when its original Activity document is no longer available."
+        text: "Fixed simultaneous socket, slot-configuration, and gem-recovery updates overwriting one another on the same host item."
       },
       {
-        text: "Updated support windows and sheet refresh behavior for Foundry VTT v14."
+        text: "Fixed delayed recovery rolls applying to a replacement gem after the original gem was removed, replaced, or reordered."
       },
       {
-        text: "Fixed the +Details tab so critical threshold, critical multiplier, and attack bonus controls no longer show duplicate labels or extra interface text."
+        text: "Fixed pending recovery updates clobbering charge consumption or other slot changes made while a recovery formula was rolling."
       }
     ]
   }

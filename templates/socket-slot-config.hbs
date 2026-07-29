@@ -15,6 +15,7 @@
               <span class="slotcfg-rail-name">{{rail.name}}</span>
               <span class="slotcfg-rail-gem">{{rail.gemLabel}}</span>
             </span>
+            <span class="slotcfg-rail-dirty" data-slot-dirty="{{rail.index}}" hidden aria-hidden="true"></span>
             {{#if rail.hidden}}
               <i class="fa-solid fa-eye-slash slotcfg-rail-hidden" data-tooltip="{{../strings.hiddenLabel}}"></i>
             {{/if}}
@@ -73,6 +74,7 @@
                 data-action="pickTint"
                 data-color="{{swatch.value}}"
                 data-tooltip="{{swatch.value}}"
+                aria-label="{{swatch.value}}"
                 style="--slotcfg-swatch: {{swatch.value}};"
                 {{#unless ../editable}}disabled{{/unless}}
               ></button>
@@ -194,6 +196,7 @@
                       min="0"
                       max="{{gemResource.max}}"
                       step="1"
+                      aria-label="{{strings.gemChargesLabel}}"
                       {{#unless editable}}disabled{{/unless}}
                     />
                     <button type="button" class="slotcfg-stepper-btn" data-action="gemChargeDelta" data-delta="1" {{#unless editable}}disabled{{/unless}} aria-label="+1">
@@ -216,6 +219,7 @@
                   <select
                     name="gemResource.recovery.period"
                     class="slotcfg-input slotcfg-recovery-period"
+                    aria-label="{{strings.gemRecoveryPeriodLabel}}"
                     {{#unless editable}}disabled{{/unless}}
                   >
                     {{#each gemRecoveryPeriodGroups as |group|}}
@@ -239,12 +243,14 @@
                     value="{{gemResource.recovery.threshold}}"
                     min="1" max="6" step="1"
                     placeholder="6"
+                    aria-label="{{strings.gemRecoveryThresholdLabel}}"
                     {{#unless gemRecoveryIsRecharge}}hidden{{/unless}}
                     {{#unless editable}}disabled{{/unless}}
                   />
                   <select
                     name="gemResource.recovery.type"
                     class="slotcfg-input slotcfg-recovery-type"
+                    aria-label="{{strings.gemRecoveryTypeLabel}}"
                     {{#unless editable}}disabled{{/unless}}
                   >
                     {{#each gemRecoveryTypeOptions as |opt|}}
@@ -257,6 +263,7 @@
                     class="slotcfg-input slotcfg-recovery-formula"
                     value="{{gemResource.recovery.formula}}"
                     placeholder="{{strings.gemRecoveryFormulaPlaceholder}}"
+                    aria-label="{{strings.gemRecoveryFormulaLabel}}"
                     {{#unless gemRecoveryShowFormula}}hidden{{/unless}}
                     {{#unless editable}}disabled{{/unless}}
                   />
@@ -288,13 +295,15 @@
               {{strings.hiddenLabel}}
               <span class="slotcfg-badge slotcfg-badge--warn" data-hidden-badge {{#unless hidden}}hidden{{/unless}}>{{strings.hiddenBadge}}</span>
             </strong>
-            <small>{{strings.hiddenHint}}</small>
+            <small id="{{appId}}-hidden-hint">{{strings.hiddenHint}}</small>
           </span>
           <label class="slotcfg-toggle">
             <input
               type="checkbox"
               name="slotConfig.hidden"
               value="true"
+              aria-label="{{strings.hiddenLabel}}"
+              aria-describedby="{{appId}}-hidden-hint"
               {{#if hidden}}checked{{/if}}
               {{#unless canEditVisibility}}disabled{{/unless}}
             />
@@ -310,13 +319,15 @@
               {{strings.deleteGemOnRemovalLabel}}
               <span class="slotcfg-badge slotcfg-badge--warn" data-delete-gem-badge {{#unless deleteGemOnRemoval}}hidden{{/unless}}>{{strings.destructiveBadge}}</span>
             </strong>
-            <small>{{strings.deleteGemOnRemovalHint}}</small>
+            <small id="{{appId}}-delete-gem-hint">{{strings.deleteGemOnRemovalHint}}</small>
           </span>
           <label class="slotcfg-toggle">
             <input
               type="checkbox"
               name="slotConfig.deleteGemOnRemoval"
               value="true"
+              aria-label="{{strings.deleteGemOnRemovalLabel}}"
+              aria-describedby="{{appId}}-delete-gem-hint"
               {{#if deleteGemOnRemoval}}checked{{/if}}
               {{#unless editable}}disabled{{/unless}}
             />
@@ -328,15 +339,15 @@
 
     <div class="slotcfg-editors">
       <div class="slotcfg-tabs" role="tablist">
-        <button type="button" class="slotcfg-tab {{#if tabDescActive}}is-active{{/if}}" data-action="switchTab" data-tab="desc" role="tab" aria-selected="{{tabDescActive}}">
+        <button type="button" id="{{appId}}-tab-desc" class="slotcfg-tab {{#if tabDescActive}}is-active{{/if}}" data-action="switchTab" data-tab="desc" role="tab" aria-selected="{{tabDescActive}}" aria-controls="{{appId}}-pane-desc" tabindex="{{#if tabDescActive}}0{{else}}-1{{/if}}">
           {{strings.tabDescription}}
         </button>
-        <button type="button" class="slotcfg-tab {{#if tabCondActive}}is-active{{/if}}" data-action="switchTab" data-tab="cond" role="tab" aria-selected="{{tabCondActive}}">
+        <button type="button" id="{{appId}}-tab-cond" class="slotcfg-tab {{#if tabCondActive}}is-active{{/if}}" data-action="switchTab" data-tab="cond" role="tab" aria-selected="{{tabCondActive}}" aria-controls="{{appId}}-pane-cond" tabindex="{{#if tabCondActive}}0{{else}}-1{{/if}}">
           {{strings.tabCondition}}
         </button>
       </div>
 
-      <div class="slotcfg-pane" data-tab-pane="desc" {{#unless tabDescActive}}hidden{{/unless}}>
+      <div class="slotcfg-pane" id="{{appId}}-pane-desc" role="tabpanel" aria-labelledby="{{appId}}-tab-desc" data-tab-pane="desc" {{#unless tabDescActive}}hidden{{/unless}}>
         <div class="slotcfg-section-head">
           <span class="slotcfg-section-title">{{strings.descriptionLabel}}</span>
         </div>
@@ -358,7 +369,7 @@
         </div>
       </div>
 
-      <div class="slotcfg-pane" data-tab-pane="cond" {{#unless tabCondActive}}hidden{{/unless}}>
+      <div class="slotcfg-pane" id="{{appId}}-pane-cond" role="tabpanel" aria-labelledby="{{appId}}-tab-cond" data-tab-pane="cond" {{#unless tabCondActive}}hidden{{/unless}}>
         <div class="slotcfg-section-head">
           <span class="slotcfg-section-title">{{strings.conditionLabel}}</span>
           <a
@@ -410,12 +421,18 @@
   </div>
 
   <footer class="slotcfg-footer">
+    {{#if editable}}
+      <span class="slotcfg-pill slotcfg-pill--saved" data-status-pill>
+        <span class="slotcfg-pill-dot" aria-hidden="true"></span>
+        <span data-status-pill-label>{{strings.saved}}</span>
+      </span>
+    {{/if}}
     <span class="slotcfg-spacer"></span>
-    <button type="button" class="slotcfg-btn slotcfg-btn--secondary" data-action="close">
+    <button type="button" class="slotcfg-btn slotcfg-btn--secondary" data-action="close" data-tooltip="{{strings.cancelHint}}">
       <i class="fas fa-xmark"></i> {{strings.cancel}}
     </button>
     {{#if editable}}
-      <button type="submit" class="slotcfg-btn slotcfg-btn--primary">
+      <button type="submit" class="slotcfg-btn slotcfg-btn--primary" data-save-button>
         <i class="fas fa-floppy-disk"></i> {{strings.save}}
       </button>
     {{/if}}

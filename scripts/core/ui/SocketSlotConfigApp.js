@@ -34,9 +34,11 @@ export class SocketSlotConfigApp extends BaseApplication {
   #editable;
   #activeTab = "desc";
   #drafts = new Map();
+  #baselines = new Map();
   #boundRoot = null;
   #inputListener;
   #clickListener;
+  #keydownListener;
 
   static DEFAULT_OPTIONS = foundry.utils.mergeObject(
     foundry.utils.deepClone(super.DEFAULT_OPTIONS ?? {}),
@@ -50,7 +52,7 @@ export class SocketSlotConfigApp extends BaseApplication {
           "SCSockets.SocketSlotConfig.Title",
           "Socket Slot Settings"
         ),
-        icon: "fas fa-pen-to-square",
+        icon: "fas fa-gem",
         resizable: true
       },
       form: {
@@ -79,6 +81,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     this.#editable = Boolean(editable);
     this.#inputListener = (event) => this.#handleInput(event);
     this.#clickListener = (event) => this.#handleClick(event);
+    this.#keydownListener = (event) => this.#handleTabKeydown(event);
   }
 
   static #buildId(hostItem) {
@@ -91,6 +94,7 @@ export class SocketSlotConfigApp extends BaseApplication {
   static open(hostItem, slotIndex, options = {}) {
     const existing = foundry.applications?.instances?.get?.(SocketSlotConfigApp.#buildId(hostItem));
     if (existing instanceof SocketSlotConfigApp) {
+      existing.#applyOpenOptions(options);
       existing.selectSlot(slotIndex);
       existing.bringToFront?.();
       return existing;
@@ -99,6 +103,25 @@ export class SocketSlotConfigApp extends BaseApplication {
     const app = new SocketSlotConfigApp(hostItem, slotIndex, options);
     app.render(true);
     return app;
+  }
+
+  /**
+   * A reused window must reflect the caller's current context: ownership or
+   * permission changes flip `editable`, and the opener becomes the app to
+   * refresh after socket actions.
+   */
+  #applyOpenOptions({ parentApp = undefined, editable = undefined } = {}) {
+    if (parentApp !== undefined) {
+      this.#parentApp = parentApp;
+    }
+    if (editable !== undefined && Boolean(editable) !== this.#editable) {
+      this.#editable = Boolean(editable);
+      if (!this.#editable) {
+        this.#drafts.clear();
+        this.#baselines.clear();
+      }
+      this.render();
+    }
   }
 
   get title() {
@@ -137,12 +160,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     for (const [index, payload] of this.#drafts) {
       const validation = SocketSlotConfigService.validateCondition(payload.condition);
       if (!validation.valid) {
-        const base = Constants.localize("SCSockets.SocketSlotConfig.Validation.InvalidCondition", "The slot condition has invalid code.");
-        const slotRef = `${Constants.localize("SCSockets.SocketSlotConfig.SlotLabel", "Slot")} ${index + 1}`;
-        const message = validation.error?.message
-          ? `${slotRef}: ${base} ${validation.error.message}`
-          : `${slotRef}: ${base}`;
-        ui.notifications?.error?.(message);
+        ui.notifications?.error?.(this.#invalidConditionMessage(index, validation));
         if (index !== this.#slotIndex) {
           this.#slotIndex = index;
           this.#activeTab = "cond";
@@ -152,24 +170,20 @@ export class SocketSlotConfigApp extends BaseApplication {
       }
     }
 
-    let failed = false;
-    for (const [index, payload] of this.#drafts) {
-      const updated = await SocketSlotConfigService.updateConfigAndResource(
-        this.#hostItem,
-        index,
-        payload,
-        { value: payload.gemResourceValue, recovery: payload.gemResourceRecovery },
-        {
-          [Constants.MODULE_ID]: {
-            [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
-          }
+    const updates = new Map(Array.from(this.#drafts, ([index, payload]) => [index, {
+      config: payload,
+      gemResource: { value: payload.gemResourceValue, recovery: payload.gemResourceRecovery }
+    }]));
+    const updated = await SocketSlotConfigService.updateManyConfigsAndResources(
+      this.#hostItem,
+      updates,
+      {
+        [Constants.MODULE_ID]: {
+          [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
         }
-      );
-      if (!updated) {
-        failed = true;
       }
-    }
-    if (failed) {
+    );
+    if (!updated) {
       ui.notifications?.warn?.(
         Constants.localize(
           "SCSockets.Notifications.InvalidSocketIndex",
@@ -199,6 +213,62 @@ export class SocketSlotConfigApp extends BaseApplication {
     await this._processSubmitData(event, this.form, formData);
   }
 
+  #invalidConditionMessage(index, validation) {
+    const base = Constants.localize("SCSockets.SocketSlotConfig.Validation.InvalidCondition", "The slot condition has invalid code.");
+    const slotRef = `${Constants.localize("SCSockets.SocketSlotConfig.SlotLabel", "Slot")} ${index + 1}`;
+    return validation.error?.message
+      ? `${slotRef}: ${base} ${validation.error.message}`
+      : `${slotRef}: ${base}`;
+  }
+
+  /**
+   * Persists the current slot's visible draft so immediate gem actions
+   * (unsocket, drop) are governed by the configuration the user sees —
+   * e.g. an unchecked "Delete gem on removal" or a freshly edited condition —
+   * instead of the previously saved one.
+   * @returns {Promise<boolean>} False when the draft is invalid or fails to save; the action must abort then.
+   */
+  async #commitCurrentDraft() {
+    this.#captureDraft();
+    const draft = this.#drafts.get(this.#slotIndex);
+    if (!draft) {
+      return true;
+    }
+
+    const validation = SocketSlotConfigService.validateCondition(draft.condition);
+    if (!validation.valid) {
+      ui.notifications?.error?.(this.#invalidConditionMessage(this.#slotIndex, validation));
+      this.#activeTab = "cond";
+      this.render();
+      return false;
+    }
+
+    const updated = await SocketSlotConfigService.updateManyConfigsAndResources(
+      this.#hostItem,
+      new Map([[this.#slotIndex, {
+        config: draft,
+        gemResource: { value: draft.gemResourceValue, recovery: draft.gemResourceRecovery }
+      }]]),
+      {
+        [Constants.MODULE_ID]: {
+          [Constants.UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC]: true
+        }
+      }
+    );
+    if (!updated) {
+      ui.notifications?.warn?.(
+        Constants.localize(
+          "SCSockets.Notifications.InvalidSocketIndex",
+          "Invalid socket index."
+        )
+      );
+      return false;
+    }
+
+    this.#drafts.delete(this.#slotIndex);
+    return true;
+  }
+
   async _onFirstRender(context, options) {
     await super._onFirstRender?.(context, options);
     window.requestAnimationFrame(() => this.#applyLayoutBounds());
@@ -211,6 +281,8 @@ export class SocketSlotConfigApp extends BaseApplication {
     this.#refreshPreview();
     this.#refreshRecoveryControls();
     this.#refreshChargesBar();
+    this.#captureBaseline();
+    this.#refreshDirtyUI();
   }
 
   activateListeners(html) {
@@ -532,6 +604,22 @@ export class SocketSlotConfigApp extends BaseApplication {
         "SCSockets.SocketSlotConfig.GemRecovery.FormulaPlaceholder",
         "e.g. 1d4"
       ),
+      gemRecoveryPeriodLabel: Constants.localize(
+        "SCSockets.GemDetails.Resource.Recovery.Period",
+        "Recharges on"
+      ),
+      gemRecoveryThresholdLabel: Constants.localize(
+        "SCSockets.GemDetails.Resource.Recovery.Threshold",
+        "Recharge On"
+      ),
+      gemRecoveryTypeLabel: Constants.localize(
+        "SCSockets.GemDetails.Resource.Recovery.Type",
+        "Recovery"
+      ),
+      gemRecoveryFormulaLabel: Constants.localize(
+        "SCSockets.GemDetails.Resource.Recovery.Formula",
+        "Formula"
+      ),
       emptySlot: Constants.localize(
         "SCSockets.SocketSlotConfig.EmptySlot",
         "Empty slot"
@@ -544,8 +632,14 @@ export class SocketSlotConfigApp extends BaseApplication {
         "SCSockets.SocketSlotConfig.DropGemHint",
         "Drag a gem here to socket it."
       ),
+      unsaved: Constants.localize("SCSockets.Settings.ConfigMenu.Unsaved", "Unsaved changes"),
+      saved: Constants.localize("SCSockets.Settings.ConfigMenu.SavedPill", "Saved"),
       save: Constants.localize("SCSockets.SocketSlotConfig.Save", "Save and Close"),
-      cancel: Constants.localize("SCSockets.SocketSlotConfig.Cancel", "Cancel")
+      cancel: Constants.localize("SCSockets.SocketSlotConfig.Cancel", "Cancel"),
+      cancelHint: Constants.localize(
+        "SCSockets.SocketSlotConfig.CancelHint",
+        "Discards unsaved slot edits. Adding sockets and socketing/unsocketing gems apply immediately and are not reverted."
+      )
     };
   }
 
@@ -559,6 +653,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     root.addEventListener("input", this.#inputListener);
     root.addEventListener("change", this.#inputListener);
     root.addEventListener("click", this.#clickListener);
+    root.addEventListener("keydown", this.#keydownListener);
     this.#boundRoot = root;
   }
 
@@ -570,10 +665,56 @@ export class SocketSlotConfigApp extends BaseApplication {
     this.#boundRoot.removeEventListener("input", this.#inputListener);
     this.#boundRoot.removeEventListener("change", this.#inputListener);
     this.#boundRoot.removeEventListener("click", this.#clickListener);
+    this.#boundRoot.removeEventListener("keydown", this.#keydownListener);
     this.#boundRoot = null;
   }
 
+  /** Roving arrow-key navigation for the tab strips, per the WAI-ARIA tabs pattern. */
+  #handleTabKeydown(event) {
+    const tab = event.target instanceof HTMLElement ? event.target.closest('[role="tab"]') : null;
+    const tablist = tab?.closest?.('[role="tablist"]');
+    if (!tab || !tablist) {
+      return;
+    }
+
+    const tabs = Array.from(tablist.querySelectorAll('[role="tab"]:not([disabled])'));
+    const index = tabs.indexOf(tab);
+    if (index < 0) {
+      return;
+    }
+
+    let nextIndex = null;
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        nextIndex = (index + 1) % tabs.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        nextIndex = (index - 1 + tabs.length) % tabs.length;
+        break;
+      case "Home":
+        nextIndex = 0;
+        break;
+      case "End":
+        nextIndex = tabs.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    const next = tabs[nextIndex];
+    next?.focus?.();
+    next?.click?.();
+  }
+
   #handleInput(event) {
+    this.#routeInput(event);
+    this.#refreshDirtyUI();
+  }
+
+  #routeInput(event) {
     const target = event.target;
     if (!(target instanceof HTMLElement)) {
       return;
@@ -673,6 +814,7 @@ export class SocketSlotConfigApp extends BaseApplication {
         event.preventDefault();
         this.#clearColorInputs();
         this.#refreshPreview();
+        this.#refreshDirtyUI();
         break;
       case "inspectGem":
         event.preventDefault();
@@ -702,6 +844,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       const active = button.dataset.tab === nextTab;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-selected", String(active));
+      button.setAttribute("tabindex", active ? "0" : "-1");
     });
   }
 
@@ -719,6 +862,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       pickerInput.value = normalized;
     }
     this.#refreshPreview();
+    this.#refreshDirtyUI();
   }
 
   async #copyResourceKey(key) {
@@ -755,6 +899,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     const needsSpace = current.length > 0 && !/\s$/.test(current);
     field.value = `${current}${needsSpace ? " " : ""}${snippet}`;
     field.focus?.();
+    this.#refreshDirtyUI();
   }
 
   #applyChargeDelta(delta) {
@@ -770,6 +915,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     const upper = Number.isFinite(max) && max > 0 ? max : Number.POSITIVE_INFINITY;
     input.value = String(Math.max(0, Math.min(upper, current + delta)));
     this.#refreshChargesBar();
+    this.#refreshDirtyUI();
   }
 
   #bindDropZone() {
@@ -813,7 +959,9 @@ export class SocketSlotConfigApp extends BaseApplication {
       hostItem: DebugTrace.describeItem(this.#hostItem),
       slotIndex: this.#slotIndex
     });
-    this.#captureDraft();
+    if (!(await this.#commitCurrentDraft())) {
+      return;
+    }
     await SocketService.addGem(this.#hostItem, this.#slotIndex, data);
     this.#parentApp?.render?.();
     this.render();
@@ -849,7 +997,9 @@ export class SocketSlotConfigApp extends BaseApplication {
       }
     }
 
-    this.#captureDraft();
+    if (!(await this.#commitCurrentDraft())) {
+      return;
+    }
     await SocketService.removeGem(this.#hostItem, this.#slotIndex);
     this.#parentApp?.render?.();
     this.render();
@@ -916,6 +1066,101 @@ export class SocketSlotConfigApp extends BaseApplication {
   #currentDeleteGemOnRemovalValue() {
     const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
     return SocketSlotConfigService.getConfig(slot).deleteGemOnRemoval;
+  }
+
+  /**
+   * Dirty tracking mirrors the module settings window: a footer pill plus a
+   * dot on each rail slot while its edits differ from the saved state.
+   * Baselines are captured from the freshly rendered form (saved values) so
+   * both sides of the comparison go through the same field readers.
+   */
+  #captureBaseline() {
+    if (!this.#editable || this.#drafts.has(this.#slotIndex)) {
+      return;
+    }
+    if (!SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex)) {
+      return;
+    }
+    const form = this.form;
+    if (!(form instanceof HTMLFormElement)) {
+      return;
+    }
+    this.#baselines.set(this.#slotIndex, this.#normalizePayload(this.#readForm(form)));
+  }
+
+  #normalizePayload(payload) {
+    if (!payload) {
+      return "";
+    }
+    const recovery = payload.gemResourceRecovery;
+    return JSON.stringify({
+      name: String(payload.name ?? "").trim(),
+      hidden: Boolean(payload.hidden),
+      deleteGemOnRemoval: Boolean(payload.deleteGemOnRemoval),
+      condition: String(payload.condition ?? ""),
+      description: String(payload.description ?? ""),
+      color: normalizeSlotColor(payload.color ?? ""),
+      gemResourceValue: payload.gemResourceValue === undefined || payload.gemResourceValue === ""
+        ? null
+        : Number(payload.gemResourceValue),
+      gemResourceRecovery: recovery
+        ? {
+          period: String(recovery.period ?? ""),
+          type: String(recovery.type ?? ""),
+          formula: String(recovery.formula ?? "").trim(),
+          threshold: String(recovery.threshold ?? "")
+        }
+        : null
+    });
+  }
+
+  #isSlotDirty(index) {
+    const baseline = this.#baselines.get(index);
+    if (baseline === undefined) {
+      return false;
+    }
+    if (index === this.#slotIndex && this.form instanceof HTMLFormElement) {
+      return this.#normalizePayload(this.#readForm(this.form)) !== baseline;
+    }
+    const draft = this.#drafts.get(index);
+    return draft ? this.#normalizePayload(draft) !== baseline : false;
+  }
+
+  #refreshDirtyUI() {
+    if (!this.#editable) {
+      return;
+    }
+    const root = this.element;
+    if (!root) {
+      return;
+    }
+
+    let anyDirty = false;
+    const dirtyByIndex = new Map();
+    for (const index of new Set([this.#slotIndex, ...this.#drafts.keys()])) {
+      const dirty = this.#isSlotDirty(index);
+      dirtyByIndex.set(index, dirty);
+      anyDirty ||= dirty;
+    }
+
+    root.querySelectorAll("[data-slot-dirty]").forEach((dot) => {
+      dot.hidden = !dirtyByIndex.get(Number(dot.dataset.slotDirty));
+    });
+
+    const pill = root.querySelector("[data-status-pill]");
+    if (pill instanceof HTMLElement) {
+      pill.classList.toggle("slotcfg-pill--unsaved", anyDirty);
+      pill.classList.toggle("slotcfg-pill--saved", !anyDirty);
+      const label = pill.querySelector("[data-status-pill-label]");
+      if (label instanceof HTMLElement) {
+        label.textContent = anyDirty
+          ? Constants.localize("SCSockets.Settings.ConfigMenu.Unsaved", "Unsaved changes")
+          : Constants.localize("SCSockets.Settings.ConfigMenu.SavedPill", "Saved");
+      }
+    }
+    root.classList?.toggle?.("slotcfg-dirty", anyDirty);
+    const saveButton = root.querySelector("[data-save-button]");
+    saveButton?.classList?.toggle?.("is-dirty", anyDirty);
   }
 
   /**
@@ -1062,8 +1307,10 @@ export class SocketSlotConfigApp extends BaseApplication {
   #applyLayoutBounds() {
     const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 1280;
     const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 900;
-    const targetWidth = Math.max(880, Math.min(1140, viewportWidth - 48));
-    const targetHeight = Math.max(600, Math.min(700, viewportHeight - 48));
+    // Prefer 880-1140 × 600-700, but never exceed the usable viewport on
+    // small screens.
+    const targetWidth = Math.min(Math.max(880, Math.min(1140, viewportWidth - 48)), viewportWidth - 16);
+    const targetHeight = Math.min(Math.max(600, Math.min(700, viewportHeight - 48)), viewportHeight - 16);
     this.setPosition?.({ width: targetWidth, height: targetHeight });
   }
 }

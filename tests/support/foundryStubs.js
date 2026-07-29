@@ -162,6 +162,9 @@ export function installFoundryStubs({
       hasProperty,
       mergeObject,
       setProperty,
+      randomID() {
+        return `test-${Math.random().toString(36).slice(2, 12)}`;
+      },
       debounce(fn) {
         return fn;
       }

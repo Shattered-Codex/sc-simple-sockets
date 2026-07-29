@@ -6,20 +6,20 @@
   {{#if details.isGem}}
 
     <div class="sc-sockets-gem-details-container" data-sc-sockets="gem-details-container">
-        <nav class="sc-sockets-gem-pills" data-sc-sockets="gem-pills">
-          <button type="button" class="sc-sockets-gem-pill active" data-action="showGemPane" data-pane="combat">
+        <nav class="sc-sockets-gem-pills" data-sc-sockets="gem-pills" role="tablist">
+          <button type="button" class="sc-sockets-gem-pill active interface-only always-interactive" role="tab" aria-selected="true" data-action="showGemPane" data-pane="combat">
             <span class="sc-sockets-gem-pill-label">{{details.panes.combat.label}}</span>
             {{#if details.panes.combat.filled}}
               <span class="sc-sockets-gem-pill-dot" data-tooltip="{{details.panes.filledLabel}}" aria-label="{{details.panes.filledLabel}}"></span>
             {{/if}}
           </button>
-          <button type="button" class="sc-sockets-gem-pill" data-action="showGemPane" data-pane="resource">
+          <button type="button" class="sc-sockets-gem-pill interface-only always-interactive" role="tab" aria-selected="false" data-action="showGemPane" data-pane="resource">
             <span class="sc-sockets-gem-pill-label">{{details.panes.resource.label}}</span>
             {{#if details.panes.resource.filled}}
               <span class="sc-sockets-gem-pill-dot" data-tooltip="{{details.panes.filledLabel}}" aria-label="{{details.panes.filledLabel}}"></span>
             {{/if}}
           </button>
-          <button type="button" class="sc-sockets-gem-pill" data-action="showGemPane" data-pane="tags">
+          <button type="button" class="sc-sockets-gem-pill interface-only always-interactive" role="tab" aria-selected="false" data-action="showGemPane" data-pane="tags">
             <span class="sc-sockets-gem-pill-label">{{details.panes.tags.label}}</span>
             {{#if details.panes.tags.count}}
               <span class="sc-sockets-gem-pill-count">{{details.panes.tags.count}}</span>
@@ -27,7 +27,7 @@
           </button>
         </nav>
 
-        <div class="sc-sockets-gem-pane" data-sc-sockets-pane="combat">
+        <div class="sc-sockets-gem-pane" role="tabpanel" data-sc-sockets-pane="combat">
           <fieldset class="form-group sc-sockets-gem-attack-crit">
             <legend class="form-header">{{ localize "SCSockets.GemDetails.AttackCrit.Label" }}</legend>
             <div class="sc-sockets-gem-critical-row">
@@ -331,13 +331,15 @@
                          value="{{details.resource.recovery.threshold}}"
                          min="1" max="6" step="1"
                          placeholder="6">
-                  <button type="button"
-                          class="sc-sockets-gem-recharge-roll"
-                          data-action="rollGemRecharge"
-                          data-tooltip="{{ localize 'SCSockets.GemDetails.Resource.Recovery.Roll' }}"
-                          aria-label="{{ localize 'SCSockets.GemDetails.Resource.Recovery.Roll' }}">
-                    <i class="fas fa-dice-six"></i>
-                  </button>
+                  {{#if details.resource.recovery.canRoll}}
+                    <button type="button"
+                            class="sc-sockets-gem-recharge-roll always-interactive"
+                            data-action="rollGemRecharge"
+                            data-tooltip="{{ localize 'SCSockets.GemDetails.Resource.Recovery.Roll' }}"
+                            aria-label="{{ localize 'SCSockets.GemDetails.Resource.Recovery.Roll' }}">
+                      <i class="fas fa-dice-six"></i>
+                    </button>
+                  {{/if}}
                 </div>
               </div>
             {{/if}}

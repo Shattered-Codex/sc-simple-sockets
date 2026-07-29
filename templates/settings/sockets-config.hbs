@@ -1,0 +1,311 @@
+<section class="sc-config" data-application-part="form">
+  <div class="sc-config__body">
+    <nav class="sc-config__rail" role="tablist" aria-label="{{strings.tabsAria}}">
+      {{#each tabs}}
+        <button
+          type="button"
+          role="tab"
+          id="{{../formId}}-tab-{{this.id}}"
+          class="sc-config__tab{{#if this.active}} is-active{{/if}}"
+          data-action="switchTab"
+          data-tab-target="{{this.id}}"
+          aria-selected="{{#if this.active}}true{{else}}false{{/if}}"
+          aria-controls="{{../formId}}-panel-{{this.id}}"
+          tabindex="{{#if this.active}}0{{else}}-1{{/if}}"
+        >
+          <i class="{{this.icon}}" aria-hidden="true"></i>
+          <span class="sc-config__tab-label">{{this.label}}</span>
+          <span class="sc-config__tab-dot" data-tab-dot="{{this.id}}" hidden></span>
+        </button>
+      {{/each}}
+    </nav>
+
+    <div class="sc-config__content">
+      {{!-- ── Tab · Socket rules ─────────────────────────────── --}}
+      <section
+        id="{{formId}}-panel-rules"
+        class="sc-config__panel"
+        role="tabpanel"
+        aria-labelledby="{{formId}}-tab-rules"
+        data-tab-panel="rules"
+        {{#unless rules.active}}hidden{{/unless}}
+      >
+        <header class="sc-config__panel-head">
+          <h2 class="sc-config__panel-title">{{rules.title}}</h2>
+          <p class="sc-config__panel-hint">{{rules.hint}}</p>
+        </header>
+
+        <div class="sc-config__rows">
+          {{#each rules.fields}}
+            <label class="sc-config-row">
+              <span class="sc-config-row__copy">
+                <span class="sc-config-row__name">{{this.name}}</span>
+                <span class="sc-config-row__hint">{{this.hint}}</span>
+              </span>
+              <span class="sc-config-row__control">
+                {{#if this.isSelect}}
+                  <span class="sc-select-wrap">
+                    <select
+                      name="{{this.key}}"
+                      class="sc-select"
+                      {{#if this.isDynamicDescription}}data-dynamic-description{{/if}}
+                      data-default-value="{{this.defaultValue}}"
+                    >
+                      {{#each this.choices}}
+                        <option
+                          value="{{this.value}}"
+                          data-description="{{this.description}}"
+                          {{#if this.selected}}selected{{/if}}
+                        >{{this.label}}</option>
+                      {{/each}}
+                    </select>
+                    <i class="fas fa-chevron-down sc-select-chev" aria-hidden="true"></i>
+                  </span>
+                {{/if}}
+                {{#if this.isNumber}}
+                  <input
+                    type="number"
+                    name="{{this.key}}"
+                    class="sc-input sc-input--number"
+                    step="1"
+                    value="{{this.value}}"
+                    data-default-value="{{this.defaultValue}}"
+                  />
+                {{/if}}
+                {{#if this.isCheckbox}}
+                  <span class="sc-check">
+                    <input
+                      type="checkbox"
+                      name="{{this.key}}"
+                      {{#if this.checked}}checked{{/if}}
+                      data-default-checked="{{this.defaultChecked}}"
+                    />
+                    <span class="sc-check__box"><i class="fas fa-check" aria-hidden="true"></i></span>
+                  </span>
+                {{/if}}
+              </span>
+              {{#if this.isDynamicDescription}}
+                <span class="sc-config-row__description" data-select-description>{{this.selectedDescription}}</span>
+              {{/if}}
+            </label>
+          {{/each}}
+        </div>
+      </section>
+
+      {{!-- ── Tab · Display ──────────────────────────────────── --}}
+      <section
+        id="{{formId}}-panel-display"
+        class="sc-config__panel"
+        role="tabpanel"
+        aria-labelledby="{{formId}}-tab-display"
+        data-tab-panel="display"
+        {{#unless display.active}}hidden{{/unless}}
+      >
+        <header class="sc-config__panel-head">
+          <h2 class="sc-config__panel-title">{{display.title}}</h2>
+          <p class="sc-config__panel-hint">{{display.hint}}</p>
+        </header>
+
+        <div class="sc-config__rows">
+          {{#each display.fields}}
+            <label class="sc-config-row">
+              <span class="sc-config-row__copy">
+                <span class="sc-config-row__name">{{this.name}}</span>
+                <span class="sc-config-row__hint">{{this.hint}}</span>
+              </span>
+              <span class="sc-config-row__control">
+                {{#if this.isSelect}}
+                  <span class="sc-select-wrap">
+                    <select
+                      name="{{this.key}}"
+                      class="sc-select"
+                      {{#if this.isDynamicDescription}}data-dynamic-description{{/if}}
+                      data-default-value="{{this.defaultValue}}"
+                    >
+                      {{#each this.choices}}
+                        <option
+                          value="{{this.value}}"
+                          data-description="{{this.description}}"
+                          {{#if this.selected}}selected{{/if}}
+                        >{{this.label}}</option>
+                      {{/each}}
+                    </select>
+                    <i class="fas fa-chevron-down sc-select-chev" aria-hidden="true"></i>
+                  </span>
+                {{/if}}
+                {{#if this.isNumber}}
+                  <input
+                    type="number"
+                    name="{{this.key}}"
+                    class="sc-input sc-input--number"
+                    step="1"
+                    value="{{this.value}}"
+                    data-default-value="{{this.defaultValue}}"
+                  />
+                {{/if}}
+                {{#if this.isCheckbox}}
+                  <span class="sc-check">
+                    <input
+                      type="checkbox"
+                      name="{{this.key}}"
+                      {{#if this.checked}}checked{{/if}}
+                      data-default-checked="{{this.defaultChecked}}"
+                    />
+                    <span class="sc-check__box"><i class="fas fa-check" aria-hidden="true"></i></span>
+                  </span>
+                {{/if}}
+              </span>
+              {{#if this.isDynamicDescription}}
+                <span class="sc-config-row__description" data-select-description>{{this.selectedDescription}}</span>
+              {{/if}}
+            </label>
+          {{/each}}
+        </div>
+      </section>
+
+      {{!-- ── Tab · Socketable item types ────────────────────── --}}
+      <section
+        id="{{formId}}-panel-types"
+        class="sc-config__panel"
+        role="tabpanel"
+        aria-labelledby="{{formId}}-tab-types"
+        data-tab-panel="types"
+        {{#unless types.active}}hidden{{/unless}}
+      >
+        <header class="sc-config__panel-head">
+          <h2 class="sc-config__panel-title">{{types.title}}</h2>
+          <p class="sc-config__panel-hint">{{types.hint}}</p>
+        </header>
+
+        <h3 class="sc-config__section-title">{{types.selectLabel}}</h3>
+        <p class="sc-config__section-hint">{{types.selectHint}}</p>
+        <div class="sc-config-choice-grid" role="group" aria-label="{{types.selectLabel}}">
+          {{#each types.options}}
+            <label class="sc-config-choice">
+              <input
+                type="checkbox"
+                name="types.{{this.value}}"
+                data-type-value="{{this.value}}"
+                {{#if this.selected}}checked{{/if}}
+              />
+              <span class="sc-check__box"><i class="fas fa-check" aria-hidden="true"></i></span>
+              <span class="sc-config-choice__label">{{this.label}}</span>
+            </label>
+          {{/each}}
+        </div>
+      </section>
+
+      {{!-- ── Tab · Gem subtypes ─────────────────────────────── --}}
+      <section
+        id="{{formId}}-panel-subtypes"
+        class="sc-config__panel"
+        role="tabpanel"
+        aria-labelledby="{{formId}}-tab-subtypes"
+        data-tab-panel="subtypes"
+        {{#unless subtypes.active}}hidden{{/unless}}
+      >
+        <header class="sc-config__panel-head">
+          <h2 class="sc-config__panel-title">{{subtypes.title}}</h2>
+          <p class="sc-config__panel-hint">{{subtypes.hint}}</p>
+        </header>
+
+        <h3 class="sc-config__section-title">{{subtypes.selectLabel}}</h3>
+        <p class="sc-config__section-hint">{{subtypes.selectHint}}</p>
+        <div
+          class="sc-config-choice-grid"
+          role="group"
+          aria-label="{{subtypes.selectLabel}}"
+          data-subtype-grid
+          data-custom-badge="{{strings.customBadge}}"
+        >
+          {{#each subtypes.options}}
+            <label class="sc-config-choice">
+              <input
+                type="checkbox"
+                name="subtypes.{{this.value}}"
+                data-subtype-value="{{this.value}}"
+                {{#if this.selected}}checked{{/if}}
+              />
+              <span class="sc-check__box"><i class="fas fa-check" aria-hidden="true"></i></span>
+              <span class="sc-config-choice__label">{{this.label}}</span>
+              {{#if this.isCustom}}<span class="sc-config-badge">{{../strings.customBadge}}</span>{{/if}}
+            </label>
+          {{/each}}
+        </div>
+
+        <h3 class="sc-config__section-title">{{subtypes.custom.heading}}</h3>
+        <p class="sc-config__section-hint">{{subtypes.custom.hint}}</p>
+        <div class="sc-config-custom">
+          <div class="sc-config-custom__head" aria-hidden="true">
+            <span>{{subtypes.custom.keyLabel}}</span>
+            <span>{{subtypes.custom.labelLabel}}</span>
+            <span></span>
+          </div>
+          <ul
+            class="sc-config-custom__list"
+            data-custom-subtypes
+            data-placeholder-key="{{subtypes.custom.keyPlaceholder}}"
+            data-placeholder-label="{{subtypes.custom.labelPlaceholder}}"
+            data-remove-label="{{subtypes.custom.remove}}"
+            data-key-label="{{subtypes.custom.keyLabel}}"
+            data-label-label="{{subtypes.custom.labelLabel}}"
+          >
+            {{#each subtypes.customSubtypes}}
+              <li class="sc-config-custom__row" data-subtype-row data-index="{{@index}}">
+                <input
+                  type="text"
+                  class="sc-input"
+                  name="customSubtypes.{{@index}}.key"
+                  value="{{this.key}}"
+                  placeholder="{{../subtypes.custom.keyPlaceholder}}"
+                  aria-label="{{../subtypes.custom.keyLabel}}"
+                  data-custom-field="key"
+                  autocomplete="off"
+                />
+                <input
+                  type="text"
+                  class="sc-input"
+                  name="customSubtypes.{{@index}}.label"
+                  value="{{this.label}}"
+                  placeholder="{{../subtypes.custom.labelPlaceholder}}"
+                  aria-label="{{../subtypes.custom.labelLabel}}"
+                  data-custom-field="label"
+                  autocomplete="off"
+                />
+                <button
+                  type="button"
+                  class="sc-icon-btn sc-icon-btn--danger"
+                  data-action="removeCustomSubtype"
+                  aria-label="{{../subtypes.custom.remove}}"
+                  data-tooltip="{{../subtypes.custom.remove}}"
+                >
+                  <i class="fas fa-trash-can" aria-hidden="true"></i>
+                </button>
+              </li>
+            {{/each}}
+          </ul>
+          <button type="button" class="sc-btn sc-btn--sm sc-config-custom__add" data-action="addCustomSubtype">
+            <i class="fas fa-plus" aria-hidden="true"></i> {{subtypes.custom.add}}
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer class="sc-config__footer">
+    <span class="sc-config-pill" data-status-pill hidden>
+      <span class="sc-config-pill__dot" aria-hidden="true"></span>
+      <span data-status-pill-label></span>
+    </span>
+    <span class="sc-config__spacer"></span>
+    <button type="button" class="sc-btn sc-btn--ghost" data-action="resetActiveTab">
+      <i class="fas fa-rotate-left" aria-hidden="true"></i> {{strings.reset}}
+    </button>
+    <button type="button" class="sc-btn" data-action="close">
+      <i class="fas fa-xmark" aria-hidden="true"></i> {{strings.close}}
+    </button>
+    <button type="submit" class="sc-btn sc-btn--primary" data-save-button>
+      <i class="fas fa-floppy-disk" aria-hidden="true"></i> {{strings.save}}
+    </button>
+  </footer>
+</section>

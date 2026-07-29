@@ -16,6 +16,7 @@
       "GemIncompatible": "That item is not compatible with this socket.",
       "GemUnsocketed": "Gem unsocketed.",
       "CannotOpenGem": "Could not open the gem item.",
+      "SocketGemChanged": "The socketed gem changed since this sheet was opened. Close it and open the gem again.",
       "MaxReached": "Maximum number of sockets reached.",
       "GemRequiresSocket": "This gem must be socketed before it can be used.",
       "HostNotSocketable": "This item type cannot receive sockets.",
@@ -184,6 +185,7 @@
       "DropGemHint": "Drag a gem here to socket it.",
       "Save": "Save and Close",
       "Cancel": "Cancel",
+      "CancelHint": "Discards unsaved slot edits. Adding sockets and socketing/unsocketing gems apply immediately and are not reverted.",
       "Saved": "Slot settings saved.",
       "Tabs": {
         "Description": "Description",
@@ -405,6 +407,29 @@
           "Display": "Display",
           "DisplayHint": "Adjust how gem damage and the socket tab are presented in the UI."
         }
+      },
+      "ConfigMenu": {
+        "Name": "Module configuration",
+        "Label": "Open configuration",
+        "Hint": "All Simple Sockets settings in one window: socket rules, display, item types, and gem subtypes.",
+        "Title": "Simple Sockets — Configuration",
+        "Tabs": {
+          "Rules": "Socket rules",
+          "RulesHint": "Control who can edit sockets and how gems behave when attached or removed.",
+          "Display": "Display",
+          "DisplayHint": "Adjust how gem damage and the socket tab are presented in the UI.",
+          "Types": "Item types",
+          "TypesHint": "Choose which item types can receive sockets.",
+          "Subtypes": "Gem subtypes",
+          "SubtypesHint": "Select which loot subtypes count as gems and manage custom subtypes. New custom subtypes appear in the selection above as soon as they are added."
+        },
+        "CustomBadge": "custom",
+        "Save": "Save Changes",
+        "Close": "Close",
+        "Reset": "Reset defaults",
+        "Unsaved": "Unsaved changes",
+        "SavedPill": "Saved",
+        "SavedNotification": "Simple Sockets settings saved."
       },
       "HideSupportCard": {
         "Name": "Hide automatic What's New popup until next update",

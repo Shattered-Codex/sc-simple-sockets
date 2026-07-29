@@ -37,6 +37,7 @@ export class ModuleSettings {
   static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
   static SETTING_CUSTOM_LOOT_SUBTYPES = Constants.SETTING_CUSTOM_LOOT_SUBTYPES;
   static SETTING_CUSTOM_LOOT_SUBTYPE_MENU = "customLootSubtypeMenu";
+  static SETTING_CONFIG_MENU = "socketsConfigMenu";
 
   // Permission -----------------------------------------------------------------
 

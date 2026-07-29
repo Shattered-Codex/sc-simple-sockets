@@ -58,6 +58,11 @@ export class ItemResolver {
       name: typeof slot?.name === "string" && slot.name.length ? slot.name : defaultName,
       slotConfig: normalizeSlotConfig(slot?.slotConfig),
       _gemData: slot?._gemData ? ItemResolver.compactSnapshot(slot._gemData) : null,
+      _gemInstanceId: gem
+        ? (typeof slot?._gemInstanceId === "string" && slot._gemInstanceId.length
+          ? slot._gemInstanceId
+          : foundry?.utils?.randomID?.() ?? null)
+        : null,
       _slot: Number.isInteger(slotIndex) ? slotIndex : (Number.isInteger(slot?._slot) ? slot._slot : null)
     };
   }

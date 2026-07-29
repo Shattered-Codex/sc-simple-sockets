@@ -3,6 +3,7 @@ import { SocketStore } from "../SocketStore.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { HostOperationQueue } from "../support/HostOperationQueue.js";
 
 /**
  * Restores gem resource charges when their recovery period triggers.
@@ -11,14 +12,25 @@ import { GemResourceService } from "../../domain/gems/GemResourceService.js";
  * (stored in flags inside slot snapshots and on loose gem items) are
  * recovered here, mirroring the native periods:
  * - Rests (dnd5e.restCompleted): the rest type's recoverPeriods plus the
- *   day/dawn/dusk periods when the rest starts a new day, matching
- *   Actor5e._getRestItemUsesRecovery. Runs after the system applies its own
- *   rest updates because recovery formulas may contain dice, which cannot be
- *   rolled inside the synchronous preRestCompleted hook.
+ *   explicit recoverShortRestUses/recoverLongRestUses/recoverDailyUses
+ *   overrides and the day/dawn/dusk periods when the rest starts a new day,
+ *   matching Actor5e._getRestItemUsesRecovery. Runs after the system applies
+ *   its own rest updates because recovery formulas may contain dice, which
+ *   cannot be rolled inside the synchronous preRestCompleted hook. Known
+ *   divergence from native recovery: formulas referencing actor state (HP,
+ *   resources, uses) therefore see the post-rest values, not the pre-rest
+ *   ones.
  * - Combat (dnd5e.postCombatRecovery): initiative, turnStart, turnEnd, and
  *   turn periods, per combatant, after the system's own combat recovery.
  * - Recharge: a manual d6 check against the configured threshold, rolled from
  *   the gem sheet or the Socket Descriptions die button.
+ *
+ * Writes follow a plan/apply split: every roll completes first (rolls can wait
+ * on dice animations and chat), then the sockets are re-read and only the
+ * planned changes are applied to the freshest state — validating the gem's
+ * identity and recovery profile per slot — inside the shared per-host queue
+ * (HostOperationQueue), so a recovery write cannot clobber socket CRUD or
+ * slot-configuration writes made while its rolls were pending.
  */
 export class GemRecoveryService {
   static #registered = false;
@@ -49,7 +61,15 @@ export class GemRecoveryService {
   static restPeriods(config) {
     const restConfig = globalThis.CONFIG?.DND5E?.restTypes?.[config?.type];
     const periods = new Set(restConfig?.recoverPeriods ?? []);
-    if (config?.newDay) {
+    // Mirror Actor5e._getRestItemUsesRecovery: the rest configuration can force
+    // the short/long/daily periods regardless of the rest type's defaults.
+    if (config?.recoverShortRestUses) {
+      periods.add("sr");
+    }
+    if (config?.recoverLongRestUses) {
+      periods.add("lr");
+    }
+    if (config?.recoverDailyUses || config?.newDay) {
       periods.add("day").add("dawn").add("dusk");
     }
     return periods;
@@ -80,21 +100,22 @@ export class GemRecoveryService {
       return;
     }
 
-    let changed = false;
-    const nextSlots = [];
-    for (const slot of slots) {
+    const changes = [];
+    for (let index = 0; index < slots.length; index += 1) {
+      const slot = slots[index];
       const resource = GemResourceService.getSlotResource(slot);
-      const restored = await GemRecoveryService.#restoredValue(resource, periods, item);
-      if (restored === null) {
-        nextSlots.push(slot);
-        continue;
+      const change = await GemRecoveryService.#plannedChange(
+        resource,
+        periods,
+        () => GemRecoveryService.#slotRollData(item, slot)
+      );
+      if (change) {
+        changes.push({ ...change, index, ...GemRecoveryService.#slotIdentity(slot, resource) });
       }
-      nextSlots.push(GemResourceService.withSlotResourceValue(slot, restored));
-      changed = true;
     }
 
-    if (changed) {
-      await SocketStore.setSlots(item, nextSlots);
+    if (changes.length) {
+      await GemRecoveryService.#applySlotChanges(item, changes);
     }
   }
 
@@ -104,46 +125,185 @@ export class GemRecoveryService {
     }
 
     const resource = GemResourceService.getGemResource(item);
-    const restored = await GemRecoveryService.#restoredValue(resource, periods, item);
-    if (restored === null) {
-      return;
-    }
-
-    await item.setFlag(
-      Constants.MODULE_ID,
-      Constants.FLAG_GEM_RESOURCE,
-      { ...resource, value: restored }
+    const change = await GemRecoveryService.#plannedChange(
+      resource,
+      periods,
+      () => item?.getRollData?.() ?? {}
     );
+    if (change) {
+      await GemRecoveryService.#applyItemChange(item, resource, change);
+    }
+  }
+
+  /* -------------------------------------------- */
+  /*  Applying planned changes                    */
+  /* -------------------------------------------- */
+
+  static #slotIdentity(slot, resource) {
+    return {
+      resourceKey: resource?.key ?? null,
+      gemName: ItemResolver.getSlotGemMeta?.(slot)?.name ?? null,
+      gemInstanceId: slot?._gemInstanceId ?? null,
+      profile: GemRecoveryService.#profileFingerprint(resource)
+    };
   }
 
   /**
-   * Returns the new charge value for the resource, or null when this trigger
-   * does not change it (wrong period, nothing to recover/lose, or a bad
+   * Fingerprint of the recovery profile a change was planned against. If the
+   * user edits the period, type, formula, threshold, or the gem's maximum
+   * while a roll is pending, the stale planned result must not be applied.
+   */
+  static #profileFingerprint(resource) {
+    if (!resource) {
+      return null;
+    }
+    return JSON.stringify({
+      period: resource.recovery?.period ?? "",
+      type: resource.recovery?.type ?? "",
+      formula: resource.recovery?.formula ?? "",
+      threshold: resource.recovery?.threshold ?? "",
+      max: resource.max ?? null
+    });
+  }
+
+  /** Whether the slot still holds the gem (and profile) the change was planned for. */
+  static #sameGem(slot, resource, change) {
+    if (!resource || resource.key !== change.resourceKey) {
+      return false;
+    }
+    if (change.profile !== undefined
+      && change.profile !== GemRecoveryService.#profileFingerprint(resource)) {
+      return false;
+    }
+    // The persistent per-socketing id is authoritative when both sides have
+    // one; name matching remains as the fallback for slots written before the
+    // id existed.
+    const instanceId = slot?._gemInstanceId ?? null;
+    if (change.gemInstanceId && instanceId) {
+      return change.gemInstanceId === instanceId;
+    }
+    const name = ItemResolver.getSlotGemMeta?.(slot)?.name ?? null;
+    return change.gemName === null || name === null || name === change.gemName;
+  }
+
+  /** Re-reads the sockets and applies the planned changes to the freshest state. */
+  static async #applySlotChanges(hostItem, changes) {
+    await GemRecoveryService.#withHostQueue(hostItem, async () => {
+      const slots = SocketStore.getSlots(hostItem);
+      let changed = false;
+      for (const change of changes) {
+        const slot = slots[change.index];
+        const resource = GemResourceService.getSlotResource(slot);
+        if (!slot || !GemRecoveryService.#sameGem(slot, resource, change)) {
+          continue;
+        }
+        const next = GemRecoveryService.#changedValue(resource, change);
+        if (next === null) {
+          continue;
+        }
+        slots[change.index] = GemResourceService.withSlotResourceValue(slot, next);
+        changed = true;
+      }
+      if (changed) {
+        await SocketStore.setSlots(hostItem, slots);
+      }
+    });
+  }
+
+  static async #applyItemChange(item, plannedResource, change) {
+    const fresh = GemResourceService.getGemResource(item);
+    if (!fresh || fresh.key !== plannedResource?.key) {
+      return;
+    }
+    if (GemRecoveryService.#profileFingerprint(fresh)
+      !== GemRecoveryService.#profileFingerprint(plannedResource)) {
+      return;
+    }
+    const next = GemRecoveryService.#changedValue(fresh, change);
+    if (next === null) {
+      return;
+    }
+    await item.setFlag(
+      Constants.MODULE_ID,
+      Constants.FLAG_GEM_RESOURCE,
+      { ...fresh, value: next }
+    );
+  }
+
+  static async #withHostQueue(hostItem, task) {
+    return HostOperationQueue.enqueue(hostItem, task);
+  }
+
+  /* -------------------------------------------- */
+  /*  Roll data                                   */
+  /* -------------------------------------------- */
+
+  /**
+   * Roll data for a socketed gem's recovery formula. A temporary document is
+   * built from the snapshot so `@item.*` resolves exactly like a loose gem's
+   * Item5e.getRollData() (including labels and derived data); the host item's
+   * data stays reachable through `@host.*`, and the actor data comes through
+   * unchanged.
+   */
+  static #slotRollData(hostItem, slot) {
+    const hostRollData = { ...(hostItem?.getRollData?.() ?? {}) };
+    const source = GemResourceService.getSlotGemSource(slot);
+    if (!source?.system || typeof source.system !== "object") {
+      return hostRollData;
+    }
+
+    const rollData = GemRecoveryService.#snapshotRollData(source, hostItem)
+      ?? { ...hostRollData, item: foundry.utils.deepClone(source.system) };
+    rollData.host = hostRollData.item ?? null;
+    return rollData;
+  }
+
+  static #snapshotRollData(source, hostItem) {
+    const ItemDocument = globalThis.CONFIG?.Item?.documentClass;
+    if (typeof ItemDocument !== "function") {
+      return null;
+    }
+    try {
+      const gem = new ItemDocument(source, { parent: hostItem?.actor ?? null });
+      const rollData = gem.getRollData?.();
+      return rollData && typeof rollData === "object" ? { ...rollData } : null;
+    } catch (error) {
+      console.warn(`[${Constants.MODULE_ID}] failed to build roll data from gem snapshot`, error);
+      return null;
+    }
+  }
+
+  /* -------------------------------------------- */
+  /*  Planning                                    */
+  /* -------------------------------------------- */
+
+  /**
+   * Returns the planned change for the resource, or null when this trigger
+   * does not affect it (wrong period, nothing to recover/lose, or a bad
    * formula). The recharge period is excluded: it only recovers through its
    * manual d6 check.
    */
-  static async #restoredValue(resource, periods, rollSourceItem) {
+  static async #plannedChange(resource, periods, getRollData) {
     const period = resource?.recovery?.period;
     if (!period || period === "recharge" || !periods.has(period)) {
       return null;
     }
-    return GemRecoveryService.#profileValue(resource, rollSourceItem);
+    return GemRecoveryService.#plannedRecovery(resource, getRollData);
   }
 
   /**
-   * Applies the recovery profile (mirroring the native dnd5e ones — recoverAll,
-   * loseAll, formula) and returns the new charge value, or null for no change.
+   * Plans the recovery profile (mirroring the native dnd5e ones — recoverAll,
+   * loseAll, formula) as `{mode: "max"|"zero"|"delta", amount?}` or null for
+   * no change. Formula amounts apply signed, like UsesField.recoverUses, so a
+   * negative total drains charges.
    */
-  static async #profileValue(resource, rollSourceItem) {
+  static async #plannedRecovery(resource, getRollData) {
     const type = resource.recovery.type;
     if (type === "loseAll") {
-      return resource.value > 0 ? 0 : null;
-    }
-    if (resource.value >= resource.max) {
-      return null;
+      return resource.value > 0 ? { mode: "zero" } : null;
     }
     if (type !== "formula") {
-      return resource.max;
+      return resource.value < resource.max ? { mode: "max" } : null;
     }
 
     const formula = resource.recovery.formula;
@@ -156,13 +316,19 @@ export class GemRecoveryService {
       if (!RollClass) {
         return null;
       }
-      const roll = new RollClass(formula, rollSourceItem?.getRollData?.() ?? {});
+      const roll = new RollClass(formula, getRollData?.() ?? {});
+      // Mirror UsesField.recoverUses: daily formulas recover a week's worth
+      // under the gritty realism rest variant.
+      if (["day", "dawn", "dusk"].includes(resource.recovery.period)
+        && GemRecoveryService.#isGrittyRest()) {
+        roll.alter?.(7, 0, { multiplyNumeric: true });
+      }
       const total = (await roll.evaluate()).total;
-      const amount = Math.max(Math.floor(Number(total) || 0), 0);
+      const amount = Math.trunc(Number(total) || 0);
       if (!amount) {
         return null;
       }
-      return Math.min(resource.value + amount, resource.max);
+      return { mode: "delta", amount };
     } catch (error) {
       console.warn(
         `[${Constants.MODULE_ID}] invalid gem recovery formula "${formula}" on "${resource.key}":`,
@@ -170,6 +336,27 @@ export class GemRecoveryService {
       );
       return null;
     }
+  }
+
+  static #isGrittyRest() {
+    try {
+      return globalThis.game?.settings?.get?.("dnd5e", "restVariant") === "gritty";
+    } catch {
+      return false;
+    }
+  }
+
+  /** New charge value after the planned change, computed against the freshest resource; null for no change. */
+  static #changedValue(resource, change) {
+    let next;
+    if (change.mode === "zero") {
+      next = 0;
+    } else if (change.mode === "max") {
+      next = resource.max;
+    } else {
+      next = Math.min(Math.max(resource.value + change.amount, 0), resource.max);
+    }
+    return next === resource.value ? null : next;
   }
 
   /* -------------------------------------------- */
@@ -185,7 +372,8 @@ export class GemRecoveryService {
   /**
    * Rolls the recharge check for a gem socketed in the given host item slot
    * and, on a success, applies the configured recovery profile (recover all,
-   * lose all, or the rolled formula amount) inside the slot snapshot.
+   * lose all, or the rolled formula amount) inside the slot snapshot. The
+   * write validates that the slot still holds the same gem.
    * @returns {Promise<{roll: Roll, success: boolean, threshold: number}|null>}
    */
   static async rollSlotRecharge(hostItem, slotIndex) {
@@ -203,10 +391,14 @@ export class GemRecoveryService {
     }
 
     if (check.success) {
-      const nextValue = await GemRecoveryService.#profileValue(resource, hostItem);
-      if (nextValue !== null) {
-        slots[slotIndex] = GemResourceService.withSlotResourceValue(slot, nextValue);
-        await SocketStore.setSlots(hostItem, slots);
+      const change = await GemRecoveryService.#plannedRecovery(
+        resource,
+        () => GemRecoveryService.#slotRollData(hostItem, slot)
+      );
+      if (change) {
+        await GemRecoveryService.#applySlotChanges(hostItem, [
+          { ...change, index: slotIndex, ...GemRecoveryService.#slotIdentity(slot, resource) }
+        ]);
       }
     }
     return check;
@@ -224,13 +416,12 @@ export class GemRecoveryService {
     }
 
     if (check.success) {
-      const nextValue = await GemRecoveryService.#profileValue(resource, item);
-      if (nextValue !== null) {
-        await item.setFlag(
-          Constants.MODULE_ID,
-          Constants.FLAG_GEM_RESOURCE,
-          { ...resource, value: nextValue }
-        );
+      const change = await GemRecoveryService.#plannedRecovery(
+        resource,
+        () => item?.getRollData?.() ?? {}
+      );
+      if (change) {
+        await GemRecoveryService.#applyItemChange(item, resource, change);
       }
     }
     return check;

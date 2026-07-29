@@ -171,6 +171,88 @@ describe("SocketSlotConfigService", () => {
     assert.equal(calls, 0);
   });
 
+  test("updateManyConfigsAndResources saves several slots in a single item update", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        name: "Sword",
+        type: "weapon",
+        includeActivitiesField: true,
+        flags: {
+          [Constants.MODULE_ID]: {
+            [Constants.FLAGS.sockets]: [
+              makeSlot("Battery Gem", { key: "battery", max: 10, value: 7 }),
+              makeSlot("Magic Gem", { key: "magic", max: 6, value: 6 }, { slotIndex: 1 })
+            ]
+          }
+        }
+      }]
+    });
+    const item = actor.items.get("host-1");
+
+    let calls = 0;
+    const originalUpdate = actor.updateEmbeddedDocuments.bind(actor);
+    actor.updateEmbeddedDocuments = async (...args) => {
+      calls += 1;
+      return originalUpdate(...args);
+    };
+
+    const config = (name) => ({
+      name, hidden: false, deleteGemOnRemoval: false, condition: "", description: "", color: ""
+    });
+    const updated = await SocketSlotConfigService.updateManyConfigsAndResources(item, new Map([
+      [0, { config: config("First Slot"), gemResource: { value: 2, recovery: null } }],
+      [1, { config: config("Second Slot"), gemResource: { value: 1, recovery: null } }]
+    ]));
+
+    assert.equal(updated, true);
+    assert.equal(calls, 1);
+    const slots = item.getFlag(Constants.MODULE_ID, Constants.FLAGS.sockets);
+    assert.equal(slots[0].name, "First Slot");
+    assert.equal(GemResourceService.getSlotResource(slots[0]).value, 2);
+    assert.equal(slots[1].name, "Second Slot");
+    assert.equal(GemResourceService.getSlotResource(slots[1]).value, 1);
+  });
+
+  test("updateManyConfigsAndResources writes nothing when any slot index is invalid", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        name: "Sword",
+        type: "weapon",
+        includeActivitiesField: true,
+        flags: {
+          [Constants.MODULE_ID]: {
+            [Constants.FLAGS.sockets]: [
+              makeSlot("Battery Gem", { key: "battery", max: 10, value: 7 })
+            ]
+          }
+        }
+      }]
+    });
+    const item = actor.items.get("host-1");
+
+    let calls = 0;
+    actor.updateEmbeddedDocuments = async () => {
+      calls += 1;
+      return [];
+    };
+
+    const config = (name) => ({
+      name, hidden: false, deleteGemOnRemoval: false, condition: "", description: "", color: ""
+    });
+    const updated = await SocketSlotConfigService.updateManyConfigsAndResources(item, new Map([
+      [0, { config: config("First Slot"), gemResource: { value: 2, recovery: null } }],
+      [5, { config: config("Ghost Slot"), gemResource: { value: 1, recovery: null } }]
+    ]));
+
+    assert.equal(updated, false);
+    assert.equal(calls, 0);
+    const slots = item.getFlag(Constants.MODULE_ID, Constants.FLAGS.sockets);
+    assert.equal(slots[0].name, "Battery Gem");
+    assert.equal(GemResourceService.getSlotResource(slots[0]).value, 7);
+  });
+
   test("exposes normalized gem tags to slot conditions", async () => {
     const hostItem = createTestItem({
       name: "Sword",

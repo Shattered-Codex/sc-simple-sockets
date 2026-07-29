@@ -16,6 +16,7 @@
       "GemIncompatible": "Esse item não é compatível com este soquete.",
       "GemUnsocketed": "Gema removida do soquete.",
       "CannotOpenGem": "Não foi possível abrir o item da gema.",
+      "SocketGemChanged": "A gema encaixada mudou desde que esta ficha foi aberta. Feche-a e abra a gema novamente.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada.",
       "HostNotSocketable": "Este tipo de item não pode receber soquetes.",
@@ -184,6 +185,7 @@
       "DropGemHint": "Arraste uma gema até aqui para encaixá-la.",
       "Save": "Salvar e fechar",
       "Cancel": "Cancelar",
+      "CancelHint": "Descarta edições não salvas do slot. Adicionar soquetes e encaixar/remover gemas são aplicados imediatamente e não são revertidos.",
       "Saved": "Configurações do slot salvas.",
       "Tabs": {
         "Description": "Descrição",
@@ -405,6 +407,29 @@
           "Display": "Exibição",
           "DisplayHint": "Ajuste como o dano das gemas e a aba de soquetes são apresentados na interface."
         }
+      },
+      "ConfigMenu": {
+        "Name": "Configurações do módulo",
+        "Label": "Abrir configurações",
+        "Hint": "Todas as configurações do Simple Sockets em uma única janela: regras de soquete, exibição, tipos de item e subtipos de gema.",
+        "Title": "Simple Sockets — Configurações",
+        "Tabs": {
+          "Rules": "Regras de soquete",
+          "RulesHint": "Controle quem pode editar soquetes e como gemas se comportam ao serem encaixadas ou removidas.",
+          "Display": "Exibição",
+          "DisplayHint": "Ajuste como o dano de gemas e a aba de soquetes aparecem na interface.",
+          "Types": "Tipos de item",
+          "TypesHint": "Escolha quais tipos de item podem receber soquetes.",
+          "Subtypes": "Subtipos de gema",
+          "SubtypesHint": "Selecione quais subtipos de saque contam como gemas e gerencie subtipos personalizados. Novos subtipos personalizados aparecem na seleção acima assim que são adicionados."
+        },
+        "CustomBadge": "personalizado",
+        "Save": "Salvar alterações",
+        "Close": "Fechar",
+        "Reset": "Restaurar padrões",
+        "Unsaved": "Alterações não salvas",
+        "SavedPill": "Salvo",
+        "SavedNotification": "Configurações do Simple Sockets salvas."
       },
       "HideSupportCard": {
         "Name": "Ocultar popup automático de novidades até a próxima atualização",

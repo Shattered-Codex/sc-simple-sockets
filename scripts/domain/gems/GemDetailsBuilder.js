@@ -354,6 +354,11 @@ export class GemDetailsBuilder {
 
   static #buildResourceContext(item) {
     const resource = GemResourceService.getGemResource(item);
+    // Temporary documents opened from a socket persist the recharge into the
+    // host item, so the roll button follows the host's ownership; everywhere
+    // else it follows the gem's own document.
+    const socketSource = item?.[Constants.PROP_SOCKET_SOURCE] ?? null;
+    const rollTarget = socketSource ? socketSource.hostItem : item;
     return {
       namePrefix: `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`,
       key: resource?.key ?? "",
@@ -365,6 +370,7 @@ export class GemDetailsBuilder {
         threshold: resource?.recovery?.threshold ?? 6,
         isFormula: resource?.recovery?.type === "formula",
         isRecharge: resource?.recovery?.period === "recharge",
+        canRoll: rollTarget?.isOwner !== false,
         periodGroups: GemDetailsBuilder.buildRecoveryPeriodGroups(resource?.recovery?.period ?? ""),
         typeOptions: GemDetailsBuilder.buildRecoveryTypeOptions(resource?.recovery?.type ?? "recoverAll", {
           includeLoseAll: resource?.recovery?.period !== "recharge"

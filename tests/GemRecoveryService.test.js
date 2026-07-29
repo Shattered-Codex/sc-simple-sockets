@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, test } from "node:test";
 import { Constants } from "../scripts/core/Constants.js";
 import { GemRecoveryService } from "../scripts/core/services/GemRecoveryService.js";
 import { GemResourceService } from "../scripts/domain/gems/GemResourceService.js";
+import { SocketStore } from "../scripts/core/SocketStore.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
 import { createTestActor } from "./support/testDocuments.js";
 
@@ -60,17 +61,33 @@ function hostSlotResource(actor, index = 0) {
 
 // Deterministic stand-in for CONFIG.Dice.BasicRoll: numeric formulas evaluate
 // to themselves; dice formulas (e.g. the recharge "1d6") use `nextTotal`.
+// `lastData` records the roll data handed to the most recent roll, `gate` is
+// an optional promise every evaluation awaits (so tests can interleave writes
+// while a roll is pending), and `alter` mirrors the dnd5e gritty multiplier.
 class StubRoll {
   static nextTotal = null;
+  static lastData = null;
+  static gate = null;
 
-  constructor(formula) {
+  constructor(formula, data) {
     this.formula = formula;
+    this.data = data;
+    this.multiplier = 1;
+    StubRoll.lastData = data;
+  }
+
+  alter(multiply, _add, _options) {
+    this.multiplier = multiply;
+    return this;
   }
 
   async evaluate() {
+    if (StubRoll.gate) {
+      await StubRoll.gate;
+    }
     const parsed = Number(this.formula);
     if (Number.isFinite(parsed)) {
-      this.total = parsed;
+      this.total = parsed * this.multiplier;
     } else if (StubRoll.nextTotal !== null) {
       this.total = StubRoll.nextTotal;
     } else {
@@ -81,8 +98,10 @@ class StubRoll {
 }
 
 describe("GemRecoveryService", () => {
+  let stubs;
+
   beforeEach(() => {
-    installFoundryStubs();
+    stubs = installFoundryStubs();
     globalThis.CONFIG.DND5E = {
       restTypes: {
         short: { recoverPeriods: ["sr"] },
@@ -91,6 +110,8 @@ describe("GemRecoveryService", () => {
     };
     globalThis.CONFIG.Dice = { BasicRoll: StubRoll };
     StubRoll.nextTotal = null;
+    StubRoll.lastData = null;
+    StubRoll.gate = null;
   });
 
   afterEach(() => {
@@ -193,6 +214,138 @@ describe("GemRecoveryService", () => {
 
     assert.equal(hostSlotResource(actor, 0).value, 0);
     assert.equal(hostSlotResource(actor, 1).value, 0);
+  });
+
+  test("a socketed gem's formula rolls with the gem snapshot as @item and the host as @host", async () => {
+    const actor = makeHostActor([
+      makeSlot("Trickle Gem", {
+        key: "battery", max: 10, value: 3, recovery: { period: "sr", type: "formula", formula: "2" }
+      })
+    ]);
+    hostItem(actor).getRollData = () => ({
+      abilities: { int: { mod: 3 } },
+      item: { hostOnly: true }
+    });
+
+    await GemRecoveryService.recoverRestCharges(actor, { type: "short" });
+
+    assert.equal(hostSlotResource(actor).value, 5);
+    assert.deepEqual(StubRoll.lastData, {
+      abilities: { int: { mod: 3 } },
+      host: { hostOnly: true },
+      item: { quantity: 1, type: { value: "gem" } }
+    });
+  });
+
+  test("a loose gem's formula rolls with the gem's own roll data", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "gem-1",
+        name: "Loose Battery",
+        type: "loot",
+        system: { type: { value: "gem" } },
+        flags: {
+          [Constants.MODULE_ID]: {
+            [Constants.FLAG_GEM_RESOURCE]: {
+              key: "battery", max: 8, value: 2, recovery: { period: "lr", type: "formula", formula: "2" }
+            }
+          }
+        }
+      }]
+    });
+    const gem = actor.items.get("gem-1");
+    gem.getRollData = () => ({ item: { gemOnly: true } });
+
+    await GemRecoveryService.recoverRestCharges(actor, { type: "long" });
+
+    assert.equal(GemResourceService.getGemResource(gem).value, 4);
+    assert.deepEqual(StubRoll.lastData, { item: { gemOnly: true } });
+  });
+
+  test("a negative formula total drains charges, mirroring dnd5e", async () => {
+    const actor = makeHostActor([
+      makeSlot("Leaking Gem", {
+        key: "battery", max: 10, value: 3, recovery: { period: "sr", type: "formula", formula: "-2" }
+      })
+    ]);
+
+    await GemRecoveryService.recoverRestCharges(actor, { type: "short" });
+
+    assert.equal(hostSlotResource(actor).value, 1);
+  });
+
+  test("daily formulas recover sevenfold under the gritty realism rest variant", async () => {
+    stubs.settingsStore.set("dnd5e.restVariant", "gritty");
+    const actor = makeHostActor([
+      makeSlot("Dawn Trickle Gem", {
+        key: "magic", max: 20, value: 1, recovery: { period: "dawn", type: "formula", formula: "2" }
+      })
+    ]);
+
+    await GemRecoveryService.recoverRestCharges(actor, { type: "long", newDay: true });
+
+    assert.equal(hostSlotResource(actor).value, 15);
+  });
+
+  test("the recoverDailyUses rest flag recovers daily gems without a new day", async () => {
+    const actor = makeHostActor([
+      makeSlot("Dawn Gem", {
+        key: "magic", max: 6, value: 1, recovery: { period: "dawn", formula: "" }
+      })
+    ]);
+
+    await GemRecoveryService.recoverRestCharges(actor, { type: "short", recoverDailyUses: true });
+
+    assert.equal(hostSlotResource(actor).value, 6);
+  });
+
+  test("recovery does not clobber slot changes made while its rolls were pending", async () => {
+    const actor = makeHostActor([
+      makeSlot("Trickle Gem", {
+        key: "battery", max: 10, value: 3, recovery: { period: "sr", type: "formula", formula: "2" }
+      }),
+      makeSlot("Consumed Gem", { key: "magic", max: 6, value: 5 })
+    ]);
+    const item = hostItem(actor);
+
+    let release;
+    StubRoll.gate = new Promise((resolve) => { release = resolve; });
+    const recovery = GemRecoveryService.recoverRestCharges(actor, { type: "short" });
+
+    // A use consumes charges from the second gem while the formula roll waits.
+    const slots = SocketStore.getSlots(item);
+    slots[1] = GemResourceService.withSlotResourceValue(slots[1], 1);
+    await SocketStore.setSlots(item, slots);
+
+    release();
+    await recovery;
+
+    assert.equal(hostSlotResource(actor, 0).value, 5);
+    assert.equal(hostSlotResource(actor, 1).value, 1);
+  });
+
+  test("a planned recovery is dropped when the slot's gem changed before the write", async () => {
+    const actor = makeHostActor([
+      makeSlot("Trickle Gem", {
+        key: "battery", max: 10, value: 3, recovery: { period: "sr", type: "formula", formula: "2" }
+      })
+    ]);
+    const item = hostItem(actor);
+
+    let release;
+    StubRoll.gate = new Promise((resolve) => { release = resolve; });
+    const recovery = GemRecoveryService.recoverRestCharges(actor, { type: "short" });
+
+    // The gem is swapped while the formula roll waits.
+    const slots = SocketStore.getSlots(item);
+    slots[0] = makeSlot("Other Gem", { key: "other", max: 4, value: 0 });
+    await SocketStore.setSlots(item, slots);
+
+    release();
+    await recovery;
+
+    assert.equal(hostSlotResource(actor).key, "other");
+    assert.equal(hostSlotResource(actor).value, 0);
   });
 
   test("a formula type without a formula does nothing", async () => {

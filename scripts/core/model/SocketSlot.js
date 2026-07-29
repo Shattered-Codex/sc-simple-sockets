@@ -28,6 +28,10 @@ export class SocketSlot {
       img: gemItem.img,
       _srcGemId: gemItem.id,
       _gemData: gemSnap,
+      // Persistent per-socketing identity: deferred writes (recovery rolls,
+      // inspected-gem sheets) validate against it so replacing or reordering
+      // same-named gems cannot make them hit another instance.
+      _gemInstanceId: foundry?.utils?.randomID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       _slot: slotIndex
     };
   }

@@ -106,6 +106,10 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
+  /* Size container so the collapse below tracks the application window width,
+     not the browser viewport. */
+  container-type: inline-size;
+  container-name: slotcfg;
 }
 
 .socket-slot-config-app .window-content {
@@ -135,6 +139,64 @@
   border-top: 1px solid var(--slotcfg-border);
   background: var(--slotcfg-bg-1);
   flex: 0 0 auto;
+}
+
+/* === Status pill (unsaved changes) ========================= */
+
+.socket-slot-config-app .slotcfg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--slotcfg-border);
+  border-radius: 999px;
+  background: var(--slotcfg-bg-2);
+  color: var(--slotcfg-text-dim);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.socket-slot-config-app .slotcfg-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-pill--unsaved {
+  background: var(--slotcfg-warn-soft);
+  border-color: var(--slotcfg-warn);
+  color: var(--slotcfg-warn);
+}
+
+.socket-slot-config-app .slotcfg-pill--unsaved .slotcfg-pill-dot {
+  background: var(--slotcfg-warn);
+}
+
+.socket-slot-config-app .slotcfg-pill--saved {
+  background: var(--slotcfg-accent-soft);
+  border-color: var(--slotcfg-accent);
+  color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app .slotcfg-pill--saved .slotcfg-pill-dot {
+  background: var(--slotcfg-accent);
+}
+
+/* The header gem mirrors the save state: verdant when everything is
+   persisted, warn-amber while there are unsaved slot edits. */
+.socket-slot-config-app .window-header .window-icon,
+.socket-slot-config-app .window-header i.fa-gem {
+  color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app.slotcfg-dirty .window-header .window-icon,
+.socket-slot-config-app.slotcfg-dirty .window-header i.fa-gem {
+  color: var(--slotcfg-warn);
+}
+
+.socket-slot-config-app .slotcfg-btn--primary.is-dirty {
+  box-shadow: 0 0 10px var(--slotcfg-accent-soft), 0 0 4px var(--slotcfg-accent);
 }
 
 /* === Slot rail ============================================ */
@@ -231,6 +293,14 @@
   flex: 0 0 auto;
   font-size: 0.7rem;
   color: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-rail-dirty {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--slotcfg-warn);
 }
 
 .socket-slot-config-app .slotcfg-rail-foot {
@@ -1232,6 +1302,25 @@
 }
 
 /* === Responsive ============================================ */
+/* Collapses when the application window itself is narrow (resizable app),
+   with the viewport media query kept as a fallback for narrow screens. */
+@container slotcfg (max-width: 960px) {
+  .socket-slot-config-app .slotcfg-body {
+    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    overflow-y: auto;
+  }
+
+  .socket-slot-config-app .slotcfg-rail {
+    grid-row: 1 / -1;
+  }
+
+  .socket-slot-config-app .slotcfg-config {
+    border-right: none;
+    border-bottom: 1px solid var(--slotcfg-border);
+  }
+}
+
 @media (max-width: 960px) {
   .socket-slot-config-app .slotcfg-body {
     grid-template-columns: 180px minmax(0, 1fr);

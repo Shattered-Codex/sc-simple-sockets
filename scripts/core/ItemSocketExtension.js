@@ -282,7 +282,8 @@ export class ItemSocketExtension extends SheetExtension {
         }
 
         const sheet = resolveActionSheet(this);
-        await SocketGemSheetService.openFromHost(ItemSheetSync.syncSheetDocument(sheet, sheet?.item ?? this.item), idx);
+        // Snapshot-backed sheets cannot persist edits, so they always open read-only.
+        await SocketGemSheetService.inspectFromHost(ItemSheetSync.syncSheetDocument(sheet, sheet?.item ?? this.item), idx);
       },
 
       async openSocketSlotConfig(event, target) {
