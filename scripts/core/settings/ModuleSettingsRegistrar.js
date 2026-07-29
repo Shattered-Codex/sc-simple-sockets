@@ -1,6 +1,5 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "./ModuleSettings.js";
-import { SocketBehaviorSettingsLauncher } from "./SocketBehaviorSettingsLauncher.js";
 import { DocumentationMenu } from "./DocumentationMenu.js";
 import { SupportMenu } from "./SupportMenu.js";
 import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
@@ -35,6 +34,7 @@ export class ModuleSettingsRegistrar {
     this.#registerDeleteOnRemoval();
     this.#registerGemRollLayoutSetting();
     this.#registerGemFormulaLayoutSettings();
+    this.#registerGemBadgesFavoritesSetting();
     this.#registerSocketTabLayoutSetting();
     this.#registerEnableSocketTabForAllItems();
     this.#registerLootSubtypeDataSettings();
@@ -52,9 +52,7 @@ export class ModuleSettingsRegistrar {
     this.registerSettings();
     this.#registerSupportMenu();
     this.#registerDocumentationMenu();
-    this.#registerSocketBehaviorMenu();
-    await this.#registerSocketableItemTypeMenu();
-    await this.#registerLootSubtypeMenus();
+    await this.#registerConfigMenu();
   }
 
   // ---------------------------------------------------------------------------
@@ -131,19 +129,24 @@ export class ModuleSettingsRegistrar {
     });
   }
 
-  #registerSocketBehaviorMenu() {
-    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_BEHAVIOR_MENU, {
-      name: Constants.localize("SCSockets.Settings.SocketBehaviorMenu.Name", "Socket settings"),
-      label: Constants.localize(
-        "SCSockets.Settings.SocketBehaviorMenu.Label",
-        "Configure socket settings"
-      ),
+  /**
+   * Single configuration window (Shattered Codex "Sidebar Tabs" archetype)
+   * covering socket rules, display options, socketable item types, and gem
+   * loot subtypes — including the custom subtype manager the subtype
+   * selection depends on.
+   */
+  async #registerConfigMenu() {
+    const { SocketsConfigLauncher } = await import("./SocketsConfigApp.js");
+
+    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_CONFIG_MENU, {
+      name: Constants.localize("SCSockets.Settings.ConfigMenu.Name", "Module configuration"),
+      label: Constants.localize("SCSockets.Settings.ConfigMenu.Label", "Open configuration"),
       hint: Constants.localize(
-        "SCSockets.Settings.SocketBehaviorMenu.Hint",
-        "Open a dedicated window for socket permissions, limits, gem handling, and layout options."
+        "SCSockets.Settings.ConfigMenu.Hint",
+        "All Simple Sockets settings in one window: socket rules, display, item types, and gem subtypes."
       ),
       icon: "fas fa-gears",
-      type: SocketBehaviorSettingsLauncher,
+      type: SocketsConfigLauncher,
       restricted: true
     });
   }
@@ -183,25 +186,6 @@ export class ModuleSettingsRegistrar {
         ModuleSettings.refreshOpenSheets({ item: true, actor: true });
         void TidyIntegration.syncAllItemTabConfigurations();
       }
-    });
-  }
-
-  async #registerSocketableItemTypeMenu() {
-    const { SocketableItemTypesSettings } = await import("./SocketableItemTypesSettings.js");
-
-    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKETABLE_ITEM_TYPES_MENU, {
-      name: Constants.localize("SCSockets.Settings.SocketableItemTypes.Name", "Socketable Item Types"),
-      label: Constants.localize(
-        "SCSockets.Settings.SocketableItemTypes.Label",
-        "Configure Socketable Item Types"
-      ),
-      hint: Constants.localize(
-        "SCSockets.Settings.SocketableItemTypes.Hint",
-        "Choose which item types can receive sockets."
-      ),
-      icon: "fas fa-link",
-      type: SocketableItemTypesSettings,
-      restricted: true
     });
   }
 
@@ -308,6 +292,27 @@ export class ModuleSettingsRegistrar {
     });
   }
 
+  #registerGemBadgesFavoritesSetting() {
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_BADGES_FAVORITES, {
+      name: Constants.localize(
+        "SCSockets.Settings.GemBadgesFavorites.Name",
+        "Show gem badges in Favorites"
+      ),
+      hint: Constants.localize(
+        "SCSockets.Settings.GemBadgesFavorites.Hint",
+        "If enabled, items with socketed gems also show their gem badges in the Favorites section of the character sheet."
+      ),
+      scope: "client",
+      config: false,
+      type: Boolean,
+      default: true,
+      onChange: foundry.utils.debounce(
+        () => ModuleSettings.refreshOpenSheets({ item: false, actor: true }),
+        150
+      )
+    });
+  }
+
   #registerSocketTabLayoutSetting() {
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_SOCKET_TAB_LAYOUT, {
       name: Constants.localize("SCSockets.Settings.SocketTabLayout.Name", "Socket tab layout"),
@@ -379,47 +384,6 @@ export class ModuleSettingsRegistrar {
         ModuleSettings.refreshOpenSheets({ item: true, actor: true });
         void TidyIntegration.syncAllItemTabConfigurations();
       }
-    });
-  }
-
-  async #registerLootSubtypeMenus() {
-    const { GemSubtypeSelectionSettings } = await import("./GemSubtypeSelectionSettings.js");
-    const { GemCustomSubtypeSettings } = await import("./GemCustomSubtypeSettings.js");
-
-    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_LOOT_SUBTYPE_MENU, {
-      name: Constants.localize(
-        "SCSockets.Settings.GemLootSubtypes.Selection.Name",
-        "Gem Loot Subtypes"
-      ),
-      label: Constants.localize(
-        "SCSockets.Settings.GemLootSubtypes.Selection.Label",
-        "Configure Gem Loot Subtypes"
-      ),
-      hint: Constants.localize(
-        "SCSockets.Settings.GemLootSubtypes.Selection.Hint",
-        "Select which loot subtypes count as gems."
-      ),
-      icon: "fas fa-gem",
-      type: GemSubtypeSelectionSettings,
-      restricted: true
-    });
-
-    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_CUSTOM_LOOT_SUBTYPE_MENU, {
-      name: Constants.localize(
-        "SCSockets.Settings.GemLootSubtypes.CustomMenu.Name",
-        "Custom Loot Subtypes"
-      ),
-      label: Constants.localize(
-        "SCSockets.Settings.GemLootSubtypes.CustomMenu.Label",
-        "Configure Custom Loot Subtypes"
-      ),
-      hint: Constants.localize(
-        "SCSockets.Settings.GemLootSubtypes.CustomMenu.Hint",
-        "Add custom loot subtype keys and labels that can be used as gems."
-      ),
-      icon: "fas fa-list",
-      type: GemCustomSubtypeSettings,
-      restricted: true
     });
   }
 

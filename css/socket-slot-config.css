@@ -1,0 +1,1339 @@
+/* =========================================================
+   SC · Simple Sockets — Socket Slot Settings window
+   Master–detail layout (slot rail · config · text/logic)
+   in the Shattered Codex "verdant" theme.
+   ========================================================= */
+
+.socket-slot-config-app {
+  /* --- Verdant accent --- */
+  --slotcfg-accent: #1fa971;
+  --slotcfg-accent-soft: rgba(31, 169, 113, 0.13);
+  --slotcfg-accent-dim: #14573e;
+  --slotcfg-text-on-acc: #06231a;
+
+  /* --- Surfaces --- */
+  --slotcfg-bg: #15181a;
+  --slotcfg-bg-1: #1b1f22;
+  --slotcfg-bg-2: #232830;
+  --slotcfg-bg-3: #2c333b;
+  --slotcfg-bg-hover: #2f3741;
+
+  /* --- Borders --- */
+  --slotcfg-border: #2e353d;
+  --slotcfg-border-soft: #232a32;
+  --slotcfg-border-strong: #4a5560;
+
+  /* --- Text --- */
+  --slotcfg-text: #e6e8ea;
+  --slotcfg-text-dim: #9aa3ad;
+  --slotcfg-text-mute: #6b7480;
+
+  /* --- Status --- */
+  --slotcfg-danger: #c94f4f;
+  --slotcfg-danger-soft: rgba(201, 79, 79, 0.13);
+  --slotcfg-warn: #d09b3c;
+  --slotcfg-warn-soft: rgba(208, 155, 60, 0.13);
+
+  /* --- Shape & type --- */
+  --slotcfg-radius-sm: 4px;
+  --slotcfg-radius: 6px;
+  --slotcfg-radius-lg: 10px;
+  --slotcfg-font-display: "Cinzel", "Modesto Condensed", "Signika", serif;
+  --slotcfg-font-body: var(--font-primary, "Signika", sans-serif);
+  --slotcfg-font-mono: var(--font-monospace, "JetBrains Mono", "Consolas", monospace);
+  --slotcfg-control-h: 30px;
+  --slotcfg-control-h-sm: 26px;
+}
+
+/* === Window chrome ======================================= */
+.socket-slot-config-app.application {
+  background: var(--slotcfg-bg);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius-lg);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.socket-slot-config-app .window-header {
+  background: var(--slotcfg-bg-1);
+  border-top: 2px solid var(--slotcfg-accent);
+  border-bottom: 1px solid var(--slotcfg-border);
+  color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app .window-header .window-title {
+  font-family: var(--slotcfg-font-display);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app .window-header i.fa-pen-to-square {
+  color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app.application .window-header button,
+.socket-slot-config-app.application .window-header .header-button,
+.socket-slot-config-app.application .window-header .header-control,
+.socket-slot-config-app.application .window-header .window-control {
+  border: 0;
+  background: transparent;
+  color: var(--slotcfg-text-mute);
+  box-shadow: none;
+}
+
+.socket-slot-config-app.application .window-header button:hover,
+.socket-slot-config-app.application .window-header button:focus-visible,
+.socket-slot-config-app.application .window-header .header-button:hover,
+.socket-slot-config-app.application .window-header .header-control:hover,
+.socket-slot-config-app.application .window-header .window-control:hover {
+  background: var(--slotcfg-bg-hover);
+  color: var(--slotcfg-text);
+  box-shadow: none;
+}
+
+.socket-slot-config-app.application,
+.socket-slot-config-app .window-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.socket-slot-config-app .socket-slot-config-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Size container so the collapse below tracks the application window width,
+     not the browser viewport. */
+  container-type: inline-size;
+  container-name: slotcfg;
+}
+
+.socket-slot-config-app .window-content {
+  padding: 0;
+  background: var(--slotcfg-bg);
+  color: var(--slotcfg-text);
+  font-family: var(--slotcfg-font-body);
+}
+
+/* === Frame =============================================== */
+.socket-slot-config-app .slotcfg-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 212px minmax(0, 1.06fr) minmax(0, 1fr);
+}
+
+.socket-slot-config-app .slotcfg-spacer {
+  flex: 1 1 auto;
+}
+
+.socket-slot-config-app .slotcfg-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--slotcfg-border);
+  background: var(--slotcfg-bg-1);
+  flex: 0 0 auto;
+}
+
+/* === Status pill (unsaved changes) ========================= */
+
+.socket-slot-config-app .slotcfg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--slotcfg-border);
+  border-radius: 999px;
+  background: var(--slotcfg-bg-2);
+  color: var(--slotcfg-text-dim);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.socket-slot-config-app .slotcfg-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-pill--unsaved {
+  background: var(--slotcfg-warn-soft);
+  border-color: var(--slotcfg-warn);
+  color: var(--slotcfg-warn);
+}
+
+.socket-slot-config-app .slotcfg-pill--unsaved .slotcfg-pill-dot {
+  background: var(--slotcfg-warn);
+}
+
+.socket-slot-config-app .slotcfg-pill--saved {
+  background: var(--slotcfg-accent-soft);
+  border-color: var(--slotcfg-accent);
+  color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app .slotcfg-pill--saved .slotcfg-pill-dot {
+  background: var(--slotcfg-accent);
+}
+
+/* The header gem mirrors the save state: verdant when everything is
+   persisted, warn-amber while there are unsaved slot edits. */
+.socket-slot-config-app .window-header .window-icon,
+.socket-slot-config-app .window-header i.fa-gem {
+  color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app.slotcfg-dirty .window-header .window-icon,
+.socket-slot-config-app.slotcfg-dirty .window-header i.fa-gem {
+  color: var(--slotcfg-warn);
+}
+
+.socket-slot-config-app .slotcfg-btn--primary.is-dirty {
+  box-shadow: 0 0 10px var(--slotcfg-accent-soft), 0 0 4px var(--slotcfg-accent);
+}
+
+/* === Slot rail ============================================ */
+.socket-slot-config-app .slotcfg-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--slotcfg-bg-1);
+  border-right: 1px solid var(--slotcfg-border);
+}
+
+.socket-slot-config-app .slotcfg-rail-title {
+  padding: 10px 12px 8px;
+  font-family: var(--slotcfg-font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-rail-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.socket-slot-config-app .slotcfg-rail-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 4px 12px;
+  cursor: pointer;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  border: none;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid var(--slotcfg-border-soft);
+  border-radius: 0;
+  transition: background 120ms;
+}
+
+.socket-slot-config-app .slotcfg-rail-item:hover {
+  background: var(--slotcfg-bg-hover);
+  box-shadow: none;
+}
+
+.socket-slot-config-app .slotcfg-rail-item.is-active {
+  background: var(--slotcfg-accent-soft);
+  border-left-color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app .slotcfg-rail-diamond {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 2px;
+  background: var(--slotcfg-tint, var(--slotcfg-border-strong));
+  transform: rotate(45deg);
+}
+
+.socket-slot-config-app .slotcfg-rail-meta {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.socket-slot-config-app .slotcfg-rail-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--slotcfg-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.socket-slot-config-app .slotcfg-rail-item.is-active .slotcfg-rail-name {
+  color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app .slotcfg-rail-gem {
+  font-size: 0.65rem;
+  color: var(--slotcfg-text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.socket-slot-config-app .slotcfg-rail-hidden {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  color: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-rail-dirty {
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--slotcfg-warn);
+}
+
+.socket-slot-config-app .slotcfg-rail-foot {
+  padding: 10px;
+  border-top: 1px solid var(--slotcfg-border);
+}
+
+/* === Config column ======================================== */
+.socket-slot-config-app .slotcfg-config {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 12px 16px 16px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  border-right: 1px solid var(--slotcfg-border);
+}
+
+.socket-slot-config-app .slotcfg-identity {
+  display: flex;
+  gap: 12px;
+}
+
+.socket-slot-config-app .slotcfg-tile {
+  --sc-sockets-slot-icon-size: 58px;
+  background: var(--slotcfg-bg-3);
+}
+
+.socket-slot-config-app .slotcfg-identity-fields {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.socket-slot-config-app .slotcfg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.socket-slot-config-app .slotcfg-flabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--slotcfg-text-dim);
+}
+
+.socket-slot-config-app .slotcfg-hint {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.45;
+  color: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-info {
+  color: var(--slotcfg-text-mute);
+  cursor: help;
+}
+
+.socket-slot-config-app .slotcfg-rule {
+  height: 1px;
+  flex: 0 0 1px;
+  background: var(--slotcfg-border-soft);
+}
+
+.socket-slot-config-app .slotcfg-section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.socket-slot-config-app .slotcfg-section:last-child .slotcfg-section-head,
+.socket-slot-config-app .slotcfg-pane .slotcfg-section-head {
+  margin-bottom: 0;
+}
+
+.socket-slot-config-app .slotcfg-section-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--slotcfg-font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--slotcfg-text-dim);
+}
+
+/* === Inputs =============================================== */
+.socket-slot-config-app input.slotcfg-input,
+.socket-slot-config-app select.slotcfg-input {
+  height: var(--slotcfg-control-h);
+  width: 100%;
+  padding: 0 10px;
+  background: var(--slotcfg-bg-3);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  color: var(--slotcfg-text);
+  font-family: var(--slotcfg-font-body);
+  font-size: 0.8rem;
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+
+.socket-slot-config-app select.slotcfg-input {
+  cursor: pointer;
+}
+
+.socket-slot-config-app select.slotcfg-input option,
+.socket-slot-config-app select.slotcfg-input optgroup {
+  background: var(--slotcfg-bg-2);
+  color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app input.slotcfg-input:focus,
+.socket-slot-config-app select.slotcfg-input:focus {
+  border-color: var(--slotcfg-accent);
+  box-shadow: 0 0 0 3px var(--slotcfg-accent-soft);
+  outline: none;
+}
+
+.socket-slot-config-app input.slotcfg-input:disabled,
+.socket-slot-config-app select.slotcfg-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.socket-slot-config-app input.slotcfg-input::placeholder {
+  color: var(--slotcfg-text-mute);
+}
+
+/* === Buttons ============================================== */
+.socket-slot-config-app button.slotcfg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  height: var(--slotcfg-control-h);
+  padding: 0 14px;
+  border-radius: var(--slotcfg-radius);
+  font-family: var(--slotcfg-font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  border: 1px solid transparent;
+  box-shadow: none;
+  transition: background 120ms, border-color 120ms, color 120ms;
+}
+
+.socket-slot-config-app button.slotcfg-btn--primary {
+  background: var(--slotcfg-accent);
+  border-color: var(--slotcfg-accent);
+  color: var(--slotcfg-text-on-acc);
+}
+
+.socket-slot-config-app button.slotcfg-btn--primary:hover,
+.socket-slot-config-app button.slotcfg-btn--primary:focus-visible {
+  background: color-mix(in srgb, var(--slotcfg-accent) 86%, white 14%);
+  color: var(--slotcfg-text-on-acc);
+  box-shadow: none;
+}
+
+.socket-slot-config-app button.slotcfg-btn--secondary {
+  background: var(--slotcfg-bg-2);
+  border-color: var(--slotcfg-border-strong);
+  color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app button.slotcfg-btn--secondary:hover,
+.socket-slot-config-app button.slotcfg-btn--secondary:focus-visible {
+  background: var(--slotcfg-bg-hover);
+  box-shadow: none;
+}
+
+.socket-slot-config-app button.slotcfg-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--slotcfg-text-dim);
+}
+
+.socket-slot-config-app button.slotcfg-btn--ghost:hover,
+.socket-slot-config-app button.slotcfg-btn--ghost:focus-visible {
+  background: var(--slotcfg-bg-hover);
+  color: var(--slotcfg-text);
+  box-shadow: none;
+}
+
+.socket-slot-config-app button.slotcfg-btn--sm {
+  height: var(--slotcfg-control-h-sm);
+  padding: 0 10px;
+  font-size: 0.72rem;
+}
+
+.socket-slot-config-app button.slotcfg-btn--block {
+  width: 100%;
+}
+
+.socket-slot-config-app button.slotcfg-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.socket-slot-config-app button.slotcfg-iconbtn {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--slotcfg-bg-2);
+  color: var(--slotcfg-text-dim);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+
+.socket-slot-config-app button.slotcfg-iconbtn:hover,
+.socket-slot-config-app button.slotcfg-iconbtn:focus-visible {
+  background: var(--slotcfg-bg-hover);
+  color: var(--slotcfg-text);
+  box-shadow: none;
+}
+
+.socket-slot-config-app button.slotcfg-iconbtn--danger {
+  color: var(--slotcfg-danger);
+}
+
+.socket-slot-config-app button.slotcfg-iconbtn--danger:hover,
+.socket-slot-config-app button.slotcfg-iconbtn--danger:focus-visible {
+  color: var(--slotcfg-danger);
+  border-color: var(--slotcfg-danger);
+}
+
+.socket-slot-config-app button.slotcfg-iconbtn i {
+  font-size: 0.72rem;
+}
+
+/* === Badges =============================================== */
+.socket-slot-config-app .slotcfg-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-family: var(--slotcfg-font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.4;
+  border-radius: 999px;
+  background: var(--slotcfg-bg-3);
+  color: var(--slotcfg-text-dim);
+  border: 1px solid var(--slotcfg-border-strong);
+  white-space: nowrap;
+}
+
+.socket-slot-config-app .slotcfg-badge--accent {
+  background: transparent;
+  color: var(--slotcfg-accent);
+  border-color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app .slotcfg-badge--warn {
+  background: var(--slotcfg-warn-soft);
+  color: var(--slotcfg-warn);
+  border-color: var(--slotcfg-warn);
+}
+
+.socket-slot-config-app .slotcfg-badge--mono {
+  text-transform: none;
+}
+
+.socket-slot-config-app button.slotcfg-badge--copy {
+  width: auto;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 120ms, color 120ms;
+}
+
+.socket-slot-config-app button.slotcfg-badge--copy:hover,
+.socket-slot-config-app button.slotcfg-badge--copy:focus-visible {
+  border-color: var(--slotcfg-accent);
+  color: var(--slotcfg-accent);
+  background: var(--slotcfg-bg-3);
+  box-shadow: none;
+}
+
+.socket-slot-config-app button.slotcfg-badge--copy:active {
+  transform: translateY(1px);
+}
+
+/* === Tint picker ========================================== */
+.socket-slot-config-app .slotcfg-tint-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.socket-slot-config-app .slotcfg-swatches {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.socket-slot-config-app .slotcfg-tint-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.socket-slot-config-app button.slotcfg-swatch {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  padding: 0;
+  border-radius: var(--slotcfg-radius-sm);
+  background: var(--slotcfg-swatch, transparent);
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  box-shadow: none;
+  transition: box-shadow 120ms, border-color 120ms;
+}
+
+.socket-slot-config-app button.slotcfg-swatch:hover {
+  border-color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app button.slotcfg-swatch.is-active {
+  border-color: var(--slotcfg-text);
+  box-shadow: 0 0 0 2px var(--slotcfg-bg-1), 0 0 0 3px var(--slotcfg-text);
+}
+
+.socket-slot-config-app input.slotcfg-input--hex {
+  width: auto;
+  flex: 1 1 84px;
+  min-width: 68px;
+  max-width: 110px;
+  padding: 0 8px;
+  font-family: var(--slotcfg-font-mono);
+  font-size: 0.72rem;
+}
+
+.socket-slot-config-app input.slotcfg-color-picker {
+  width: 34px;
+  height: var(--slotcfg-control-h);
+  flex: 0 0 auto;
+  padding: 2px;
+  background: var(--slotcfg-bg-3);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  cursor: pointer;
+}
+
+/* === Contents card ======================================== */
+.socket-slot-config-app .slotcfg-card {
+  background: var(--slotcfg-bg-1);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  padding: 4px;
+}
+
+.socket-slot-config-app .slotcfg-card-divider {
+  height: 1px;
+  background: var(--slotcfg-border-soft);
+  margin: 2px 8px;
+}
+
+.socket-slot-config-app .slotcfg-docrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: var(--slotcfg-radius);
+  transition: background 120ms;
+}
+
+.socket-slot-config-app .slotcfg-docrow:hover {
+  background: var(--slotcfg-bg-hover);
+}
+
+.socket-slot-config-app .slotcfg-docrow-icon {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--slotcfg-bg-3);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius-sm);
+}
+
+.socket-slot-config-app .slotcfg-docrow-icon--gem {
+  border-color: var(--slotcfg-accent-dim);
+}
+
+.socket-slot-config-app .slotcfg-docrow-icon img {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: none;
+  object-fit: cover;
+}
+
+.socket-slot-config-app .slotcfg-docrow-meta {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.socket-slot-config-app .slotcfg-docrow-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-docrow-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--slotcfg-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.socket-slot-config-app .slotcfg-docrow-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0.4;
+  transition: opacity 120ms;
+}
+
+.socket-slot-config-app .slotcfg-docrow:hover .slotcfg-docrow-actions,
+.socket-slot-config-app .slotcfg-docrow:focus-within .slotcfg-docrow-actions {
+  opacity: 1;
+}
+
+.socket-slot-config-app .slotcfg-empty-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: 4px;
+  padding: 18px 14px;
+  text-align: center;
+  border: 1px dashed var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  color: var(--slotcfg-text-dim);
+  font-size: 0.75rem;
+  transition: border-color 120ms, background 120ms;
+}
+
+.socket-slot-config-app .slotcfg-empty-drop > * {
+  pointer-events: none;
+}
+
+.socket-slot-config-app .slotcfg-empty-drop[data-dropzone]:hover,
+.socket-slot-config-app .slotcfg-empty-drop.is-dragover {
+  border-color: var(--slotcfg-accent);
+  background: var(--slotcfg-accent-soft);
+}
+
+.socket-slot-config-app .slotcfg-empty-drop.is-dragover i,
+.socket-slot-config-app .slotcfg-empty-drop.is-dragover .slotcfg-empty-drop-hint {
+  color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app .slotcfg-empty-drop i {
+  color: var(--slotcfg-text-mute);
+  font-size: 1rem;
+}
+
+.socket-slot-config-app .slotcfg-empty-drop-hint {
+  font-size: 0.68rem;
+  color: var(--slotcfg-text-mute);
+}
+
+/* === Charges =============================================== */
+.socket-slot-config-app .slotcfg-charges {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 10px 10px;
+}
+
+.socket-slot-config-app .slotcfg-charges-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.socket-slot-config-app .slotcfg-charges-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.socket-slot-config-app .slotcfg-stepper {
+  display: flex;
+  align-items: center;
+  height: var(--slotcfg-control-h-sm);
+  background: var(--slotcfg-bg-3);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  overflow: hidden;
+}
+
+.socket-slot-config-app button.slotcfg-stepper-btn {
+  width: 26px;
+  height: 100%;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--slotcfg-text-dim);
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.socket-slot-config-app button.slotcfg-stepper-btn:first-child {
+  border-right: 1px solid var(--slotcfg-border);
+}
+
+.socket-slot-config-app button.slotcfg-stepper-btn:last-child {
+  border-left: 1px solid var(--slotcfg-border);
+}
+
+.socket-slot-config-app button.slotcfg-stepper-btn:hover,
+.socket-slot-config-app button.slotcfg-stepper-btn:focus-visible {
+  background: var(--slotcfg-bg-hover);
+  color: var(--slotcfg-text);
+  box-shadow: none;
+}
+
+.socket-slot-config-app button.slotcfg-stepper-btn i {
+  font-size: 0.62rem;
+}
+
+.socket-slot-config-app input.slotcfg-stepper-input {
+  width: 44px;
+  height: 100%;
+  text-align: center;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--slotcfg-text);
+  font-family: var(--slotcfg-font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.socket-slot-config-app input.slotcfg-stepper-input::-webkit-outer-spin-button,
+.socket-slot-config-app input.slotcfg-stepper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.socket-slot-config-app .slotcfg-charges-max {
+  font-family: var(--slotcfg-font-mono);
+  font-size: 0.75rem;
+  color: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--slotcfg-bg-3);
+  overflow: hidden;
+}
+
+.socket-slot-config-app .slotcfg-bar-fill {
+  height: 100%;
+  background: var(--slotcfg-accent);
+  transition: width 180ms ease-out;
+}
+
+/* === Recovery ============================================== */
+.socket-slot-config-app .slotcfg-recovery {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 10px 10px;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls {
+  display: grid;
+  align-items: end;
+  gap: 6px;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-periodic {
+  grid-template-columns: minmax(8rem, 1.8fr) minmax(8rem, 1fr);
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-periodic .slotcfg-recovery-period {
+  grid-column: 1;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-periodic .slotcfg-recovery-type {
+  grid-column: 2;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-periodic .slotcfg-recovery-formula {
+  grid-column: 1 / -1;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge {
+  grid-template-columns: minmax(8rem, 1fr) minmax(5rem, 1fr) auto;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge .slotcfg-recovery-period {
+  grid-column: 1 / 3;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge .slotcfg-recovery-threshold {
+  grid-column: 3;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge .slotcfg-recovery-type {
+  grid-column: 1;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge .slotcfg-recovery-formula {
+  grid-column: 2 / -1;
+}
+
+.socket-slot-config-app .slotcfg-recovery-controls.is-recharge:not(.has-formula) .slotcfg-recovery-type {
+  grid-column: 1 / -1;
+}
+
+.socket-slot-config-app select.slotcfg-recovery-period {
+  width: 100%;
+  min-width: 8rem;
+}
+
+.socket-slot-config-app input.slotcfg-recovery-threshold {
+  width: 3.4rem;
+}
+
+.socket-slot-config-app select.slotcfg-recovery-type {
+  width: 100%;
+  min-width: 8rem;
+}
+
+.socket-slot-config-app input.slotcfg-recovery-formula {
+  width: 100%;
+  font-family: var(--slotcfg-font-mono);
+  font-size: 0.72rem;
+}
+
+/* === Rules (switch rows) =================================== */
+.socket-slot-config-app .slotcfg-switchrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 2px;
+}
+
+.socket-slot-config-app .slotcfg-switchrow-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.socket-slot-config-app .slotcfg-switchrow-text strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app .slotcfg-switchrow-text small {
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-toggle {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.socket-slot-config-app .slotcfg-toggle input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.socket-slot-config-app .slotcfg-toggle-track {
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--slotcfg-bg-3);
+  border: 1px solid var(--slotcfg-border-strong);
+  transition: background 160ms, border-color 160ms;
+  pointer-events: none;
+}
+
+.socket-slot-config-app .slotcfg-toggle-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #a8b1ba;
+  transition: left 160ms, background 160ms;
+}
+
+.socket-slot-config-app .slotcfg-toggle input:checked + .slotcfg-toggle-track {
+  background: var(--slotcfg-accent);
+  border-color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app .slotcfg-toggle input:checked + .slotcfg-toggle-track::after {
+  left: 18px;
+  background: var(--slotcfg-text-on-acc);
+}
+
+.socket-slot-config-app .slotcfg-toggle input:disabled + .slotcfg-toggle-track {
+  opacity: 0.5;
+}
+
+.socket-slot-config-app .slotcfg-toggle input:focus-visible + .slotcfg-toggle-track {
+  box-shadow: 0 0 0 3px var(--slotcfg-accent-soft);
+}
+
+/* === Editors column ======================================== */
+.socket-slot-config-app .slotcfg-editors {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--slotcfg-bg);
+}
+
+.socket-slot-config-app .slotcfg-tabs {
+  display: flex;
+  gap: 0;
+  padding: 0 8px;
+  background: var(--slotcfg-bg-1);
+  border-bottom: 1px solid var(--slotcfg-border);
+  flex: 0 0 auto;
+}
+
+.socket-slot-config-app button.slotcfg-tab {
+  width: auto;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-bottom: -1px;
+  padding: 10px 14px;
+  color: var(--slotcfg-text-dim);
+  font-family: var(--slotcfg-font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+  transition: color 120ms, border-color 120ms;
+}
+
+.socket-slot-config-app button.slotcfg-tab:hover,
+.socket-slot-config-app button.slotcfg-tab:focus-visible {
+  color: var(--slotcfg-text);
+  box-shadow: none;
+}
+
+.socket-slot-config-app button.slotcfg-tab.is-active {
+  color: var(--slotcfg-accent);
+  border-bottom-color: var(--slotcfg-accent);
+}
+
+.socket-slot-config-app .slotcfg-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 12px 16px 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.socket-slot-config-app .slotcfg-pane[hidden] {
+  display: none;
+}
+
+.socket-slot-config-app .slotcfg-help-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  color: var(--slotcfg-accent);
+  text-decoration: none;
+}
+
+.socket-slot-config-app .slotcfg-help-link:hover,
+.socket-slot-config-app .slotcfg-help-link:focus-visible {
+  color: var(--slotcfg-text);
+  text-shadow: none;
+}
+
+.socket-slot-config-app .slotcfg-editor-frame {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.socket-slot-config-app .slotcfg-insert {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.socket-slot-config-app .slotcfg-insert-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.socket-slot-config-app button.slotcfg-chip {
+  width: auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--slotcfg-bg-2);
+  border: 1px solid var(--slotcfg-border);
+  color: var(--slotcfg-text-dim);
+  font-family: var(--slotcfg-font-mono);
+  font-size: 0.68rem;
+  line-height: 1.4;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 120ms, color 120ms;
+}
+
+.socket-slot-config-app button.slotcfg-chip:hover,
+.socket-slot-config-app button.slotcfg-chip:focus-visible {
+  border-color: var(--slotcfg-accent);
+  color: var(--slotcfg-accent);
+  background: var(--slotcfg-bg-2);
+  box-shadow: none;
+}
+
+/* --- Description editor (prose-mirror) --- */
+.socket-slot-config-app prose-mirror.slotcfg-description-editor {
+  flex: 1 1 auto;
+  min-height: 12rem;
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  background: var(--slotcfg-bg-1);
+  overflow: hidden;
+  color: var(--slotcfg-text);
+  caret-color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .editor-content {
+  min-height: 10rem;
+  padding: 0.85rem 0.95rem;
+  line-height: 1.5;
+}
+
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .editor-content,
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .editor-content p,
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .editor-content li,
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .editor-content span,
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .editor-content strong,
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .editor-content em,
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .editor-content code,
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .ProseMirror {
+  color: var(--slotcfg-text);
+  caret-color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .editor-content a,
+.socket-slot-config-app prose-mirror.slotcfg-description-editor .ProseMirror a {
+  color: color-mix(in srgb, var(--slotcfg-accent) 78%, white 22%);
+}
+
+.socket-slot-config-app .slotcfg-description-preview {
+  flex: 1 1 auto;
+  min-height: 12rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  background: var(--slotcfg-bg-1);
+  color: var(--slotcfg-text);
+}
+
+/* --- Condition editor (code-mirror) --- */
+.socket-slot-config-app .slotcfg-code {
+  font-family: var(--slotcfg-font-mono);
+  font-size: 0.78rem;
+}
+
+.socket-slot-config-app code-mirror.slotcfg-code {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 12rem;
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  background: var(--slotcfg-bg);
+  overflow: hidden;
+}
+
+.socket-slot-config-app code-mirror.slotcfg-code .cm-editor {
+  height: 100%;
+  min-height: 12rem;
+  background: transparent;
+  color: var(--slotcfg-text);
+  overflow: hidden;
+}
+
+.socket-slot-config-app code-mirror.slotcfg-code .cm-scroller {
+  height: 100%;
+  min-height: 12rem;
+  padding: 0.2rem 0;
+  font-family: var(--slotcfg-font-mono);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.socket-slot-config-app code-mirror.slotcfg-code .cm-content,
+.socket-slot-config-app code-mirror.slotcfg-code .cm-line {
+  color: var(--slotcfg-text);
+  caret-color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app code-mirror.slotcfg-code .cm-gutters {
+  background: var(--slotcfg-bg-1);
+  border-right: 1px solid var(--slotcfg-border-soft);
+  color: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app textarea.slotcfg-code--readonly {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 12rem;
+  padding: 0.6rem 0.75rem;
+  resize: vertical;
+  line-height: 1.45;
+  background: var(--slotcfg-bg);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  color: var(--slotcfg-text-dim);
+}
+
+/* === Scrollbars ============================================ */
+.socket-slot-config-app ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.socket-slot-config-app ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.socket-slot-config-app ::-webkit-scrollbar-thumb {
+  background: var(--slotcfg-bg-3);
+  border-radius: 6px;
+}
+
+.socket-slot-config-app ::-webkit-scrollbar-thumb:hover {
+  background: var(--slotcfg-border-strong);
+}
+
+/* === Responsive ============================================ */
+/* Collapses when the application window itself is narrow (resizable app),
+   with the viewport media query kept as a fallback for narrow screens. */
+@container slotcfg (max-width: 960px) {
+  .socket-slot-config-app .slotcfg-body {
+    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    overflow-y: auto;
+  }
+
+  .socket-slot-config-app .slotcfg-rail {
+    grid-row: 1 / -1;
+  }
+
+  .socket-slot-config-app .slotcfg-config {
+    border-right: none;
+    border-bottom: 1px solid var(--slotcfg-border);
+  }
+}
+
+@media (max-width: 960px) {
+  .socket-slot-config-app .slotcfg-body {
+    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    overflow-y: auto;
+  }
+
+  .socket-slot-config-app .slotcfg-rail {
+    grid-row: 1 / -1;
+  }
+
+  .socket-slot-config-app .slotcfg-config {
+    border-right: none;
+    border-bottom: 1px solid var(--slotcfg-border);
+  }
+}

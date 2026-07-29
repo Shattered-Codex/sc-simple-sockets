@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { canUserSeeSlot, getSlotConfig } from "../helpers/socketSlotConfig.js";
+import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { DebugTrace } from "../support/DebugTrace.js";
 
 export class ActorGemBadges {
@@ -263,6 +264,11 @@ export class ActorGemBadges {
       targets.push(...activityTargets);
     }
 
+    const favoriteTargets = this.#findFavoriteTargets(root, item, slots);
+    if (favoriteTargets.length) {
+      targets.push(...favoriteTargets);
+    }
+
     return targets;
   }
 
@@ -359,6 +365,59 @@ static #removeExistingBadges(root, itemId) {
     return results;
   }
 
+  /**
+   * Finds favorite entries in the dnd5e sheet sidebar for the item. Item
+   * favorites show every visible slot; activity favorites only show the gem
+   * that created the activity, mirroring the Tidy activity rows.
+   * @private
+   */
+  static #findFavoriteTargets(root, item, slots) {
+    if (!ModuleSettings.shouldShowGemBadgesInFavorites()) return [];
+
+    const results = [];
+    const entries = root.querySelectorAll(
+      `.favorites li[data-favorite-id][data-item-id="${item.id}"]`
+    );
+
+    for (const entry of entries) {
+      if (entry.dataset.effectId) continue;
+
+      const container = entry.querySelector(".name-stacked");
+      if (!container) continue;
+
+      let entrySlots = slots;
+      const activityId = entry.dataset.activityId;
+      if (activityId) {
+        const slot = this.#findSlotForActivity(item, slots, activityId);
+        if (!slot) continue;
+        entrySlots = [slot];
+      }
+
+      results.push({
+        itemId: item.id,
+        container,
+        reference: null,
+        inline: true,
+        favorite: true,
+        activityId: activityId || undefined,
+        slots: entrySlots
+      });
+    }
+
+    return results;
+  }
+
+  static #findSlotForActivity(item, slots, activityId) {
+    const flag = item.getFlag(Constants.MODULE_ID, Constants.FLAG_SOCKET_ACTIVITIES) ?? {};
+    for (const [slotIndex, payload] of Object.entries(flag)) {
+      const meta = payload?.activityMeta ?? {};
+      if (!Object.hasOwn(meta, activityId)) continue;
+      const slot = slots.find((entry) => entry?._index === Number(slotIndex));
+      if (slot?.gem) return slot;
+    }
+    return null;
+  }
+
 static #scheduleInjection(target) {
     if (!target) return;
     const schedule =
@@ -384,6 +443,9 @@ static #scheduleInjection(target) {
     if (target.activityId) {
       wrap.dataset.activityId = target.activityId;
       wrap.classList.add("sc-sockets-badges-activity");
+    }
+    if (target.favorite) {
+      wrap.classList.add("sc-sockets-badges-favorite");
     }
 
     const container = target.container;

@@ -248,11 +248,11 @@ That means weapons and equipment already work out of the box.
 
 You can change this in:
 
-**Configure Settings > Module Settings > SC - Simple Sockets**
+**Configure Settings > Module Settings > SC - Simple Sockets > Module configuration**
 
-Look for:
+Look for the tab:
 
-- **Socketable Item Types**
+- **Item types**
 
 Example:
 
@@ -269,10 +269,10 @@ By default, the module treats this as a gem:
 - an item of type **Loot**
 - with subtype **gem**
 
-You can change that in:
+You can change that in the **Gem subtypes** tab of the **Module configuration** window, which combines:
 
-- **Gem Loot Subtypes**
-- **Custom Loot Subtypes**
+- the selection of loot subtypes that count as gems
+- the custom loot subtype manager (new custom subtypes show up in the selection immediately)
 
 Example:
 
@@ -743,18 +743,19 @@ All options are available in:
 
 ### Main options summary
 
-| Setting | Default | What it does |
-| --- | --- | --- |
-| **Socket settings** | — | Opens the main module settings window |
-| **Enable Socket Tab on all items** | `true` | Shows the Sockets tab on all supported items |
-| **Edit Socket Permission** | GM | Defines who can add or remove sockets |
-| **Maximum Number of Sockets per Item** | `6` | Limits how many sockets each item can have |
-| **Delete Gem on Removal** | `false` | Decides whether the gem is returned or deleted |
-| **Gem damage layout in roll dialog** | `true` | Groups damage in the roll dialog by gem |
-| **Socket tab layout** | `Default list` | Chooses between list and grid |
-| **Socketable Item Types** | `weapon`, `equipment` | Defines which items can receive sockets |
-| **Gem Loot Subtypes** | `gem` | Defines which loot subtypes count as gems |
-| **Custom Loot Subtypes** | empty | Lets you create extra gem-like subtypes |
+The **Module configuration** menu opens a single window with four tabs. The footer shows an *Unsaved changes* pill whenever something differs from the saved values, and nothing is applied until you press **Save Changes**.
+
+| Tab | Setting | Default | What it does |
+| --- | --- | --- | --- |
+| **Socket rules** | Edit Socket Permission | GM | Defines who can add or remove sockets |
+| **Socket rules** | Maximum Number of Sockets per Item | `6` | Limits how many sockets each item can have |
+| **Socket rules** | Delete Gem on Removal | `false` | Decides whether the gem is returned or deleted |
+| **Display** | Enable Socket Tab on all items | `true` | Shows the Sockets tab on all supported items |
+| **Display** | Socket tab layout | `Default list` | Chooses between list and grid |
+| **Display** | Gem damage layout in roll dialog | `true` | Groups damage in the roll dialog by gem |
+| **Item types** | Socketable Item Types | `weapon`, `equipment` | Defines which items can receive sockets |
+| **Gem subtypes** | Gem Loot Subtypes | `gem` | Defines which loot subtypes count as gems |
+| **Gem subtypes** | Custom Loot Subtypes | empty | Lets you create extra gem-like subtypes |
 
 ## Troubleshooting
 

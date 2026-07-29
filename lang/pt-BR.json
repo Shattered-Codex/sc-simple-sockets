@@ -16,6 +16,7 @@
       "GemIncompatible": "Esse item não é compatível com este soquete.",
       "GemUnsocketed": "Gema removida do soquete.",
       "CannotOpenGem": "Não foi possível abrir o item da gema.",
+      "SocketGemChanged": "A gema encaixada mudou desde que esta ficha foi aberta. Feche-a e abra a gema novamente.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada.",
       "HostNotSocketable": "Este tipo de item não pode receber soquetes.",
@@ -44,6 +45,16 @@
       "TabLabel": "+Detalhes",
       "SelectLabel": "Detalhes adicionais",
       "Hint": "Escolha como esta gema deve ser categorizada.",
+      "Panes": {
+        "Combat": "Combate",
+        "Resource": "Recurso",
+        "Tags": "Tags",
+        "Filled": "Preenchido"
+      },
+      "AttackCrit": {
+        "Label": "Ataque e Crítico",
+        "Hint": "Em branco, herda do item hospedeiro."
+      },
       "TypeFieldset": "Tipo de detalhe",
       "Options": {
         "None": "Nenhum",
@@ -107,7 +118,30 @@
         "Max": "Máximo",
         "Value": "Atual",
         "DestroyOnEmpty": "Destruir ao ficar sem cargas",
-        "DestroyOnEmptyHint": "Quando um consumo zera as cargas desta gema, ela é destruída e removida do slot."
+        "DestroyOnEmptyHint": "Quando um consumo zera as cargas desta gema, ela é destruída e removida do slot.",
+        "Recovery": {
+          "Period": "Recarrega em",
+          "PeriodHint": "Quando estas cargas mudam automaticamente: durante descansos, em combate (iniciativa e turnos) ou por uma rolagem manual de Recarga. Aplica-se ao ator que carrega a gema, esteja ela socketada ou solta no inventário.",
+          "PeriodNone": "Nunca (apenas manual)",
+          "PeriodShortRest": "Descanso Curto",
+          "PeriodLongRest": "Descanso Longo",
+          "PeriodDay": "Diário (novo dia)",
+          "Type": "Recuperação",
+          "TypeHint": "O que acontece quando o período dispara: recupera todas as cargas, perde todas as cargas ou rola uma fórmula customizada.",
+          "TypeRecoverAll": "Recupera Todas as Cargas",
+          "TypeLoseAll": "Perde Todas as Cargas",
+          "TypeFormula": "Fórmula Customizada",
+          "Formula": "Fórmula",
+          "FormulaPlaceholder": "ex.: 1d4",
+          "FormulaHint": "Fórmula rolada para determinar quantas cargas retornam.",
+          "Threshold": "Recarrega com",
+          "ThresholdHint": "Resultado mínimo do d6 para o teste de recarga; ex.: 5 significa 5–6. No sucesso, aplica-se a recuperação escolhida (todas as cargas ou a fórmula). Role com o botão de dado aqui ou nas Socket Descriptions.",
+          "Roll": "Rolar Recarga",
+          "RechargeFlavor": "{name} teste de recarga - {result}",
+          "RechargeSuccess": "Sucesso!",
+          "RechargeFailure": "Falha.",
+          "RechargeFull": "{name} já está com as cargas completas."
+        }
       },
       "Tags": {
         "Label": "Tags da Gema",
@@ -130,32 +164,65 @@
     "SocketSlotConfig": {
       "Title": "Configurações do Slot",
       "Subtitle": "Configure regras, descrição e cor deste slot.",
+      "Sockets": "Soquetes",
+      "AddSocket": "Adicionar soquete",
       "SlotLabel": "Slot",
       "SlotNameLabel": "Nome do slot",
+      "SlotNameHint": "Deixe em branco para numerar automaticamente.",
       "HostLabel": "Item base",
       "GemLabel": "Gema no slot",
+      "Contents": "Conteúdo",
+      "Rules": "Regras",
+      "SocketedBadge": "Encaixada",
+      "EmptyBadge": "Vazio",
+      "UnsocketGem": "Remover gema",
       "InspectHost": "Abrir item base",
       "InspectHostHint": "Abre a ficha do item base.",
       "InspectGem": "Inspecionar gema",
       "InspectHint": "Abre a gema encaixada em modo somente leitura.",
-      "EmptySlot": "Empty slot",
+      "EmptySlot": "Slot vazio",
       "NoGem": "Nenhuma gema está encaixada neste slot no momento.",
+      "DropGemHint": "Arraste uma gema até aqui para encaixá-la.",
       "Save": "Salvar e fechar",
       "Cancel": "Cancelar",
+      "CancelHint": "Descarta edições não salvas do slot. Adicionar soquetes e encaixar/remover gemas são aplicados imediatamente e não são revertidos.",
       "Saved": "Configurações do slot salvas.",
+      "Tabs": {
+        "Description": "Descrição",
+        "Condition": "Condição"
+      },
       "Hidden": {
         "Label": "Ocultar slot",
-        "Hint": "Somente GMs podem ver este slot e sua descrição de socket."
+        "Hint": "Somente GMs podem ver este slot e sua descrição de socket.",
+        "Badge": "Só GM"
       },
       "DeleteGemOnRemoval": {
         "Label": "Destruir gema ao remover",
-        "Hint": "Quando ativado, este slot destrói a gema ao removê-la mesmo se a configuração global estiver desativada."
+        "Hint": "Quando ativado, este slot destrói a gema ao removê-la mesmo se a configuração global estiver desativada.",
+        "Badge": "Destrutivo"
       },
       "Condition": {
         "Label": "Condição do slot",
         "Hint": "Use JavaScript. As tags da gema estão disponíveis por gemTags e hasGemTag(tag). Outras variáveis: gem, gemItem, hostItem, item, actor, user, slot, slotConfig, slotIndex, source, getProperty, hasProperty, deepClone.",
         "Placeholder": "Exemplo: return hasGemTag('poison');",
-        "Wiki": "Abrir wiki"
+        "Wiki": "Abrir wiki",
+        "Insert": {
+          "Label": "Clique para inserir",
+          "Vars": {
+            "Gem": "O documento de item da gema sendo encaixada (o mesmo que gemItem).",
+            "GemTags": "Lista com as tags da gema.",
+            "HasGemTag": "Retorna true quando a gema tem a tag informada.",
+            "HostItem": "O item dono deste soquete (também disponível como item).",
+            "Actor": "O ator que possui o item base, ou null.",
+            "User": "O usuário que está encaixando a gema.",
+            "Slot": "Dados brutos deste slot.",
+            "SlotConfig": "A configuração deste slot (nome, cor, oculto…).",
+            "SlotIndex": "Índice deste slot, começando em 0.",
+            "Source": "Dados de origem da gema antes do encaixe.",
+            "GetProperty": "Lê uma propriedade por caminho, ex.: getProperty(gem, 'system.rarity').",
+            "HasProperty": "Verifica se uma propriedade existe no caminho informado."
+          }
+        }
       },
       "Description": {
         "Label": "Descrição do slot",
@@ -174,7 +241,14 @@
       },
       "GemCharges": {
         "Label": "Cargas da gema",
-        "Hint": "Cargas atuais da gema socketada. O máximo é configurado na própria gema."
+        "Hint": "Cargas atuais da gema socketada. O máximo é configurado na própria gema.",
+        "CopyKeyHint": "Clique para copiar o identificador da carga.",
+        "KeyCopied": "\"{key}\" copiado para a área de transferência."
+      },
+      "GemRecovery": {
+        "Label": "Recarga",
+        "Hint": "Quando e como as cargas desta gema mudam automaticamente — descansos, períodos de combate ou o teste de Recarga no d6 — recuperando todas as cargas, perdendo todas ou rolando uma fórmula customizada.",
+        "FormulaPlaceholder": "ex.: 1d4"
       }
     },
     "SocketDescriptions": {
@@ -297,6 +371,10 @@
         "Name": "Mostrar imagem da gema no detalhamento da Fórmula",
         "Hint": "Se habilitado, as gemas no detalhamento da Fórmula são identificadas por uma pequena imagem; caso contrário, o nome da gema é usado. O detalhamento do tooltip sempre mostra a imagem e esta opção apenas oculta o nome da gema nele."
       },
+      "GemBadgesFavorites": {
+        "Name": "Mostrar badges de gemas nos Favoritos",
+        "Hint": "Se habilitado, itens com gemas encaixadas também mostram os badges das gemas na seção de Favoritos da ficha de personagem."
+      },
       "SocketTabLayout": {
         "Name": "Layout da aba de soquetes",
         "Hint": "Escolha como a aba de soquetes será exibida.",
@@ -333,6 +411,29 @@
           "Display": "Exibição",
           "DisplayHint": "Ajuste como o dano das gemas e a aba de soquetes são apresentados na interface."
         }
+      },
+      "ConfigMenu": {
+        "Name": "Configurações do módulo",
+        "Label": "Abrir configurações",
+        "Hint": "Todas as configurações do Simple Sockets em uma única janela: regras de soquete, exibição, tipos de item e subtipos de gema.",
+        "Title": "Simple Sockets — Configurações",
+        "Tabs": {
+          "Rules": "Regras de soquete",
+          "RulesHint": "Controle quem pode editar soquetes e como gemas se comportam ao serem encaixadas ou removidas.",
+          "Display": "Exibição",
+          "DisplayHint": "Ajuste como o dano de gemas e a aba de soquetes aparecem na interface.",
+          "Types": "Tipos de item",
+          "TypesHint": "Escolha quais tipos de item podem receber soquetes.",
+          "Subtypes": "Subtipos de gema",
+          "SubtypesHint": "Selecione quais subtipos de saque contam como gemas e gerencie subtipos personalizados. Novos subtipos personalizados aparecem na seleção acima assim que são adicionados."
+        },
+        "CustomBadge": "personalizado",
+        "Save": "Salvar alterações",
+        "Close": "Fechar",
+        "Reset": "Restaurar padrões",
+        "Unsaved": "Alterações não salvas",
+        "SavedPill": "Salvo",
+        "SavedNotification": "Configurações do Simple Sockets salvas."
       },
       "HideSupportCard": {
         "Name": "Ocultar popup automático de novidades até a próxima atualização",

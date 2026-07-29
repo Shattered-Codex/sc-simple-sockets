@@ -102,4 +102,17 @@ describe("ModuleSettings", () => {
       { key: "relic", label: "Relic" }
     ]);
   });
+
+  test("shows gem badges in Favorites by default when the setting is unregistered", () => {
+    assert.equal(ModuleSettings.shouldShowGemBadgesInFavorites(), true);
+  });
+
+  test("hides gem badges in Favorites when the setting is registered and disabled", () => {
+    installFoundryStubs({
+      settings: {
+        [`${Constants.MODULE_ID}.${ModuleSettings.SETTING_GEM_BADGES_FAVORITES}`]: false
+      }
+    });
+    assert.equal(ModuleSettings.shouldShowGemBadgesInFavorites(), false);
+  });
 });

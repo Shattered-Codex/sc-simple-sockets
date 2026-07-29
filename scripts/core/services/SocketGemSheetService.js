@@ -11,12 +11,7 @@ export class SocketGemSheetService {
       return false;
     }
 
-    const document = await this.#resolveDocument(slot);
-    if (this.#renderDocument(document, { editable })) {
-      return true;
-    }
-
-    const temporary = this.#buildTemporaryDocument(hostItem, slot);
+    const temporary = this.#buildTemporaryDocument(hostItem, slot, slotIndex);
     if (this.#renderDocument(temporary, { editable })) {
       return true;
     }
@@ -34,11 +29,7 @@ export class SocketGemSheetService {
     return this.openFromHost(hostItem, slotIndex, { editable: false });
   }
 
-  static async #resolveDocument(slot) {
-    return null;
-  }
-
-  static #buildTemporaryDocument(hostItem, slot) {
+  static #buildTemporaryDocument(hostItem, slot, slotIndex) {
     const payload = ItemResolver.expandSnapshot(slot?._gemData ?? null);
     const ItemDocument = CONFIG?.Item?.documentClass;
     if (!payload || typeof ItemDocument !== "function") {
@@ -49,36 +40,24 @@ export class SocketGemSheetService {
     payload.img ||= slot?.gem?.img ?? slot?.img ?? Constants.SOCKET_SLOT_IMG;
 
     try {
-      return new ItemDocument(payload, { parent: hostItem?.actor ?? null });
+      const temporary = new ItemDocument(payload, { parent: hostItem?.actor ?? null });
+      // Temporary documents cannot persist their own updates, so actions on the
+      // inspected sheet (e.g. the recharge roll) write into the socket instead.
+      // The per-socketing instance id (with the gem name as legacy fallback)
+      // fingerprints the slot: if the socket's contents change while this
+      // sheet stays open, the action is refused instead of hitting whatever
+      // gem now sits at the same index.
+      temporary[Constants.PROP_SOCKET_SOURCE] = {
+        hostItem,
+        slotIndex: Number.isInteger(slotIndex) ? slotIndex : Number(slotIndex ?? -1),
+        gemName: payload.name ?? null,
+        gemInstanceId: slot?._gemInstanceId ?? null
+      };
+      return temporary;
     } catch (error) {
       console.warn(`[${Constants.MODULE_ID}] failed to create temporary gem document`, error);
       return null;
     }
-  }
-
-  static async #fromUuid(uuid) {
-    if (!uuid) {
-      return null;
-    }
-
-    if (typeof fromUuidSync === "function") {
-      try {
-        const resolved = fromUuidSync(uuid);
-        if (resolved) {
-          return resolved;
-        }
-      } catch {
-      }
-    }
-
-    if (typeof fromUuid === "function") {
-      try {
-        return await fromUuid(uuid);
-      } catch {
-      }
-    }
-
-    return null;
   }
 
   static #renderDocument(document, { editable = true } = {}) {

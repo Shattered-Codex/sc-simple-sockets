@@ -4,6 +4,7 @@ import { SocketSlot } from "../model/SocketSlot.js";
 import { getSlotConfig } from "../helpers/socketSlotConfig.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { GemTagService } from "../../domain/gems/GemTagService.js";
+import { HostOperationQueue } from "../support/HostOperationQueue.js";
 
 const AsyncFunction = Object.getPrototypeOf(async function() {}).constructor;
 
@@ -23,6 +24,11 @@ export class SocketSlotConfigService {
     return slots[slotIndex] ?? null;
   }
 
+  /**
+   * Unqueued on purpose: SocketService calls this from inside the shared
+   * per-host queue (HostOperationQueue); enqueueing again would deadlock.
+   * External callers should prefer the queued entry points below.
+   */
   static async updateConfig(hostItem, slotIndex, config, options = {}) {
     return SocketSlotConfigService.#saveSlot(
       hostItem,
@@ -32,39 +38,84 @@ export class SocketSlotConfigService {
     );
   }
 
-  static async updateConfigAndResource(hostItem, slotIndex, config, gemResourceValue, options = {}) {
-    return SocketSlotConfigService.#saveSlot(
+  static async updateConfigAndResource(hostItem, slotIndex, config, gemResource, options = {}) {
+    return HostOperationQueue.enqueue(hostItem, () => SocketSlotConfigService.#saveSlot(
       hostItem,
       slotIndex,
-      (slot) => {
-        let nextSlot = SocketSlot.applyConfig(slot, config, slotIndex);
-        if (gemResourceValue !== undefined && gemResourceValue !== null && gemResourceValue !== "") {
-          nextSlot = GemResourceService.withSlotResourceValue(nextSlot, Number(gemResourceValue));
-        }
-        return nextSlot;
-      },
+      (slot) => SocketSlotConfigService.#applyConfigAndResource(slot, slotIndex, config, gemResource),
       options
-    );
+    ));
+  }
+
+  /**
+   * Applies several slot updates in a single item update, so a failure persists
+   * nothing instead of leaving the sockets partially saved.
+   * @param {Item} hostItem
+   * @param {Map<number, {config: object, gemResource: *}>} updates Keyed by slot index.
+   * @returns {Promise<boolean>} False when any slot index is invalid; no slot is written then.
+   */
+  static async updateManyConfigsAndResources(hostItem, updates, options = {}) {
+    return HostOperationQueue.enqueue(hostItem, async () => {
+      const entries = Array.from(updates instanceof Map ? updates.entries() : updates ?? []);
+      const slots = SocketStore.getSlots(hostItem);
+      let changed = false;
+
+      for (const [index, { config, gemResource } = {}] of entries) {
+        const slotIndex = Number(index);
+        if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
+          return false;
+        }
+
+        const previousSlot = slots[slotIndex];
+        const nextSlot = SocketSlotConfigService.#applyConfigAndResource(previousSlot, slotIndex, config, gemResource);
+        if (SocketSlotConfigService.#stableStringify(previousSlot) === SocketSlotConfigService.#stableStringify(nextSlot)) {
+          continue;
+        }
+        slots[slotIndex] = nextSlot;
+        changed = true;
+      }
+
+      if (changed) {
+        await SocketStore.setSlots(hostItem, slots, options);
+      }
+      return true;
+    });
+  }
+
+  static #applyConfigAndResource(slot, slotIndex, config, gemResource) {
+    const { value, recovery } = gemResource && typeof gemResource === "object"
+      ? gemResource
+      : { value: gemResource, recovery: null };
+    let nextSlot = SocketSlot.applyConfig(slot, config, slotIndex);
+    if (value !== undefined && value !== null && value !== "") {
+      nextSlot = GemResourceService.withSlotResourceValue(nextSlot, Number(value));
+    }
+    if (recovery) {
+      nextSlot = GemResourceService.withSlotResourceRecovery(nextSlot, recovery);
+    }
+    return nextSlot;
   }
 
   static async toggleHidden(hostItem, slotIndex, options = {}) {
-    const slots = SocketStore.getSlots(hostItem);
-    if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
-      return null;
-    }
+    return HostOperationQueue.enqueue(hostItem, async () => {
+      const slots = SocketStore.getSlots(hostItem);
+      if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= slots.length) {
+        return null;
+      }
 
-    const config = getSlotConfig(slots[slotIndex]);
-    const nextConfig = {
-      ...config,
-      hidden: !config.hidden
-    };
-    await SocketSlotConfigService.#saveSlot(
-      hostItem,
-      slotIndex,
-      (slot) => SocketSlot.applyConfig(slot, nextConfig, slotIndex),
-      options
-    );
-    return nextConfig.hidden;
+      const config = getSlotConfig(slots[slotIndex]);
+      const nextConfig = {
+        ...config,
+        hidden: !config.hidden
+      };
+      await SocketSlotConfigService.#saveSlot(
+        hostItem,
+        slotIndex,
+        (slot) => SocketSlot.applyConfig(slot, nextConfig, slotIndex),
+        options
+      );
+      return nextConfig.hidden;
+    });
   }
 
   static async #saveSlot(hostItem, slotIndex, buildNextSlot, options = {}) {

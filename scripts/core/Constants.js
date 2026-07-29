@@ -40,6 +40,12 @@ export class Constants {
   static SETTING_LOOT_SUBTYPE_MENU = "gemLootSubtypeSettings";
   static SETTING_CUSTOM_LOOT_SUBTYPES = "customLootSubtypes";
   static UPDATE_OPTION_SKIP_ITEM_SHEET_SYNC = "skipItemSheetSync";
+  /**
+   * Instance property attached to temporary gem documents built from a slot
+   * snapshot, pointing back to `{ hostItem, slotIndex }` so actions taken on
+   * the inspected sheet can persist into the real socket.
+   */
+  static PROP_SOCKET_SOURCE = "scSocketsSocketSource";
 
   static getTextEditor() {
     return foundry?.applications?.ux?.TextEditor?.implementation

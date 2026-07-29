@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
 import { buildSocketDescriptionEntries } from "../helpers/socketDescriptionEntries.js";
+import { GemRecoveryService } from "../services/GemRecoveryService.js";
 
 export class SocketDescriptionsUI {
   static #handler = null;
@@ -127,12 +128,26 @@ export class SocketDescriptionsUI {
       "Send to Chat"
     );
     const escapedSendLabel = SocketDescriptionsUI.#escapeHtml(sendLabel);
+    const rollLabel = Constants.localize(
+      "SCSockets.GemDetails.Resource.Recovery.Roll",
+      "Roll Recharge"
+    );
+    const escapedRollLabel = SocketDescriptionsUI.#escapeHtml(rollLabel);
     const rows = entries.map((entry) => `
       <div class="sc-sockets-socket-description">
         ${SocketDescriptionsUI.#buildIcon(entry)}
         <div class="sc-sockets-socket-description-body">
           <div class="sc-sockets-socket-description-header">
             <strong class="sc-sockets-socket-description-title">${SocketDescriptionsUI.#escapeHtml(entry.name)}${entry.resourceLabel ? ` <span class="sc-sockets-gem-resource-badge">${SocketDescriptionsUI.#escapeHtml(entry.resourceLabel)}</span>` : ""}</strong>
+            ${entry.canRecharge ? `
+            <button type="button"
+                    class="unbutton control-button always-interactive sc-sockets-gem-recharge-roll"
+                    data-action="rollSocketRecharge"
+                    data-slot-index="${Number(entry.slotIndex)}"
+                    data-tooltip="${escapedRollLabel}"
+                    aria-label="${escapedRollLabel}">
+              <i class="fas fa-dice-six" inert></i>
+            </button>` : ""}
             <button type="button"
                     class="unbutton control-button always-interactive sc-sockets-socket-description-chat"
                     data-action="sendSocketDescription"
@@ -172,6 +187,13 @@ export class SocketDescriptionsUI {
         ? event.target.closest("[data-action]")
         : null;
       if (!target) return;
+
+      if (target.dataset.action === "rollSocketRecharge") {
+        event.preventDefault();
+        event.stopPropagation();
+        await GemRecoveryService.rollSlotRecharge(item, Number(target.dataset.slotIndex));
+        return;
+      }
 
       if (target.dataset.action !== "sendSocketDescription") {
         return;

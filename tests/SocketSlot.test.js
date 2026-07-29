@@ -52,7 +52,11 @@ describe("SocketSlot", () => {
 
     const slot = SocketSlot.fillFromGem(prev, gemItem, { packed: true }, 2);
 
-    assert.deepEqual(slot, {
+    assert.equal(typeof slot._gemInstanceId, "string");
+    assert.ok(slot._gemInstanceId.length > 0);
+
+    const { _gemInstanceId, ...rest } = slot;
+    assert.deepEqual(rest, {
       name: "Ruby Socket",
       img: "icons/ruby.webp",
       slotConfig: {

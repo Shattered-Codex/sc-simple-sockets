@@ -1,279 +1,440 @@
-<section class="sc-sockets-settings-app socket-slot-config-layout standard-form" data-application-part="form">
-  <div class="sc-sockets-settings-content">
-    <div class="socket-slot-config-top-grid">
-      <div class="sc-sockets-settings-card socket-slot-config-overview-card socket-slot-config-overview-card--details">
-          <div class="section-heading">
-            <div>
-              <h4>{{strings.slotLabel}} {{slotNumber}}</h4>
-              <p class="notes">{{strings.subtitle}}</p>
-            </div>
-          </div>
+<section class="socket-slot-config-layout" data-application-part="form">
+  <div class="slotcfg-body">
+    <nav class="slotcfg-rail" aria-label="{{strings.railTitle}}">
+      <span class="slotcfg-rail-title">{{strings.railTitle}}</span>
+      <div class="slotcfg-rail-list">
+        {{#each railSlots as |rail|}}
+          <button
+            type="button"
+            class="slotcfg-rail-item {{#if rail.active}}is-active{{/if}}"
+            data-action="selectSlot"
+            data-index="{{rail.index}}"
+          >
+            <span class="slotcfg-rail-diamond" {{#if rail.color}}style="--slotcfg-tint: {{rail.color}};"{{/if}}></span>
+            <span class="slotcfg-rail-meta">
+              <span class="slotcfg-rail-name">{{rail.name}}</span>
+              <span class="slotcfg-rail-gem">{{rail.gemLabel}}</span>
+            </span>
+            <span class="slotcfg-rail-dirty" data-slot-dirty="{{rail.index}}" hidden aria-hidden="true"></span>
+            {{#if rail.hidden}}
+              <i class="fa-solid fa-eye-slash slotcfg-rail-hidden" data-tooltip="{{../strings.hiddenLabel}}"></i>
+            {{/if}}
+          </button>
+        {{/each}}
+      </div>
+      {{#if canAddSocket}}
+        <div class="slotcfg-rail-foot">
+          <button type="button" class="slotcfg-btn slotcfg-btn--secondary slotcfg-btn--sm slotcfg-btn--block" data-action="addSocket">
+            <i class="fas fa-plus"></i> {{strings.addSocket}}
+          </button>
+        </div>
+      {{/if}}
+    </nav>
 
-          <div class="socket-slot-config-name-row">
-            <label class="socket-slot-config-name-field">
-              <span>{{strings.slotNameLabel}}</span>
-              <input
-                type="text"
-                name="slotConfig.name"
-                class="sc-sockets-settings-control"
-                value="{{slotConfigName}}"
-                placeholder="{{strings.emptySlot}}"
-                autocomplete="off"
-                {{#unless editable}}disabled{{/unless}}
-              />
-            </label>
-            <label class="socket-slot-config-hidden-field">
-              <input
-                type="checkbox"
-                name="slotConfig.hidden"
-                value="true"
-                {{#if hidden}}checked{{/if}}
-                {{#unless canEditVisibility}}disabled{{/unless}}
-              />
-              <span>
-                <strong>{{strings.hiddenLabel}}</strong>
-                <small>{{strings.hiddenHint}}</small>
-              </span>
-            </label>
-          </div>
+    <div class="slotcfg-config">
+      <div class="slotcfg-identity">
+        <div
+          class="sc-sockets-slot-visual slotcfg-tile {{#if previewHasTint}}has-slot-tint{{/if}}"
+          data-slot-color-preview
+          {{#if previewStyle}}style="{{previewStyle}}"{{/if}}
+          aria-label="{{strings.previewLabel}}"
+        >
+          <img class="sc-sockets-slot-frame {{#if previewHasTint}}is-tinted{{/if}}" src="{{slotFrameImg}}" alt="{{strings.previewLabel}}">
+          {{#if hasGem}}
+            <img class="sc-sockets-slot-gem" src="{{gemImg}}" alt="{{gemName}}">
+          {{/if}}
+        </div>
+        <div class="slotcfg-identity-fields">
+          <label class="slotcfg-flabel" for="{{appId}}-slot-name">{{strings.slotNameLabel}}</label>
+          <input
+            id="{{appId}}-slot-name"
+            type="text"
+            name="slotConfig.name"
+            class="slotcfg-input"
+            value="{{slotConfigName}}"
+            placeholder="{{strings.slotLabel}} {{slotNumber}}"
+            autocomplete="off"
+            {{#unless editable}}disabled{{/unless}}
+          />
+          <span class="slotcfg-hint">{{strings.slotNameHint}}</span>
+        </div>
+      </div>
 
-          <label class="socket-slot-config-hidden-field">
+      <div class="slotcfg-field">
+        <span class="slotcfg-flabel">
+          {{strings.colorLabel}}
+          <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.colorHint}}"></i>
+        </span>
+        <div class="slotcfg-tint-row">
+          <div class="slotcfg-swatches">
+            {{#each tintSwatches as |swatch|}}
+              <button
+                type="button"
+                class="slotcfg-swatch {{#if swatch.active}}is-active{{/if}}"
+                data-action="pickTint"
+                data-color="{{swatch.value}}"
+                data-tooltip="{{swatch.value}}"
+                aria-label="{{swatch.value}}"
+                style="--slotcfg-swatch: {{swatch.value}};"
+                {{#unless ../editable}}disabled{{/unless}}
+              ></button>
+            {{/each}}
+          </div>
+          <div class="slotcfg-tint-controls">
             <input
-              type="checkbox"
-              name="slotConfig.deleteGemOnRemoval"
-              value="true"
-              {{#if deleteGemOnRemoval}}checked{{/if}}
+              type="text"
+              name="slotConfig.colorHex"
+              class="slotcfg-input slotcfg-input--hex"
+              value="{{color}}"
+              placeholder="#D4AF37"
+              autocomplete="off"
+              aria-label="{{strings.colorHexLabel}}"
               {{#unless editable}}disabled{{/unless}}
             />
-            <span>
-              <strong>{{strings.deleteGemOnRemovalLabel}}</strong>
-              <small>{{strings.deleteGemOnRemovalHint}}</small>
+            <input
+              type="color"
+              name="slotConfig.colorPicker"
+              class="slotcfg-color-picker"
+              value="{{colorPickerValue}}"
+              aria-label="{{strings.colorPickerLabel}}"
+              {{#unless editable}}disabled{{/unless}}
+            />
+            <button
+              type="button"
+              class="slotcfg-iconbtn"
+              data-action="clearColor"
+              aria-label="{{strings.clearColor}}"
+              data-tooltip="{{strings.clearColor}}"
+              {{#unless editable}}disabled{{/unless}}
+            >
+              <i class="fas fa-eraser"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="slotcfg-rule"></div>
+
+      <div class="slotcfg-section">
+        <div class="slotcfg-section-head">
+          <span class="slotcfg-section-title">{{strings.contentsLabel}}</span>
+          {{#if hasGem}}
+            <span class="slotcfg-badge slotcfg-badge--accent">{{strings.socketedBadge}}</span>
+          {{else}}
+            <span class="slotcfg-badge">{{strings.emptyBadge}}</span>
+          {{/if}}
+        </div>
+        <div class="slotcfg-card">
+          <div class="slotcfg-docrow">
+            <span class="slotcfg-docrow-icon">
+              <img src="{{hostItemImg}}" alt="{{hostItemName}}">
             </span>
-          </label>
+            <span class="slotcfg-docrow-meta">
+              <span class="slotcfg-docrow-label">{{strings.hostLabel}}</span>
+              <span class="slotcfg-docrow-name">{{hostItemName}}</span>
+            </span>
+            {{#if canInspectHost}}
+              <span class="slotcfg-docrow-actions">
+                <button type="button" class="slotcfg-iconbtn" data-action="inspectHost" aria-label="{{strings.inspectHost}}" data-tooltip="{{strings.inspectHostHint}}">
+                  <i class="fas fa-eye"></i>
+                </button>
+              </span>
+            {{/if}}
+          </div>
 
-          <div class="socket-slot-config-item-stack">
-            <article class="socket-slot-config-document-card">
-              <div class="socket-slot-config-document-body">
-                <div class="socket-slot-config-image-card socket-slot-config-image-card--compact">
-                  <img src="{{hostItemImg}}" alt="{{hostItemName}}">
-                  {{#if canInspectHost}}
-                    <button
-                      type="button"
-                      class="dialog-button socket-slot-config-image-action"
-                      data-action="inspectHost"
-                      aria-label="{{strings.inspectHost}}"
-                      data-tooltip="{{strings.inspectHostHint}}"
-                    >
-                      <i class="fas fa-magnifying-glass"></i>
-                    </button>
-                  {{/if}}
-                </div>
-                <div class="socket-slot-config-document-heading">
-                  <span class="socket-slot-config-summary-label">{{strings.hostLabel}}</span>
-                  <strong>{{hostItemName}}</strong>
-                </div>
-                {{#if canInspectHost}}
-                  <i
-                    class="fa-solid fa-circle-info socket-slot-config-info"
-                    data-tooltip="{{strings.inspectHostHint}}"
-                  ></i>
+          <div class="slotcfg-card-divider"></div>
+
+          {{#if hasGem}}
+            <div class="slotcfg-docrow slotcfg-docrow--gem">
+              <span class="slotcfg-docrow-icon slotcfg-docrow-icon--gem">
+                <img src="{{gemImg}}" alt="{{gemName}}">
+              </span>
+              <span class="slotcfg-docrow-meta">
+                <span class="slotcfg-docrow-label">{{strings.gemLabel}}</span>
+                <span class="slotcfg-docrow-name">{{gemName}}</span>
+              </span>
+              <span class="slotcfg-docrow-actions">
+                {{#if canInspectGem}}
+                  <button type="button" class="slotcfg-iconbtn" data-action="inspectGem" aria-label="{{strings.inspectGem}}" data-tooltip="{{localize 'SCSockets.SocketSlotConfig.InspectHint'}}">
+                    <i class="fas fa-eye"></i>
+                  </button>
                 {{/if}}
-              </div>
-            </article>
+                {{#if canUnsocketGem}}
+                  <button type="button" class="slotcfg-iconbtn slotcfg-iconbtn--danger" data-action="unsocketGem" aria-label="{{strings.unsocketGem}}" data-tooltip="{{strings.unsocketGem}}">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                {{/if}}
+              </span>
+            </div>
 
-            <article class="socket-slot-config-document-card socket-slot-config-document-card--gem">
-              {{#if hasGem}}
-                <div class="socket-slot-config-document-body">
-                  <div class="socket-slot-config-image-card socket-slot-config-image-card--compact">
-                    <img src="{{gemImg}}" alt="{{gemName}}">
-                    <button
-                      type="button"
-                      class="dialog-button socket-slot-config-image-action"
-                      data-action="inspectGem"
-                      aria-label="{{strings.inspectGem}}"
-                      data-tooltip="{{localize 'SCSockets.SocketSlotConfig.InspectHint'}}"
-                    >
-                      <i class="fas fa-magnifying-glass"></i>
-                    </button>
-                  </div>
-                  <div class="socket-slot-config-document-heading">
-                    <span class="socket-slot-config-summary-label">{{strings.gemLabel}}</span>
-                    <strong>{{gemName}}</strong>
-                  </div>
-                  {{#if canInspectGem}}
-                    <i
-                      class="fa-solid fa-circle-info socket-slot-config-info"
-                      data-tooltip="{{localize 'SCSockets.SocketSlotConfig.InspectHint'}}"
-                    ></i>
-                  {{/if}}
-                </div>
-                {{#if hasGemResource}}
-                <div class="socket-slot-config-gem-charges">
-                  <span class="socket-slot-config-gem-charges-label">
+            {{#if hasGemResource}}
+              <div class="slotcfg-charges">
+                <div class="slotcfg-charges-head">
+                  <span class="slotcfg-flabel">
                     {{strings.gemChargesLabel}}
-                    <i class="fa-solid fa-circle-info socket-slot-config-info" data-tooltip="{{strings.gemChargesHint}}"></i>
-                    <span class="sc-sockets-gem-resource-badge">{{gemResource.key}}</span>
+                    <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.gemChargesHint}}"></i>
                   </span>
-                  <div class="socket-slot-config-gem-charges-control">
+                  <span class="slotcfg-spacer"></span>
+                  <button
+                    type="button"
+                    class="slotcfg-badge slotcfg-badge--mono slotcfg-badge--copy"
+                    data-action="copyResourceKey"
+                    data-key="{{gemResource.key}}"
+                    data-tooltip="{{strings.copyKeyHint}}"
+                  >{{gemResource.key}}</button>
+                </div>
+                <div class="slotcfg-charges-row">
+                  <div class="slotcfg-stepper">
+                    <button type="button" class="slotcfg-stepper-btn" data-action="gemChargeDelta" data-delta="-1" {{#unless editable}}disabled{{/unless}} aria-label="-1">
+                      <i class="fas fa-minus"></i>
+                    </button>
                     <input
                       type="number"
                       name="gemResource.value"
-                      class="sc-sockets-settings-control socket-slot-config-gem-charges-input"
+                      class="slotcfg-stepper-input"
                       value="{{gemResource.value}}"
                       min="0"
                       max="{{gemResource.max}}"
                       step="1"
+                      aria-label="{{strings.gemChargesLabel}}"
                       {{#unless editable}}disabled{{/unless}}
                     />
-                    <span class="socket-slot-config-gem-charges-max">/ {{gemResource.max}}</span>
+                    <button type="button" class="slotcfg-stepper-btn" data-action="gemChargeDelta" data-delta="1" {{#unless editable}}disabled{{/unless}} aria-label="+1">
+                      <i class="fas fa-plus"></i>
+                    </button>
                   </div>
+                  <span class="slotcfg-charges-max">/ {{gemResource.max}}</span>
                 </div>
-                {{/if}}
-              {{else}}
-                <div class="socket-slot-config-document-body socket-slot-config-document-body--empty">
-                  <div class="socket-slot-config-image-card socket-slot-config-image-card--compact socket-slot-config-image-card--empty"></div>
-                  <div class="socket-slot-config-document-heading">
-                    <span class="socket-slot-config-summary-label">{{strings.gemLabel}}</span>
-                    <strong>{{strings.emptySlot}}</strong>
-                  </div>
+                <div class="slotcfg-bar">
+                  <div class="slotcfg-bar-fill" data-gem-charges-bar style="width: {{gemChargesPct}}%;"></div>
                 </div>
-              {{/if}}
-            </article>
-          </div>
-      </div>
-
-      <div class="sc-sockets-settings-card socket-slot-config-overview-card socket-slot-config-overview-card--color">
-          <div class="socket-slot-config-section-title-row">
-            <div class="sc-sockets-settings-section-header">
-              <h4>{{strings.colorLabel}}</h4>
-            </div>
-            <i
-              class="fa-solid fa-circle-info socket-slot-config-info"
-              data-tooltip="{{strings.colorHint}}"
-            ></i>
-          </div>
-
-          <div class="socket-slot-config-preview-card">
-            <div class="socket-slot-config-preview-wrap">
-              <div
-                class="sc-sockets-slot-visual {{#if previewHasTint}}has-slot-tint{{/if}}"
-                data-slot-color-preview
-                {{#if previewStyle}}style="{{previewStyle}}"{{/if}}
-                aria-label="{{strings.previewLabel}}"
-              >
-                <img class="item-image socket-icon sc-sockets-slot-frame {{#if previewHasTint}}is-tinted{{/if}}" src="{{slotFrameImg}}" alt="{{strings.previewLabel}}">
               </div>
+
+              <div class="slotcfg-recovery">
+                <span class="slotcfg-flabel">
+                  {{strings.gemRecoveryLabel}}
+                  <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.gemRecoveryHint}}"></i>
+                </span>
+                <div class="slotcfg-recovery-controls {{#if gemRecoveryIsRecharge}}is-recharge{{else}}is-periodic{{/if}} {{#if gemRecoveryShowFormula}}has-formula{{/if}}">
+                  <select
+                    name="gemResource.recovery.period"
+                    class="slotcfg-input slotcfg-recovery-period"
+                    aria-label="{{strings.gemRecoveryPeriodLabel}}"
+                    {{#unless editable}}disabled{{/unless}}
+                  >
+                    {{#each gemRecoveryPeriodGroups as |group|}}
+                      {{#if group.label}}
+                        <optgroup label="{{group.label}}">
+                          {{#each group.options as |opt|}}
+                            <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
+                          {{/each}}
+                        </optgroup>
+                      {{else}}
+                        {{#each group.options as |opt|}}
+                          <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
+                        {{/each}}
+                      {{/if}}
+                    {{/each}}
+                  </select>
+                  <input
+                    type="number"
+                    name="gemResource.recovery.threshold"
+                    class="slotcfg-input slotcfg-recovery-threshold"
+                    value="{{gemResource.recovery.threshold}}"
+                    min="1" max="6" step="1"
+                    placeholder="6"
+                    aria-label="{{strings.gemRecoveryThresholdLabel}}"
+                    {{#unless gemRecoveryIsRecharge}}hidden{{/unless}}
+                    {{#unless editable}}disabled{{/unless}}
+                  />
+                  <select
+                    name="gemResource.recovery.type"
+                    class="slotcfg-input slotcfg-recovery-type"
+                    aria-label="{{strings.gemRecoveryTypeLabel}}"
+                    {{#unless editable}}disabled{{/unless}}
+                  >
+                    {{#each gemRecoveryTypeOptions as |opt|}}
+                      <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
+                    {{/each}}
+                  </select>
+                  <input
+                    type="text"
+                    name="gemResource.recovery.formula"
+                    class="slotcfg-input slotcfg-recovery-formula"
+                    value="{{gemResource.recovery.formula}}"
+                    placeholder="{{strings.gemRecoveryFormulaPlaceholder}}"
+                    aria-label="{{strings.gemRecoveryFormulaLabel}}"
+                    {{#unless gemRecoveryShowFormula}}hidden{{/unless}}
+                    {{#unless editable}}disabled{{/unless}}
+                  />
+                </div>
+              </div>
+            {{/if}}
+          {{else}}
+            <div class="slotcfg-empty-drop" {{#if editable}}data-dropzone="slotcfg-gem" data-index="{{slotIndex}}"{{/if}}>
+              <i class="fas fa-gem"></i>
+              <span>{{strings.noGem}}</span>
+              {{#if editable}}
+                <span class="slotcfg-empty-drop-hint">{{strings.dropGemHint}}</span>
+              {{/if}}
             </div>
-          </div>
-
-          <div class="socket-slot-config-color-row">
-            <label class="socket-slot-config-color-field">
-              <span>{{strings.colorHexLabel}}</span>
-              <input
-                type="text"
-                name="slotConfig.colorHex"
-                class="sc-sockets-settings-control"
-                value="{{color}}"
-                placeholder="#D4AF37"
-                inputmode="text"
-                autocomplete="off"
-                {{#unless editable}}disabled{{/unless}}
-              />
-            </label>
-
-            <div class="socket-slot-config-color-actions">
-              <label class="socket-slot-config-color-field socket-slot-config-color-field--picker">
-                <span>{{strings.colorPickerLabel}}</span>
-                <input
-                  type="color"
-                  name="slotConfig.colorPicker"
-                  class="socket-slot-config-color-picker"
-                  value="{{colorPickerValue}}"
-                  {{#unless editable}}disabled{{/unless}}
-                />
-              </label>
-
-              <button
-                type="button"
-                class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost"
-                data-action="clearColor"
-                {{#unless editable}}disabled{{/unless}}
-              >
-                <i class="fas fa-eraser"></i> {{strings.clearColor}}
-              </button>
-            </div>
-          </div>
-      </div>
-    </div>
-
-    <div class="sc-sockets-settings-card sc-sockets-settings-section-card">
-      <div class="sc-sockets-settings-section-header">
-        <h4>{{strings.descriptionLabel}}</h4>
-        <p class="notes">{{strings.descriptionHint}}</p>
-      </div>
-
-      <div class="socket-slot-config-field socket-slot-config-field--editor">
-        {{#if editable}}
-          <prose-mirror
-            name="slotConfig.description"
-            value="{{description}}"
-            document-uuid="{{hostItemUuid}}"
-            class="socket-slot-config-description-editor"
-            compact
-          >{{{descriptionEnriched}}}</prose-mirror>
-        {{else}}
-          <div class="editor editor-content socket-slot-config-description-preview">
-            {{{descriptionEnriched}}}
-          </div>
-        {{/if}}
-      </div>
-    </div>
-
-    <div class="sc-sockets-settings-card sc-sockets-settings-section-card">
-      <div class="sc-sockets-settings-section-header socket-slot-config-section-header-with-link">
-        <div>
-          <h4>{{strings.conditionLabel}}</h4>
-          <p class="notes">{{strings.conditionHint}}</p>
+          {{/if}}
         </div>
-        <a
-          href="{{conditionWikiUrl}}"
-          target="_blank"
-          rel="noopener"
-          class="socket-slot-config-help-link"
-        >
-          <i class="fas fa-up-right-from-square"></i> {{strings.conditionWiki}}
-        </a>
       </div>
 
-      <div class="socket-slot-config-field socket-slot-config-field--code">
+      <div class="slotcfg-rule"></div>
+
+      <div class="slotcfg-section">
+        <div class="slotcfg-section-head">
+          <span class="slotcfg-section-title">{{strings.rulesLabel}}</span>
+        </div>
+
+        <div class="slotcfg-switchrow">
+          <span class="slotcfg-switchrow-text">
+            <strong>
+              {{strings.hiddenLabel}}
+              <span class="slotcfg-badge slotcfg-badge--warn" data-hidden-badge {{#unless hidden}}hidden{{/unless}}>{{strings.hiddenBadge}}</span>
+            </strong>
+            <small id="{{appId}}-hidden-hint">{{strings.hiddenHint}}</small>
+          </span>
+          <label class="slotcfg-toggle">
+            <input
+              type="checkbox"
+              name="slotConfig.hidden"
+              value="true"
+              aria-label="{{strings.hiddenLabel}}"
+              aria-describedby="{{appId}}-hidden-hint"
+              {{#if hidden}}checked{{/if}}
+              {{#unless canEditVisibility}}disabled{{/unless}}
+            />
+            <span class="slotcfg-toggle-track"></span>
+          </label>
+        </div>
+
+        <div class="slotcfg-card-divider"></div>
+
+        <div class="slotcfg-switchrow">
+          <span class="slotcfg-switchrow-text">
+            <strong>
+              {{strings.deleteGemOnRemovalLabel}}
+              <span class="slotcfg-badge slotcfg-badge--warn" data-delete-gem-badge {{#unless deleteGemOnRemoval}}hidden{{/unless}}>{{strings.destructiveBadge}}</span>
+            </strong>
+            <small id="{{appId}}-delete-gem-hint">{{strings.deleteGemOnRemovalHint}}</small>
+          </span>
+          <label class="slotcfg-toggle">
+            <input
+              type="checkbox"
+              name="slotConfig.deleteGemOnRemoval"
+              value="true"
+              aria-label="{{strings.deleteGemOnRemovalLabel}}"
+              aria-describedby="{{appId}}-delete-gem-hint"
+              {{#if deleteGemOnRemoval}}checked{{/if}}
+              {{#unless editable}}disabled{{/unless}}
+            />
+            <span class="slotcfg-toggle-track"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="slotcfg-editors">
+      <div class="slotcfg-tabs" role="tablist">
+        <button type="button" id="{{appId}}-tab-desc" class="slotcfg-tab {{#if tabDescActive}}is-active{{/if}}" data-action="switchTab" data-tab="desc" role="tab" aria-selected="{{tabDescActive}}" aria-controls="{{appId}}-pane-desc" tabindex="{{#if tabDescActive}}0{{else}}-1{{/if}}">
+          {{strings.tabDescription}}
+        </button>
+        <button type="button" id="{{appId}}-tab-cond" class="slotcfg-tab {{#if tabCondActive}}is-active{{/if}}" data-action="switchTab" data-tab="cond" role="tab" aria-selected="{{tabCondActive}}" aria-controls="{{appId}}-pane-cond" tabindex="{{#if tabCondActive}}0{{else}}-1{{/if}}">
+          {{strings.tabCondition}}
+        </button>
+      </div>
+
+      <div class="slotcfg-pane" id="{{appId}}-pane-desc" role="tabpanel" aria-labelledby="{{appId}}-tab-desc" data-tab-pane="desc" {{#unless tabDescActive}}hidden{{/unless}}>
+        <div class="slotcfg-section-head">
+          <span class="slotcfg-section-title">{{strings.descriptionLabel}}</span>
+        </div>
+        <p class="slotcfg-hint">{{strings.descriptionHint}}</p>
+        <div class="slotcfg-editor-frame">
+          {{#if editable}}
+            <prose-mirror
+              name="slotConfig.description"
+              value="{{description}}"
+              document-uuid="{{hostItemUuid}}"
+              class="slotcfg-description-editor"
+              compact
+            >{{{descriptionEnriched}}}</prose-mirror>
+          {{else}}
+            <div class="editor editor-content slotcfg-description-preview">
+              {{{descriptionEnriched}}}
+            </div>
+          {{/if}}
+        </div>
+      </div>
+
+      <div class="slotcfg-pane" id="{{appId}}-pane-cond" role="tabpanel" aria-labelledby="{{appId}}-tab-cond" data-tab-pane="cond" {{#unless tabCondActive}}hidden{{/unless}}>
+        <div class="slotcfg-section-head">
+          <span class="slotcfg-section-title">{{strings.conditionLabel}}</span>
+          <a
+            href="{{conditionWikiUrl}}"
+            target="_blank"
+            rel="noopener"
+            class="slotcfg-help-link"
+          >
+            <i class="fas fa-up-right-from-square"></i> {{strings.conditionWiki}}
+          </a>
+        </div>
+        <p class="slotcfg-hint">{{strings.conditionHint}}</p>
+        <div class="slotcfg-editor-frame">
+          {{#if editable}}
+            <code-mirror
+              name="slotConfig.condition"
+              language="javascript"
+              indent="2"
+              class="slotcfg-code"
+              aria-label="{{strings.conditionLabel}}"
+            >{{condition}}</code-mirror>
+          {{else}}
+            <textarea
+              name="slotConfig.condition"
+              class="slotcfg-code slotcfg-code--readonly"
+              rows="10"
+              placeholder="{{strings.conditionPlaceholder}}"
+              disabled>{{condition}}</textarea>
+          {{/if}}
+        </div>
         {{#if editable}}
-          <code-mirror
-            name="slotConfig.condition"
-            language="javascript"
-            indent="2"
-            class="socket-slot-config-code"
-            aria-label="{{strings.conditionLabel}}"
-          >{{condition}}</code-mirror>
-        {{else}}
-          <textarea
-            name="slotConfig.condition"
-            class="sc-sockets-settings-control socket-slot-config-code socket-slot-config-code--readonly"
-            rows="10"
-            placeholder="{{strings.conditionPlaceholder}}"
-            disabled>{{condition}}</textarea>
+          <div class="slotcfg-insert">
+            <span class="slotcfg-hint">{{strings.insertLabel}}</span>
+            <div class="slotcfg-insert-chips">
+              {{#each conditionVars as |cVar|}}
+                <button
+                  type="button"
+                  class="slotcfg-chip"
+                  data-action="insertConditionVar"
+                  data-insert="{{cVar.snippet}}"
+                  data-tooltip="{{cVar.tooltip}}"
+                >{{cVar.label}}</button>
+              {{/each}}
+            </div>
+          </div>
         {{/if}}
       </div>
     </div>
   </div>
 
-  <footer class="form-footer sc-sockets-settings-footer button-row">
+  <footer class="slotcfg-footer">
     {{#if editable}}
-      <button type="submit" class="dialog-button ok sc-sockets-settings-btn sc-sockets-settings-btn--primary">
-        <i class="fas fa-floppy-disk"></i> <span class="save-label">{{strings.save}}</span>
-      </button>
+      <span class="slotcfg-pill slotcfg-pill--saved" data-status-pill>
+        <span class="slotcfg-pill-dot" aria-hidden="true"></span>
+        <span data-status-pill-label>{{strings.saved}}</span>
+      </span>
     {{/if}}
-    <button type="button" class="dialog-button sc-sockets-settings-btn sc-sockets-settings-btn--ghost" data-action="close">
+    <span class="slotcfg-spacer"></span>
+    <button type="button" class="slotcfg-btn slotcfg-btn--secondary" data-action="close" data-tooltip="{{strings.cancelHint}}">
       <i class="fas fa-xmark"></i> {{strings.cancel}}
     </button>
+    {{#if editable}}
+      <button type="submit" class="slotcfg-btn slotcfg-btn--primary" data-save-button>
+        <i class="fas fa-floppy-disk"></i> {{strings.save}}
+      </button>
+    {{/if}}
   </footer>
 </section>

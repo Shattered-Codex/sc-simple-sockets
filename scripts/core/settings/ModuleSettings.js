@@ -14,6 +14,7 @@ export class ModuleSettings {
   static SOCKET_TAB_LAYOUT_LIST = "list";
   static SOCKET_TAB_LAYOUT_GRID = "grid";
   static SETTING_GEM_BADGES = "gemBadgesEnabled";
+  static SETTING_GEM_BADGES_FAVORITES = "gemBadgesFavoritesEnabled";
   static SETTING_EDIT_SOCKET = "editSocketPermission";
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
@@ -37,6 +38,7 @@ export class ModuleSettings {
   static SETTING_LOOT_SUBTYPE_MENU = Constants.SETTING_LOOT_SUBTYPE_MENU;
   static SETTING_CUSTOM_LOOT_SUBTYPES = Constants.SETTING_CUSTOM_LOOT_SUBTYPES;
   static SETTING_CUSTOM_LOOT_SUBTYPE_MENU = "customLootSubtypeMenu";
+  static SETTING_CONFIG_MENU = "socketsConfigMenu";
 
   // Permission -----------------------------------------------------------------
 
@@ -177,6 +179,13 @@ export class ModuleSettings {
       return true;
     }
     return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE) !== false;
+  }
+
+  static shouldShowGemBadgesInFavorites() {
+    if (!ModuleSettings.#isSettingRegistered(ModuleSettings.SETTING_GEM_BADGES_FAVORITES)) {
+      return true;
+    }
+    return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_BADGES_FAVORITES) !== false;
   }
 
   static getGemFormulaLayoutChoices() {

@@ -33,6 +33,7 @@ export class GemDetailsBuilder {
     const attackBonus = this.#buildAttackBonusContext(item, { include: showWeaponDetails });
     const resource = this.#buildResourceContext(item);
     const tags = this.#buildTagsContext(item);
+    const panes = this.#buildPanesContext({ critThreshold, critMultiplier, attackBonus, damage, resource, tags });
     const canEdit = Boolean(
       isGem && (
         (editable ?? true) ||
@@ -62,7 +63,8 @@ export class GemDetailsBuilder {
       critMultiplier,
       attackBonus,
       resource,
-      tags
+      tags,
+      panes
     };
 
     if (part) {
@@ -70,6 +72,33 @@ export class GemDetailsBuilder {
     }
 
     return context;
+  }
+
+  /**
+   * Builds the pane pills context for the +Details layout: Combat and Resource
+   * show a "filled" dot when they hold configured values, Tags shows a count.
+   */
+  static #buildPanesContext({ critThreshold, critMultiplier, attackBonus, damage, resource, tags }) {
+    const combatFilled = critThreshold.value !== ""
+      || critMultiplier.value !== ""
+      || attackBonus.value !== ""
+      || (damage.entries?.length ?? 0) > 0;
+    const resourceFilled = String(resource.key ?? "").trim().length > 0;
+    return {
+      combat: {
+        label: Constants.localize("SCSockets.GemDetails.Panes.Combat", "Combat"),
+        filled: combatFilled
+      },
+      resource: {
+        label: Constants.localize("SCSockets.GemDetails.Panes.Resource", "Resource"),
+        filled: resourceFilled
+      },
+      tags: {
+        label: Constants.localize("SCSockets.GemDetails.Panes.Tags", "Tags"),
+        count: tags.entries.length
+      },
+      filledLabel: Constants.localize("SCSockets.GemDetails.Panes.Filled", "Configured")
+    };
   }
 
   static #buildDamageContext(item, { include = false, flag = Constants.FLAG_GEM_DAMAGE } = {}) {
@@ -325,17 +354,92 @@ export class GemDetailsBuilder {
 
   static #buildResourceContext(item) {
     const resource = GemResourceService.getGemResource(item);
+    // Temporary documents opened from a socket persist the recharge into the
+    // host item, so the roll button follows the host's ownership; everywhere
+    // else it follows the gem's own document.
+    const socketSource = item?.[Constants.PROP_SOCKET_SOURCE] ?? null;
+    const rollTarget = socketSource ? socketSource.hostItem : item;
     return {
       namePrefix: `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`,
       key: resource?.key ?? "",
       max: resource ? resource.max : "",
       value: resource ? resource.value : "",
       destroyOnEmpty: resource?.destroyOnEmpty === true,
+      recovery: {
+        formula: resource?.recovery?.formula ?? "",
+        threshold: resource?.recovery?.threshold ?? 6,
+        isFormula: resource?.recovery?.type === "formula",
+        isRecharge: resource?.recovery?.period === "recharge",
+        canRoll: rollTarget?.isOwner !== false,
+        periodGroups: GemDetailsBuilder.buildRecoveryPeriodGroups(resource?.recovery?.period ?? ""),
+        typeOptions: GemDetailsBuilder.buildRecoveryTypeOptions(resource?.recovery?.type ?? "recoverAll", {
+          includeLoseAll: resource?.recovery?.period !== "recharge"
+        })
+      },
       hint: Constants.localize(
         "SCSockets.GemDetails.Resource.Hint",
         "Custom resource this gem provides while socketed (e.g. battery, magic). Activities can consume it through the Socketed Charges consumption type. Leave the key blank to provide none."
       )
     };
+  }
+
+  /**
+   * Builds the recovery period select as `[{label, options}]` groups mirroring
+   * the native dnd5e recovery period dropdown (Time/Special/Combat groups plus
+   * the ungrouped Recharge entry), prefixed with the module's "never" option.
+   * Groups with an empty label render their options at the top level.
+   */
+  static buildRecoveryPeriodGroups(selected) {
+    const groups = [];
+    const push = (label, option) => {
+      const last = groups[groups.length - 1];
+      if (last && last.label === label) {
+        last.options.push(option);
+      } else {
+        groups.push({ label, options: [option] });
+      }
+    };
+
+    push("", {
+      value: "",
+      label: Constants.localize("SCSockets.GemDetails.Resource.Recovery.PeriodNone", "Never (manual only)"),
+      selected: selected === ""
+    });
+
+    const native = globalThis.CONFIG?.DND5E?.limitedUsePeriods?.recoveryOptions;
+    const options = Array.isArray(native) && native.length
+      ? native
+      : [
+        { value: "sr", label: Constants.localize("SCSockets.GemDetails.Resource.Recovery.PeriodShortRest", "Short Rest") },
+        { value: "lr", label: Constants.localize("SCSockets.GemDetails.Resource.Recovery.PeriodLongRest", "Long Rest") },
+        { value: "day", label: Constants.localize("SCSockets.GemDetails.Resource.Recovery.PeriodDay", "Daily (new day)") }
+      ];
+
+    for (const option of options) {
+      push(option.group ?? "", {
+        value: option.value,
+        label: option.label,
+        selected: option.value === selected
+      });
+    }
+
+    return groups;
+  }
+
+  /** Recharge checks only restore charges, so loseAll is excluded there. */
+  static buildRecoveryTypeOptions(selected, { includeLoseAll = true } = {}) {
+    const options = [
+      { value: "recoverAll", labelKey: "SCSockets.GemDetails.Resource.Recovery.TypeRecoverAll", fallback: "Recover All Charges" },
+      { value: "loseAll", labelKey: "SCSockets.GemDetails.Resource.Recovery.TypeLoseAll", fallback: "Lose All Charges" },
+      { value: "formula", labelKey: "SCSockets.GemDetails.Resource.Recovery.TypeFormula", fallback: "Custom Formula" }
+    ];
+    return options
+      .filter((option) => includeLoseAll || option.value !== "loseAll")
+      .map((option) => ({
+        value: option.value,
+        label: Constants.localize(option.labelKey, option.fallback),
+        selected: option.value === selected
+      }));
   }
 
   static #buildTagsContext(item) {

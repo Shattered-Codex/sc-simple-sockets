@@ -105,7 +105,11 @@ describe("ItemResolver", () => {
       { slotIndex: 4 }
     );
 
-    assert.deepEqual(slot, {
+    assert.equal(typeof slot._gemInstanceId, "string");
+    assert.ok(slot._gemInstanceId.length > 0);
+
+    const { _gemInstanceId, ...rest } = slot;
+    assert.deepEqual(rest, {
       gem: {
         name: "Sapphire",
         img: "icons/sapphire.webp"
@@ -129,6 +133,26 @@ describe("ItemResolver", () => {
       },
       _slot: 4
     });
+  });
+
+  test("sanitizeSocketSlot keeps an existing gem instance id and clears it on empty slots", () => {
+    const withGem = ItemResolver.sanitizeSocketSlot({
+      _gemData: {
+        name: "Sapphire",
+        img: "icons/sapphire.webp",
+        description: "",
+        socketDescription: "",
+        data: "{\"name\":\"Sapphire\"}"
+      },
+      _gemInstanceId: "instance-1"
+    });
+    assert.equal(withGem._gemInstanceId, "instance-1");
+
+    const emptySlot = ItemResolver.sanitizeSocketSlot({
+      name: "Empty",
+      _gemInstanceId: "instance-1"
+    });
+    assert.equal(emptySlot._gemInstanceId, null);
   });
 
   test("getSnapshotMeta reads description and socket description from Foundry-style paths", () => {

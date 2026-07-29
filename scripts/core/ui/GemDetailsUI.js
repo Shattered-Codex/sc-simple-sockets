@@ -3,11 +3,17 @@ import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { GemTagService } from "../../domain/gems/GemTagService.js";
+import { GemRecoveryService } from "../services/GemRecoveryService.js";
+import { SocketStore } from "../SocketStore.js";
+import { ItemResolver } from "../ItemResolver.js";
 
 export class GemDetailsUI {
   static #handler = null;
   static SELECTOR = '[data-sc-sockets="gem-details-container"]';
   static DAMAGE_SECTION_SELECTOR = '[data-sc-sockets="gem-details"]';
+  static PANES = ["combat", "resource", "tags"];
+  /** Remembers the active +Details pane per gem so it survives sheet re-renders. */
+  static #activePanes = new Map();
 
   static activate() {
     if (GemDetailsUI.#handler) {
@@ -34,16 +40,28 @@ export class GemDetailsUI {
     const root = GemDetailsUI.#rootOf(html ?? sheet?.element);
     if (!root) return;
 
-    GemDetailsUI.#bindFormSubmit(root, sheet);
+    // Snapshot-backed documents (gems opened from a socket) cannot persist
+    // field edits; their sheet only allows the recharge roll and pane pills.
+    const isSnapshotDoc = Boolean(item?.[Constants.PROP_SOCKET_SOURCE]);
+
+    if (!isSnapshotDoc) {
+      GemDetailsUI.#bindFormSubmit(root, sheet);
+    }
 
     const container = root.querySelector(GemDetailsUI.SELECTOR);
     if (!container) return;
+
+    GemDetailsUI.#restoreInteractiveControls(container);
+
+    if (isSnapshotDoc) {
+      GemDetailsUI.#disableSnapshotFields(container);
+    }
 
     if (container.dataset.scSocketsGemDetailsBound === "true") {
       return;
     }
 
-    container.addEventListener("change", async (event) => {
+    if (!isSnapshotDoc) container.addEventListener("change", async (event) => {
       const target = GemDetailsUI.#resolveFieldTarget(event.target);
       if (!GemDetailsUI.#isSupportedInputTarget(target)) {
         return;
@@ -97,6 +115,10 @@ export class GemDetailsUI {
         return;
       }
 
+      if (isSnapshotDoc && !["rollGemRecharge", "showGemPane"].includes(target.dataset.action)) {
+        return;
+      }
+
       switch (target.dataset.action) {
         case "addGemDamage":
           event.preventDefault();
@@ -122,6 +144,14 @@ export class GemDetailsUI {
           event.preventDefault();
           await GemDetailsUI.#handleRemoveDamageType(sheet, target);
           break;
+        case "rollGemRecharge":
+          event.preventDefault();
+          await GemDetailsUI.#rollRecharge(sheet);
+          break;
+        case "showGemPane":
+          event.preventDefault();
+          GemDetailsUI.#activatePane(container, target.dataset.pane, sheet?.item);
+          break;
         default:
           break;
       }
@@ -129,6 +159,110 @@ export class GemDetailsUI {
 
     container.dataset.scSocketsGemDetailsBound = "true";
     GemDetailsUI.#normalizeDamageTypeSelections(container);
+    GemDetailsUI.#activatePane(container, GemDetailsUI.#activePanes.get(item?.uuid), item);
+  }
+
+  /**
+   * Sheets opened from a socket render a temporary document whose updates
+   * cannot persist, so the recharge is rolled against the slot snapshot on the
+   * host item; loose gems recharge through their own document. The slot must
+   * still hold the gem this sheet was opened for — indexes can shift while the
+   * sheet stays open.
+   */
+  static async #rollRecharge(sheet) {
+    const item = sheet?.item;
+    const source = item?.[Constants.PROP_SOCKET_SOURCE];
+    if (!source?.hostItem) {
+      await GemRecoveryService.rollItemRecharge(item);
+      return;
+    }
+
+    const slot = SocketStore.getSlots(source.hostItem)[source.slotIndex];
+    const currentName = ItemResolver.getSlotGemMeta?.(slot)?.name ?? null;
+    const gemChanged = source.gemInstanceId && slot?._gemInstanceId
+      ? source.gemInstanceId !== slot._gemInstanceId
+      : Boolean(source.gemName && currentName !== source.gemName);
+    if (!slot || gemChanged) {
+      ui.notifications?.warn?.(Constants.localize(
+        "SCSockets.Notifications.SocketGemChanged",
+        "The socketed gem changed since this sheet was opened. Close it and open the gem again."
+      ));
+      return;
+    }
+
+    const check = await GemRecoveryService.rollSlotRecharge(source.hostItem, source.slotIndex);
+    if (check?.success) {
+      GemDetailsUI.#syncTemporaryGemResource(sheet, source);
+    }
+  }
+
+  /**
+   * dnd5e's `_disableFields` disables every button on non-editable sheets and
+   * in play mode, honoring only its `always-interactive` class. The pane pills
+   * and the recharge roll are navigation/roll controls that must stay usable
+   * regardless, so re-enable them after each render as a safety net.
+   */
+  static #restoreInteractiveControls(container) {
+    const controls = container.querySelectorAll?.(
+      '[data-action="showGemPane"], [data-action="rollGemRecharge"]'
+    ) ?? [];
+    for (const control of controls) {
+      if ("disabled" in control) control.disabled = false;
+      control.removeAttribute?.("disabled");
+    }
+  }
+
+  /** Editing on a snapshot document cannot persist; only the recharge roll and pane pills stay active. */
+  static #disableSnapshotFields(container) {
+    const fields = container.querySelectorAll?.("input, select, textarea, multi-select, string-tags") ?? [];
+    for (const field of fields) {
+      if ("disabled" in field) field.disabled = true;
+      field.setAttribute?.("disabled", "");
+    }
+    for (const action of container.querySelectorAll?.("[data-action]") ?? []) {
+      const name = action.dataset.action;
+      if (name === "rollGemRecharge" || name === "showGemPane") continue;
+      if ("disabled" in action) action.disabled = true;
+      action.setAttribute?.("aria-disabled", "true");
+    }
+  }
+
+  /** Mirrors the slot's post-recharge charges into the temporary document so the open sheet shows them. */
+  static #syncTemporaryGemResource(sheet, source) {
+    const slots = SocketStore.getSlots(source.hostItem);
+    const resource = GemResourceService.getSlotResource(slots[source.slotIndex]);
+    if (resource && typeof sheet?.item?.updateSource === "function") {
+      try {
+        sheet.item.updateSource({
+          [`flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`]: resource
+        });
+      } catch (error) {
+        console.warn(`[${Constants.MODULE_ID}] failed to sync recharged gem charges into the inspected sheet`, error);
+      }
+    }
+    sheet?.render?.();
+  }
+
+  static #activatePane(container, pane, item) {
+    const pills = container?.querySelectorAll?.('[data-action="showGemPane"]') ?? [];
+    const panes = container?.querySelectorAll?.("[data-sc-sockets-pane]") ?? [];
+    if (!pills.length && !panes.length) {
+      return;
+    }
+
+    const active = GemDetailsUI.PANES.includes(pane) ? pane : GemDetailsUI.PANES[0];
+    for (const pill of pills) {
+      const isActive = pill.dataset.pane === active;
+      pill.classList.toggle("active", isActive);
+      pill.setAttribute?.("aria-selected", String(isActive));
+    }
+    for (const element of panes) {
+      element.hidden = element.dataset.scSocketsPane !== active;
+    }
+
+    if (item?.uuid) {
+      GemDetailsUI.#activePanes.set(item.uuid, active);
+    }
   }
 
   static async #handleAddDamage(sheet, container, { sectionSelector, flag }) {
@@ -555,7 +689,9 @@ export class GemDetailsUI {
     const prefix = `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_RESOURCE}`;
     const readField = (suffix) => {
       const field = container.querySelector(`[name="${prefix}.${suffix}"]`);
-      return field instanceof HTMLInputElement ? field.value : undefined;
+      return field instanceof HTMLInputElement || field instanceof HTMLSelectElement
+        ? field.value
+        : undefined;
     };
     const readCheckbox = (suffix) => {
       const field = container.querySelector(`[name="${prefix}.${suffix}"]`);
@@ -567,14 +703,21 @@ export class GemDetailsUI {
       return;
     }
 
+    const existing = GemResourceService.getGemResource(item);
     const resource = GemResourceService.normalizeResource({
       key,
       max: readField("max"),
       value: readField("value"),
-      destroyOnEmpty: readCheckbox("destroyOnEmpty")
+      destroyOnEmpty: readCheckbox("destroyOnEmpty"),
+      recovery: {
+        period: readField("recovery.period"),
+        type: readField("recovery.type"),
+        // The formula and threshold inputs only render for their modes; keep
+        // the stored values so switching modes back and forth is lossless.
+        formula: readField("recovery.formula") ?? existing?.recovery?.formula,
+        threshold: readField("recovery.threshold") ?? existing?.recovery?.threshold
+      }
     });
-
-    const existing = GemResourceService.getGemResource(item);
     if (!resource) {
       if (existing) {
         await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_GEM_RESOURCE);
@@ -586,7 +729,11 @@ export class GemDetailsUI {
       && existing.key === resource.key
       && existing.max === resource.max
       && existing.value === resource.value
-      && existing.destroyOnEmpty === resource.destroyOnEmpty) {
+      && existing.destroyOnEmpty === resource.destroyOnEmpty
+      && existing.recovery.period === resource.recovery.period
+      && existing.recovery.type === resource.recovery.type
+      && existing.recovery.formula === resource.recovery.formula
+      && existing.recovery.threshold === resource.recovery.threshold) {
       return;
     }
 

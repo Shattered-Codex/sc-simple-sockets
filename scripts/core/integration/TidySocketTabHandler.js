@@ -220,7 +220,8 @@ export class TidySocketTabHandler {
     const idx = TidySocketTabHandler.#resolveIndex(target);
     if (idx === null) return;
 
-    await SocketGemSheetService.openFromHost(ItemSheetSync.syncSheetDocument(sheet, sheet.item), idx);
+    // Snapshot-backed sheets cannot persist edits, so they always open read-only.
+    await SocketGemSheetService.inspectFromHost(ItemSheetSync.syncSheetDocument(sheet, sheet.item), idx);
   }
 
   static async #handleOpenSocketSlotConfig(event, target, sheet) {

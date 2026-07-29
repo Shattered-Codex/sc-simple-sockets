@@ -1,0 +1,721 @@
+/* =========================================================
+   SC – Simple Sockets · unified configuration window
+   Shattered Codex design system — theme: verdant.
+   Tokens mirror styles.css from the design guide project;
+   everything is scoped under .sc-config-theme so other
+   modules (and core Foundry) are unaffected.
+   ========================================================= */
+
+.sc-config-theme {
+  /* --- Theme: Verdant --------------------------------------- */
+  --sc-accent:        #1fa971;
+  --sc-accent-soft:   #1fa97122;
+  --sc-accent-dim:    #14573e;
+
+  /* --- Surfaces --------------------------------------------- */
+  --sc-bg:            #15181a;
+  --sc-bg-1:          #1b1f22;
+  --sc-bg-2:          #232830;
+  --sc-bg-3:          #2c333b;
+  --sc-bg-hover:      #2f3741;
+
+  /* --- Borders ---------------------------------------------- */
+  --sc-border:        #2e353d;
+  --sc-border-soft:   #232a32;
+  --sc-border-strong: #4a5560;
+
+  /* --- Text ------------------------------------------------- */
+  --sc-text:          #e6e8ea;
+  --sc-text-dim:      #9aa3ad;
+  --sc-text-mute:     #6b7480;
+  --sc-text-on-acc:   #06231a;
+
+  /* --- Status ----------------------------------------------- */
+  --sc-danger:        #c94f4f;
+  --sc-warn:          #d09b3c;
+  --sc-warn-soft:     #d09b3c22;
+  --sc-success:       #4ab87a;
+  --sc-success-soft:  #4ab87a22;
+  --sc-info:          #4a8cd1;
+  --sc-info-soft:     #4a8cd122;
+
+  /* --- Shape / depth / type --------------------------------- */
+  --sc-radius-sm:     4px;
+  --sc-radius:        6px;
+  --sc-radius-lg:     10px;
+  --sc-density:       1;
+  --sc-shadow-lg:     0 18px 48px rgba(0, 0, 0, 0.55);
+  --sc-glow-accent:   0 0 0 1px var(--sc-accent), 0 0 16px var(--sc-accent-soft);
+  --sc-font-display:  "Cinzel", "IM Fell English SC", "Trajan Pro", serif;
+  --sc-font-body:     "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --sc-font-mono:     "JetBrains Mono", "Fira Code", ui-monospace, Menlo, monospace;
+}
+
+/* === Window chrome ======================================== */
+
+.sc-config-theme.application {
+  background: var(--sc-bg);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-lg);
+  box-shadow: var(--sc-shadow-lg);
+}
+
+.sc-config-theme.application,
+.sc-config-theme .window-content,
+.sc-config-theme form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.sc-config-theme.application .window-header {
+  background: var(--sc-bg-2);
+  border-top: 2px solid var(--sc-accent);
+  border-bottom: 1px solid var(--sc-border);
+  color: var(--sc-text);
+  font-family: var(--sc-font-display);
+  letter-spacing: 0.04em;
+}
+
+.sc-config-theme .window-content {
+  background: var(--sc-bg);
+  color: var(--sc-text);
+  padding: 0;
+}
+
+.sc-config-theme.application .window-header button,
+.sc-config-theme.application .window-header .header-button,
+.sc-config-theme.application .window-header .header-control,
+.sc-config-theme.application .window-header .window-control {
+  min-height: 1.8rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--sc-radius-sm);
+  background: transparent;
+  color: var(--sc-text-dim);
+  box-shadow: none;
+}
+
+.sc-config-theme.application .window-header button:hover,
+.sc-config-theme.application .window-header button:focus-visible,
+.sc-config-theme.application .window-header .header-button:hover,
+.sc-config-theme.application .window-header .header-button:focus-visible,
+.sc-config-theme.application .window-header .header-control:hover,
+.sc-config-theme.application .window-header .header-control:focus-visible,
+.sc-config-theme.application .window-header .window-control:hover,
+.sc-config-theme.application .window-header .window-control:focus-visible {
+  border: 0;
+  background: var(--sc-bg-hover);
+  color: var(--sc-text);
+  box-shadow: none;
+}
+
+/* === Shell layout ========================================= */
+
+.sc-config {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  font-family: var(--sc-font-body);
+  font-size: 13px;
+  color: var(--sc-text);
+}
+
+.sc-config__body {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  min-height: 0;
+}
+
+.sc-config__spacer {
+  flex: 1;
+}
+
+/* === Sidebar rail (archetype B) =========================== */
+
+.sc-config__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: calc(8px * var(--sc-density));
+  background: var(--sc-bg-1);
+  border-right: 1px solid var(--sc-border);
+  overflow-y: auto;
+}
+
+.sc-config__tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: calc(8px * var(--sc-density)) 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--sc-radius);
+  color: var(--sc-text-dim);
+  font: 600 12px/1.2 var(--sc-font-body);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.sc-config__tab:hover {
+  background: var(--sc-bg-hover);
+  color: var(--sc-text);
+}
+
+.sc-config__tab:focus-visible {
+  outline: none;
+  border-color: var(--sc-accent);
+}
+
+.sc-config__tab.is-active {
+  background: var(--sc-accent-soft);
+  border-color: var(--sc-accent);
+  color: var(--sc-accent);
+}
+
+.sc-config__tab i {
+  width: 14px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.sc-config__tab-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-config__tab-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--sc-warn);
+}
+
+/* === Content panels ======================================= */
+
+.sc-config__content {
+  min-width: 0;
+  overflow-y: auto;
+  padding: calc(16px * var(--sc-density)) calc(18px * var(--sc-density));
+}
+
+.sc-config__panel-head {
+  margin-bottom: calc(14px * var(--sc-density));
+}
+
+.sc-config__panel-title {
+  margin: 0;
+  border: 0;
+  font-family: var(--sc-font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sc-text);
+}
+
+.sc-config__panel-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--sc-text-dim);
+  max-width: 560px;
+}
+
+.sc-config__section-title {
+  margin: calc(18px * var(--sc-density)) 0 2px;
+  border: 0;
+  font-family: var(--sc-font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--sc-accent);
+}
+
+.sc-config__section-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  color: var(--sc-text-mute);
+}
+
+/* === Setting rows ========================================= */
+
+.sc-config__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.sc-config-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 14px;
+  align-items: center;
+  padding: calc(10px * var(--sc-density)) 0;
+  border-bottom: 1px solid var(--sc-border-soft);
+}
+
+.sc-config-row__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sc-config-row__name {
+  font-size: 12.5px;
+  color: var(--sc-text);
+}
+
+.sc-config-row__hint {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--sc-text-mute);
+}
+
+.sc-config-row__control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.sc-config-row__description {
+  grid-column: 1 / -1;
+  padding: 6px 8px;
+  border-left: 2px solid var(--sc-accent);
+  border-radius: var(--sc-radius-sm);
+  background: var(--sc-bg-1);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--sc-text-dim);
+}
+
+/* === Inputs / selects ===================================== */
+
+.sc-config .sc-input {
+  width: 100%;
+  height: calc(32px * var(--sc-density));
+  padding: 0 10px;
+  background: var(--sc-bg-3);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  color: var(--sc-text);
+  font: 13px var(--sc-font-body);
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+.sc-config .sc-input--number {
+  width: 90px;
+  text-align: right;
+  font-family: var(--sc-font-mono);
+  font-size: 12px;
+}
+
+.sc-config .sc-input:focus {
+  outline: none;
+  border-color: var(--sc-accent);
+  box-shadow: var(--sc-glow-accent);
+}
+
+.sc-config .sc-input::placeholder {
+  color: var(--sc-text-mute);
+}
+
+.sc-config .sc-select-wrap {
+  position: relative;
+  min-width: 220px;
+}
+
+.sc-config .sc-select {
+  width: 100%;
+  height: calc(32px * var(--sc-density));
+  padding: 0 30px 0 10px;
+  background: var(--sc-bg-3);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  color: var(--sc-text);
+  font: 13px var(--sc-font-body);
+  appearance: none;
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+.sc-config .sc-select:focus {
+  outline: none;
+  border-color: var(--sc-accent);
+  box-shadow: var(--sc-glow-accent);
+}
+
+.sc-config .sc-select-chev {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--sc-text-mute);
+  pointer-events: none;
+}
+
+/* === Checkbox (sc-check) ================================== */
+
+.sc-config .sc-check {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sc-config .sc-check input,
+.sc-config .sc-config-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sc-config .sc-check__box {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sc-bg-3);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-sm);
+  color: transparent;
+  font-size: 10px;
+  transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.sc-config .sc-check input:checked + .sc-check__box,
+.sc-config .sc-config-choice input:checked + .sc-check__box {
+  background: var(--sc-accent);
+  border-color: var(--sc-accent);
+  color: var(--sc-text-on-acc);
+}
+
+.sc-config .sc-check input:focus-visible + .sc-check__box,
+.sc-config .sc-config-choice input:focus-visible + .sc-check__box {
+  box-shadow: var(--sc-glow-accent);
+}
+
+/* === Choice grid (item types / gem subtypes) ============== */
+
+.sc-config-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 6px;
+}
+
+.sc-config-choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(7px * var(--sc-density)) 10px;
+  background: var(--sc-bg-2);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  cursor: pointer;
+  transition: background 120ms ease-out, border-color 120ms ease-out;
+}
+
+.sc-config-choice:hover {
+  background: var(--sc-bg-hover);
+}
+
+.sc-config-choice:has(input:checked) {
+  background: var(--sc-accent-soft);
+  border-color: var(--sc-accent);
+}
+
+.sc-config-choice__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--sc-text);
+}
+
+.sc-config-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border: 1px solid var(--sc-info);
+  border-radius: 999px;
+  background: var(--sc-info-soft);
+  color: var(--sc-info);
+  font: 600 9px/1 var(--sc-font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* === Custom subtype manager =============================== */
+
+.sc-config-custom {
+  display: flex;
+  flex-direction: column;
+}
+
+.sc-config-custom__head,
+.sc-config-custom__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 32px;
+  gap: 8px;
+  align-items: center;
+}
+
+.sc-config-custom__head {
+  padding: 0 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--sc-text-mute);
+}
+
+.sc-config-custom__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sc-config-custom__row {
+  padding: 6px 0;
+  border-top: 1px solid var(--sc-border-soft);
+}
+
+.sc-config-custom__add {
+  align-self: flex-start;
+  margin-top: 10px;
+}
+
+/* === Icon button ========================================== */
+
+.sc-config .sc-icon-btn {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sc-bg-2);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  color: var(--sc-text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.sc-config .sc-icon-btn:hover {
+  background: var(--sc-bg-hover);
+  color: var(--sc-text);
+}
+
+.sc-config .sc-icon-btn--danger {
+  color: var(--sc-danger);
+}
+
+.sc-config .sc-icon-btn--danger:hover {
+  background: color-mix(in srgb, var(--sc-danger) 12%, transparent);
+  color: var(--sc-danger);
+}
+
+/* === Footer =============================================== */
+
+.sc-config__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: calc(10px * var(--sc-density)) 14px;
+  background: var(--sc-bg-1);
+  border-top: 1px solid var(--sc-border-strong);
+}
+
+/* === Buttons ============================================== */
+
+.sc-config .sc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: calc(32px * var(--sc-density));
+  padding: 0 12px;
+  background: var(--sc-bg-2);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius);
+  color: var(--sc-text);
+  font: 600 12px/1 var(--sc-font-body);
+  cursor: pointer;
+  transition: background 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
+}
+
+.sc-config .sc-btn:hover {
+  background: var(--sc-bg-hover);
+  box-shadow: none;
+}
+
+.sc-config .sc-btn:focus-visible {
+  outline: none;
+  border-color: var(--sc-accent);
+}
+
+.sc-config .sc-btn--sm {
+  height: calc(26px * var(--sc-density));
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.sc-config .sc-btn--primary {
+  background: var(--sc-accent);
+  border-color: var(--sc-accent);
+  color: var(--sc-text-on-acc);
+}
+
+.sc-config .sc-btn--primary:hover {
+  background: var(--sc-accent-dim);
+  border-color: var(--sc-accent-dim);
+  color: var(--sc-text);
+}
+
+.sc-config .sc-btn--primary.is-dirty {
+  box-shadow: var(--sc-glow-accent);
+}
+
+.sc-config .sc-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--sc-text-dim);
+}
+
+.sc-config .sc-btn--ghost:hover {
+  background: var(--sc-bg-hover);
+  color: var(--sc-text);
+}
+
+/* === Status pill (saved / unsaved) ======================== */
+
+.sc-config-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--sc-border);
+  border-radius: 999px;
+  background: var(--sc-bg-2);
+  color: var(--sc-text-dim);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sc-config-pill__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--sc-text-mute);
+}
+
+.sc-config-pill--unsaved {
+  background: var(--sc-warn-soft);
+  border-color: var(--sc-warn);
+  color: var(--sc-warn);
+}
+
+.sc-config-pill--unsaved .sc-config-pill__dot {
+  background: var(--sc-warn);
+}
+
+.sc-config-pill--saved {
+  background: var(--sc-success-soft);
+  border-color: var(--sc-success);
+  color: var(--sc-success);
+}
+
+.sc-config-pill--saved .sc-config-pill__dot {
+  background: var(--sc-success);
+}
+
+/* === Scrollbars =========================================== */
+
+.sc-config__content::-webkit-scrollbar,
+.sc-config__rail::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.sc-config__content::-webkit-scrollbar-track,
+.sc-config__rail::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sc-config__content::-webkit-scrollbar-thumb,
+.sc-config__rail::-webkit-scrollbar-thumb {
+  background: var(--sc-bg-3);
+  border-radius: 6px;
+}
+
+.sc-config__content::-webkit-scrollbar-thumb:hover,
+.sc-config__rail::-webkit-scrollbar-thumb:hover {
+  background: var(--sc-border-strong);
+}
+
+/* === Narrow windows: rail collapses to icons ============== */
+
+@media (max-width: 640px) {
+  .sc-config__body {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .sc-config__tab {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  /* Visually hidden but kept in the accessibility tree: the tab icons are
+     aria-hidden, so this text is the button's only accessible name. */
+  .sc-config__tab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .sc-config__tab-dot {
+    position: absolute;
+    transform: translate(12px, -8px);
+  }
+}
+
+/* === Reduced motion ======================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-config *,
+  .sc-config-theme * {
+    transition: none !important;
+  }
+}

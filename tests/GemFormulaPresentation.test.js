@@ -20,10 +20,13 @@ function createGem({ name = "Ruby", img = "icons/ruby.webp", damage = [] } = {})
   });
 }
 
-function createHost({ type = "weapon", gems = [], activities } = {}) {
+function createHost({ type = "weapon", gems = [], activities, damage } = {}) {
   const system = {};
   if (activities !== undefined) {
     system.activities = activities;
+  }
+  if (damage !== undefined) {
+    system.damage = damage;
   }
   return createTestItem({
     type,
@@ -242,7 +245,7 @@ describe("GemFormulaPresentation", () => {
     assert.deepEqual(entries[1].typeDetails, [{ value: "cold", label: "Cold", icon: null }]);
   });
 
-  test("inherit entries expose no type icon metadata", () => {
+  test("inherit entries expose no type icon metadata when the host has no damage type", () => {
     const gem = createGem({
       damage: [{ number: 1, die: "d8", types: [Constants.GEM_DAMAGE_INHERIT_TYPE] }]
     });
@@ -250,6 +253,44 @@ describe("GemFormulaPresentation", () => {
 
     const entries = GemFormulaPresentation.collectEntries(host);
     assert.deepEqual(entries[0].typeDetails, []);
+  });
+
+  test("inherit entries resolve the host weapon's base damage type", () => {
+    const gem = createGem({
+      damage: [{ number: 1, die: "d4", types: [Constants.GEM_DAMAGE_INHERIT_TYPE] }]
+    });
+    const host = createHost({
+      gems: [gem],
+      damage: { base: { types: new Set(["fire"]) } }
+    });
+
+    const entries = GemFormulaPresentation.collectEntries(host);
+    assert.deepEqual(entries[0].typeDetails, [{
+      value: "fire",
+      label: "Same as host (Fire)",
+      icon: "systems/dnd5e/icons/svg/damage/fire.svg"
+    }]);
+    assert.equal(entries[0].typeLabel, "Same as host (Fire)");
+  });
+
+  test("inherit entries fall back to activity damage parts for hosts without base damage", () => {
+    const gem = createGem({
+      damage: [{ number: 1, die: "d4", types: [Constants.GEM_DAMAGE_INHERIT_TYPE], activity: "spell" }]
+    });
+    const host = createHost({
+      type: "spell",
+      gems: [gem],
+      activities: { a1: { type: "save", damage: { parts: [{ types: ["cold"] }] } } }
+    });
+
+    const entries = GemFormulaPresentation.collectEntries(host);
+    assert.equal(entries.length, 1);
+    assert.deepEqual(entries[0].typeDetails, [{
+      value: "cold",
+      label: "Same as host (Cold)",
+      icon: null
+    }]);
+    assert.equal(entries[0].typeLabel, "Same as host (Cold)");
   });
 
   test("tooltip renders damage type icons with text fallback", () => {

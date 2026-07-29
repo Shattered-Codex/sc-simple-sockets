@@ -10,9 +10,9 @@ import { SocketSlotConfigService } from "./SocketSlotConfigService.js";
 import { ItemSheetSync } from "../support/ItemSheetSync.js";
 import { DebugTrace } from "../support/DebugTrace.js";
 import { HostItemUpdateService } from "../support/HostItemUpdateService.js";
+import { HostOperationQueue } from "../support/HostOperationQueue.js";
 
 export class SocketService {
-  static #operationQueues = new Map();
   static REMOVE_GEM_MODE_DEFAULT = "default";
   static REMOVE_GEM_MODE_KEEP = "keep";
   static REMOVE_GEM_MODE_DELETE = "delete";
@@ -595,25 +595,10 @@ export class SocketService {
 
   static async #enqueueHostOperation(hostItem, operation) {
     const currentHostItem = SocketService.#resolveHostItem(hostItem);
-    const key = SocketService.#hostOperationKey(currentHostItem);
-    if (!key) {
-      return operation(currentHostItem);
-    }
-
-    const previous = SocketService.#operationQueues.get(key) ?? Promise.resolve();
-    const next = previous
-      .catch(() => undefined)
-      .then(() => operation(SocketService.#resolveHostItem(currentHostItem)));
-
-    SocketService.#operationQueues.set(key, next);
-
-    try {
-      return await next;
-    } finally {
-      if (SocketService.#operationQueues.get(key) === next) {
-        SocketService.#operationQueues.delete(key);
-      }
-    }
+    return HostOperationQueue.enqueue(
+      currentHostItem,
+      () => operation(SocketService.#resolveHostItem(currentHostItem))
+    );
   }
 
   static #resolveHostItem(hostItem) {
@@ -721,19 +706,6 @@ export class SocketService {
     return SocketService.#resolveHostItem(currentHostItem);
   }
 
-  static #hostOperationKey(hostItem) {
-    if (!hostItem) {
-      return null;
-    }
-
-    const parentUuid = hostItem.parent?.uuid ?? "world";
-    const itemId = hostItem.id ?? hostItem.uuid ?? null;
-    if (!itemId) {
-      return null;
-    }
-
-    return `${parentUuid}:${itemId}`;
-  }
 
   static #emitSocketAdded(hostItem, { slotIndex, slot, totalSlots }) {
     Hooks.callAll(Constants.HOOK_SOCKET_ADDED, {
