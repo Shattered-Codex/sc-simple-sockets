@@ -38,6 +38,10 @@ Gems can now do more than provide passive bonuses:
 - Actions can spend charges from one gem, several gems on the same item, or compatible socketed items across the character.
 - Socket counts can act as native item charges: use `@sc.sockets.total` or `@sc.sockets.gems` in an item's Limited Uses, consume them with **Item Uses**, and recover them with the item's own Recovery configuration.
 - Socket counts also work in the **Value** of an Active Effect change, so a bonus can scale with sockets. Three counts — `total`, `gems`, `empty` — in two scopes: `@sc.sockets.gems` counts the item that grants the effect, `@sc.sockets.actor.gems` counts the whole character. Arithmetic is allowed, so `@sc.sockets.gems * 2` or `floor(@sc.sockets.actor.total / 2)` work as values.
+- Activities copied from a socketed gem keep their internal `sc-chain` and
+  `sc-conditional-chain` references after Foundry assigns new activity IDs.
+- Macros and integrations can create sockets and insert gems through the public
+  socket API, using a specific slot or the first empty slot automatically.
 - Charges remain with the gem when it is removed and returned to inventory.
 - Gem tags make it easier to create sockets that accept a category such as `fire`, `poison`, or `healing`.
 - The optional **SC More Activities** integration can insert gems, extract gems, recharge one gem, or recharge a shared pool.
@@ -470,7 +474,23 @@ That makes it easier to see:
 
 ![Module overview image](https://i.imgur.com/pQOiRzu.png)
 
+### Transferred chained activities
 
+When a socketed gem provides activities, Foundry copies those activities onto
+the host item and assigns new IDs. The module also updates references used by
+the **SC More Activities** `sc-chain` and `sc-conditional-chain` activity types,
+so their steps continue to point to the copied activities.
+
+For example, a gem can contain these three activities:
+
+1. **Flame Strike**
+2. **Ember Push**
+3. **Ruby Combo**, an `sc-chain` that runs Flame Strike and then Ember Push
+
+After the gem is inserted, Ruby Combo on the host item uses the copied Flame
+Strike and Ember Push rather than the source IDs stored on the gem. References
+to a source activity that could not be transferred are removed; references to
+activities outside the gem are preserved.
 
 ### Tidy5e integration
 
@@ -653,7 +673,11 @@ count. Everything else remains native:
 - The native **Item Uses** consumption type on any of the item's activities.
 - The native **Recovery** configuration on the item, including recharge rolls.
   Recovery formulas can use the socket counts too, for example `@sc.sockets.gems`.
-- Editing the **Spent** field on the item sheet or the value on the actor sheet.
+
+While either exact socket-count binding is active, the **Spent** field on the
+item sheet and its uses value on the actor sheet are read-only. Native Item Uses
+consumption and Recovery still update the pool normally; the lock prevents a
+manual edit from conflicting with the live socket-derived maximum.
 
 This is the simplest way to say "this staff has one use per socketed gem,
 recovered on a long rest": bind the maximum, add an **Item Uses** consumption
@@ -948,7 +972,7 @@ game.modules.get("sc-simple-sockets").api
 ### Socket functions
 
 ```js
-const api = game.modules.get("sc-simple-sockets")?.api?.sockets;
+const sockets = game.modules.get("sc-simple-sockets")?.api?.sockets;
 ```
 
 You can call:
@@ -956,6 +980,8 @@ You can call:
 - `getItemSlots(itemOrUuid)`
 - `getItemGems(itemOrUuid)`
 - `hasItemGemTag(itemOrUuid, tag)`
+- `addSlot(itemOrUuid, options?)`
+- `addGem(itemOrUuid, gemOrUuid, slotIndex?, options?)`
 - `removeGem(itemOrUuid, slotIndex, options)`
 - `removeGemKeepingItem(itemOrUuid, slotIndex)`
 
@@ -964,6 +990,89 @@ In simple terms:
 - one function lists all sockets on an item
 - another lists only the gems currently socketed in that item, including their normalized `tags`
 - `hasItemGemTag` checks whether at least one socketed gem has a specific tag
+- `addSlot` creates one empty socket and accepts the same optional slot
+  configuration used by the item sheet
+- `addGem` inserts a gem in the requested zero-based slot, or in the first empty
+  slot when `slotIndex` is omitted; both the host item and gem can be Item
+  documents or UUIDs. The normal permission, gem type, host compatibility, and
+  slot condition checks still apply.
+
+Create one default socket:
+
+```js
+const result = await sockets.addSlot(item);
+
+if (!result.success) {
+  ui.notifications.warn(`Could not add the socket: ${result.reason}`);
+}
+```
+
+Create a configured socket:
+
+```js
+await sockets.addSlot(item.uuid, {
+  slotConfig: {
+    name: "Ruby Socket",
+    description: "Accepts one adornment ruby.",
+    condition: "return hasGemTag('adornment-ruby');",
+    color: "#9f1239",
+    deleteGemOnRemoval: false
+  }
+});
+```
+
+The normal edit permission, socketable item type, and world maximum socket
+setting still apply. `result.data.slotIndex` is the zero-based index of the new
+slot and `result.data.totalSlots` is the new total.
+
+To bring an item up to twice an actor's proficiency bonus without adding
+duplicates when the macro runs again:
+
+```js
+const desiredSlots = Math.max(Number(actor.system.attributes.prof) || 0, 0) * 2;
+const currentSlots = await sockets.getItemSlots(item);
+
+for (let index = currentSlots.length; index < desiredSlots; index += 1) {
+  const result = await sockets.addSlot(item);
+  if (!result.success) {
+    ui.notifications.warn(`Stopped creating sockets: ${result.reason}`);
+    break;
+  }
+}
+```
+
+Set **Maximum Number of Sockets per Item** high enough for the intended result;
+at proficiency bonus 6, this example needs a limit of at least 12.
+
+Insert gems after the empty sockets exist:
+
+```js
+// Uses the first empty slot.
+const automaticResult = await sockets.addGem(item, gem);
+console.log(automaticResult.data.slotIndex);
+
+// Uses slot index 1 (the second slot).
+const selectedResult = await sockets.addGem(item.uuid, gem.uuid, 1);
+
+if (!selectedResult.success) {
+  ui.notifications.warn(`Could not socket the gem: ${selectedResult.reason}`);
+}
+```
+
+The automatic form checks the first empty slot. If that slot has a condition,
+the gem must satisfy it; the API does not skip ahead to a later empty slot. An
+explicit occupied slot follows the module's normal replacement rules, including
+whether the previous gem is returned or deleted.
+
+Mutation calls return the same structured shape:
+
+| Field | Meaning |
+| --- | --- |
+| `success` | Whether the operation completed successfully |
+| `changed` | Whether the host item changed |
+| `reason` | A stable result code such as `slot-added`, `max-sockets-reached`, `gem-added`, `no-available-slot`, `gem-incompatible`, or `socket-condition-failed` |
+| `data.slotIndex` | The zero-based slot created or used by a successful mutation |
+| `data.totalSlots` | The new socket count after `addSlot` |
 
 Example for **SC - Conditional Activities**:
 

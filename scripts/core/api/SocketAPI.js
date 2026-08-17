@@ -20,6 +20,10 @@ export class SocketAPI {
         SocketAPI.getItemGems(itemOrUuid, options);
       module.api.sockets.hasItemGemTag = async (itemOrUuid, tag) =>
         SocketAPI.hasItemGemTag(itemOrUuid, tag);
+      module.api.sockets.addSlot = async (itemOrUuid, options = {}) =>
+        SocketAPI.addSlot(itemOrUuid, options);
+      module.api.sockets.addGem = async (itemOrUuid, gemOrUuid, slotIndex = null, options = {}) =>
+        SocketAPI.addGem(itemOrUuid, gemOrUuid, slotIndex, options);
       module.api.sockets.removeGem = async (itemOrUuid, slotIndex, options = {}) =>
         SocketAPI.removeGem(itemOrUuid, slotIndex, options);
       module.api.sockets.removeGemKeepingItem = async (itemOrUuid, slotIndex, options = {}) =>
@@ -115,19 +119,8 @@ export class SocketAPI {
       return SocketAPI.#buildResult({ success: false, changed: false, reason: "item-not-found" });
     }
 
-    const beforeCount = SocketAPI.#slotCount(item);
     const result = await SocketService.addSlot(item, options);
-    const currentItem = await SocketAPI.#resolveCurrentItem(item);
-    const afterCount = SocketAPI.#slotCount(currentItem);
-    const createdIndex = afterCount > beforeCount ? afterCount - 1 : null;
-
-    return SocketAPI.#buildResult({
-      success: afterCount > beforeCount,
-      changed: afterCount > beforeCount,
-      reason: afterCount > beforeCount ? "slot-added" : "slot-not-added",
-      slotIndex: createdIndex,
-      totalSlots: afterCount
-    });
+    return SocketAPI.#buildResult(result);
   }
 
   static async removeSlot(itemOrUuid, slotIndex, options = {}) {
@@ -195,6 +188,27 @@ export class SocketAPI {
     }
 
     const result = await SocketService.removeGem(item, idx, options);
+    return SocketAPI.#buildResult(result);
+  }
+
+  static async addGem(itemOrUuid, gemOrUuid, slotIndex = null, options = {}) {
+    const item = await SocketAPI.#resolveItem(itemOrUuid);
+    if (!item) {
+      return SocketAPI.#buildResult({ success: false, changed: false, reason: "item-not-found" });
+    }
+
+    if (slotIndex && typeof slotIndex === "object") {
+      options = slotIndex;
+      slotIndex = options.slotIndex ?? null;
+    }
+
+    const hasExplicitSlot = slotIndex !== null && slotIndex !== undefined;
+    const idx = hasExplicitSlot ? Number(slotIndex) : null;
+    if (hasExplicitSlot && (!Number.isInteger(idx) || idx < 0)) {
+      return SocketAPI.#buildResult({ success: false, changed: false, reason: "invalid-slot-index" });
+    }
+
+    const result = await SocketService.addGem(item, idx, gemOrUuid, options);
     return SocketAPI.#buildResult(result);
   }
 
