@@ -51,7 +51,32 @@ Use the same world content on both targets:
 - Confirm extra gem damage is added to the damage workflow.
 - Confirm crit threshold/multiplier logic still applies when configured on the gem.
 
-## 7. Regression Sweep
+## 7. Socket Counts in Active Effects
+
+Foundry resolves effect change values differently on the two generations
+(v13 does not resolve `@` paths in changes at all), so this section must be run
+on both.
+
+- On an item with sockets, add an Active Effect with the change
+  `system.attributes.ac.bonus` / `Add` / `@sc.sockets.gems`.
+- Equip the item and confirm the actor AC rises by the number of socketed gems.
+- Socket another gem with the actor sheet open and confirm AC rises by one more,
+  without reopening the sheet. Extract it and confirm AC drops back.
+- Put another socketed gem on a second item the actor owns, then hover the AC
+  value and confirm the breakdown tooltip credits the effect with the item count,
+  not the character total.
+- With that second item still holding an empty socket, change the value to
+  `max(0, 2 - @sc.sockets.empty * 2)` on a fully socketed item and confirm the
+  effect is listed in the tooltip with +2 — it evaluates to zero against the
+  character totals, which is where dnd5e would otherwise drop it from the list.
+- Change the value to `@sc.sockets.gems * 2` and confirm the bonus doubles on
+  both generations.
+- Change the value to `@sc.sockets.actor.gems` and confirm it counts the gems of
+  every item the actor owns, including unequipped ones.
+- Unequip (or break attunement on) the item and confirm the bonus disappears.
+- Confirm the console shows no `failed to resolve` warning for the change.
+
+## 8. Regression Sweep
 
 - Reload the world.
 - Reopen a previously socketed item and actor.

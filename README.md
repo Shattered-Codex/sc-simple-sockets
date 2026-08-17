@@ -37,6 +37,7 @@ Gems can now do more than provide passive bonuses:
 - A gem can carry its own limited resource, such as energy, ammunition, or magic charges.
 - Actions can spend charges from one gem, several gems on the same item, or compatible socketed items across the character.
 - Socket counts can act as native item charges: use `@sc.sockets.total` or `@sc.sockets.gems` in an item's Limited Uses, consume them with **Item Uses**, and recover them with the item's own Recovery configuration.
+- Socket counts also work in the **Value** of an Active Effect change, so a bonus can scale with sockets. Three counts — `total`, `gems`, `empty` — in two scopes: `@sc.sockets.gems` counts the item that grants the effect, `@sc.sockets.actor.gems` counts the whole character. Arithmetic is allowed, so `@sc.sockets.gems * 2` or `floor(@sc.sockets.actor.total / 2)` work as values.
 - Charges remain with the gem when it is removed and returned to inventory.
 - Gem tags make it easier to create sockets that accept a category such as `fire`, `poison`, or `healing`.
 - The optional **SC More Activities** integration can insert gems, extract gems, recharge one gem, or recharge a shared pool.
@@ -642,6 +643,9 @@ including **Limited Uses → Max** on the item and on activities:
 | `@sc.sockets.actor.gems` | Socketed gems across the whole character |
 | `@sc.sockets.actor.empty` | Empty sockets across the whole character |
 
+The same paths work in Active Effects, where the item scope becomes the item that
+grants the effect — see [Socket counts in Active Effects](#socket-counts-in-active-effects).
+
 Setting an item's **Limited Uses → Max** to exactly `@sc.sockets.gems` or
 `@sc.sockets.total` makes the native dnd5e Item Uses pool follow that socket
 count. Everything else remains native:
@@ -679,6 +683,81 @@ The item's native recovery supports Recover All Uses, Lose All Uses, recharge,
 and Custom Formula. Socket counts are available in that formula. For example,
 `floor(@sc.sockets.gems / 2)` recovers half the number of socketed gems, while
 `floor(@item.uses.max / 2)` recovers half the item's maximum uses.
+
+#### Socket counts in Active Effects
+
+The same counts work in the **Value** of an Active Effect change, so an item can
+scale a bonus with its own sockets. "+1 AC for each socketed gem" is a single
+change on the item that has the sockets:
+
+| Attribute Key | Change Mode | Value |
+| --- | --- | --- |
+| `system.attributes.ac.bonus` | Add | `@sc.sockets.gems` |
+
+`@sc.sockets.gems` is the count itself, so it already means "+1 per gem".
+
+##### Every path available in an effect
+
+Three counts, in two scopes. The scope segment is optional and defaults to the
+item that grants the effect:
+
+| Formula | Value |
+| --- | --- |
+| `@sc.sockets.total` | Socket slots on the item that grants the effect |
+| `@sc.sockets.gems` | Socketed gems on that item |
+| `@sc.sockets.empty` | Empty sockets on that item |
+| `@sc.sockets.item.total` | Explicit spelling of `@sc.sockets.total` |
+| `@sc.sockets.item.gems` | Explicit spelling of `@sc.sockets.gems` |
+| `@sc.sockets.item.empty` | Explicit spelling of `@sc.sockets.empty` |
+| `@sc.sockets.actor.total` | Socket slots across the whole character |
+| `@sc.sockets.actor.gems` | Socketed gems across the whole character |
+| `@sc.sockets.actor.empty` | Empty sockets across the whole character |
+
+`gems + empty` always equals `total`. The `.item` spellings exist only for
+readability — they are the same numbers as the bare paths.
+
+##### Recipes
+
+| You want | Value |
+| --- | --- |
+| +1 per gem on this item | `@sc.sockets.gems` |
+| +2 per gem on this item | `@sc.sockets.gems * 2` |
+| +1 for every two gems | `floor(@sc.sockets.gems / 2)` |
+| +1 per socket, filled or not | `@sc.sockets.total` |
+| A penalty per empty socket | `-@sc.sockets.empty` |
+| +1 per gem anywhere on the character | `@sc.sockets.actor.gems` |
+| +2 only while every socket is filled | `max(0, 2 - @sc.sockets.empty * 2)` |
+| Scaling with something else too | `@sc.sockets.gems + @abilities.dex.mod` |
+
+Any dnd5e formula field accepts these, not just AC: `system.bonuses.mwak.damage`,
+`system.attributes.hp.bonuses.overall`, `system.bonuses.spell.dc`, and so on.
+Mixing a socket count with another `@` path is the one case that needs a formula
+field rather than a plain numeric one on Foundry v13, since v13 hands plain
+numeric targets to `Number()` and cannot evaluate a leftover expression. Values
+built only from socket counts work on any target, on both generations.
+
+##### Points worth knowing
+
+- The **item scope is the item carrying the effect**. An effect that lives
+  directly on the actor has no item scope and counts zero sockets there; use the
+  `.actor` counts for that case.
+- Only **filled** sockets count as gems. An empty socket is `@sc.sockets.empty`.
+- The bonus is **live**: socketing or extracting a gem re-prepares the actor and
+  the effect is re-evaluated immediately.
+- Effects from an unequipped or unattuned item are suppressed by dnd5e as usual,
+  so the bonus follows the item's equipped state without extra configuration.
+- The AC breakdown tooltip on the actor sheet reports the same number the effect
+  actually applied, for both scopes — including a value that only becomes
+  non-zero in the item scope, such as the `max(0, …)` recipe above.
+- Anything **outside** the table above is left untouched for dnd5e to resolve.
+  A near miss such as `@sc.sockets.gems.max` is not silently turned into a
+  number: it stays unresolved so the system reports it.
+- Both Foundry v13 and v14 are supported. The counts are resolved into literal
+  numbers before the change reaches the system, so a value such as
+  `@sc.sockets.gems * 2` behaves identically on both.
+- The per-resource pools (`@sockets.<resource>.*`) are **not** available in
+  effects — those are item-scoped formulas for Limited Uses and recovery. Only
+  the socket counts above cross into Active Effects.
 
 ## Example Gem Setup
 

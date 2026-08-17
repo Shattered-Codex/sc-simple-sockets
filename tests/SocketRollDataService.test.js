@@ -193,6 +193,18 @@ describe("SocketRollDataService", () => {
     );
   });
 
+  test("reports the socket counts of a single item and of a whole actor", () => {
+    const sword = makeItem("Sword", [makeSlot("Soul A", "soul", 1, 2), {}]);
+    const armor = makeItem("Armor", [makeSlot("Mana", "mana", 1, 2)]);
+    const actor = { items: new Set([sword, armor]) };
+    sword.actor = actor;
+    armor.actor = actor;
+
+    assert.deepEqual(SocketRollDataService.countItem(sword), { total: 2, gems: 1, empty: 1 });
+    assert.deepEqual(SocketRollDataService.countActor(actor), { total: 3, gems: 2, empty: 1 });
+    assert.deepEqual(SocketRollDataService.countActor(null), { total: 0, gems: 0, empty: 0 });
+  });
+
   test("wraps Item5e.getRollData and preserves the original roll data", () => {
     class Item5e {
       constructor() {
@@ -212,25 +224,60 @@ describe("SocketRollDataService", () => {
       }
     }
 
-    globalThis.dnd5e = { documents: { Item5e } };
-    let registration;
+    class Actor5e {
+      constructor(items = []) {
+        this.items = items;
+      }
+
+      getRollData(options) {
+        return { original: options?.marker, sc: { custom: 5 } };
+      }
+    }
+
+    globalThis.dnd5e = { documents: { Item5e, Actor5e } };
+    const prototypes = {
+      "dnd5e.documents.Item5e.prototype.getRollData": Item5e.prototype,
+      "dnd5e.documents.Actor5e.prototype.getRollData": Actor5e.prototype
+    };
+    const registrations = [];
     globalThis.libWrapper = {
       register(moduleId, target, wrapper, type) {
-        registration = { moduleId, target, type };
-        const original = Item5e.prototype.getRollData;
-        Item5e.prototype.getRollData = function (...args) {
+        registrations.push({ moduleId, target, type });
+        const owner = prototypes[target];
+        const original = owner.getRollData;
+        owner.getRollData = function (...args) {
           return wrapper.call(this, original.bind(this), ...args);
         };
       }
     };
     SocketRollDataService.activate();
 
+    assert.deepEqual(registrations, [
+      {
+        moduleId: Constants.MODULE_ID,
+        target: "dnd5e.documents.Item5e.prototype.getRollData",
+        type: "WRAPPER"
+      },
+      {
+        moduleId: Constants.MODULE_ID,
+        target: "dnd5e.documents.Actor5e.prototype.getRollData",
+        type: "WRAPPER"
+      }
+    ]);
+
+    const actorData = new Actor5e([new Item5e(), new Item5e()]).getRollData({ marker: "kept" });
+    assert.equal(actorData.original, "kept");
+    assert.equal(actorData.sc.custom, 5);
+    assert.equal(actorData.sc.sockets.total, 2);
+    assert.equal(actorData.sc.sockets.gems, 2);
+    assert.equal(actorData.sc.sockets.empty, 0);
+    assert.equal(actorData.sc.sockets.actor.gems, 2);
+    assert.equal(String(actorData.sc.sockets), "2");
+    // The resource pools are item-scoped only: aggregating them expands every
+    // gem snapshot, which must stay out of the actor hot path.
+    assert.equal(actorData.sockets, undefined);
+
     const data = new Item5e().getRollData({ marker: "kept" });
-    assert.deepEqual(registration, {
-      moduleId: Constants.MODULE_ID,
-      target: "dnd5e.documents.Item5e.prototype.getRollData",
-      type: "WRAPPER"
-    });
     assert.equal(data.original, "kept");
     assert.equal(data.sockets.external.current, 9);
     assert.equal(data.sockets.energy.current, 2);

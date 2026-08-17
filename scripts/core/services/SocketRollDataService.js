@@ -16,12 +16,34 @@ import { GemResourceService } from "../../domain/gems/GemResourceService.js";
  * - `@sc.sockets.gems`  — currently socketed gems on this item
  * - `@sc.sockets.empty` — empty sockets on this item
  * - `@sc.sockets.actor.total|gems|empty` — the same counts across the actor
+ *
+ * Actor roll data carries the `@sc.sockets.*` counts too, scoped to every item
+ * the actor owns. Only an item knows a narrower scope, so at actor level the
+ * root values and the `actor` values are the same numbers. Active Effect change
+ * values are resolved against actor roll data, which is why they need to exist
+ * there; the per-item scope inside an effect is handled by
+ * SocketEffectFormulaService.
+ *
+ * The `@sockets.*` resource pools stay out of actor roll data on purpose: they
+ * are only meaningful per item, and aggregating them means expanding every
+ * socketed gem snapshot, which is far too expensive for a namespace nothing
+ * reads at actor scope.
  */
 export class SocketRollDataService {
-  static #activated = false;
+  static #itemActivated = false;
+  static #actorActivated = false;
 
   static activate() {
-    if (SocketRollDataService.#activated || game?.system?.id !== "dnd5e") {
+    if (game?.system?.id !== "dnd5e") {
+      return;
+    }
+
+    SocketRollDataService.#activateItemRollData();
+    SocketRollDataService.#activateActorRollData();
+  }
+
+  static #activateItemRollData() {
+    if (SocketRollDataService.#itemActivated) {
       return;
     }
 
@@ -64,7 +86,50 @@ export class SocketRollDataService {
       };
     }
 
-    SocketRollDataService.#activated = true;
+    SocketRollDataService.#itemActivated = true;
+  }
+
+  static #activateActorRollData() {
+    if (SocketRollDataService.#actorActivated) {
+      return;
+    }
+
+    const ActorClass = globalThis.dnd5e?.documents?.Actor5e ?? globalThis.CONFIG?.Actor?.documentClass;
+    const original = ActorClass?.prototype?.getRollData;
+    if (typeof original !== "function") {
+      console.warn(`[${Constants.MODULE_ID}] Actor.getRollData was not found; actor socket formula data is unavailable.`);
+      return;
+    }
+
+    const enrich = function (wrapped, ...args) {
+      const data = wrapped.call(this, ...args) ?? {};
+      // dnd5e returns a shallow copy of the actor's system data here, so the
+      // namespace below is added to the roll data only, never persisted. This is
+      // the hot path shared with every item's roll data, so it stays a count
+      // walk: no gem snapshot is expanded here.
+      const counts = SocketRollDataService.#countItems(Array.from(this.items ?? []));
+      const existingSc = data.sc && typeof data.sc === "object" ? data.sc : {};
+      data.sc = SocketRollDataService.#withNumericFallback({
+        ...existingSc,
+        sockets: SocketRollDataService.#formatActorCounts(counts)
+      }, 0);
+      return data;
+    };
+
+    if (globalThis.libWrapper?.register && globalThis.dnd5e?.documents?.Actor5e) {
+      libWrapper.register(
+        Constants.MODULE_ID,
+        "dnd5e.documents.Actor5e.prototype.getRollData",
+        enrich,
+        "WRAPPER"
+      );
+    } else {
+      ActorClass.prototype.getRollData = function (...args) {
+        return enrich.call(this, original, ...args);
+      };
+    }
+
+    SocketRollDataService.#actorActivated = true;
   }
 
   /**
@@ -86,6 +151,24 @@ export class SocketRollDataService {
   }
 
   /**
+   * Raw socket counts for a single item, with no actor scope attached.
+   * @param {Item} item Item to count sockets on.
+   * @returns {{total: number, gems: number, empty: number}}
+   */
+  static countItem(item) {
+    return SocketRollDataService.#countItems([item]);
+  }
+
+  /**
+   * Raw socket counts across every item the actor owns.
+   * @param {Actor} actor Actor to count sockets on.
+   * @returns {{total: number, gems: number, empty: number}}
+   */
+  static countActor(actor) {
+    return SocketRollDataService.#countItems(Array.from(actor?.items ?? []));
+  }
+
+  /**
    * Scans the item scope and the actor scope. An unowned item shares a single
    * scan between both scopes, since the two would walk the same slots.
    */
@@ -94,6 +177,32 @@ export class SocketRollDataService {
     if (!item?.actor?.items) return { itemScan, actorScan: itemScan };
     const actorScan = SocketRollDataService.#scanItems([item, ...Array.from(item.actor.items)]);
     return { itemScan, actorScan };
+  }
+
+  /**
+   * Counts sockets without resolving what the gems provide. Aggregating the
+   * resource pools has to expand every gem snapshot, so the count-only walk is
+   * what the actor hot path uses.
+   */
+  static #countItems(items) {
+    const counts = { total: 0, gems: 0, empty: 0 };
+    const seen = new Set();
+    for (const item of Array.isArray(items) ? items : []) {
+      if (!item) continue;
+      const identity = item.id ?? item;
+      if (seen.has(identity)) continue;
+      seen.add(identity);
+
+      for (const slot of SocketStore.peekSlots(item)) {
+        counts.total += 1;
+        if (GemResourceService.slotHasGem(slot)) {
+          counts.gems += 1;
+        } else {
+          counts.empty += 1;
+        }
+      }
+    }
+    return counts;
   }
 
   /**
@@ -160,6 +269,17 @@ export class SocketRollDataService {
       actor: SocketRollDataService.#withNumericFallback({ ...actorScan.counts }, actorScan.counts.total)
     };
     return SocketRollDataService.#withNumericFallback(data, itemScan.counts.total);
+  }
+
+  /**
+   * Actor-scope counts. An actor has no narrower scope to publish, so `actor`
+   * mirrors the root values.
+   */
+  static #formatActorCounts(counts) {
+    return SocketRollDataService.#withNumericFallback({
+      ...counts,
+      actor: SocketRollDataService.#withNumericFallback({ ...counts }, counts.total)
+    }, counts.total);
   }
 
   static normalizeResourceKey(value) {

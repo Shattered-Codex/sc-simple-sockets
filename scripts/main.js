@@ -29,6 +29,7 @@ import { ItemSheetSync } from "./core/support/ItemSheetSync.js";
 import { DebugTrace } from "./core/support/DebugTrace.js";
 import { ScMoreActivitiesIntegration } from "./core/integrations/sc-more-activities/ScMoreActivitiesIntegration.js";
 import { SocketRollDataService } from "./core/services/SocketRollDataService.js";
+import { SocketEffectFormulaService } from "./core/services/SocketEffectFormulaService.js";
 import { SocketUsesBridgeService } from "./core/services/SocketUsesBridgeService.js";
 import { SocketCountUsesService } from "./core/services/SocketCountUsesService.js";
 import { SocketUsesUI } from "./core/ui/SocketUsesUI.js";
@@ -62,6 +63,7 @@ Hooks.once("init", async function() {
   GemLootTypeExtension.ensure();
   LootActivitiesExtension.ensure();
   SocketRollDataService.activate();
+  SocketEffectFormulaService.activate();
 
   await foundry.applications.handlebars.loadTemplates([
     `modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`,
@@ -97,6 +99,7 @@ Hooks.once("setup", () => {
   // Idempotent retry for environments where the Item document class was not
   // published yet during init. Normal dnd5e initialization activates it above.
   SocketRollDataService.activate();
+  SocketEffectFormulaService.activate();
   SocketUsesUI.activate();
 
 });
