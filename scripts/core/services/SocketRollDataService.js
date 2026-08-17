@@ -8,6 +8,14 @@ import { GemResourceService } from "../../domain/gems/GemResourceService.js";
  * The root values cover every item owned by the actor. The nested `item` values
  * cover only the item whose formula is being evaluated. Unowned items use their
  * own pool for both scopes.
+ *
+ * Besides the per-resource pools under `@sockets.*`, socket counts are exposed
+ * under `@sc.sockets.*` so Limited Uses (item or activity) can size a charge
+ * pool by the sockets themselves:
+ * - `@sc.sockets.total` — socket slots on this item
+ * - `@sc.sockets.gems`  — currently socketed gems on this item
+ * - `@sc.sockets.empty` — empty sockets on this item
+ * - `@sc.sockets.actor.total|gems|empty` — the same counts across the actor
  */
 export class SocketRollDataService {
   static #activated = false;
@@ -26,10 +34,18 @@ export class SocketRollDataService {
 
     const enrich = function (wrapped, ...args) {
       const data = wrapped.call(this, ...args) ?? {};
-      const socketData = SocketRollDataService.build(this);
+      // One inventory scan feeds both namespaces: getRollData runs on every roll,
+      // activity use and formula preparation, so a second walk is not affordable.
+      const scan = SocketRollDataService.#scanScopes(this);
+      const socketData = SocketRollDataService.#formatPools(scan);
       data.sockets = SocketRollDataService.#withNumericFallback({
         ...(data.sockets ?? {}),
         ...socketData
+      }, 0);
+      const existingSc = data.sc && typeof data.sc === "object" ? data.sc : {};
+      data.sc = SocketRollDataService.#withNumericFallback({
+        ...existingSc,
+        sockets: SocketRollDataService.#formatCounts(scan)
       }, 0);
       SocketRollDataService.applyDerivedSpent(this, socketData);
       return data;
@@ -56,15 +72,78 @@ export class SocketRollDataService {
    * @returns {Record<string, object>}
    */
   static build(item) {
-    const itemPools = SocketRollDataService.#aggregateItems([item]);
-    const actorItems = item?.actor?.items ? [item, ...Array.from(item.actor.items)] : [item];
-    const actorPools = SocketRollDataService.#aggregateItems(actorItems);
-    const keys = new Set([...itemPools.keys(), ...actorPools.keys()]);
+    return SocketRollDataService.#formatPools(SocketRollDataService.#scanScopes(item));
+  }
+
+  /**
+   * Socket count data for `@sc.sockets.*`. Item-scoped at the root; the actor
+   * totals live under `actor`. Unowned items use their own counts for both.
+   * @param {Item} item Item whose roll data is being prepared.
+   * @returns {{total: number, gems: number, empty: number, actor: object}}
+   */
+  static buildCounts(item) {
+    return SocketRollDataService.#formatCounts(SocketRollDataService.#scanScopes(item));
+  }
+
+  /**
+   * Scans the item scope and the actor scope. An unowned item shares a single
+   * scan between both scopes, since the two would walk the same slots.
+   */
+  static #scanScopes(item) {
+    const itemScan = SocketRollDataService.#scanItems([item]);
+    if (!item?.actor?.items) return { itemScan, actorScan: itemScan };
+    const actorScan = SocketRollDataService.#scanItems([item, ...Array.from(item.actor.items)]);
+    return { itemScan, actorScan };
+  }
+
+  /**
+   * Single pass over `items` producing both the per-resource pools and the raw
+   * socket counts, reading each item's socket flag exactly once.
+   *
+   * Items are deduped by id rather than by object identity: dnd5e clones items
+   * with `keepId: true` while resolving activity usage and scaling, so the clone
+   * and the actor's own copy are different objects describing the same sockets.
+   */
+  static #scanItems(items) {
+    const pools = new Map();
+    const counts = { total: 0, gems: 0, empty: 0 };
+    const seen = new Set();
+    for (const item of Array.isArray(items) ? items : []) {
+      if (!item) continue;
+      const identity = item.id ?? item;
+      if (seen.has(identity)) continue;
+      seen.add(identity);
+
+      const slots = SocketStore.peekSlots(item);
+      for (const slot of slots) {
+        counts.total += 1;
+        if (GemResourceService.slotHasGem(slot)) {
+          counts.gems += 1;
+        } else {
+          counts.empty += 1;
+        }
+      }
+
+      for (const pool of GemResourceService.aggregatePools(slots)) {
+        const key = SocketRollDataService.normalizeResourceKey(pool.key);
+        if (!key) continue;
+        const aggregate = pools.get(key) ?? { value: 0, max: 0, gems: 0 };
+        aggregate.value += pool.value;
+        aggregate.max += pool.max;
+        aggregate.gems += pool.gems;
+        pools.set(key, aggregate);
+      }
+    }
+    return { pools, counts };
+  }
+
+  static #formatPools({ itemScan, actorScan }) {
+    const keys = new Set([...itemScan.pools.keys(), ...actorScan.pools.keys()]);
     const data = {};
 
     for (const key of keys) {
-      const itemPool = SocketRollDataService.#poolValues(itemPools.get(key));
-      const actorPool = SocketRollDataService.#poolValues(actorPools.get(key));
+      const itemPool = SocketRollDataService.#poolValues(itemScan.pools.get(key));
+      const actorPool = SocketRollDataService.#poolValues(actorScan.pools.get(key));
       data[key] = SocketRollDataService.#withNumericFallback({
         ...actorPool,
         actor: SocketRollDataService.#withNumericFallback({ ...actorPool }, actorPool.total),
@@ -73,6 +152,14 @@ export class SocketRollDataService {
     }
 
     return SocketRollDataService.#withNumericFallback(data, 0);
+  }
+
+  static #formatCounts({ itemScan, actorScan }) {
+    const data = {
+      ...itemScan.counts,
+      actor: SocketRollDataService.#withNumericFallback({ ...actorScan.counts }, actorScan.counts.total)
+    };
+    return SocketRollDataService.#withNumericFallback(data, itemScan.counts.total);
   }
 
   static normalizeResourceKey(value) {
@@ -108,26 +195,6 @@ export class SocketRollDataService {
     const state = SocketRollDataService.getUsesBindingState(item, socketData);
     if (state && item?.system?.uses) item.system.uses.spent = state.spent;
     return state;
-  }
-
-  static #aggregateItems(items) {
-    const pools = new Map();
-    const seen = new Set();
-    for (const item of Array.isArray(items) ? items : []) {
-      if (!item || seen.has(item)) continue;
-      seen.add(item);
-
-      for (const pool of GemResourceService.aggregatePools(SocketStore.peekSlots(item))) {
-        const key = SocketRollDataService.normalizeResourceKey(pool.key);
-        if (!key) continue;
-        const aggregate = pools.get(key) ?? { value: 0, max: 0, gems: 0 };
-        aggregate.value += pool.value;
-        aggregate.max += pool.max;
-        aggregate.gems += pool.gems;
-        pools.set(key, aggregate);
-      }
-    }
-    return pools;
   }
 
   static #poolValues(pool) {

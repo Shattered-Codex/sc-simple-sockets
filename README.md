@@ -36,6 +36,7 @@ Gems can now do more than provide passive bonuses:
 
 - A gem can carry its own limited resource, such as energy, ammunition, or magic charges.
 - Actions can spend charges from one gem, several gems on the same item, or compatible socketed items across the character.
+- Socket counts can act as native item charges: use `@sc.sockets.total` or `@sc.sockets.gems` in an item's Limited Uses, consume them with **Item Uses**, and recover them with the item's own Recovery configuration.
 - Charges remain with the gem when it is removed and returned to inventory.
 - Gem tags make it easier to create sockets that accept a category such as `fire`, `poison`, or `healing`.
 - The optional **SC More Activities** integration can insert gems, extract gems, recharge one gem, or recharge a shared pool.
@@ -615,6 +616,69 @@ return getProperty(item, "flags.sc-setforge.setId")
 Here, `item` is a possible socket host and `sourceItem` is the item that owns the
 activity. If the filter has invalid code or throws an error, the consumption is
 blocked instead of drawing charges from an unintended item.
+
+### Native Item Uses from socket counts
+
+Besides the charges stored on gems, the sockets themselves can act as a charge
+pool. Two counts are available per item:
+
+- **Socketed Gems** — how many gems are currently socketed.
+- **Socket Slots** — how many sockets the item has, filled or empty.
+
+Nothing extra is stored for the maximum: it is always recalculated from the
+item's sockets, so inserting or extracting a gem resizes the pool immediately.
+
+#### Socket counts in formulas
+
+The counts are added to the item's roll data and work in any formula field,
+including **Limited Uses → Max** on the item and on activities:
+
+| Formula | Value |
+| --- | --- |
+| `@sc.sockets.total` | Socket slots on this item |
+| `@sc.sockets.gems` | Socketed gems on this item |
+| `@sc.sockets.empty` | Empty sockets on this item |
+| `@sc.sockets.actor.total` | Socket slots across the whole character |
+| `@sc.sockets.actor.gems` | Socketed gems across the whole character |
+| `@sc.sockets.actor.empty` | Empty sockets across the whole character |
+
+Setting an item's **Limited Uses → Max** to exactly `@sc.sockets.gems` or
+`@sc.sockets.total` makes the native dnd5e Item Uses pool follow that socket
+count. Everything else remains native:
+
+- The native **Item Uses** consumption type on any of the item's activities.
+- The native **Recovery** configuration on the item, including recharge rolls.
+  Recovery formulas can use the socket counts too, for example `@sc.sockets.gems`.
+- Editing the **Spent** field on the item sheet or the value on the actor sheet.
+
+This is the simplest way to say "this staff has one use per socketed gem,
+recovered on a long rest": bind the maximum, add an **Item Uses** consumption
+row to the activity, and pick a recovery period. Note that an activity only
+spends a charge if it has a consumption row configured — attacking with a
+weapon that has no consumption does not spend anything, which is standard
+dnd5e behavior.
+
+Because the maximum is live, socketing or removing gems resizes the pool
+immediately. The module rebases the native Spent value during that socket
+change so the number of remaining charges stays the same, clamped only when
+the new maximum is smaller. A newly added capacity starts empty until recovery.
+
+Other formulas — `@sc.sockets.empty`, the `.actor.*` counts, and arithmetic
+such as `@sc.sockets.gems * 2` — are available to dnd5e formulas but do not get
+the capacity-rebase behavior reserved for the two exact bindings above. None
+of these count formulas consumes or modifies the socketed gems themselves.
+
+#### Recovery placement and formulas
+
+Configure Recovery on the **item**, in the same Details → Usage section as the
+socket-count maximum. An activity that consumes **Item Uses** spends this item
+pool, but the Recovery section on the activity belongs to the activity's own
+separate Limited Uses counter and does not recover the target item.
+
+The item's native recovery supports Recover All Uses, Lose All Uses, recharge,
+and Custom Formula. Socket counts are available in that formula. For example,
+`floor(@sc.sockets.gems / 2)` recovers half the number of socketed gems, while
+`floor(@item.uses.max / 2)` recovers half the item's maximum uses.
 
 ## Example Gem Setup
 

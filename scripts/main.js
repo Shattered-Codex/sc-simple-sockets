@@ -30,6 +30,7 @@ import { DebugTrace } from "./core/support/DebugTrace.js";
 import { ScMoreActivitiesIntegration } from "./core/integrations/sc-more-activities/ScMoreActivitiesIntegration.js";
 import { SocketRollDataService } from "./core/services/SocketRollDataService.js";
 import { SocketUsesBridgeService } from "./core/services/SocketUsesBridgeService.js";
+import { SocketCountUsesService } from "./core/services/SocketCountUsesService.js";
 import { SocketUsesUI } from "./core/ui/SocketUsesUI.js";
 
 const gemSheet = new GemSheetExtension();
@@ -60,6 +61,7 @@ Hooks.once("init", async function() {
   settings.registerSettings();
   GemLootTypeExtension.ensure();
   LootActivitiesExtension.ensure();
+  SocketRollDataService.activate();
 
   await foundry.applications.handlebars.loadTemplates([
     `modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`,
@@ -92,6 +94,8 @@ Hooks.once("setup", () => {
   SocketDescriptionsUI.activate();
   ItemSheetSync.activate();
   DebugTrace.activate();
+  // Idempotent retry for environments where the Item document class was not
+  // published yet during init. Normal dnd5e initialization activates it above.
   SocketRollDataService.activate();
   SocketUsesUI.activate();
 
@@ -114,6 +118,7 @@ Hooks.on("preUpdateItem", (item, changes, options) => {
       options: DebugTrace.describeOptions(options)
     });
     lifecycle.handlePreUpdate(item, changes, options);
+    SocketCountUsesService.rebaseSpentForSocketChange(item, changes);
   } catch (e) {
     console.error(`[${Constants.MODULE_ID}] handlePreUpdate failed:`, e);
   }
@@ -127,6 +132,7 @@ Hooks.on("updateItem", async (item, changes, options) => {
       changes: DebugTrace.describeChanges(changes),
       options: DebugTrace.describeOptions(options)
     });
+    SocketUsesUI.refreshCountUses(item, changes);
     await lifecycle.handleItemUpdated(item, changes, options);
     await ActivityTransferService.reconcileDerivedActivities(item, changes, options);
     DebugTrace.log("main.updateItem.done", {
