@@ -141,6 +141,70 @@ describe("SocketRollDataService", () => {
     assert.equal(SocketRollDataService.parseUsesFormula("@sockets.energy.total + 1"), null);
   });
 
+  test("exposes item and actor socket counts under sc.sockets", () => {
+    const sword = makeItem("Sword", [makeSlot("Soul A", "soul", 1, 2), {}]);
+    const armor = makeItem("Armor", [makeSlot("Mana", "mana", 1, 2)]);
+    const actor = { items: [sword, armor] };
+    sword.actor = actor;
+    armor.actor = actor;
+
+    const counts = SocketRollDataService.buildCounts(sword);
+
+    assert.equal(counts.total, 2);
+    assert.equal(counts.gems, 1);
+    assert.equal(counts.empty, 1);
+    assert.equal(counts.actor.total, 3);
+    assert.equal(counts.actor.gems, 2);
+    assert.equal(counts.actor.empty, 1);
+    assert.equal(String(counts), "2");
+    assert.equal(String(counts.actor), "3");
+  });
+
+  test("counts a dnd5e usage clone only once in the actor scope", () => {
+    // dnd5e resolves activity usage against `item.clone({}, { keepId: true })`,
+    // so the clone and the actor's own copy share an id but not a reference.
+    const owned = makeItem("Staff", [makeSlot("Soul", "soul", 1, 2), {}]);
+    owned.id = "staff";
+    const clone = makeItem("Staff", [makeSlot("Soul", "soul", 1, 2), {}]);
+    clone.id = "staff";
+    const actor = { items: [owned] };
+    owned.actor = actor;
+    clone.actor = actor;
+
+    const counts = SocketRollDataService.buildCounts(clone);
+    assert.equal(counts.actor.total, 2);
+    assert.equal(counts.actor.gems, 1);
+    assert.equal(counts.actor.empty, 1);
+
+    assert.equal(SocketRollDataService.build(clone).soul.actor.total, 2);
+  });
+
+  test("uses the item counts for both scopes on an unowned item", () => {
+    const item = makeItem("World Item", [makeSlot("Battery", "battery", 1, 1)]);
+
+    const counts = SocketRollDataService.buildCounts(item);
+
+    assert.equal(counts.total, 1);
+    assert.equal(counts.gems, 1);
+    assert.equal(counts.empty, 0);
+    assert.deepEqual(
+      { total: counts.actor.total, gems: counts.actor.gems, empty: counts.actor.empty },
+      { total: 1, gems: 1, empty: 0 }
+    );
+  });
+
+  test("reports the socket counts of a single item and of a whole actor", () => {
+    const sword = makeItem("Sword", [makeSlot("Soul A", "soul", 1, 2), {}]);
+    const armor = makeItem("Armor", [makeSlot("Mana", "mana", 1, 2)]);
+    const actor = { items: new Set([sword, armor]) };
+    sword.actor = actor;
+    armor.actor = actor;
+
+    assert.deepEqual(SocketRollDataService.countItem(sword), { total: 2, gems: 1, empty: 1 });
+    assert.deepEqual(SocketRollDataService.countActor(actor), { total: 3, gems: 2, empty: 1 });
+    assert.deepEqual(SocketRollDataService.countActor(null), { total: 0, gems: 0, empty: 0 });
+  });
+
   test("wraps Item5e.getRollData and preserves the original roll data", () => {
     class Item5e {
       constructor() {
@@ -152,12 +216,66 @@ describe("SocketRollDataService", () => {
       }
 
       getRollData(options) {
-        return { original: options?.marker, sockets: { external: { current: 9 } } };
+        return {
+          original: options?.marker,
+          sockets: { external: { current: 9 } },
+          sc: { custom: 7 }
+        };
       }
     }
 
-    globalThis.dnd5e = { documents: { Item5e } };
+    class Actor5e {
+      constructor(items = []) {
+        this.items = items;
+      }
+
+      getRollData(options) {
+        return { original: options?.marker, sc: { custom: 5 } };
+      }
+    }
+
+    globalThis.dnd5e = { documents: { Item5e, Actor5e } };
+    const prototypes = {
+      "dnd5e.documents.Item5e.prototype.getRollData": Item5e.prototype,
+      "dnd5e.documents.Actor5e.prototype.getRollData": Actor5e.prototype
+    };
+    const registrations = [];
+    globalThis.libWrapper = {
+      register(moduleId, target, wrapper, type) {
+        registrations.push({ moduleId, target, type });
+        const owner = prototypes[target];
+        const original = owner.getRollData;
+        owner.getRollData = function (...args) {
+          return wrapper.call(this, original.bind(this), ...args);
+        };
+      }
+    };
     SocketRollDataService.activate();
+
+    assert.deepEqual(registrations, [
+      {
+        moduleId: Constants.MODULE_ID,
+        target: "dnd5e.documents.Item5e.prototype.getRollData",
+        type: "WRAPPER"
+      },
+      {
+        moduleId: Constants.MODULE_ID,
+        target: "dnd5e.documents.Actor5e.prototype.getRollData",
+        type: "WRAPPER"
+      }
+    ]);
+
+    const actorData = new Actor5e([new Item5e(), new Item5e()]).getRollData({ marker: "kept" });
+    assert.equal(actorData.original, "kept");
+    assert.equal(actorData.sc.custom, 5);
+    assert.equal(actorData.sc.sockets.total, 2);
+    assert.equal(actorData.sc.sockets.gems, 2);
+    assert.equal(actorData.sc.sockets.empty, 0);
+    assert.equal(actorData.sc.sockets.actor.gems, 2);
+    assert.equal(String(actorData.sc.sockets), "2");
+    // The resource pools are item-scoped only: aggregating them expands every
+    // gem snapshot, which must stay out of the actor hot path.
+    assert.equal(actorData.sockets, undefined);
 
     const data = new Item5e().getRollData({ marker: "kept" });
     assert.equal(data.original, "kept");
@@ -166,5 +284,11 @@ describe("SocketRollDataService", () => {
     assert.equal(data.sockets.energy.item.total, 3);
     assert.equal(String(data.sockets), "0");
     assert.equal(String(data.sockets.energy), "3");
+    assert.equal(data.sc.custom, 7);
+    assert.equal(data.sc.sockets.total, 1);
+    assert.equal(data.sc.sockets.gems, 1);
+    assert.equal(data.sc.sockets.empty, 0);
+    assert.equal(String(data.sc), "0");
+    assert.equal(String(data.sc.sockets), "1");
   });
 });

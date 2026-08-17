@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { ActivityReferenceRemapper } from "./ActivityReferenceRemapper.js";
 import { HostItemUpdateService } from "../support/HostItemUpdateService.js";
 import { ItemSheetSync } from "../support/ItemSheetSync.js";
 
@@ -33,6 +34,7 @@ export class ActivityTransferService {
 
     const createdIds = [];
     const activityMeta = {};
+    const activityIdMap = new Map();
     for (const activity of sourceActivities) {
       const original = activity.toObject();
       const type = original.type;
@@ -81,6 +83,7 @@ export class ActivityTransferService {
         continue;
       }
       createdIds.push(newId);
+      activityIdMap.set(String(activity.id), String(newId));
       activityMeta[newId] = {
         sourceId: activity.id,
         hostActivityId: newId,
@@ -110,7 +113,8 @@ export class ActivityTransferService {
     };
 
     const updateData = {
-      ...extraUpdateData
+      ...extraUpdateData,
+      ...ActivityReferenceRemapper.buildUpdateData(sourceActivities, activityIdMap)
     };
     const flagPath = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`;
     updateData[flagPath] = flagPayload;

@@ -126,6 +126,17 @@ export class SocketService {
 
     const slots = SocketStore.getSlots(hostItem);
 
+    if (idx == null) {
+      idx = slots.findIndex((slot) => !slot?.gem && !slot?._gemData);
+      if (idx < 0) {
+        return SocketService.#buildResult({
+          success: false,
+          changed: false,
+          reason: "no-available-slot"
+        });
+      }
+    }
+
     if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
       return SocketService.#warnAndReturnResult(
         "warn",
@@ -261,7 +272,12 @@ export class SocketService {
       hostItem: DebugTrace.describeItem(hostItem),
       slotIndex: idx
     });
-    return SocketService.#buildResult({ success: true, changed: true, reason: "gem-added" });
+    return SocketService.#buildResult({
+      success: true,
+      changed: true,
+      reason: "gem-added",
+      slotIndex: idx
+    });
   }
 
   static async #removeGem(hostItem, idx, options = {}) {
@@ -376,11 +392,19 @@ export class SocketService {
           )
         );
       }
-      return;
+      return SocketService.#buildResult({
+        success: false,
+        changed: false,
+        reason: "host-not-socketable"
+      });
     }
 
     if (!bypassPermission && !ModuleSettings.canAddOrRemoveSocket()) {
-      return;
+      return SocketService.#buildResult({
+        success: false,
+        changed: false,
+        reason: "permission-denied"
+      });
     }
     const currentSlots = SocketStore.peekSlots(hostItem);
     const maxSlots = ModuleSettings.getMaxSockets();
@@ -390,7 +414,11 @@ export class SocketService {
           Constants.localize("SCSockets.Notifications.MaxReached", "Maximum number of sockets reached.")
         );
       }
-      return;
+      return SocketService.#buildResult({
+        success: false,
+        changed: false,
+        reason: "max-sockets-reached"
+      });
     }
     const slot = SocketSlot.makeDefault(slotConfig);
     const createdIndex = currentSlots.length;
@@ -399,7 +427,7 @@ export class SocketService {
       hostItem: DebugTrace.describeItem(hostItem),
       options: DebugTrace.describeOptions(updateOptions)
     });
-    const result = await SocketStore.addSlot(hostItem, slot, updateOptions);
+    await SocketStore.addSlot(hostItem, slot, updateOptions);
     SocketService.#emitSocketAdded(hostItem, {
       slotIndex: createdIndex,
       slot,
@@ -409,7 +437,13 @@ export class SocketService {
       hostItem: DebugTrace.describeItem(hostItem),
       slotIndex: createdIndex
     });
-    return result;
+    return SocketService.#buildResult({
+      success: true,
+      changed: true,
+      reason: "slot-added",
+      slotIndex: createdIndex,
+      totalSlots: createdIndex + 1
+    });
   }
 
   static async #removeSlot(hostItem, idx, options = {}) {

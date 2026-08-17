@@ -5,7 +5,7 @@ import { Constants } from "../scripts/core/Constants.js";
 import { ItemResolver } from "../scripts/core/ItemResolver.js";
 import { SocketUsesUI } from "../scripts/core/ui/SocketUsesUI.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
-import { createTestItem } from "./support/testDocuments.js";
+import { createTestActor, createTestItem } from "./support/testDocuments.js";
 
 function makeBoundItem() {
   const source = {
@@ -66,5 +66,34 @@ describe("SocketUsesUI", () => {
 
     SocketUsesUI.bind({ item }, root);
     assert.equal(input.readOnly, false);
+  });
+
+  test("refreshes an open actor sheet as soon as socket-count uses change", () => {
+    const actor = createTestActor({
+      items: [{
+        id: "staff",
+        type: "weapon",
+        system: { uses: { max: 0, spent: 1, value: 0 } },
+        flags: {
+          [Constants.MODULE_ID]: {
+            [Constants.FLAGS.sockets]: [{ gem: { name: "A" } }, { gem: { name: "B" } }]
+          }
+        }
+      }]
+    });
+    const item = actor.items.get("staff");
+    item._source = { system: { uses: { max: "@sc.sockets.gems", spent: 1 } } };
+    const renders = [];
+    actor.sheet = { rendered: true, render(force) { renders.push(force); } };
+
+    const state = SocketUsesUI.refreshCountUses(item, {
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]: item.getFlag(
+        Constants.MODULE_ID,
+        Constants.FLAGS.sockets
+      )
+    });
+
+    assert.deepEqual(state, { poolKey: "gems", max: 2, spent: 1, value: 1 });
+    assert.deepEqual(renders, [false]);
   });
 });
