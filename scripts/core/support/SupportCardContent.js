@@ -84,16 +84,20 @@ const RELEASE_SECTIONS = [
     tone: "added",
     items: [
       {
-        title: "Automatic gem charge recovery",
-        text: "Loose and socketed gems can now recover or lose charges on rests, at dawn or dusk, during combat turns, or through a Recharge d6 check. Recovery can restore everything or use a custom formula."
+        title: "Socket-powered Item Uses",
+        text: "Set an item's Limited Uses maximum to @sc.sockets.gems or @sc.sockets.total to make its native dnd5e uses follow filled gems or total socket slots. Item Uses consumption and the item's own Recovery profiles continue to work normally."
       },
       {
-        title: "Recharge controls",
-        text: "Configure each gem's recovery profile from its Resource details or directly from a filled socket. Recharge profiles also get a die button that rolls the check in chat and applies the configured recovery on a success."
+        title: "Socket-count formulas",
+        text: "Use total, filled, and empty socket counts in item and activity formulas. Item-scoped paths count the current item, while @sc.sockets.actor.* paths count sockets across the character."
       },
       {
-        title: "Unified module configuration",
-        text: "Socket rules, display options, socketable item types, and gem subtypes now live in one configuration window. Changes are saved together, each tab can be reset, and custom gem subtypes update the selection list immediately."
+        title: "Scaling Active Effects",
+        text: "Active Effect values can now scale from socket counts, including arithmetic such as @sc.sockets.gems * 2 or floor(@sc.sockets.actor.total / 2), on both Foundry v13 and v14."
+      },
+      {
+        title: "Programmatic socket APIs",
+        text: "Macros and integrations can create empty sockets with addSlot and insert gems with addGem. Both APIs accept Item documents or UUIDs, return structured results, and preserve the module's permission, compatibility, and slot rules."
       }
     ]
   },
@@ -103,20 +107,16 @@ const RELEASE_SECTIONS = [
     tone: "improved",
     items: [
       {
-        title: "Safer Socket Slot Settings",
-        text: "Unsaved edits are now marked on each slot and in the footer, multiple slots save in one item update, and socketing or unsocketing validates and saves the visible slot draft before applying the action."
+        title: "Live socket-backed capacity",
+        text: "Inserting or extracting a gem immediately refreshes socket-bound Item Uses. Existing remaining uses are preserved when capacity changes, and derived counters stay read-only on item and actor sheets."
       },
       {
-        title: "More faithful recovery formulas",
-        text: "Socketed-gem formulas receive the gem as @item and the host item as @host, daily recovery respects dnd5e rest options, and gritty realism applies the same daily multiplier used by the system."
+        title: "Recovery formulas",
+        text: "The item's native Recovery configuration can reference socket counts directly. For example, floor(@sc.sockets.gems / 2) restores half the number of filled sockets."
       },
       {
-        title: "Better keyboard and small-screen support",
-        text: "Configuration tabs support arrow, Home, and End navigation, controls have clearer accessible labels, and the Socket Slot Settings window now stays within the available viewport."
-      },
-      {
-        title: "Reliable socketed-gem inspection",
-        text: "Opening a socketed gem now uses a read-only snapshot while actions such as Recharge safely write back to the real socket only when the same gem is still there."
+        title: "Reliable automation results",
+        text: "Socket mutation APIs now report the slot they created or filled, provide stable failure reasons, and serialize simultaneous changes on the same host item."
       }
     ]
   },
@@ -126,13 +126,13 @@ const RELEASE_SECTIONS = [
     tone: "fixed",
     items: [
       {
-        text: "Fixed simultaneous socket, slot-configuration, and gem-recovery updates overwriting one another on the same host item."
+        text: "Fixed transferred sc-chain and sc-conditional-chain activities keeping stale source activity IDs after a gem's activities were copied to the host item."
       },
       {
-        text: "Fixed delayed recovery rolls applying to a replacement gem after the original gem was removed, replaced, or reordered."
+        text: "Fixed socket-count Active Effects using actor totals where the effect needed the sockets from its source item."
       },
       {
-        text: "Fixed pending recovery updates clobbering charge consumption or other slot changes made while a recovery formula was rolling."
+        text: "Fixed AC breakdown attribution for socket-scaled effects so the tooltip matches the bonus that was actually applied."
       }
     ]
   }
