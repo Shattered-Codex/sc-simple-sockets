@@ -980,22 +980,38 @@ You can call:
 - `getItemSlots(itemOrUuid)`
 - `getItemGems(itemOrUuid)`
 - `hasItemGemTag(itemOrUuid, tag)`
+- `canEditSockets(itemOrUuid, options?)`
 - `addSlot(itemOrUuid, options?)`
+- `removeSlot(itemOrUuid, slotIndex, options?)`
+- `removeSlotWithContents(itemOrUuid, slotIndex, options?)`
 - `addGem(itemOrUuid, gemOrUuid, slotIndex?, options?)`
-- `removeGem(itemOrUuid, slotIndex, options)`
-- `removeGemKeepingItem(itemOrUuid, slotIndex)`
+- `removeGem(itemOrUuid, slotIndex, options?)`
+- `removeGemKeepingItem(itemOrUuid, slotIndex, options?)`
+- `updateSlotConfig(itemOrUuid, slotIndex, config, options?)`
 
 In simple terms:
 
 - one function lists all sockets on an item
 - another lists only the gems currently socketed in that item, including their normalized `tags`
 - `hasItemGemTag` checks whether at least one socketed gem has a specific tag
+- `canEditSockets` checks whether the current user, or the user selected with
+  `options.userId`, can edit sockets on the item
 - `addSlot` creates one empty socket and accepts the same optional slot
   configuration used by the item sheet
+- `removeSlot` removes an empty socket by its zero-based index. Use
+  `removeSlotWithContents` when the slot contains a gem, so the gem's effects
+  and activities are cleaned up and the gem follows the requested removal mode.
 - `addGem` inserts a gem in the requested zero-based slot, or in the first empty
   slot when `slotIndex` is omitted; both the host item and gem can be Item
   documents or UUIDs. The normal permission, gem type, host compatibility, and
   slot condition checks still apply.
+- `updateSlotConfig` updates the configuration of an existing slot, including
+  its name, description, condition, color, hidden state, and removal override.
+
+All mutation helpers accept the same `options` object used by the module's
+socket workflows. This includes normal permission checks by default and
+automation options such as `bypassPermission`, `notify`, and `render` when
+those options are appropriate for the caller.
 
 Create one default socket:
 
@@ -1063,6 +1079,25 @@ The automatic form checks the first empty slot. If that slot has a condition,
 the gem must satisfy it; the API does not skip ahead to a later empty slot. An
 explicit occupied slot follows the module's normal replacement rules, including
 whether the previous gem is returned or deleted.
+
+Remove an empty slot:
+
+```js
+const result = await sockets.removeSlot(item.uuid, 1);
+```
+
+Remove a slot and clean up its gem in one operation:
+
+```js
+const result = await sockets.removeSlotWithContents(item.uuid, 1, {
+  mode: "keep"
+});
+```
+
+`removeSlot` is intended for empty slots. For a filled slot, use
+`removeSlotWithContents` or call `removeGem` first. `removeSlotWithContents`
+uses the normal gem-removal behavior by default; set `mode` to `"keep"` or
+`"delete"` to override it.
 
 Mutation calls return the same structured shape:
 

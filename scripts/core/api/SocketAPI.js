@@ -20,8 +20,14 @@ export class SocketAPI {
         SocketAPI.getItemGems(itemOrUuid, options);
       module.api.sockets.hasItemGemTag = async (itemOrUuid, tag) =>
         SocketAPI.hasItemGemTag(itemOrUuid, tag);
+      module.api.sockets.canEditSockets = async (itemOrUuid, options = {}) =>
+        SocketAPI.canEditSockets(itemOrUuid, options);
       module.api.sockets.addSlot = async (itemOrUuid, options = {}) =>
         SocketAPI.addSlot(itemOrUuid, options);
+      module.api.sockets.removeSlot = async (itemOrUuid, slotIndex, options = {}) =>
+        SocketAPI.removeSlot(itemOrUuid, slotIndex, options);
+      module.api.sockets.removeSlotWithContents = async (itemOrUuid, slotIndex, options = {}) =>
+        SocketAPI.removeSlotWithContents(itemOrUuid, slotIndex, options);
       module.api.sockets.addGem = async (itemOrUuid, gemOrUuid, slotIndex = null, options = {}) =>
         SocketAPI.addGem(itemOrUuid, gemOrUuid, slotIndex, options);
       module.api.sockets.removeGem = async (itemOrUuid, slotIndex, options = {}) =>
@@ -31,6 +37,8 @@ export class SocketAPI {
           ...options,
           mode: SocketService.REMOVE_GEM_MODE_KEEP
         });
+      module.api.sockets.updateSlotConfig = async (itemOrUuid, slotIndex, config = {}, options = {}) =>
+        SocketAPI.updateSlotConfig(itemOrUuid, slotIndex, config, options);
 
       module.api.sockets.HOOK_SOCKET_ADDED = Constants.HOOK_SOCKET_ADDED;
       module.api.sockets.HOOK_SOCKET_REMOVED = Constants.HOOK_SOCKET_REMOVED;
