@@ -46,6 +46,10 @@ describe("SocketAPI", () => {
 
     assert.equal(typeof module.api.sockets.addSlot, "function");
     assert.equal(typeof module.api.sockets.addGem, "function");
+    assert.equal(typeof module.api.sockets.canEditSockets, "function");
+    assert.equal(typeof module.api.sockets.removeSlot, "function");
+    assert.equal(typeof module.api.sockets.removeSlotWithContents, "function");
+    assert.equal(typeof module.api.sockets.updateSlotConfig, "function");
   });
 
   test("adds a configured socket through the public API", async () => {
@@ -105,6 +109,35 @@ describe("SocketAPI", () => {
     assert.deepEqual(results.map((result) => result.data.slotIndex), [0, 1]);
     assert.deepEqual(results.map((result) => result.data.totalSlots), [1, 2]);
     assert.equal(hostItem.flags[Constants.MODULE_ID].sockets.length, 2);
+  });
+
+  test("removes an empty socket through the public API", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-remove-slot",
+        name: "Ruby Mantle",
+        type: "equipment",
+        flags: {
+          [Constants.MODULE_ID]: {
+            sockets: [SocketSlot.makeDefault(), SocketSlot.makeDefault()]
+          }
+        }
+      }]
+    });
+    const hostItem = actor.items.get("host-remove-slot");
+
+    const result = await SocketAPI.removeSlot(hostItem, 0);
+
+    assert.deepEqual(result, {
+      success: true,
+      changed: true,
+      reason: "slot-removed",
+      data: {
+        slotIndex: 0,
+        totalSlots: 1
+      }
+    });
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets.length, 1);
   });
 
   test("returns structured failure for invalid slot removal", async () => {

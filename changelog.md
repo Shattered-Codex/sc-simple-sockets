@@ -18,6 +18,7 @@
 - Added automated coverage for socket resources, consumption, character pools, gem tags, activity selection, recharge and reload workflows, socket layout, and the public API.
 - Added automatic gem charge recovery with the same periods and profiles as native dnd5e uses: rests (Short/Long Rest, Day, Dawn, Dusk), combat (Initiative, Start/End of Turn, Each Turn), and the manual Recharge d6 check, each recovering all charges, losing all charges, or rolling a custom formula. Recovery applies to socketed gems and to loose gems in the actor's inventory, and is editable on the gem sheet and directly from the socket slot settings of a filled socket.
 - Added a Recharge die button that rolls the d6 recharge check (with a chat message) from the gem sheet and from the gem's entry in Socket Descriptions. On a success the gem's configured recovery applies — all charges or a rolled formula amount — using a dedicated d6 threshold field.
+- Exposed the complete socket automation surface through `module.api.sockets`, including `canEditSockets`, `removeSlot`, `removeSlotWithContents`, and `updateSlotConfig`.
 
 ### Changed
 - Redesigned the gem +Details tab into three sub-panes — Combat (attack & crit overrides plus extra damage), Resource, and Tags — switched by pill buttons at the top of the tab, on both the default dnd5e and Tidy5e item sheets. Combat and Resource pills show an amber dot when they hold configured values and the Tags pill shows the tag count, so nothing needs scrolling to be discovered. The active pane is remembered per gem while the world is open.
