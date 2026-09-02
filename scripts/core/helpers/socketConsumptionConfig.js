@@ -12,6 +12,7 @@ export const SOCKET_CONSUMPTION_SELECTOR_MODES = Object.freeze({
   SOURCE_SLOT: "sourceSlot",
   ANY: "any",
   ANY_GEM: "anyGem",
+  GEM_TAG: "gemTag",
   GEM_NAME: "gemName",
   GEM_NAME_MATCH: "gemNameMatch",
   SLOT: "slot"
@@ -30,12 +31,13 @@ const STRUCTURED_TARGET_PREFIX = "v2:";
  * - "sourceSlot"             consume from the gem that originated this activity.
  * - "any:<resourceKey>"      consume from any socketed gem providing the resource.
  * - "anyGem"                 consume from any socketed gem, in slot order.
+ * - "gemTag:<tag>"           consume from socketed gems with the requested tag.
  * - "slot:<index>"           consume from the gem in a specific slot (resource implied).
  * - "gemName:<name>"         consume from socketed gems with exactly this name.
  * - "gemNameMatch:<pattern>" consume from socketed gems whose name matches the pattern.
  * Only "any" needs an explicit resource key because each gem provides a single resource.
  * @param {string} target
- * @returns {{mode: string, resourceKey?: string, slotIndex?: number, gemName?: string, gemNamePattern?: string}|null}
+ * @returns {{mode: string, resourceKey?: string, slotIndex?: number, gemTag?: string, gemName?: string, gemNamePattern?: string}|null}
  */
 export function parseSocketTarget(target) {
   const raw = String(target ?? "").trim();
@@ -89,6 +91,10 @@ function parseLegacySocketTarget(raw) {
     return Number.isInteger(slotIndex) && slotIndex >= 0 ? { mode, slotIndex } : null;
   }
 
+  if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_TAG) {
+    return value.length ? { mode, gemTag: value } : null;
+  }
+
   if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
     return value.length ? { mode, gemName: value } : null;
   }
@@ -104,12 +110,13 @@ export function formatSocketTarget({
   mode,
   resourceKey,
   slotIndex,
+  gemTag,
   gemName,
   gemNamePattern,
   scope = SOCKET_CONSUMPTION_SCOPES.ITEM,
   filter = ""
 } = {}) {
-  const legacy = formatLegacySocketTarget({ mode, resourceKey, slotIndex, gemName, gemNamePattern });
+  const legacy = formatLegacySocketTarget({ mode, resourceKey, slotIndex, gemTag, gemName, gemNamePattern });
   if (!legacy.length) {
     return "";
   }
@@ -126,6 +133,7 @@ export function formatSocketTarget({
     mode,
     ...(mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY ? { resourceKey: String(resourceKey ?? "").trim() } : {}),
     ...(mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT ? { slotIndex: Number(slotIndex) } : {}),
+    ...(mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_TAG ? { gemTag: String(gemTag ?? "").trim() } : {}),
     ...(mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME ? { gemName: String(gemName ?? "").trim() } : {}),
     ...(mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH
       ? { gemNamePattern: String(gemNamePattern ?? "").trim() }
@@ -135,7 +143,7 @@ export function formatSocketTarget({
   })}`;
 }
 
-function formatLegacySocketTarget({ mode, resourceKey, slotIndex, gemName, gemNamePattern } = {}) {
+function formatLegacySocketTarget({ mode, resourceKey, slotIndex, gemTag, gemName, gemNamePattern } = {}) {
   switch (mode) {
     case SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT:
     case SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM:
@@ -144,6 +152,8 @@ function formatLegacySocketTarget({ mode, resourceKey, slotIndex, gemName, gemNa
       return `${mode}:${String(resourceKey ?? "").trim()}`;
     case SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT:
       return `${mode}:${Number(slotIndex)}`;
+    case SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_TAG:
+      return `${mode}:${String(gemTag ?? "").trim()}`;
     case SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME:
       return `${mode}:${String(gemName ?? "").trim()}`;
     case SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH:

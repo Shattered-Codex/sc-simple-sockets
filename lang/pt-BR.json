@@ -877,6 +877,7 @@
         "SourceSlot": "Gema de origem (desta atividade)",
         "SlotShort": "slot {slot}",
         "AnyGem": "qualquer gema socketada (ordem dos slots)",
+        "GemTag": "gemas com a tag \"{tag}\"",
         "NameMatch": "gemas compatíveis com \"{pattern}\""
       },
       "FromLabel": "Origem",
@@ -899,6 +900,7 @@
         "sourceSlot": "Gema de origem (desta atividade)",
         "any": "Qualquer gema com o recurso",
         "anyGem": "Qualquer gema (ordem dos slots)",
+        "gemTag": "Gema por tag",
         "gemName": "Gema por nome",
         "gemNameMatch": "Nome da gema compatível",
         "slot": "Slot específico"
@@ -908,6 +910,8 @@
         "ResourcePlaceholder": "ex.: battery",
         "GemName": "Nome da Gema",
         "GemNamePlaceholder": "ex.: Gema de Bateria",
+        "GemTag": "Tag da Gema",
+        "GemTagPlaceholder": "ex.: veneno",
         "Slot": "Número do Slot",
         "NamePattern": "Padrão do Nome",
         "NamePatternPlaceholder": "ex.: Fogo* ou Bateria"

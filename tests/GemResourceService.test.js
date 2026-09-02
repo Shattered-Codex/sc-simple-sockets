@@ -6,15 +6,17 @@ import { ItemResolver } from "../scripts/core/ItemResolver.js";
 import { GemResourceService } from "../scripts/domain/gems/GemResourceService.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
 
-function makeGemSource(name, resource, { img = "icons/gem.webp" } = {}) {
+function makeGemSource(name, resource, { img = "icons/gem.webp", tags = [] } = {}) {
+  const moduleFlags = {
+    ...(resource ? { [Constants.FLAG_GEM_RESOURCE]: resource } : {}),
+    ...(tags.length ? { [Constants.FLAG_GEM_TAGS]: tags } : {})
+  };
   return {
     name,
     img,
     type: "loot",
     system: { quantity: 1, type: { value: "gem" } },
-    flags: resource
-      ? { [Constants.MODULE_ID]: { [Constants.FLAG_GEM_RESOURCE]: resource } }
-      : {}
+    flags: Object.keys(moduleFlags).length ? { [Constants.MODULE_ID]: moduleFlags } : {}
   };
 }
 
@@ -440,6 +442,23 @@ describe("GemResourceService", () => {
       assert.equal(badSlot.reason, "invalid-consumption-slot");
     });
 
+    test("gemTag draws charges only from gems carrying the normalized tag", () => {
+      const slots = [
+        makeSlot("Venom Cell", { key: "venom", max: 3, value: 3 }, { tags: ["Poison"] }),
+        makeSlot("Arcane Cell", { key: "magic", max: 4, value: 4 }, { tags: ["Ácido Arcano"] }),
+        makeSlot("Plain Cell", { key: "energy", max: 5, value: 5 })
+      ];
+
+      const plan = GemResourceService.planChargeConsumption(
+        slots,
+        { mode: "gemTag", gemTag: "acido arcano" },
+        2
+      );
+
+      assert.equal(plan.ok, true);
+      assert.deepEqual(plan.deductions, [{ slotIndex: 1, resourceKey: "magic", amount: 2 }]);
+    });
+
     test("a negative cost restores charges clamped at each gem's maximum", () => {
       const slots = [
         makeSlot("Battery Gem", { key: "battery", max: 10, value: 9 }),
@@ -486,6 +505,23 @@ describe("GemResourceService", () => {
       const plan = GemResourceService.planGemConsumption(
         slots,
         { mode: "gemName", gemName: "Battery Gem" },
+        2
+      );
+
+      assert.equal(plan.ok, true);
+      assert.deepEqual(plan.removals, [0, 1]);
+    });
+
+    test("consumes only gems carrying the requested tag", () => {
+      const slots = [
+        makeSlot("Venom Shard", null, { tags: ["poison"] }),
+        makeSlot("Toxic Pearl", null, { tags: ["Poison", "acid"] }),
+        makeSlot("Ruby", null, { tags: ["fire"] })
+      ];
+
+      const plan = GemResourceService.planGemConsumption(
+        slots,
+        { mode: "gemTag", gemTag: " POISON " },
         2
       );
 

@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
+import { GemTagService } from "../../domain/gems/GemTagService.js";
 import { SocketConsumptionHostService } from "../services/SocketConsumptionHostService.js";
 import {
   CONSUMPTION_TYPE_CHARGE,
@@ -129,6 +130,7 @@ export class SocketConsumptionTargetUI {
     }
     modes.push(
       SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM,
+      SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_TAG,
       SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME,
       SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH,
       SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT
@@ -220,6 +222,14 @@ export class SocketConsumptionTargetUI {
         placeholder: Constants.localize("SCSockets.Consumption.Value.GemNamePlaceholder", "e.g. Battery Gem")
       };
     }
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_TAG) {
+      return {
+        hidden: false,
+        inputType: "text",
+        label: Constants.localize("SCSockets.Consumption.Value.GemTag", "Gem Tag"),
+        placeholder: Constants.localize("SCSockets.Consumption.Value.GemTagPlaceholder", "e.g. poison")
+      };
+    }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
       return {
         hidden: false,
@@ -248,6 +258,9 @@ export class SocketConsumptionTargetUI {
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
       return spec.gemName ?? "";
+    }
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_TAG) {
+      return spec.gemTag ?? "";
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
       return spec.gemNamePattern ?? "";
@@ -357,6 +370,13 @@ export class SocketConsumptionTargetUI {
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
       return rawValue.length ? formatSocketTarget({ ...shared, gemName: rawValue }) : "";
+    }
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_TAG) {
+      // Store the tag exactly as gems store theirs, so a value that normalizes to
+      // nothing (punctuation only) is rejected here instead of silently matching
+      // no gem at use time.
+      const gemTag = GemTagService.normalizeTag(rawValue);
+      return gemTag.length ? formatSocketTarget({ ...shared, gemTag }) : "";
     }
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
       return rawValue.length ? formatSocketTarget({ ...shared, gemNamePattern: rawValue }) : "";

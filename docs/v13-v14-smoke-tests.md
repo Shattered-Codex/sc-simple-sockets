@@ -78,6 +78,16 @@ on both.
 
 ## 8. Regression Sweep
 
+Before the general regression sweep, verify tag-based consumption on both versions:
+
+- Socket two gems, give only one the tag `poison`, and configure an activity with
+  **Socketed Charges → Gem by tag → poison**. Confirm only that gem loses charges.
+- Reopen the activity sheet and confirm the tag selector and value persisted.
+- Repeat with **Socketed Gem → Gem by tag → poison** and confirm only the tagged
+  gem is destroyed.
+- For a character with tagged gems on multiple items, verify the current-item,
+  equipped-item, and all-item scopes include only matching tagged gems.
+
 - Reload the world.
 - Reopen a previously socketed item and actor.
 - Confirm sockets, activities, effects, and badges are still in sync.

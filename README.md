@@ -612,11 +612,18 @@ where the charges should come from. The simplest options are:
 | **Source gem (this activity)** | Spends charges from the gem that provided the activity |
 | **Any gem with resource** | Spends the named resource from compatible socketed gems |
 | **Specific slot** | Spends charges only from one socket position |
+| **Gem by tag** | Spends charges from gems carrying that tag |
 | **Gem by name** | Spends charges from gems with that exact name |
 | **Gem name matches** | Finds gems by a simple name pattern, such as `Fire*` |
 
 You can also choose whether the activity searches only its own item, equipped
 socketed items on the character, or all socketed items on the character.
+
+The same **Gem by tag** selector is available for **Socketed Gem** consumption,
+where matching gems are destroyed in slot order. Tag matching uses the same
+normalization as gem tags, so it ignores case, accents, and spaces converted to
+hyphens: the tag you type is stored normalized, and `Ácido Arcano` matches gems
+tagged `acido-arcano`.
 
 #### Restricting a pool with a host item filter
 
