@@ -1,9 +1,12 @@
 import { Constants } from "../../core/Constants.js";
 import { ItemResolver } from "../../core/ItemResolver.js";
+import { GemTagService } from "./GemTagService.js";
 import {
   SOCKET_CONSUMPTION_SELECTOR_MODES,
   matchesGemNamePattern
 } from "../../core/helpers/socketConsumptionConfig.js";
+
+const SELECTOR_MODES = new Set(Object.values(SOCKET_CONSUMPTION_SELECTOR_MODES));
 
 export class GemResourceService {
   /**
@@ -184,13 +187,13 @@ export class GemResourceService {
    * gems except for the "any" mode, where the target names it explicitly.
    * A negative cost restores charges instead (clamped at each gem's maximum).
    * @param {Array} slots Current socket slots of the host item.
-   * @param {{mode: string, resourceKey?: string, slotIndex?: number, gemName?: string}} spec Parsed target.
+   * @param {{mode: string, resourceKey?: string, slotIndex?: number, gemTag?: string, gemName?: string}} spec Parsed target.
    * @param {number} cost Signed amount of charges to consume.
    * @param {object} [options]
    * @param {number|null} [options.sourceSlotIndex] Slot that originated a transferred activity.
    * @param {Set<number>} [options.excluded] Slots already reserved for deferred gem removal.
    * @param {Map<number, number>} [options.reserved] Signed charge changes reserved by overlapping uses.
-   * @returns {{ok: boolean, reason?: string, message?: string, deductions?: Array, updatedSlots?: Array}}
+   * @returns {{ok: boolean, reason?: string, message?: string, candidates?: Array<{slotIndex: number, key: string, value: number, max: number}>, deductions?: Array, updatedSlots?: Array}}
    */
   static planChargeConsumption(
     slots,
@@ -199,13 +202,16 @@ export class GemResourceService {
     { sourceSlotIndex = null, excluded = new Set(), reserved = new Map() } = {}
   ) {
     const workingSlots = Array.isArray(slots) ? slots : [];
-    const selection = GemResourceService.#selectSlots(workingSlots, spec, { sourceSlotIndex });
+    // Expanding every gem snapshot once keeps selection and resource lookup to a
+    // single parse per slot, on a path the usage dialog re-runs on every render.
+    const sources = workingSlots.map((slot) => GemResourceService.getSlotGemSource(slot));
+    const selection = GemResourceService.#selectSlots(workingSlots, spec, { sourceSlotIndex, sources });
     if (!selection.ok) {
       return selection;
     }
 
-    const resources = workingSlots.map((slot, index) => {
-      const resource = GemResourceService.getSlotResource(slot);
+    const resources = sources.map((source, index) => {
+      const resource = GemResourceService.getGemResource(source);
       if (!resource) return null;
       const reservedAmount = Number(reserved.get(index)) || 0;
       return {
@@ -216,30 +222,41 @@ export class GemResourceService {
     const wantedKey = spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY
       ? GemResourceService.normalizeResourceLookupKey(spec?.resourceKey)
       : null;
-    const candidates = selection.indices.filter((index) => {
-      if (excluded.has(index)) {
-        return false;
-      }
-      const resource = resources[index];
-      if (!resource) {
-        return false;
-      }
-      return wantedKey === null
-        || GemResourceService.normalizeResourceLookupKey(resource.key) === wantedKey;
-    });
+    const candidates = selection.indices
+      .filter((index) => {
+        if (excluded.has(index)) {
+          return false;
+        }
+        const resource = resources[index];
+        if (!resource) {
+          return false;
+        }
+        return wantedKey === null
+          || GemResourceService.normalizeResourceLookupKey(resource.key) === wantedKey;
+      })
+      .map((index) => ({
+        slotIndex: index,
+        key: resources[index].key,
+        value: resources[index].value,
+        max: resources[index].max
+      }));
 
     const amount = Math.trunc(Number(cost) || 0);
     if (!amount) {
-      return { ok: true, deductions: [], updatedSlots: workingSlots };
+      return { ok: true, candidates, deductions: [], updatedSlots: workingSlots };
     }
 
     const deductions = [];
     if (amount > 0) {
-      const available = candidates.reduce((sum, index) => sum + resources[index].value, 0);
+      const available = candidates.reduce((sum, candidate) => sum + candidate.value, 0);
       if (available < amount) {
+        // With no candidate left to name the resource, fall back to whatever the
+        // selector itself was configured with.
         const resourceLabel = spec?.resourceKey
-          ?? resources[candidates[0]]?.key
+          ?? candidates[0]?.key
           ?? spec?.gemName
+          ?? spec?.gemTag
+          ?? spec?.gemNamePattern
           ?? "";
         return GemResourceService.#failure(
           "insufficient-socket-charges",
@@ -250,34 +267,35 @@ export class GemResourceService {
       }
 
       let pending = amount;
-      for (const index of candidates) {
+      for (const candidate of candidates) {
         if (pending <= 0) {
           break;
         }
-        const taken = Math.min(resources[index].value, pending);
+        const taken = Math.min(candidate.value, pending);
         if (taken > 0) {
           pending -= taken;
-          deductions.push({ slotIndex: index, resourceKey: resources[index].key, amount: taken });
+          deductions.push({ slotIndex: candidate.slotIndex, resourceKey: candidate.key, amount: taken });
         }
       }
     } else {
       // Restoration: fill candidates in slot order, discarding any excess.
       let pending = -amount;
-      for (const index of candidates) {
+      for (const candidate of candidates) {
         if (pending <= 0) {
           break;
         }
-        const capacity = resources[index].max - resources[index].value;
+        const capacity = candidate.max - candidate.value;
         const restored = Math.min(capacity, pending);
         if (restored > 0) {
           pending -= restored;
-          deductions.push({ slotIndex: index, resourceKey: resources[index].key, amount: -restored });
+          deductions.push({ slotIndex: candidate.slotIndex, resourceKey: candidate.key, amount: -restored });
         }
       }
     }
 
     return {
       ok: true,
+      candidates,
       deductions,
       updatedSlots: GemResourceService.applyDeductions(workingSlots, [
         ...Array.from(reserved.entries(), ([slotIndex, amount]) => ({ slotIndex, amount })),
@@ -289,12 +307,12 @@ export class GemResourceService {
   /**
    * Plans a single whole-gem consumption target without mutating anything.
    * @param {Array} slots Current socket slots of the host item.
-   * @param {{mode: string, slotIndex?: number, gemName?: string}} spec Parsed target.
+   * @param {{mode: string, slotIndex?: number, gemTag?: string, gemName?: string}} spec Parsed target.
    * @param {number} cost Number of gems to consume.
    * @param {object} [options]
    * @param {number|null} [options.sourceSlotIndex]
    * @param {Set<number>} [options.excluded] Slots already claimed by other targets.
-   * @returns {{ok: boolean, reason?: string, message?: string, removals?: number[]}}
+   * @returns {{ok: boolean, reason?: string, message?: string, candidates?: number[], removals?: number[]}}
    */
   static planGemConsumption(slots, spec, cost, { sourceSlotIndex = null, excluded = new Set() } = {}) {
     const workingSlots = Array.isArray(slots) ? slots : [];
@@ -303,14 +321,14 @@ export class GemResourceService {
       return selection;
     }
 
-    const amount = Math.trunc(Number(cost) || 0);
-    if (amount <= 0) {
-      return { ok: true, removals: [] };
-    }
-
     const candidates = selection.indices.filter((index) => (
       GemResourceService.slotHasGem(workingSlots[index]) && !excluded.has(index)
     ));
+
+    const amount = Math.trunc(Number(cost) || 0);
+    if (amount <= 0) {
+      return { ok: true, candidates, removals: [] };
+    }
 
     if (candidates.length < amount) {
       return GemResourceService.#failure(
@@ -321,7 +339,7 @@ export class GemResourceService {
       );
     }
 
-    return { ok: true, removals: candidates.slice(0, amount) };
+    return { ok: true, candidates, removals: candidates.slice(0, amount) };
   }
 
   /**
@@ -355,65 +373,116 @@ export class GemResourceService {
     return updated;
   }
 
-  static #selectSlots(slots, spec, { sourceSlotIndex = null } = {}) {
+  /**
+   * Resolves the slot indices a target selector covers, ignoring whether those gems
+   * can actually pay the cost. Selectors that name a missing slot resolve to nothing
+   * here; #selectSlots turns those into consumption failures, while the usage dialog
+   * simply reports an empty pool.
+   * @param {Array} slots
+   * @param {{mode: string, slotIndex?: number, gemTag?: string, gemName?: string, gemNamePattern?: string}} spec
+   * @param {object} [options]
+   * @param {number|null} [options.sourceSlotIndex] Slot that originated a transferred activity.
+   * @param {Array|null} [options.sources] Gem snapshots the caller already expanded, in slot order.
+   * @returns {number[]}
+   */
+  static selectSlotIndices(slots, spec, { sourceSlotIndex = null, sources = null } = {}) {
     const mode = spec?.mode;
 
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT) {
       const slot = Number.isInteger(sourceSlotIndex) ? slots[sourceSlotIndex] : null;
-      if (!slot || !GemResourceService.slotHasGem(slot)) {
-        return GemResourceService.#failure(
-          "source-gem-missing",
-          "SCSockets.Notifications.SourceGemMissing",
-          "The gem that provides this activity is no longer socketed."
-        );
-      }
-      return { ok: true, indices: [sourceSlotIndex] };
+      return slot && GemResourceService.slotHasGem(slot) ? [sourceSlotIndex] : [];
     }
 
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT) {
       const index = Number(spec?.slotIndex);
-      if (!Number.isInteger(index) || index < 0 || index >= slots.length) {
-        return GemResourceService.#failure(
-          "invalid-consumption-slot",
-          "SCSockets.Notifications.InvalidConsumptionSlot",
-          "The socket slot configured for consumption does not exist."
-        );
-      }
-      return { ok: true, indices: [index] };
+      return Number.isInteger(index) && index >= 0 && index < slots.length ? [index] : [];
     }
 
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
       const wanted = String(spec?.gemName ?? "").trim().toLowerCase();
-      const indices = slots.reduce((matches, slot, index) => {
+      if (!wanted.length) {
+        return [];
+      }
+      return slots.reduce((matches, slot, index) => {
         const name = String(ItemResolver.getSlotGemMeta(slot)?.name ?? "").trim().toLowerCase();
-        if (wanted.length && name === wanted) {
+        if (name === wanted) {
           matches.push(index);
         }
         return matches;
       }, []);
-      return { ok: true, indices };
+    }
+
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_TAG) {
+      // Gems store normalized tags, so the configured tag is normalized once here
+      // rather than per slot.
+      const wanted = GemTagService.normalizeTag(spec?.gemTag);
+      if (!wanted.length) {
+        return [];
+      }
+      return slots.reduce((matches, slot, index) => {
+        const source = sources ? sources[index] : GemResourceService.getSlotGemSource(slot);
+        if (GemTagService.getTags(source).includes(wanted)) {
+          matches.push(index);
+        }
+        return matches;
+      }, []);
     }
 
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
-      const indices = slots.reduce((matches, slot, index) => {
+      return slots.reduce((matches, slot, index) => {
         if (matchesGemNamePattern(spec?.gemNamePattern, ItemResolver.getSlotGemMeta(slot)?.name)) {
           matches.push(index);
         }
         return matches;
       }, []);
-      return { ok: true, indices };
     }
 
     if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY
       || mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM) {
-      return { ok: true, indices: slots.map((_, index) => index) };
+      return slots.map((_, index) => index);
     }
 
-    return GemResourceService.#failure(
-      "invalid-consumption-target",
-      "SCSockets.Notifications.InvalidConsumptionTarget",
-      "This socket consumption target is not configured."
-    );
+    return [];
+  }
+
+  /**
+   * The consumption-planning view of selectSlotIndices: a selector that resolves to
+   * nothing because the slot it names is gone is an error when spending, not an
+   * empty pool.
+   */
+  static #selectSlots(slots, spec, { sourceSlotIndex = null, sources = null } = {}) {
+    const mode = spec?.mode;
+
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT) {
+      const indices = GemResourceService.selectSlotIndices(slots, spec, { sourceSlotIndex });
+      return indices.length ? { ok: true, indices } : GemResourceService.#failure(
+        "source-gem-missing",
+        "SCSockets.Notifications.SourceGemMissing",
+        "The gem that provides this activity is no longer socketed."
+      );
+    }
+
+    if (mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT) {
+      const indices = GemResourceService.selectSlotIndices(slots, spec);
+      return indices.length ? { ok: true, indices } : GemResourceService.#failure(
+        "invalid-consumption-slot",
+        "SCSockets.Notifications.InvalidConsumptionSlot",
+        "The socket slot configured for consumption does not exist."
+      );
+    }
+
+    if (!SELECTOR_MODES.has(mode)) {
+      return GemResourceService.#failure(
+        "invalid-consumption-target",
+        "SCSockets.Notifications.InvalidConsumptionTarget",
+        "This socket consumption target is not configured."
+      );
+    }
+
+    return {
+      ok: true,
+      indices: GemResourceService.selectSlotIndices(slots, spec, { sourceSlotIndex, sources })
+    };
   }
 
   static #failure(reason, key, fallback, data = {}) {

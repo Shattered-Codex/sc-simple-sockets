@@ -4,7 +4,7 @@
 
 ### Added
 - Added configurable resources to gems, including current and maximum charges and an option to destroy the gem when its charges reach zero.
-- Added native dnd5e consumption types for spending socketed charges or entire socketed gems from the source gem, a specific slot, a resource, an exact gem name, or a name pattern.
+- Added native dnd5e consumption types for spending socketed charges or entire socketed gems from the source gem, a specific slot, a resource, a gem tag, an exact gem name, or a name pattern.
 - Added character-wide charge pools that can draw from equipped socketed items or every socketed item on the same actor, with an optional host-item filter for sets and other custom groupings.
 - Added resource and charge displays to the standard dnd5e and Tidy5e item sheets, including direct charge editing from a filled socket.
 - Added gem tags and tag helpers for readable socket conditions and automations, including `hasGemTag(tag)` in slot rules and `hasItemGemTag(itemOrUuid, tag)` in the public socket API.

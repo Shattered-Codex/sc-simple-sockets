@@ -9,14 +9,15 @@ import { formatSocketTarget } from "../scripts/core/helpers/socketConsumptionCon
 import { clearFoundryStubs, getProperty, installFoundryStubs } from "./support/foundryStubs.js";
 import { createTestActor } from "./support/testDocuments.js";
 
-function chargedSlot(name, value, max = value, destroyOnEmpty = false) {
+function chargedSlot(name, value, { max = value, destroyOnEmpty = false, tags = [] } = {}) {
   const source = {
     name,
     type: "loot",
     system: { quantity: 1, type: { value: "gem" } },
     flags: {
       [Constants.MODULE_ID]: {
-        [Constants.FLAG_GEM_RESOURCE]: { key: "energy", value, max, destroyOnEmpty }
+        [Constants.FLAG_GEM_RESOURCE]: { key: "energy", value, max, destroyOnEmpty },
+        ...(tags.length ? { [Constants.FLAG_GEM_TAGS]: tags } : {})
       }
     }
   };
@@ -30,6 +31,23 @@ function chargedSlot(name, value, max = value, destroyOnEmpty = false) {
 
 function socketFlags(slots) {
   return { [Constants.MODULE_ID]: { [Constants.FLAGS.sockets]: slots } };
+}
+
+const consumptionHooks = new Map();
+
+/**
+ * Registers the service once and caches its hook handlers. The registration guard is
+ * a static, so a second register() call is a no-op and every test shares one setup.
+ */
+function consumptionHookHandlers() {
+  game.system = { id: "dnd5e" };
+  CONFIG.DND5E = { activityConsumptionTypes: {} };
+  if (!consumptionHooks.size) {
+    Hooks.once = (_hook, callback) => callback();
+    Hooks.on = (hook, callback) => consumptionHooks.set(hook, callback);
+    SocketConsumptionService.register();
+  }
+  return consumptionHooks;
 }
 
 function updatedCharge(updates, itemId, slotIndex = 0) {
@@ -48,8 +66,8 @@ describe("SocketConsumptionService actor pools", () => {
   test("spends an equipped actor pool across multiple host items in stable order", async () => {
     const actor = createTestActor({ items: [
       { id: "ability", type: "feat" },
-      { id: "sword", system: { equipped: true }, flags: socketFlags([chargedSlot("Cell A", 2, 3)]) },
-      { id: "armor", system: { equipped: true }, flags: socketFlags([chargedSlot("Cell B", 4, 5)]) }
+      { id: "sword", system: { equipped: true }, flags: socketFlags([chargedSlot("Cell A", 2, { max: 3 })]) },
+      { id: "armor", system: { equipped: true }, flags: socketFlags([chargedSlot("Cell B", 4, { max: 5 })]) }
     ] });
     const ability = actor.items.get("ability");
     const target = {
@@ -99,19 +117,142 @@ describe("SocketConsumptionService actor pools", () => {
     assert.equal(updatedCharge(updates, "dragon"), 1);
   });
 
+  test("filters a character-wide charge pool by normalized gem tag", async () => {
+    const actor = createTestActor({ items: [
+      { id: "ability", type: "feat" },
+      {
+        id: "poison-ring",
+        system: { equipped: true },
+        flags: socketFlags([chargedSlot("Venom Cell", 2, { tags: ["Poison"] })])
+      },
+      {
+        id: "acid-ring",
+        system: { equipped: true },
+        flags: socketFlags([chargedSlot("Acid Cell", 4, { tags: ["Ácido Arcano"] })])
+      },
+      {
+        id: "plain-ring",
+        system: { equipped: true },
+        flags: socketFlags([chargedSlot("Plain Cell", 5)])
+      }
+    ] });
+    const ability = actor.items.get("ability");
+    const target = {
+      item: ability,
+      activity: { id: "blast", item: ability, flags: {} },
+      target: formatSocketTarget({
+        mode: "gemTag",
+        gemTag: "acido arcano",
+        scope: "actorEquipped"
+      }),
+      async resolveCost() { return { total: 3 }; }
+    };
+    const updates = { item: [], rolls: [] };
+
+    await SocketConsumptionService.consumeCharge.call(target, {}, updates);
+
+    assert.deepEqual(updates.item.map((entry) => entry._id), ["acid-ring"]);
+    assert.equal(updatedCharge(updates, "acid-ring"), 1);
+  });
+
+  test("reports tag-filtered availability in charge and gem consumption labels", () => {
+    const actor = createTestActor({ items: [{
+      id: "ability",
+      type: "feat",
+      flags: socketFlags([
+        chargedSlot("Venom Cell", 2, { tags: ["poison"] }),
+        chargedSlot("Plain Cell", 7)
+      ])
+    }] });
+    const ability = actor.items.get("ability");
+    const target = {
+      item: ability,
+      activity: { id: "blast", item: ability, flags: {} },
+      target: formatSocketTarget({ mode: "gemTag", gemTag: "POISON" }),
+      _resolveHintCost() {
+        return { cost: 2, simplifiedCost: 2, increaseKey: "Decrease" };
+      }
+    };
+
+    const charge = SocketConsumptionService.consumptionLabelsCharge.call(target, {});
+    const gem = SocketConsumptionService.consumptionLabelsGem.call(target, {});
+
+    assert.match(charge.hint, /\(2 available\)/);
+    assert.equal(charge.warn, false);
+    assert.match(gem.hint, /gems tagged "poison" \(1 available\)/);
+    assert.equal(gem.warn, true);
+  });
+
+  test("destroys only tagged gems across host items and reserves them between uses", async () => {
+    const hookHandlers = consumptionHookHandlers();
+    const actor = createTestActor({ items: [
+      { id: "ability", type: "feat" },
+      {
+        id: "ring",
+        system: { equipped: true },
+        flags: socketFlags([
+          chargedSlot("Venom Shard", 1, { tags: ["Poison"] }),
+          chargedSlot("Ruby", 1)
+        ])
+      },
+      {
+        id: "amulet",
+        system: { equipped: true },
+        flags: socketFlags([chargedSlot("Toxic Pearl", 1, { tags: ["Ácido Arcano", "poison"] })])
+      }
+    ] });
+    const ability = actor.items.get("ability");
+    const activity = { id: "purge", uuid: "Actor.test.Item.ability.Activity.purge", item: ability, flags: {} };
+    const target = {
+      item: ability,
+      activity,
+      target: formatSocketTarget({ mode: "gemTag", gemTag: "poison", scope: "actorEquipped" }),
+      async resolveCost() { return { total: 1 }; }
+    };
+
+    const removals = [];
+    const originalRemoveGem = SocketService.removeGem;
+    SocketService.removeGem = async (item, slotIndex) => {
+      removals.push({ itemId: item.id, slotIndex });
+    };
+
+    try {
+      const useA = { consume: { resources: true } };
+      const useB = { consume: { resources: true } };
+      hookHandlers.get("dnd5e.preActivityConsumption")(activity, useA, {});
+      await SocketConsumptionService.consumeGem.call(target, useA, { item: [], rolls: [] });
+      hookHandlers.get("dnd5e.preActivityConsumption")(activity, useB, {});
+      await SocketConsumptionService.consumeGem.call(target, useB, { item: [], rolls: [] });
+
+      // Both tagged gems are now reserved; the untagged Ruby must not stand in.
+      const useC = { consume: { resources: true } };
+      hookHandlers.get("dnd5e.preActivityConsumption")(activity, useC, {});
+      await assert.rejects(
+        SocketConsumptionService.consumeGem.call(target, useC, { item: [], rolls: [] }),
+        /Not enough socketed gems to consume \(0\/1\)/
+      );
+
+      hookHandlers.get("dnd5e.postUseActivity")(activity, useA, {});
+      hookHandlers.get("dnd5e.postUseActivity")(activity, useB, {});
+      await new Promise((resolve) => setImmediate(resolve));
+
+      assert.deepEqual(removals, [
+        { itemId: "ring", slotIndex: 0 },
+        { itemId: "amulet", slotIndex: 0 }
+      ]);
+    } finally {
+      SocketService.removeGem = originalRemoveGem;
+    }
+  });
+
   test("isolates gem and charge reservations across overlapping uses of one activity", async () => {
-    const hookHandlers = new Map();
-    game.system = { id: "dnd5e" };
-    CONFIG.DND5E = { activityConsumptionTypes: {} };
-    Hooks.once = (_hook, callback) => callback();
-    Hooks.on = (hook, callback) => hookHandlers.set(hook, callback);
-    SocketConsumptionService.register();
+    const hookHandlers = consumptionHookHandlers();
 
     const actor = createTestActor({ items: [
       {
         id: "ability",
         type: "feat",
-        flags: socketFlags([chargedSlot("Cell A", 1, 1, true), chargedSlot("Cell B", 1, 1, true)])
+        flags: socketFlags([chargedSlot("Cell A", 1, { destroyOnEmpty: true }), chargedSlot("Cell B", 1, { destroyOnEmpty: true })])
       }
     ] });
     const ability = actor.items.get("ability");
@@ -188,8 +329,8 @@ describe("SocketConsumptionService actor pools", () => {
           id: "delayed-ability",
           type: "feat",
           flags: socketFlags([
-            chargedSlot("Disposable Cell", 2, 2, true),
-            chargedSlot("Reserve Cell", 10, 10, false)
+            chargedSlot("Disposable Cell", 2, { destroyOnEmpty: true }),
+            chargedSlot("Reserve Cell", 10)
           ])
         }
       ] });

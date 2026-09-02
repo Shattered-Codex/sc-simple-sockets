@@ -35,6 +35,14 @@ describe("socketConsumptionConfig", () => {
       assert.equal(parseSocketTarget("gemName:"), null);
     });
 
+    test("parses gem tags", () => {
+      assert.deepEqual(parseSocketTarget("gemTag:Ácido Arcano"), {
+        mode: "gemTag",
+        gemTag: "Ácido Arcano"
+      });
+      assert.equal(parseSocketTarget("gemTag:"), null);
+    });
+
     test("rejects unknown grammar", () => {
       assert.equal(parseSocketTarget(""), null);
       assert.equal(parseSocketTarget(null), null);
@@ -70,6 +78,7 @@ describe("socketConsumptionConfig", () => {
         { mode: "sourceSlot" },
         { mode: "any", resourceKey: "battery" },
         { mode: "slot", slotIndex: 3 },
+        { mode: "gemTag", gemTag: "poison" },
         { mode: "gemName", gemName: "Battery Gem" }
       ];
       for (const spec of specs) {

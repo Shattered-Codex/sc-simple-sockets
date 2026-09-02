@@ -1,15 +1,14 @@
 import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
 import { SocketService } from "./SocketService.js";
-import { ItemResolver } from "../ItemResolver.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { GemTagService } from "../../domain/gems/GemTagService.js";
 import { SocketConsumptionHostService } from "./SocketConsumptionHostService.js";
 import {
   CONSUMPTION_TYPE_CHARGE,
   CONSUMPTION_TYPE_GEM,
   SOCKET_CONSUMPTION_SELECTOR_MODES,
   getActivitySourceSlotIndex,
-  matchesGemNamePattern,
   parseSocketTarget
 } from "../helpers/socketConsumptionConfig.js";
 
@@ -423,27 +422,15 @@ export class SocketConsumptionService {
       ? GemResourceService.planChargeConsumption(slots, spec, 0, { sourceSlotIndex })
       : null;
 
-    let available = 0;
-    let resource = spec?.resourceKey ?? "";
-    if (plan?.ok) {
-      const indices = SocketConsumptionService.#candidateIndices(slots, spec, sourceSlotIndex);
-      for (const index of indices) {
-        const slotResource = GemResourceService.getSlotResource(slots[index]);
-        if (!slotResource) {
-          continue;
-        }
-        if (spec.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.ANY
-          && GemResourceService.normalizeResourceLookupKey(slotResource.key)
-            !== GemResourceService.normalizeResourceLookupKey(spec.resourceKey)) {
-          continue;
-        }
-        available += slotResource.value;
-        // "Any gem" may mix different resources; keep the generic label there.
-        if (spec.mode !== SOCKET_CONSUMPTION_SELECTOR_MODES.ANY_GEM) {
-          resource ||= slotResource.key;
-        }
-      }
-    }
+    const candidates = plan?.ok ? plan.candidates : [];
+    const available = candidates.reduce((sum, candidate) => sum + candidate.value, 0);
+    // Cross-cutting selectors such as "any gem" and "gem by tag" may span gems
+    // holding different resources; a mixed pool has no single name, so it keeps
+    // the generic label.
+    const keys = new Set(candidates.map(
+      (candidate) => GemResourceService.normalizeResourceLookupKey(candidate.key)
+    ));
+    const resource = spec?.resourceKey || (keys.size === 1 ? candidates[0].key : "");
 
     return {
       available,
@@ -455,8 +442,10 @@ export class SocketConsumptionService {
     const combined = spec ? SocketConsumptionService.#combinedHosts(target, spec) : null;
     const slots = combined?.ok ? combined.slots : [];
     const sourceSlotIndex = combined?.ok ? combined.sourceSlotIndex : null;
-    const indices = spec ? SocketConsumptionService.#candidateIndices(slots, spec, sourceSlotIndex) : [];
-    const available = indices.filter((index) => GemResourceService.slotHasGem(slots[index])).length;
+    const plan = spec
+      ? GemResourceService.planGemConsumption(slots, spec, 0, { sourceSlotIndex })
+      : null;
+    const available = plan?.ok ? plan.candidates.length : 0;
 
     let label;
     if (spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT) {
@@ -469,6 +458,14 @@ export class SocketConsumptionService {
       );
     } else if (spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
       label = spec.gemName;
+    } else if (spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_TAG) {
+      // Show the normalized tag, which is what the gems carry and what matching uses.
+      const tag = GemTagService.normalizeTag(spec.gemTag);
+      label = SocketConsumptionService.#format(
+        "SCSockets.Consumption.Target.GemTag",
+        { tag },
+        `gems tagged "${tag}"`
+      );
     } else if (spec?.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
       label = SocketConsumptionService.#format(
         "SCSockets.Consumption.Target.NameMatch",
@@ -482,34 +479,6 @@ export class SocketConsumptionService {
     }
 
     return { available, label };
-  }
-
-  static #candidateIndices(slots, spec, sourceSlotIndex) {
-    if (spec.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SOURCE_SLOT) {
-      return Number.isInteger(sourceSlotIndex) ? [sourceSlotIndex] : [];
-    }
-    if (spec.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.SLOT) {
-      return Number.isInteger(spec.slotIndex) && spec.slotIndex < slots.length ? [spec.slotIndex] : [];
-    }
-    if (spec.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME) {
-      const wanted = String(spec.gemName ?? "").trim().toLowerCase();
-      return slots.reduce((matches, slot, index) => {
-        const name = String(ItemResolver.getSlotGemMeta(slot)?.name ?? "").trim().toLowerCase();
-        if (wanted.length && name === wanted) {
-          matches.push(index);
-        }
-        return matches;
-      }, []);
-    }
-    if (spec.mode === SOCKET_CONSUMPTION_SELECTOR_MODES.GEM_NAME_MATCH) {
-      return slots.reduce((matches, slot, index) => {
-        if (matchesGemNamePattern(spec.gemNamePattern, ItemResolver.getSlotGemMeta(slot)?.name)) {
-          matches.push(index);
-        }
-        return matches;
-      }, []);
-    }
-    return slots.map((_, index) => index);
   }
 
   static #consumptionError(message) {

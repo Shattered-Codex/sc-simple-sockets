@@ -877,6 +877,7 @@
         "SourceSlot": "Source gem (this activity)",
         "SlotShort": "slot {slot}",
         "AnyGem": "any socketed gem (slot order)",
+        "GemTag": "gems tagged \"{tag}\"",
         "NameMatch": "gems matching \"{pattern}\""
       },
       "FromLabel": "From",
@@ -899,6 +900,7 @@
         "sourceSlot": "Source gem (this activity)",
         "any": "Any gem with resource",
         "anyGem": "Any gem (slot order)",
+        "gemTag": "Gem by tag",
         "gemName": "Gem by name",
         "gemNameMatch": "Gem name matches",
         "slot": "Specific slot"
@@ -908,6 +910,8 @@
         "ResourcePlaceholder": "e.g. battery",
         "GemName": "Gem Name",
         "GemNamePlaceholder": "e.g. Battery Gem",
+        "GemTag": "Gem Tag",
+        "GemTagPlaceholder": "e.g. poison",
         "Slot": "Slot Number",
         "NamePattern": "Name Pattern",
         "NamePatternPlaceholder": "e.g. Fire* or Battery"
