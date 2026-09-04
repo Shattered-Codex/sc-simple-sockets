@@ -661,9 +661,9 @@
   color: var(--slotcfg-text);
 }
 
-.socket-slot-config-app .slotcfg-img-row .slotcfg-iconbtn:disabled {
-  opacity: 0.45;
-  cursor: default;
+.socket-slot-config-app button.slotcfg-btn--reset {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 /* The slot preview doubles as a shortcut to the image picker. */

@@ -835,7 +835,7 @@ Good examples:
 
 Each socket can use its own artwork while it is empty, so a battery bay, a rune notch, and a plain gem socket can live on the same item.
 
-Pick the image in `Socket Slot Settings`, either with the `Empty socket image` field or by clicking the slot preview. Leave the field blank (or press the reset button) to go back to the default socket image that ships with the module.
+Pick the image in `Socket Slot Settings`, either with the `Empty socket image` field or by clicking the slot preview. The `Default` button next to the field clears the custom image and brings back the socket artwork that ships with the module; it stays disabled while the slot already uses the default.
 
 The custom image appears wherever the empty socket is drawn:
 

@@ -87,14 +87,14 @@
           ></file-picker>
           <button
             type="button"
-            class="slotcfg-iconbtn"
+            class="slotcfg-btn slotcfg-btn--secondary slotcfg-btn--sm slotcfg-btn--reset"
             data-action="clearFrameImg"
             data-frame-reset
             aria-label="{{strings.frameImgReset}}"
             data-tooltip="{{strings.frameImgReset}}"
             {{#unless hasCustomFrameImg}}disabled{{/unless}}
           >
-            <i class="fas fa-rotate-left"></i>
+            <i class="fas fa-rotate-left"></i> {{strings.frameImgResetLabel}}
           </button>
         </div>
       </div>

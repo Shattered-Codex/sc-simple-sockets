@@ -592,6 +592,10 @@ export class SocketSlotConfigApp extends BaseApplication {
         "SCSockets.SocketSlotConfig.FrameImg.Reset",
         "Restore the default socket image"
       ),
+      frameImgResetLabel: Constants.localize(
+        "SCSockets.SocketSlotConfig.FrameImg.ResetLabel",
+        "Default"
+      ),
       inspectHost: Constants.localize(
         "SCSockets.SocketSlotConfig.InspectHost",
         "Open Host Item"

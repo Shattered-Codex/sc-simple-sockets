@@ -241,7 +241,8 @@
         "Hint": "Artwork shown while the slot is empty, such as a battery bay or a rune notch. Leave it blank to use the default socket.",
         "Placeholder": "Default socket image",
         "Pick": "Change the empty socket image",
-        "Reset": "Restore the default socket image"
+        "Reset": "Restore the default socket image",
+        "ResetLabel": "Default"
       },
       "Validation": {
         "InvalidCondition": "The slot condition has invalid code."
