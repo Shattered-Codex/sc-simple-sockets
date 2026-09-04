@@ -46,7 +46,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       id: `${Constants.MODULE_ID}-socket-slot-config`,
       tag: "form",
       classes: ["sc-sockets", "socket-slot-config-app"],
-      position: { width: 1140, height: 680 },
+      position: { width: 1140, height: 800 },
       window: {
         title: Constants.localize(
           "SCSockets.SocketSlotConfig.Title",
@@ -1413,10 +1413,11 @@ export class SocketSlotConfigApp extends BaseApplication {
   #applyLayoutBounds() {
     const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 1280;
     const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 900;
-    // Prefer 880-1140 × 600-700, but never exceed the usable viewport on
-    // small screens.
+    // Prefer 880-1140 × 620-820, but never exceed the usable viewport on
+    // small screens. The height target fits the whole configuration column —
+    // identity, image, tint, contents and rules — without scrolling it.
     const targetWidth = Math.min(Math.max(880, Math.min(1140, viewportWidth - 48)), viewportWidth - 16);
-    const targetHeight = Math.min(Math.max(600, Math.min(700, viewportHeight - 48)), viewportHeight - 16);
+    const targetHeight = Math.min(Math.max(620, Math.min(820, viewportHeight - 48)), viewportHeight - 16);
     this.setPosition?.({ width: targetWidth, height: targetHeight });
   }
 }
