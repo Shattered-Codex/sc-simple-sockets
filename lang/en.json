@@ -466,6 +466,7 @@
       "Intro": "Support us on Patreon to help us keep creating.",
       "Exclusive": "Get access to the exclusive <strong>SC - More Gems</strong> module with 120+ gems and monthly updates. We are also building <strong>SC - Setforge</strong> so you can create item sets.",
       "Discord": "Discord",
+      "DiscordRequests": "Discord & Requests",
       "DiscordInvite": "Join the community",
       "Issues": "Issues / Requests",
       "Link": "Patreon",
@@ -478,7 +479,6 @@
       "ReleaseSubtitle": "SC - Simple Sockets Changelog",
       "ViewModule": "View on wiki",
       "DontShowAgain": "Don't show again until the next update",
-      "FeatureRequest": "Feature Request",
       "Close": "Close",
       "Status": {
         "Free": "Free",

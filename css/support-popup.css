@@ -15,7 +15,6 @@
   --scsockets-wiki: #19b47f;
   --scsockets-discord: #5865f2;
   --scsockets-patreon: #cf3040;
-  --scsockets-feature: #1ea672;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -493,10 +492,6 @@
 
 .scsockets-support-popup__action--patreon {
   background: var(--scsockets-patreon);
-}
-
-.scsockets-support-popup__action--feature {
-  background: var(--scsockets-feature);
 }
 
 @media (max-width: 900px) {

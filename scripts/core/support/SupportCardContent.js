@@ -2,7 +2,6 @@ import { Constants } from "../Constants.js";
 
 const PATREON_URL = Constants.PATREON_URL;
 const DISCORD_URL = Constants.DISCORD_URL;
-const FEATURE_REQUEST_URL = "https://github.com/Shattered-Codex/sc-simple-sockets/issues";
 
 const PUZZLE_ENGINE_URL = "https://wiki.shattered-codex.com/modules/sc-puzzle-engine";
 const PUZZLE_ENGINE_NAME = "SC - Puzzle Engine";
@@ -192,7 +191,6 @@ export function buildSupportCardContent(moduleVersion) {
         "SCSockets.SupportCard.DontShowAgain",
         "Don't show again until the next update"
       ),
-      featureRequest: Constants.localize("SCSockets.SupportCard.FeatureRequest", "Feature Request"),
       close: Constants.localize("SCSockets.SupportCard.Close", "Close"),
       versionBadge: `v${moduleVersion}`
     },
@@ -212,18 +210,16 @@ export function buildSupportCardContent(moduleVersion) {
         label: Constants.localize("SCSockets.SupportCard.Wiki", "Wiki"),
         url: Constants.MODULE_WIKI_URL
       },
+      // Feature requests used to be their own GitHub button; the Discord
+      // server is where they are actually discussed, so the two are one.
       discord: {
-        label: Constants.localize("SCSockets.SupportCard.Discord", "Discord"),
+        label: Constants.localize("SCSockets.SupportCard.DiscordRequests", "Discord & Requests"),
         url: DISCORD_URL
       },
       patreon: {
         label: Constants.localize("SCSockets.SupportCard.Link", "Patreon"),
         url: PATREON_URL
       },
-      featureRequest: {
-        label: Constants.localize("SCSockets.SupportCard.FeatureRequest", "Feature Request"),
-        url: FEATURE_REQUEST_URL
-      }
     }
   };
 }
