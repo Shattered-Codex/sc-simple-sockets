@@ -395,15 +395,13 @@
         "Name": "Enable Socket Tab on all items",
         "Hint": "If enabled, the Sockets tab appears on every socketable item. If disabled, it must be enabled per item in Details."
       },
-      "SupportMenu": {
-        "Name": "Support the developer",
-        "Label": "Open support popup",
-        "Hint": "Open the Shattered Codex popup with release notes, module highlights, Patreon, Discord, and wiki links."
-      },
-      "DocumentationMenu": {
-        "Name": "Documentation",
+      "WikiLink": {
         "Label": "Open wiki",
         "Hint": "Open the SC - Simple Sockets documentation wiki."
+      },
+      "PatreonLink": {
+        "Label": "Patreon support",
+        "Hint": "Support Shattered Codex development on Patreon."
       },
       "DiscordLink": {
         "Label": "Discord",

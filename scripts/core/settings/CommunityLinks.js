@@ -1,7 +1,7 @@
 import { Constants } from "../Constants.js";
 
 /**
- * The outbound links the module offers: wiki, support popup, and Discord.
+ * The outbound links the module offers: wiki, Patreon, and Discord.
  *
  * They used to be registered settings menus, which Foundry renders as a full
  * label + hint + button row each — two rows of vertical space for what are
@@ -13,30 +13,19 @@ const LINKS = Object.freeze([
     id: "wiki",
     url: Constants.MODULE_WIKI_URL,
     icon: "fas fa-hat-wizard",
-    labelKey: "SCSockets.Settings.DocumentationMenu.Label",
+    labelKey: "SCSockets.Settings.WikiLink.Label",
     labelFallback: "Open wiki",
-    hintKey: "SCSockets.Settings.DocumentationMenu.Hint",
+    hintKey: "SCSockets.Settings.WikiLink.Hint",
     hintFallback: "Open the SC - Simple Sockets documentation wiki."
   }),
   Object.freeze({
     id: "patreon",
+    url: Constants.PATREON_URL,
     icon: "fas fa-heart",
-    labelKey: "SCSockets.Settings.SupportMenu.Label",
+    labelKey: "SCSockets.Settings.PatreonLink.Label",
     labelFallback: "Patreon support",
-    hintKey: "SCSockets.Settings.SupportMenu.Hint",
-    hintFallback: "Open the Shattered Codex popup with release notes, module highlights, Patreon, Discord, and wiki links.",
-    // The support popup is this module's Patreon surface: it carries the
-    // release notes and the module showcase, so the button opens it instead of
-    // jumping straight to the campaign page. Imported on demand so the strip
-    // does not drag the popup application in just to render three buttons.
-    open: async () => {
-      try {
-        const { openSupportCard } = await import("../support/supportCard.js");
-        await openSupportCard({ force: true });
-      } catch (error) {
-        console.warn(`[${Constants.MODULE_ID}] failed to open the support popup`, error);
-      }
-    }
+    hintKey: "SCSockets.Settings.PatreonLink.Hint",
+    hintFallback: "Support Shattered Codex development on Patreon."
   }),
   Object.freeze({
     id: "discord",
@@ -58,7 +47,7 @@ export class CommunityLinks {
   static links() {
     return LINKS.map((link) => ({
       id: link.id,
-      url: link.url ?? "",
+      url: link.url,
       icon: link.icon,
       label: Constants.localize(link.labelKey, link.labelFallback),
       tooltip: Constants.localize(link.hintKey, link.hintFallback)
@@ -68,10 +57,6 @@ export class CommunityLinks {
   static open(id) {
     const link = LINKS.find((entry) => entry.id === id);
     if (!link) {
-      return null;
-    }
-    if (typeof link.open === "function") {
-      void link.open();
       return null;
     }
     globalThis.window?.open?.(link.url, "_blank", "noopener");

@@ -19,15 +19,15 @@ describe("CommunityLinks", () => {
     assert.deepEqual(CommunityLinks.links().map((link) => link.id), ["wiki", "patreon", "discord"]);
   });
 
-  test("outbound links point at the module's declared URLs over https", () => {
+  test("every link points at the module's declared URL over https", () => {
     const urls = Object.fromEntries(CommunityLinks.links().map((link) => [link.id, link.url]));
 
     assert.equal(urls.wiki, Constants.MODULE_WIKI_URL);
+    assert.equal(urls.patreon, Constants.PATREON_URL);
     assert.equal(urls.discord, Constants.DISCORD_URL);
-    for (const id of ["wiki", "discord"]) {
-      assert.match(urls[id], /^https:\/\//, `${id} is not an https URL`);
+    for (const [id, url] of Object.entries(urls)) {
+      assert.match(url, /^https:\/\//, `${id} is not an https URL`);
     }
-    assert.match(Constants.PATREON_URL, /^https:\/\/www\.patreon\.com\//);
   });
 
   test("every link carries an icon and a resolvable label", () => {
@@ -47,20 +47,12 @@ describe("CommunityLinks", () => {
     assert.deepEqual(opened[0], [Constants.DISCORD_URL, "_blank", "noopener"]);
   });
 
-  test("the Patreon entry opens the support popup instead of a browser tab", async () => {
+  test("the Patreon entry goes straight to the campaign page", () => {
     const opened = [];
     globalThis.window = { open: (...args) => opened.push(args) };
-    // The popup application needs the Foundry client classes, which this
-    // environment does not provide: the handler warns instead of rejecting.
-    const warn = console.warn;
-    console.warn = () => {};
 
-    assert.equal(CommunityLinks.open("patreon"), null);
-    assert.equal(opened.length, 0);
-    assert.equal(CommunityLinks.links().find((link) => link.id === "patreon").url, "");
-
-    await new Promise((resolve) => setImmediate(resolve));
-    console.warn = warn;
+    assert.equal(CommunityLinks.open("patreon"), Constants.PATREON_URL);
+    assert.deepEqual(opened, [[Constants.PATREON_URL, "_blank", "noopener"]]);
   });
 
   test("an unknown link id opens nothing instead of throwing", () => {

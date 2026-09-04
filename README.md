@@ -939,7 +939,7 @@ All options are available in:
 
 The **Module configuration** menu opens a single window with five tabs — no option is left loose in Foundry's module list. The footer shows an *Unsaved changes* pill whenever something differs from the saved values, and nothing is applied until you press **Save Changes**.
 
-Below the menu, a compact row of links opens the wiki, the support popup, and the Shattered Codex Discord.
+Below the menu, a compact row of links opens the wiki, the Shattered Codex Patreon, and the Discord server.
 
 | Tab | Setting | Default | What it does |
 | --- | --- | --- | --- |

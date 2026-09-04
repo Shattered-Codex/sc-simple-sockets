@@ -395,15 +395,13 @@
         "Name": "Ativar Socket Tab em todos os itens",
         "Hint": "Se ativado, a aba de soquetes aparece em todos os itens socketáveis. Se desativado, ela precisa ser habilitada por item em Detalhes."
       },
-      "SupportMenu": {
-        "Name": "Apoie o desenvolvedor",
-        "Label": "Abrir popup de suporte",
-        "Hint": "Abre o popup da Shattered Codex com notas da versão, destaques de módulos e links para Patreon, Discord e wiki."
-      },
-      "DocumentationMenu": {
-        "Name": "Documentação",
+      "WikiLink": {
         "Label": "Abrir wiki",
         "Hint": "Abre a wiki de documentação do SC - Simple Sockets."
+      },
+      "PatreonLink": {
+        "Label": "Apoiar no Patreon",
+        "Hint": "Apoie o desenvolvimento da Shattered Codex no Patreon."
       },
       "DiscordLink": {
         "Label": "Discord",
