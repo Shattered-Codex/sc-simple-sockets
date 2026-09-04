@@ -600,6 +600,87 @@
   transform: translateY(1px);
 }
 
+/* === Empty socket image =================================== */
+.socket-slot-config-app .slotcfg-img-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker input {
+  height: var(--slotcfg-control-h);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 10px;
+  background: var(--slotcfg-bg-3);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  color: var(--slotcfg-text);
+  font-family: var(--slotcfg-font-mono);
+  font-size: 0.72rem;
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker input:focus {
+  border-color: var(--slotcfg-accent);
+  box-shadow: 0 0 0 2px var(--slotcfg-accent-soft);
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker button {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--slotcfg-bg-2);
+  color: var(--slotcfg-text-dim);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  font-size: 0.72rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker button:hover,
+.socket-slot-config-app file-picker.slotcfg-img-picker button:focus-visible {
+  background: var(--slotcfg-bg-hover);
+  color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app .slotcfg-img-row .slotcfg-iconbtn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* The slot preview doubles as a shortcut to the image picker. */
+.socket-slot-config-app button.slotcfg-tile-hit {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.socket-slot-config-app button.slotcfg-tile-hit:hover,
+.socket-slot-config-app button.slotcfg-tile-hit:focus-visible {
+  background: rgba(10, 16, 28, 0.24);
+  box-shadow: none;
+  outline: none;
+}
+
 /* === Tint picker ========================================== */
 .socket-slot-config-app .slotcfg-tint-row {
   display: flex;

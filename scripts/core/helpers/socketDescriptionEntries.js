@@ -1,7 +1,7 @@
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
-import { canUserSeeSlot, getSlotConfig } from "./socketSlotConfig.js";
+import { canUserSeeSlot, getSlotConfig, resolveSlotFrameImg } from "./socketSlotConfig.js";
 
 export async function buildSocketDescriptionEntries(item, slots) {
   const textEditor = Constants.getTextEditor();
@@ -31,7 +31,7 @@ export async function buildSocketDescriptionEntries(item, slots) {
     const resource = slot?.gem ? GemResourceService.getSlotResource(slot) : null;
     entries.push({
       name: slot?.gem?.name ?? slot?.name ?? Constants.localize("SCSockets.SocketEmptyName", "Empty"),
-      img: slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
+      img: slot?.gem?.img ?? resolveSlotFrameImg({ slotConfig }),
       description: enriched,
       isEmptySlot: !slot?.gem,
       slotColor: slot?.gem ? "" : (slotConfig.color || ""),

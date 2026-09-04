@@ -39,9 +39,20 @@
           {{#if previewStyle}}style="{{previewStyle}}"{{/if}}
           aria-label="{{strings.previewLabel}}"
         >
-          <img class="sc-sockets-slot-frame {{#if previewHasTint}}is-tinted{{/if}}" src="{{slotFrameImg}}" alt="{{strings.previewLabel}}">
+          <img class="sc-sockets-slot-frame {{#if previewHasTint}}is-tinted{{/if}}" src="{{slotFrameImg}}" alt="{{strings.previewLabel}}" data-slot-frame-preview>
           {{#if hasGem}}
             <img class="sc-sockets-slot-gem" src="{{gemImg}}" alt="{{gemName}}">
+          {{/if}}
+          {{#if editable}}
+            <button
+              type="button"
+              class="sc-sockets-slot-edit-hit slotcfg-tile-hit"
+              data-action="pickFrameImg"
+              aria-label="{{strings.frameImgPick}}"
+              data-tooltip="{{strings.frameImgPick}}"
+            >
+              <span class="sc-sockets-slot-edit-badge"><i class="fas fa-image"></i></span>
+            </button>
           {{/if}}
         </div>
         <div class="slotcfg-identity-fields">
@@ -57,6 +68,34 @@
             {{#unless editable}}disabled{{/unless}}
           />
           <span class="slotcfg-hint">{{strings.slotNameHint}}</span>
+        </div>
+      </div>
+
+      <div class="slotcfg-field">
+        <span class="slotcfg-flabel">
+          {{strings.frameImgLabel}}
+          <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.frameImgHint}}"></i>
+        </span>
+        <div class="slotcfg-img-row">
+          <file-picker
+            class="slotcfg-img-picker"
+            name="slotConfig.frameImg"
+            type="image"
+            value="{{frameImg}}"
+            placeholder="{{strings.frameImgPlaceholder}}"
+            {{#unless editable}}disabled{{/unless}}
+          ></file-picker>
+          <button
+            type="button"
+            class="slotcfg-iconbtn"
+            data-action="clearFrameImg"
+            data-frame-reset
+            aria-label="{{strings.frameImgReset}}"
+            data-tooltip="{{strings.frameImgReset}}"
+            {{#unless hasCustomFrameImg}}disabled{{/unless}}
+          >
+            <i class="fas fa-rotate-left"></i>
+          </button>
         </div>
       </div>
 

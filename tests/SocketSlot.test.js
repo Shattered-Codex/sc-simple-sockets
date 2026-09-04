@@ -30,6 +30,7 @@ describe("SocketSlot", () => {
         condition: "",
         description: "",
         color: "#00FF00",
+        frameImg: "",
         hidden: true,
         deleteGemOnRemoval: false
       }
@@ -64,6 +65,7 @@ describe("SocketSlot", () => {
         condition: "",
         description: "",
         color: "#FF0000",
+        frameImg: "",
         hidden: false,
         deleteGemOnRemoval: false
       },
@@ -105,6 +107,7 @@ describe("SocketSlot", () => {
         condition: "",
         description: "",
         color: "#FF0000",
+        frameImg: "",
         hidden: false,
         deleteGemOnRemoval: false
       },
@@ -139,10 +142,47 @@ describe("SocketSlot", () => {
         condition: "",
         description: "",
         color: "#AABBCC",
+        frameImg: "",
         hidden: true,
         deleteGemOnRemoval: false
       },
       _slot: 1
     });
+  });
+
+  test("an empty slot displays the configured frame image", () => {
+    const created = SocketSlot.makeDefault({ frameImg: "modules/pack/battery-slot.webp" });
+    assert.equal(created.img, "modules/pack/battery-slot.webp");
+
+    const reconfigured = SocketSlot.applyConfig(
+      { gem: null, img: Constants.SOCKET_SLOT_IMG, name: "Empty", slotConfig: {} },
+      { frameImg: "modules/pack/rune-notch.webp" },
+      0
+    );
+    assert.equal(reconfigured.img, "modules/pack/rune-notch.webp");
+
+    const cleared = SocketSlot.clearGem({
+      gem: { name: "Ruby", img: "icons/ruby.webp" },
+      img: "icons/ruby.webp",
+      name: "Ruby",
+      slotConfig: { frameImg: "modules/pack/battery-slot.webp" }
+    }, 3);
+    assert.equal(cleared.img, "modules/pack/battery-slot.webp");
+  });
+
+  test("a filled slot keeps the gem icon when its frame image changes", () => {
+    const slot = SocketSlot.applyConfig(
+      {
+        gem: { name: "Topaz", img: "icons/topaz.webp" },
+        img: "icons/topaz.webp",
+        name: "Topaz",
+        slotConfig: {}
+      },
+      { frameImg: "modules/pack/battery-slot.webp" },
+      1
+    );
+
+    assert.equal(slot.img, "icons/topaz.webp");
+    assert.equal(slot.slotConfig.frameImg, "modules/pack/battery-slot.webp");
   });
 });

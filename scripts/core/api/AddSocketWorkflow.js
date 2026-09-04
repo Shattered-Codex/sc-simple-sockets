@@ -47,6 +47,10 @@ const readFieldValue = (form, name) => {
   if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
     return String(field.value ?? "");
   }
+  // Custom form elements such as <file-picker> expose their value the same way.
+  if (field instanceof HTMLElement && typeof field.value === "string") {
+    return field.value;
+  }
   return "";
 };
 
@@ -207,6 +211,21 @@ export class AddSocketWorkflow {
               </div>
             </div>
             <div class="form-group">
+              <label>${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.FrameImg.Label", "Empty socket image"))}</label>
+              <div class="form-fields">
+                <file-picker
+                  name="slotFrameImg"
+                  type="image"
+                  value="${escapeHtml(defaults.frameImg)}"
+                  placeholder="${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.FrameImg.Placeholder", "Default socket image"))}"
+                ></file-picker>
+              </div>
+              <p class="hint">${escapeHtml(Constants.localize(
+                "SCSockets.SocketSlotConfig.FrameImg.Hint",
+                "Artwork shown while the slot is empty, such as a battery bay or a rune notch. Leave it blank to use the default socket."
+              ))}</p>
+            </div>
+            <div class="form-group">
               <label>${escapeHtml(Constants.localize("SCSockets.SocketSlotConfig.Color.Label", "Slot color"))}</label>
               <div class="form-fields">
                 <input
@@ -248,6 +267,7 @@ export class AddSocketWorkflow {
                 description: readFieldValue(form, "slotDescription"),
                 condition: readFieldValue(form, "slotCondition"),
                 color: readFieldValue(form, "slotColor"),
+                frameImg: readFieldValue(form, "slotFrameImg"),
                 deleteGemOnRemoval: form?.querySelector?.('[name="slotDeleteGemOnRemoval"]')?.checked === true
               };
             }
@@ -271,6 +291,7 @@ export class AddSocketWorkflow {
         description: valueOrDefault(result.description, defaults.description),
         condition: valueOrDefault(result.condition, defaults.condition),
         color: colorOrDefault(result.color, defaults.color),
+        frameImg: valueOrDefault(result.frameImg, defaults.frameImg),
         deleteGemOnRemoval: result.deleteGemOnRemoval === true
       });
 

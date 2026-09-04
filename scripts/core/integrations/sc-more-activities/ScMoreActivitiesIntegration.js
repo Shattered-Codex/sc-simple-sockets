@@ -1092,7 +1092,7 @@ export class ScMoreActivitiesIntegration {
       name: slotName,
       slotIndex: Number(entry?.slotIndex ?? 0),
       slotAriaLabel,
-      slotFrameImg: Constants.SOCKET_SLOT_IMG,
+      slotFrameImg: slotConfig.frameImg || Constants.SOCKET_SLOT_IMG,
       slotLabel: ScMoreActivitiesIntegration.#format(
         "SCSockets.Integrations.ScMoreActivities.Common.SlotLabel",
         { slot: slotNumber },

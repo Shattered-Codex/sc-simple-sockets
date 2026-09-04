@@ -20,6 +20,8 @@ Use the same world content on both targets:
 - Drag a valid gem into a socket.
 - Confirm the item sheet updates immediately.
 - Remove the gem and confirm the item sheet updates immediately.
+- Open Socket Slot Settings, set an `Empty socket image` on one slot (field and click on the slot preview) and save.
+- Confirm the empty slot shows the custom artwork in the Sockets tab, the actor badges, and the socket descriptions, and that the reset button restores the default socket image.
 
 ## 3. Actor Inventory Badges
 

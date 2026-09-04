@@ -236,6 +236,13 @@
         "PickerLabel": "Seletor de cor",
         "Clear": "Limpar"
       },
+      "FrameImg": {
+        "Label": "Imagem do encaixe vazio",
+        "Hint": "Arte exibida enquanto o encaixe está vazio, como um compartimento de bateria ou um entalhe de runa. Deixe em branco para usar o encaixe padrão.",
+        "Placeholder": "Imagem padrão do encaixe",
+        "Pick": "Trocar a imagem do encaixe vazio",
+        "Reset": "Restaurar a imagem padrão do encaixe"
+      },
       "Validation": {
         "InvalidCondition": "A condição do slot contém código inválido."
       },

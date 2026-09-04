@@ -1,3 +1,5 @@
+import { Constants } from "../Constants.js";
+
 function normalizeText(value) {
   return typeof value === "string" ? value : "";
 }
@@ -24,12 +26,25 @@ export function normalizeSlotColor(value) {
   return `#${normalized.toUpperCase()}`;
 }
 
+/**
+ * Sanitizes the artwork configured for an empty socket. Anything that is not a
+ * usable image reference falls back to "" so the module default is used.
+ */
+export function normalizeSlotFrameImg(value) {
+  const raw = String(value ?? "").trim();
+  if (!raw.length || /^(javascript|vbscript):/i.test(raw)) {
+    return "";
+  }
+  return raw;
+}
+
 export function normalizeSlotConfig(config = {}) {
   return {
     name: normalizeText(config?.name),
     condition: normalizeText(config?.condition),
     description: normalizeText(config?.description),
     color: normalizeSlotColor(config?.color),
+    frameImg: normalizeSlotFrameImg(config?.frameImg),
     hidden: normalizeBoolean(config?.hidden),
     deleteGemOnRemoval: normalizeBoolean(config?.deleteGemOnRemoval)
   };
@@ -37,6 +52,18 @@ export function normalizeSlotConfig(config = {}) {
 
 export function getSlotConfig(slot) {
   return normalizeSlotConfig(slot?.slotConfig);
+}
+
+/**
+ * Artwork shown while the slot is empty: the per-slot image when configured,
+ * otherwise the module default socket frame.
+ */
+export function resolveSlotFrameImg(slot) {
+  return getSlotConfig(slot).frameImg || Constants.SOCKET_SLOT_IMG;
+}
+
+export function hasCustomSlotFrameImg(slot) {
+  return Boolean(getSlotConfig(slot).frameImg);
 }
 
 export function isSlotHidden(slot) {
