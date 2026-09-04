@@ -12,6 +12,8 @@ Use the same world content on both targets:
 - Start the world with only `sc-simple-sockets` and `libWrapper`.
 - Confirm there is no startup exception in the console.
 - Open module settings and confirm socket settings menus open correctly.
+- Confirm the module section shows one row of links (wiki, Patreon support, Discord) and that no loose Simple Sockets option is left in Foundry's list.
+- Open the configuration window, switch to the Advanced tab, and confirm the What's New popup and debug logging toggles save and persist.
 
 ## 2. Item Socket Flow
 

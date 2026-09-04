@@ -937,7 +937,9 @@ All options are available in:
 
 ### Main options summary
 
-The **Module configuration** menu opens a single window with four tabs. The footer shows an *Unsaved changes* pill whenever something differs from the saved values, and nothing is applied until you press **Save Changes**.
+The **Module configuration** menu opens a single window with five tabs — no option is left loose in Foundry's module list. The footer shows an *Unsaved changes* pill whenever something differs from the saved values, and nothing is applied until you press **Save Changes**.
+
+Below the menu, a compact row of links opens the wiki, the support popup, and the Shattered Codex Discord.
 
 | Tab | Setting | Default | What it does |
 | --- | --- | --- | --- |
@@ -950,6 +952,10 @@ The **Module configuration** menu opens a single window with four tabs. The foot
 | **Item types** | Socketable Item Types | `weapon`, `equipment` | Defines which items can receive sockets |
 | **Gem subtypes** | Gem Loot Subtypes | `gem` | Defines which loot subtypes count as gems |
 | **Gem subtypes** | Custom Loot Subtypes | empty | Lets you create extra gem-like subtypes |
+| **Advanced** | Hide automatic What's New popup until next update | `true` | Keeps the release popup hidden until the module updates |
+| **Advanced** | Debug trace logging | `false` | Logs socket UI activity to the browser console |
+
+The **Advanced** tab holds per-user options: they only affect the browser you set them in, never the world.
 
 ## Troubleshooting
 

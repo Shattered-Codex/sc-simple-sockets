@@ -405,6 +405,13 @@
         "Label": "Open wiki",
         "Hint": "Open the SC - Simple Sockets documentation wiki."
       },
+      "DiscordLink": {
+        "Label": "Discord",
+        "Hint": "Join the Shattered Codex Discord server."
+      },
+      "CommunityLinks": {
+        "Aria": "Community links"
+      },
       "SocketBehaviorMenu": {
         "Name": "Socket settings",
         "Label": "Configure socket settings",
@@ -433,7 +440,9 @@
           "Types": "Item types",
           "TypesHint": "Choose which item types can receive sockets.",
           "Subtypes": "Gem subtypes",
-          "SubtypesHint": "Select which loot subtypes count as gems and manage custom subtypes. New custom subtypes appear in the selection above as soon as they are added."
+          "SubtypesHint": "Select which loot subtypes count as gems and manage custom subtypes. New custom subtypes appear in the selection above as soon as they are added.",
+          "Advanced": "Advanced",
+          "AdvancedHint": "Personal options for this browser: the What's New popup and troubleshooting logs."
         },
         "CustomBadge": "custom",
         "Save": "Save Changes",
@@ -446,6 +455,10 @@
       "HideSupportCard": {
         "Name": "Hide automatic What's New popup until next update",
         "Hint": "After the What's New popup appears for the current version, this option can keep it hidden until the next update. Uncheck it if you want the popup to appear whenever the world loads."
+      },
+      "DebugTrace": {
+        "Name": "Debug trace logging",
+        "Hint": "Logs item updates, sheet renders, and focus changes to the browser console to diagnose socket UI issues."
       }
     },
     "SupportCard": {
@@ -470,7 +483,8 @@
       "Status": {
         "Free": "Free",
         "Patreon": "Patreon",
-        "New": "New"
+        "New": "New",
+        "EarlyAccess": "Early Access"
       }
     },
     "RollLayout": {

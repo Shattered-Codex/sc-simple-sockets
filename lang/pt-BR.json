@@ -405,6 +405,13 @@
         "Label": "Abrir wiki",
         "Hint": "Abre a wiki de documentação do SC - Simple Sockets."
       },
+      "DiscordLink": {
+        "Label": "Discord",
+        "Hint": "Entre no servidor do Discord da Shattered Codex."
+      },
+      "CommunityLinks": {
+        "Aria": "Links da comunidade"
+      },
       "SocketBehaviorMenu": {
         "Name": "Configurações de soquetes",
         "Label": "Configurar soquetes",
@@ -433,7 +440,9 @@
           "Types": "Tipos de item",
           "TypesHint": "Escolha quais tipos de item podem receber soquetes.",
           "Subtypes": "Subtipos de gema",
-          "SubtypesHint": "Selecione quais subtipos de saque contam como gemas e gerencie subtipos personalizados. Novos subtipos personalizados aparecem na seleção acima assim que são adicionados."
+          "SubtypesHint": "Selecione quais subtipos de saque contam como gemas e gerencie subtipos personalizados. Novos subtipos personalizados aparecem na seleção acima assim que são adicionados.",
+          "Advanced": "Avançado",
+          "AdvancedHint": "Opções pessoais deste navegador: o popup de novidades e os logs de diagnóstico."
         },
         "CustomBadge": "personalizado",
         "Save": "Salvar alterações",
@@ -446,6 +455,10 @@
       "HideSupportCard": {
         "Name": "Ocultar popup automático de novidades até a próxima atualização",
         "Hint": "Depois que o popup de novidades aparecer para a versão atual, esta opção pode mantê-lo oculto até a próxima atualização. Desmarque se quiser que o popup apareça sempre que o mundo carregar."
+      },
+      "DebugTrace": {
+        "Name": "Log de depuração",
+        "Hint": "Registra atualizações de itens, renderizações de fichas e mudanças de foco no console do navegador para diagnosticar problemas na interface de encaixes."
       }
     },
     "SupportCard": {
@@ -470,7 +483,8 @@
       "Status": {
         "Free": "Grátis",
         "Patreon": "Patreon",
-        "New": "Novo"
+        "New": "Novo",
+        "EarlyAccess": "Acesso Antecipado"
       }
     },
     "RollLayout": {

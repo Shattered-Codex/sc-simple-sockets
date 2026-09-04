@@ -17,7 +17,8 @@ const TAB_RULES = "rules";
 const TAB_DISPLAY = "display";
 const TAB_TYPES = "types";
 const TAB_SUBTYPES = "subtypes";
-const TAB_IDS = [TAB_RULES, TAB_DISPLAY, TAB_TYPES, TAB_SUBTYPES];
+const TAB_ADVANCED = "advanced";
+const TAB_IDS = [TAB_RULES, TAB_DISPLAY, TAB_TYPES, TAB_SUBTYPES, TAB_ADVANCED];
 
 function handleFormSubmit(event, form, formData) {
   return this._processSubmitData(event, form, formData);
@@ -260,7 +261,7 @@ export class SocketsConfigApp extends BaseApplication {
     const panel = root?.querySelector?.(`[data-tab-panel="${this.#activeTab}"]`);
     if (!panel) return;
 
-    if (this.#activeTab === TAB_RULES || this.#activeTab === TAB_DISPLAY) {
+    if (this.#activeTab === TAB_RULES || this.#activeTab === TAB_DISPLAY || this.#activeTab === TAB_ADVANCED) {
       for (const select of panel.querySelectorAll("select[data-default-value]")) {
         select.value = select.dataset.defaultValue;
         if (select.matches("[data-dynamic-description]")) this.#updateSelectDescription(select);
@@ -352,7 +353,8 @@ export class SocketsConfigApp extends BaseApplication {
         { id: TAB_RULES, icon: "fas fa-gears", label: strings.tabs.rules, active: this.#activeTab === TAB_RULES },
         { id: TAB_DISPLAY, icon: "fas fa-palette", label: strings.tabs.display, active: this.#activeTab === TAB_DISPLAY },
         { id: TAB_TYPES, icon: "fas fa-link", label: strings.tabs.types, active: this.#activeTab === TAB_TYPES },
-        { id: TAB_SUBTYPES, icon: "fas fa-gem", label: strings.tabs.subtypes, active: this.#activeTab === TAB_SUBTYPES }
+        { id: TAB_SUBTYPES, icon: "fas fa-gem", label: strings.tabs.subtypes, active: this.#activeTab === TAB_SUBTYPES },
+        { id: TAB_ADVANCED, icon: "fas fa-screwdriver-wrench", label: strings.tabs.advanced, active: this.#activeTab === TAB_ADVANCED }
       ],
       rules: {
         active: this.#activeTab === TAB_RULES,
@@ -417,6 +419,12 @@ export class SocketsConfigApp extends BaseApplication {
           remove: Constants.localize("SCSockets.Settings.GemLootSubtypes.Custom.Remove", "Remove")
         }
       },
+      advanced: {
+        active: this.#activeTab === TAB_ADVANCED,
+        title: strings.tabs.advanced,
+        hint: strings.tabs.advancedHint,
+        fields: this.#buildAdvancedFields()
+      },
       strings
     };
   }
@@ -450,6 +458,11 @@ export class SocketsConfigApp extends BaseApplication {
         subtypesHint: Constants.localize(
           "SCSockets.Settings.ConfigMenu.Tabs.SubtypesHint",
           "Select which loot subtypes count as gems and manage custom subtypes. New custom subtypes appear in the selection above as soon as they are added."
+        ),
+        advanced: Constants.localize("SCSockets.Settings.ConfigMenu.Tabs.Advanced", "Advanced"),
+        advancedHint: Constants.localize(
+          "SCSockets.Settings.ConfigMenu.Tabs.AdvancedHint",
+          "Personal options for this browser: the What's New popup and troubleshooting logs."
         )
       }
     };
@@ -617,6 +630,40 @@ export class SocketsConfigApp extends BaseApplication {
         isCheckbox: true,
         defaultChecked: "true",
         checked: ModuleSettings.shouldShowGemBadgesInFavorites()
+      }
+    ];
+  }
+
+  /**
+   * Client-scoped options that used to sit loose in Foundry's module list.
+   * They only affect the user configuring them, never the world.
+   */
+  #buildAdvancedFields() {
+    return [
+      {
+        key: ModuleSettings.SETTING_HIDE_SUPPORT_CARD,
+        name: Constants.localize(
+          "SCSockets.Settings.HideSupportCard.Name",
+          "Hide automatic What's New popup until next update"
+        ),
+        hint: Constants.localize(
+          "SCSockets.Settings.HideSupportCard.Hint",
+          "After the What's New popup appears for the current version, this option can keep it hidden until the next update. Uncheck it if you want the popup to appear whenever the world loads."
+        ),
+        isCheckbox: true,
+        defaultChecked: "true",
+        checked: ModuleSettings.shouldHideSupportCard()
+      },
+      {
+        key: ModuleSettings.SETTING_DEBUG_TRACE,
+        name: Constants.localize("SCSockets.Settings.DebugTrace.Name", "Debug trace logging"),
+        hint: Constants.localize(
+          "SCSockets.Settings.DebugTrace.Hint",
+          "Logs item updates, sheet renders, and focus changes to the browser console to diagnose socket UI issues."
+        ),
+        isCheckbox: true,
+        defaultChecked: "false",
+        checked: ModuleSettings.isDebugTraceEnabled()
       }
     ];
   }
@@ -843,7 +890,9 @@ export class SocketsConfigApp extends BaseApplication {
       gemFormulaShowImage: checkboxValue(ModuleSettings.SETTING_GEM_FORMULA_SHOW_IMAGE, true),
       gemBadgesFavorites: checkboxValue(ModuleSettings.SETTING_GEM_BADGES_FAVORITES, true),
       socketTabLayout,
-      enableSocketTabForAllItems: checkboxValue(ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS, true)
+      enableSocketTabForAllItems: checkboxValue(ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS, true),
+      hideSupportCard: checkboxValue(ModuleSettings.SETTING_HIDE_SUPPORT_CARD, true),
+      debugTrace: checkboxValue(ModuleSettings.SETTING_DEBUG_TRACE, false)
     };
   }
 
@@ -885,6 +934,12 @@ export class SocketsConfigApp extends BaseApplication {
       ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS,
       behavior.enableSocketTabForAllItems
     );
+    await game.settings.set(
+      Constants.MODULE_ID,
+      ModuleSettings.SETTING_HIDE_SUPPORT_CARD,
+      behavior.hideSupportCard
+    );
+    await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_DEBUG_TRACE, behavior.debugTrace);
 
     this.#captureBaselines();
     this.#saved = true;
@@ -944,6 +999,10 @@ export class SocketsConfigApp extends BaseApplication {
           behavior.gemFormulaShowImage,
           behavior.gemBadgesFavorites
         ]);
+      }
+      case TAB_ADVANCED: {
+        const behavior = this.#collectBehaviorValues();
+        return JSON.stringify([behavior.hideSupportCard, behavior.debugTrace]);
       }
       case TAB_TYPES:
         return JSON.stringify(this.#collectSelectedTypes().sort());

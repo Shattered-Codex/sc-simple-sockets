@@ -185,6 +185,8 @@ export class SupportCardApp extends BaseApplication {
     };
 
     setText("[data-card-index]", `${slide.indexLabel} / ${slide.totalLabel}`);
+    setText("[data-card-eyebrow]", slide.eyebrow ?? "");
+    setText("[data-card-status]", slide.statusLabel ?? "");
     setText("[data-card-title]", slide.name);
     setText("[data-card-description]", slide.description);
 

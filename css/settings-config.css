@@ -711,6 +711,52 @@
   }
 }
 
+/* === Community links strip (Foundry settings sidebar) ===== */
+/* Injected at the end of the module's own settings section, so it is styled
+   outside the .sc-config-theme scope that covers the configuration window. */
+
+.sc-sockets-community-links {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border-light-tertiary, rgba(255, 255, 255, 0.1));
+}
+
+.sc-sockets-community-links .sc-sockets-community-link {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: auto;
+  min-width: 0;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.sc-sockets-community-links .sc-sockets-community-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sc-sockets-community-links .sc-sockets-community-link--wiki i {
+  color: #3cba54;
+}
+
+.sc-sockets-community-links .sc-sockets-community-link--patreon i {
+  color: #ff6b5a;
+}
+
+.sc-sockets-community-links .sc-sockets-community-link--discord i {
+  color: #7d8cf5;
+}
+
+.sc-sockets-community-links .sc-sockets-community-link:hover i {
+  filter: brightness(1.25);
+}
+
 /* === Reduced motion ======================================= */
 
 @media (prefers-reduced-motion: reduce) {
