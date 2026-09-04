@@ -39,6 +39,10 @@
         </div>
 
         <div class="scsockets-support-popup__feature-copy">
+          <p class="scsockets-support-popup__feature-eyebrow">
+            <span data-card-eyebrow>{{slide.eyebrow}}</span>
+            <span class="scsockets-support-popup__feature-status" data-card-status>{{slide.statusLabel}}</span>
+          </p>
           <h3 class="scsockets-support-popup__feature-title" data-card-title>{{slide.name}}</h3>
           <p class="scsockets-support-popup__feature-description" data-card-description>{{slide.description}}</p>
         </div>
@@ -106,10 +110,6 @@
       <a class="scsockets-support-popup__action scsockets-support-popup__action--patreon" href="{{links.patreon.url}}" target="_blank" rel="noopener">
         <i class="fa-brands fa-patreon" aria-hidden="true"></i>
         <span>{{links.patreon.label}}</span>
-      </a>
-      <a class="scsockets-support-popup__action scsockets-support-popup__action--feature" href="{{links.featureRequest.url}}" target="_blank" rel="noopener">
-        <i class="fas fa-star" aria-hidden="true"></i>
-        <span>{{links.featureRequest.label}}</span>
       </a>
     </div>
   </footer>

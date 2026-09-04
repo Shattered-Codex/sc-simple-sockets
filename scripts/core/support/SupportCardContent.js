@@ -1,79 +1,104 @@
 import { Constants } from "../Constants.js";
 
-const PATREON_URL = "https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=foundry_module&utm_campaign=support_popup";
-const DISCORD_URL = "https://discord.gg/6mWCQEJEwG";
-const FEATURE_REQUEST_URL = "https://github.com/Shattered-Codex/sc-simple-sockets/issues";
+const PATREON_URL = Constants.PATREON_URL;
+const DISCORD_URL = Constants.DISCORD_URL;
 
+const PUZZLE_ENGINE_URL = "https://wiki.shattered-codex.com/modules/sc-puzzle-engine";
+const PUZZLE_ENGINE_NAME = "SC - Puzzle Engine";
+const carouselImage = (name) => `modules/${Constants.MODULE_ID}/assets/support/carousel/${name}.webp`;
+
+/**
+ * The showcase is dedicated to SC - Puzzle Engine: one module, one slide per
+ * capability, using the screenshots published on its wiki page.
+ */
 const CATALOG_ENTRIES = [
   {
-    id: "setforge",
-    name: "SC - Setforge",
-    status: "Patreon",
-    eyebrow: "SET BONUSES • PROGRESSION",
-    description: "Create equipment sets with scalable bonuses, thresholds, and module-driven progression.",
-    url: "https://wiki.shattered-codex.com/modules/sc-setforge",
-    image: "modules/sc-simple-sockets/assets/support/carousel/setforge.webp",
-    tone: "gold"
-  },
-  {
-    id: "runeword",
-    name: "SC - Runeword",
-    status: "Patreon",
-    eyebrow: "RUNE COMBINATIONS • LOOT CHASE",
-    description: "Build runeword combinations with slot order, recipe logic, and unique rewards.",
-    url: "https://wiki.shattered-codex.com/modules/sc-runeword",
-    image: "modules/sc-simple-sockets/assets/support/carousel/runeword.webp",
+    id: "puzzle-engine-dexterity",
+    module: PUZZLE_ENGINE_NAME,
+    name: "Challenges the table plays",
+    status: "EarlyAccess",
+    eyebrow: "SC - PUZZLE ENGINE • SKILL & RHYTHM",
+    description: "Lockpicking stress bars, Timing Bar hit streaks, Simon crystal sequences, and Arrow Lane runs turn what used to be a flat ability check into something the players actually perform at the table.",
+    url: PUZZLE_ENGINE_URL,
+    image: carouselImage("puzzle-engine-lockpicking-solver"),
     tone: "ember"
   },
   {
-    id: "ascendant-items",
-    name: "SC - Ascendant Items",
-    status: "Patreon",
-    eyebrow: "EVOLVING LOOT • LONG-TERM GEAR",
-    description: "Design items that grow with the party, unlock milestones, and keep progression meaningful.",
-    url: "https://wiki.shattered-codex.com/modules/sc-ascendant-items",
-    image: "modules/sc-simple-sockets/assets/support/carousel/ascendant-items.webp",
+    id: "puzzle-engine-documents",
+    module: PUZZLE_ENGINE_NAME,
+    name: "Puzzles as real documents",
+    status: "EarlyAccess",
+    eyebrow: "SC - PUZZLE ENGINE • JOURNAL PAGES",
+    description: "Every puzzle is a Puzzle journal page with its own sheet: rules, attempts, presentation, and solution all live inside the journal, so an encounter travels with the adventure instead of living in your notes.",
+    url: PUZZLE_ENGINE_URL,
+    image: carouselImage("puzzle-engine-puzzle-codex-journal"),
     tone: "violet"
   },
   {
-    id: "more-gems",
-    name: "SC - More Gems",
-    status: "Patreon",
-    eyebrow: "120+ GEMS • MONTHLY DROPS",
-    description: "Expand Simple Sockets with a large ready-to-play gem library and fresh monthly content.",
-    url: "https://wiki.shattered-codex.com/modules/sc-more-gems",
-    image: "modules/sc-simple-sockets/assets/support/carousel/more-gems.webp",
+    id: "puzzle-engine-types",
+    module: PUZZLE_ENGINE_NAME,
+    name: "Twenty challenge types",
+    status: "EarlyAccess",
+    eyebrow: "SC - PUZZLE ENGINE • CHALLENGE CATALOG",
+    description: "PIN, Password, Mastermind, Ordering, Lights Out, Simon, Cryptex, Memory, Lockpicking, Timing Bar, Cipher, Word Search, Wordle, Placement, Drawing, Discs, Mosaic, Arrow Lane, Direct Effect, and Check — each with its own configuration and, where it applies, its own player interface.",
+    url: PUZZLE_ENGINE_URL,
+    image: carouselImage("puzzle-engine-puzzle-type-picker"),
     tone: "azure"
   },
   {
-    id: "runesmith",
-    name: "SC - Runesmith",
-    status: "Patreon",
-    eyebrow: "RUNE CRAFTING • CUSTOM SYSTEMS",
-    description: "Forge your own rune ecosystem with focused tooling for creation, balance, and progression.",
-    url: "https://wiki.shattered-codex.com/modules/sc-runesmith",
-    image: "modules/sc-simple-sockets/assets/support/carousel/runesmith.webp",
+    id: "puzzle-engine-consequences",
+    module: PUZZLE_ENGINE_NAME,
+    name: "Attempts, items, consequences",
+    status: "EarlyAccess",
+    eyebrow: "SC - PUZZLE ENGINE • GM CONFIGURATION",
+    description: "Limit attempts, require an item to even try, and configure what success and failure actually do. A live player preview sits next to the form, so you see exactly what the table will see while you build it.",
+    url: PUZZLE_ENGINE_URL,
+    image: carouselImage("puzzle-engine-configuration-tab"),
+    tone: "gold"
+  },
+  {
+    id: "puzzle-engine-solvers",
+    module: PUZZLE_ENGINE_NAME,
+    name: "Solver windows for players",
+    status: "EarlyAccess",
+    eyebrow: "SC - PUZZLE ENGINE • MULTIPLAYER SESSIONS",
+    description: "Players get a synchronized window with seating, turns, timers, and spectators. Answers are never sent to the client: the active GM validates every attempt and owns the consequences.",
+    url: PUZZLE_ENGINE_URL,
+    image: carouselImage("puzzle-engine-mastermind-solver"),
     tone: "teal"
   },
   {
-    id: "npc-character-colors",
-    name: "SC - NPC & Character Colors",
-    status: "Free",
-    eyebrow: "VISUAL CLARITY • SHEET IDENTITY",
-    description: "Give actor sheets stronger identity with configurable rarity, NPC, and character color themes.",
-    url: "https://wiki.shattered-codex.com/modules/sc-npc-and-character-colors",
-    image: "modules/sc-simple-sockets/assets/support/carousel/npc-character-colors.webp",
+    id: "puzzle-engine-presentation",
+    module: PUZZLE_ENGINE_NAME,
+    name: "Themes for every scene",
+    status: "EarlyAccess",
+    eyebrow: "SC - PUZZLE ENGINE • PRESENTATION",
+    description: "A theme gallery restyles the solver window per puzzle, with bundled runic and celtic typefaces, so a dwarven vault, an arcane seal, and a clockwork lock never look like the same dialog.",
+    url: PUZZLE_ENGINE_URL,
+    image: carouselImage("puzzle-engine-presentation-tab"),
     tone: "rose"
   },
   {
-    id: "the-cauldron",
-    name: "SC - The Cauldron",
-    status: "New",
-    eyebrow: "CRAFTING • ALCHEMY",
-    description: "Run recipe-driven crafting with ingredients, outcomes, and player-facing discovery loops.",
-    url: "https://wiki.shattered-codex.com/modules/sc-the-cauldron",
-    image: "modules/sc-simple-sockets/assets/support/carousel/the-cauldron.webp",
+    id: "puzzle-engine-hub",
+    module: PUZZLE_ENGINE_NAME,
+    name: "The Puzzle Hub",
+    status: "EarlyAccess",
+    eyebrow: "SC - PUZZLE ENGINE • SESSION CONTROL",
+    description: "One window lists every puzzle in the world with its current state — draft, open, solved — so you can open, close, reset, unlock, or force-solve any of them mid-session without digging through journals.",
+    url: PUZZLE_ENGINE_URL,
+    image: carouselImage("puzzle-engine-puzzle-hub"),
     tone: "green"
+  },
+  {
+    id: "puzzle-engine-triggers",
+    module: PUZZLE_ENGINE_NAME,
+    name: "Triggers, state and chaining",
+    status: "EarlyAccess",
+    eyebrow: "SC - PUZZLE ENGINE • CANVAS INTEGRATION",
+    description: "Bind a puzzle to doors, walls, lights, tiles, tokens, regions, drawings, map notes, ambient sounds, macros, or enriched links. State can be per player or world-wide, and a solved puzzle can chain straight into the next step of the encounter.",
+    url: PUZZLE_ENGINE_URL,
+    image: carouselImage("puzzle-engine-state-tab"),
+    tone: "azure"
   }
 ];
 
@@ -83,6 +108,10 @@ const RELEASE_SECTIONS = [
     title: "Added",
     tone: "added",
     items: [
+      {
+        title: "Custom empty socket artwork",
+        text: "Each socket slot can carry its own image for the empty state, so one item can mix a battery bay, a rune notch, and a plain socket instead of only tinting the same frame. Set it in Socket Slot Settings — through the field or by clicking the slot preview — and press Default to restore the original artwork."
+      },
       {
         title: "Socket-powered Item Uses",
         text: "Set an item's Limited Uses maximum to @sc.sockets.gems or @sc.sockets.total to make its native dnd5e uses follow filled gems or total socket slots. Item Uses consumption and the item's own Recovery profiles continue to work normally."
@@ -106,6 +135,10 @@ const RELEASE_SECTIONS = [
     title: "Improved",
     tone: "improved",
     items: [
+      {
+        title: "Every option in one window",
+        text: "The What's New popup toggle and debug trace logging moved into a new Advanced tab of the Module configuration window, so nothing is left loose in Foundry's module list. The wiki, Patreon, and Discord links now sit in a single compact row."
+      },
       {
         title: "Live socket-backed capacity",
         text: "Inserting or extracting a gem immediately refreshes socket-bound Item Uses. Existing remaining uses are preserved when capacity changes, and derived counters stay read-only on item and actor sheets."
@@ -158,7 +191,6 @@ export function buildSupportCardContent(moduleVersion) {
         "SCSockets.SupportCard.DontShowAgain",
         "Don't show again until the next update"
       ),
-      featureRequest: Constants.localize("SCSockets.SupportCard.FeatureRequest", "Feature Request"),
       close: Constants.localize("SCSockets.SupportCard.Close", "Close"),
       versionBadge: `v${moduleVersion}`
     },
@@ -178,18 +210,16 @@ export function buildSupportCardContent(moduleVersion) {
         label: Constants.localize("SCSockets.SupportCard.Wiki", "Wiki"),
         url: Constants.MODULE_WIKI_URL
       },
+      // Feature requests used to be their own GitHub button; the Discord
+      // server is where they are actually discussed, so the two are one.
       discord: {
-        label: Constants.localize("SCSockets.SupportCard.Discord", "Discord"),
+        label: Constants.localize("SCSockets.SupportCard.DiscordRequests", "Discord & Requests"),
         url: DISCORD_URL
       },
       patreon: {
         label: Constants.localize("SCSockets.SupportCard.Link", "Patreon"),
         url: PATREON_URL
       },
-      featureRequest: {
-        label: Constants.localize("SCSockets.SupportCard.FeatureRequest", "Feature Request"),
-        url: FEATURE_REQUEST_URL
-      }
     }
   };
 }

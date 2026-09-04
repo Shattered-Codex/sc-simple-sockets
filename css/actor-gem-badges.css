@@ -707,17 +707,6 @@ body.sc-sockets-extract-cursor * {
   gap: 0.6rem;
 }
 
-.scsockets-docs-button i.fa-hat-wizard,
-.scsockets-docs-setting-row i.fa-hat-wizard {
-  color: #3cba54;
-}
-
-.scsockets-docs-button:hover i.fa-hat-wizard,
-.scsockets-docs-button:focus i.fa-hat-wizard {
-  color: #62d276;
-  text-shadow: 0 0 6px rgba(60, 186, 84, 0.35);
-}
-
 .sc-sockets-settings-card h4 {
   margin: 0;
   color: var(--sf-text-strong);
@@ -1637,16 +1626,6 @@ body.sc-sockets-extract-cursor * {
 .sc-sockets-settings-btn--ghost:focus-visible {
   border-color: color-mix(in srgb, var(--sf-accent) 45%, #c8ffd8 55%);
   color: var(--sf-text-strong);
-}
-
-.scsockets-support-button i {
-  color: #ff424d;
-}
-
-.scsockets-support-button:hover i,
-.scsockets-support-button:focus i {
-  color: #ff6a72;
-  text-shadow: 0 0 6px rgba(255, 66, 77, 0.35);
 }
 
 /* Gem Details tab */

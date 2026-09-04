@@ -1,7 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "./ModuleSettings.js";
-import { DocumentationMenu } from "./DocumentationMenu.js";
-import { SupportMenu } from "./SupportMenu.js";
+import { CommunityLinks } from "./CommunityLinks.js";
 import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
 import { TidyIntegration } from "../integration/TidyIntegration.js";
 
@@ -50,8 +49,6 @@ export class ModuleSettingsRegistrar {
    */
   async register() {
     this.registerSettings();
-    this.#registerSupportMenu();
-    this.#registerDocumentationMenu();
     await this.#registerConfigMenu();
   }
 
@@ -92,42 +89,13 @@ export class ModuleSettingsRegistrar {
     ModuleSettingsRegistrar.#settingsConfigHookRegistered = true;
 
     Hooks.on("renderSettingsConfig", (_app, html) => {
-      SupportMenu.bindSettingsButton(html);
-      DocumentationMenu.bindSettingsButton(html);
+      CommunityLinks.inject(html);
     });
   }
 
   // ---------------------------------------------------------------------------
   // Menus
   // ---------------------------------------------------------------------------
-
-  #registerSupportMenu() {
-    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_SUPPORT_MENU, {
-      name: Constants.localize("SCSockets.Settings.SupportMenu.Name", "Support the developer"),
-      label: Constants.localize("SCSockets.Settings.SupportMenu.Label", "Patreon support"),
-      hint: Constants.localize(
-        "SCSockets.Settings.SupportMenu.Hint",
-        "Get access to SC - More Gems with 120+ gems, and more every month. We are also building SC - Setforge to create item sets."
-      ),
-      icon: "fas fa-heart",
-      type: SupportMenu,
-      restricted: true
-    });
-  }
-
-  #registerDocumentationMenu() {
-    game.settings.registerMenu(Constants.MODULE_ID, ModuleSettings.SETTING_DOCUMENTATION_MENU, {
-      name: Constants.localize("SCSockets.Settings.DocumentationMenu.Name", "Documentation"),
-      label: Constants.localize("SCSockets.Settings.DocumentationMenu.Label", "Open wiki"),
-      hint: Constants.localize(
-        "SCSockets.Settings.DocumentationMenu.Hint",
-        "Open the SC - Simple Sockets documentation wiki."
-      ),
-      icon: "fas fa-hat-wizard",
-      type: DocumentationMenu,
-      restricted: true
-    });
-  }
 
   /**
    * Single configuration window (Shattered Codex "Sidebar Tabs" archetype)
@@ -398,7 +366,7 @@ export class ModuleSettingsRegistrar {
         "After the What's New popup appears for the current version, this option can keep it hidden until the next update. Uncheck it if you want the popup to appear whenever the world loads."
       ),
       scope: "client",
-      config: true,
+      config: false,
       type: Boolean,
       default: true
     });
@@ -422,7 +390,7 @@ export class ModuleSettingsRegistrar {
         "Logs item updates, sheet renders, and focus changes to the browser console to diagnose socket UI issues."
       ),
       scope: "client",
-      config: true,
+      config: false,
       type: Boolean,
       default: false,
       onChange: (value) => {

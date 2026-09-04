@@ -236,6 +236,14 @@
         "PickerLabel": "Color picker",
         "Clear": "Clear"
       },
+      "FrameImg": {
+        "Label": "Empty socket image",
+        "Hint": "Artwork shown while the slot is empty, such as a battery bay or a rune notch. Leave it blank to use the default socket.",
+        "Placeholder": "Default socket image",
+        "Pick": "Change the empty socket image",
+        "Reset": "Restore the default socket image",
+        "ResetLabel": "Default"
+      },
       "Validation": {
         "InvalidCondition": "The slot condition has invalid code."
       },
@@ -387,15 +395,20 @@
         "Name": "Enable Socket Tab on all items",
         "Hint": "If enabled, the Sockets tab appears on every socketable item. If disabled, it must be enabled per item in Details."
       },
-      "SupportMenu": {
-        "Name": "Support the developer",
-        "Label": "Open support popup",
-        "Hint": "Open the Shattered Codex popup with release notes, module highlights, Patreon, Discord, and wiki links."
-      },
-      "DocumentationMenu": {
-        "Name": "Documentation",
+      "WikiLink": {
         "Label": "Open wiki",
         "Hint": "Open the SC - Simple Sockets documentation wiki."
+      },
+      "PatreonLink": {
+        "Label": "Patreon support",
+        "Hint": "Support Shattered Codex development on Patreon."
+      },
+      "DiscordLink": {
+        "Label": "Discord",
+        "Hint": "Join the Shattered Codex Discord server."
+      },
+      "CommunityLinks": {
+        "Aria": "Community links"
       },
       "SocketBehaviorMenu": {
         "Name": "Socket settings",
@@ -425,7 +438,9 @@
           "Types": "Item types",
           "TypesHint": "Choose which item types can receive sockets.",
           "Subtypes": "Gem subtypes",
-          "SubtypesHint": "Select which loot subtypes count as gems and manage custom subtypes. New custom subtypes appear in the selection above as soon as they are added."
+          "SubtypesHint": "Select which loot subtypes count as gems and manage custom subtypes. New custom subtypes appear in the selection above as soon as they are added.",
+          "Advanced": "Advanced",
+          "AdvancedHint": "Personal options for this browser: the What's New popup and troubleshooting logs."
         },
         "CustomBadge": "custom",
         "Save": "Save Changes",
@@ -438,6 +453,10 @@
       "HideSupportCard": {
         "Name": "Hide automatic What's New popup until next update",
         "Hint": "After the What's New popup appears for the current version, this option can keep it hidden until the next update. Uncheck it if you want the popup to appear whenever the world loads."
+      },
+      "DebugTrace": {
+        "Name": "Debug trace logging",
+        "Hint": "Logs item updates, sheet renders, and focus changes to the browser console to diagnose socket UI issues."
       }
     },
     "SupportCard": {
@@ -445,6 +464,7 @@
       "Intro": "Support us on Patreon to help us keep creating.",
       "Exclusive": "Get access to the exclusive <strong>SC - More Gems</strong> module with 120+ gems and monthly updates. We are also building <strong>SC - Setforge</strong> so you can create item sets.",
       "Discord": "Discord",
+      "DiscordRequests": "Discord & Requests",
       "DiscordInvite": "Join the community",
       "Issues": "Issues / Requests",
       "Link": "Patreon",
@@ -457,12 +477,12 @@
       "ReleaseSubtitle": "SC - Simple Sockets Changelog",
       "ViewModule": "View on wiki",
       "DontShowAgain": "Don't show again until the next update",
-      "FeatureRequest": "Feature Request",
       "Close": "Close",
       "Status": {
         "Free": "Free",
         "Patreon": "Patreon",
-        "New": "New"
+        "New": "New",
+        "EarlyAccess": "Early Access"
       }
     },
     "RollLayout": {

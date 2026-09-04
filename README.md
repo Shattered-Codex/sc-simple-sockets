@@ -820,6 +820,7 @@ This is important because it lets you create special sockets instead of making e
 | `Slot condition` | Extra rule that accepts or blocks a gem |
 | `Slot description` | Text shown while the socket is empty |
 | `Slot color` | Color used for the empty socket |
+| `Empty socket image` | Artwork used for the empty socket |
 | `Inspect Gem` | Opens the gem currently inside that socket |
 
 ### Slot description
@@ -829,6 +830,25 @@ Good examples:
 - "Accepts only frost gems"
 - "Ancient socket"
 - "Weakened slot"
+
+### Empty socket image
+
+Each socket can use its own artwork while it is empty, so a battery bay, a rune notch, and a plain gem socket can live on the same item.
+
+Pick the image in `Socket Slot Settings`, either with the `Empty socket image` field or by clicking the slot preview. The `Default` button next to the field clears the custom image and brings back the socket artwork that ships with the module; it stays disabled while the slot already uses the default.
+
+The custom image appears wherever the empty socket is drawn:
+
+- the Sockets tab
+- Tidy views
+- actor inventory badges
+- socket description entries
+- the socket and gem pickers of the `sc-more-activities` activities
+
+Important:
+
+- the image is for the **empty socket**: once a gem is socketed, the gem image takes over
+- the slot color still tints whatever image the socket uses
 
 ### Slot color
 
@@ -917,7 +937,9 @@ All options are available in:
 
 ### Main options summary
 
-The **Module configuration** menu opens a single window with four tabs. The footer shows an *Unsaved changes* pill whenever something differs from the saved values, and nothing is applied until you press **Save Changes**.
+The **Module configuration** menu opens a single window with five tabs — no option is left loose in Foundry's module list. The footer shows an *Unsaved changes* pill whenever something differs from the saved values, and nothing is applied until you press **Save Changes**.
+
+Below the menu, a compact row of links opens the wiki, the Shattered Codex Patreon, and the Discord server.
 
 | Tab | Setting | Default | What it does |
 | --- | --- | --- | --- |
@@ -930,6 +952,10 @@ The **Module configuration** menu opens a single window with four tabs. The foot
 | **Item types** | Socketable Item Types | `weapon`, `equipment` | Defines which items can receive sockets |
 | **Gem subtypes** | Gem Loot Subtypes | `gem` | Defines which loot subtypes count as gems |
 | **Gem subtypes** | Custom Loot Subtypes | empty | Lets you create extra gem-like subtypes |
+| **Advanced** | Hide automatic What's New popup until next update | `true` | Keeps the release popup hidden until the module updates |
+| **Advanced** | Debug trace logging | `false` | Logs socket UI activity to the browser console |
+
+The **Advanced** tab holds per-user options: they only affect the browser you set them in, never the world.
 
 ## Troubleshooting
 
@@ -1039,6 +1065,7 @@ await sockets.addSlot(item.uuid, {
     description: "Accepts one adornment ruby.",
     condition: "return hasGemTag('adornment-ruby');",
     color: "#9f1239",
+    frameImg: "modules/my-art-pack/battery-slot.webp",
     deleteGemOnRemoval: false
   }
 });
@@ -1170,12 +1197,13 @@ await game.modules.get("sc-simple-sockets")?.api?.macro?.addSocketInteractive({
     name: "Runeword Socket",
     description: "Only accepts runes from your curated list.",
     condition: "return gem?.type === 'loot' && gem?.name?.includes('Rune');",
-    color: "#C44D24"
+    color: "#C44D24",
+    frameImg: "modules/my-art-pack/rune-notch.webp"
   }
 });
 ```
 
-When `promptSlotConfig` is enabled, the dialog lets you edit `name`, `description`, `condition`, and `color`. If a field is left blank, the configured default value is used.
+When `promptSlotConfig` is enabled, the dialog lets you edit `name`, `description`, `condition`, `color`, and the empty socket image. If a field is left blank, the configured default value is used.
 
 ### Example macro: remove a gem without deleting it
 

@@ -1,7 +1,7 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
-import { canUserSeeSlot, getSlotConfig } from "./socketSlotConfig.js";
+import { canUserSeeSlot, getSlotConfig, resolveSlotFrameImg } from "./socketSlotConfig.js";
 
 export function buildSocketLayoutContext(item, {
   editable = false,
@@ -88,7 +88,8 @@ export function buildSocketLayoutContext(item, {
           hasSlotTint: Boolean(tintColor),
           index,
           displayIndex: index + 1,
-          slotFrameImg: Constants.SOCKET_SLOT_IMG,
+          slotFrameImg: resolveSlotFrameImg({ slotConfig }),
+          hasCustomSlotFrame: Boolean(slotConfig.frameImg),
           slotMaskStyle,
           slotColor: tintColor,
           slotConfig,

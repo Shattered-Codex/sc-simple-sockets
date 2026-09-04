@@ -1,13 +1,17 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, test } from "node:test";
 
+import { Constants } from "../scripts/core/Constants.js";
 import {
   canUserSeeSlot,
   getSlotConfig,
+  hasCustomSlotFrameImg,
   hasSlotConfigDescription,
   isSlotHidden,
   normalizeSlotColor,
-  normalizeSlotConfig
+  normalizeSlotConfig,
+  normalizeSlotFrameImg,
+  resolveSlotFrameImg
 } from "../scripts/core/helpers/socketSlotConfig.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
 
@@ -34,6 +38,7 @@ describe("socketSlotConfig helpers", () => {
         condition: null,
         description: 123,
         color: "0f0",
+        frameImg: "  modules/pack/battery-slot.webp  ",
         hidden: "on",
         deleteGemOnRemoval: 1
       }),
@@ -42,6 +47,7 @@ describe("socketSlotConfig helpers", () => {
         condition: "",
         description: "",
         color: "#00FF00",
+        frameImg: "modules/pack/battery-slot.webp",
         hidden: true,
         deleteGemOnRemoval: true
       }
@@ -75,10 +81,29 @@ describe("socketSlotConfig helpers", () => {
       condition: "",
       description: "  Socket flavor text  ",
       color: "#FFFFFF",
+      frameImg: "",
       hidden: false,
       deleteGemOnRemoval: false
     });
     assert.equal(hasSlotConfigDescription(slot), true);
     assert.equal(hasSlotConfigDescription({ slotConfig: { description: "   " } }), false);
+  });
+
+  test("normalizeSlotFrameImg trims paths and drops script urls", () => {
+    assert.equal(normalizeSlotFrameImg(" modules/pack/battery.webp "), "modules/pack/battery.webp");
+    assert.equal(normalizeSlotFrameImg(""), "");
+    assert.equal(normalizeSlotFrameImg(null), "");
+    assert.equal(normalizeSlotFrameImg("javascript:alert(1)"), "");
+    assert.equal(normalizeSlotFrameImg("JavaScript:alert(1)"), "");
+  });
+
+  test("frame image helpers fall back to the module default socket", () => {
+    const custom = { slotConfig: { frameImg: "modules/pack/battery.webp" } };
+
+    assert.equal(resolveSlotFrameImg(custom), "modules/pack/battery.webp");
+    assert.equal(hasCustomSlotFrameImg(custom), true);
+    assert.equal(resolveSlotFrameImg({ slotConfig: {} }), Constants.SOCKET_SLOT_IMG);
+    assert.equal(resolveSlotFrameImg(null), Constants.SOCKET_SLOT_IMG);
+    assert.equal(hasCustomSlotFrameImg({ slotConfig: { frameImg: "  " } }), false);
   });
 });

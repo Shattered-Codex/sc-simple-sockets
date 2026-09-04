@@ -1,6 +1,6 @@
 import { Constants } from "./Constants.js";
 import { GemCriteria } from "../domain/gems/GemCriteria.js";
-import { normalizeSlotConfig } from "./helpers/socketSlotConfig.js";
+import { normalizeSlotConfig, resolveSlotFrameImg } from "./helpers/socketSlotConfig.js";
 
 export class ItemResolver {
   static async resolveDraggedItem(data) {
@@ -49,14 +49,17 @@ export class ItemResolver {
         img: slot?.gem?.img ?? snapshotMeta?.img ?? null
       }
       : null;
-    const img = gem?.img ?? slot?.img ?? Constants.SOCKET_SLOT_IMG;
+    const slotConfig = normalizeSlotConfig(slot?.slotConfig);
+    // Empty slots follow their configured frame image so re-configuring a slot
+    // is never shadowed by the icon persisted at socketing time.
+    const img = gem?.img ?? (slotConfig.frameImg || slot?.img || Constants.SOCKET_SLOT_IMG);
     const defaultName = gem?.name ?? Constants.localize("SCSockets.SocketEmptyName", "Empty");
 
     return {
       gem,
       img,
       name: typeof slot?.name === "string" && slot.name.length ? slot.name : defaultName,
-      slotConfig: normalizeSlotConfig(slot?.slotConfig),
+      slotConfig,
       _gemData: slot?._gemData ? ItemResolver.compactSnapshot(slot._gemData) : null,
       _gemInstanceId: gem
         ? (typeof slot?._gemInstanceId === "string" && slot._gemInstanceId.length

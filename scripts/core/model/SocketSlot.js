@@ -1,5 +1,5 @@
 import { Constants } from "../Constants.js";
-import { getSlotConfig, normalizeSlotConfig } from "../helpers/socketSlotConfig.js";
+import { getSlotConfig, normalizeSlotConfig, resolveSlotFrameImg } from "../helpers/socketSlotConfig.js";
 
 export class SocketSlot {
   
@@ -8,7 +8,7 @@ export class SocketSlot {
     const name = slotConfig.name || Constants.localize("SCSockets.SocketEmptyName", "Empty");
     return {
       gem: null,
-      img: Constants.SOCKET_SLOT_IMG,
+      img: resolveSlotFrameImg({ slotConfig }),
       name,
       slotConfig
     };
@@ -53,11 +53,19 @@ export class SocketSlot {
       ? (prev?.gem?.name ?? Constants.localize("SCSockets.SocketEmptyName", "Empty"))
       : Constants.localize("SCSockets.SocketEmptyName", "Empty");
 
-    return {
+    const next = {
       ...(prev ?? this.makeDefault()),
       slotConfig,
       name: slotConfig.name || fallbackName,
       _slot: Number.isInteger(slotIndex) ? slotIndex : prev?._slot ?? null
     };
+
+    // An empty slot displays its configured artwork, so a new frame image has
+    // to reach the stored icon as well. A filled slot keeps the gem icon.
+    if (!hasGem) {
+      next.img = resolveSlotFrameImg({ slotConfig });
+    }
+
+    return next;
   }
 }

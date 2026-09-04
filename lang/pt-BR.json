@@ -236,6 +236,14 @@
         "PickerLabel": "Seletor de cor",
         "Clear": "Limpar"
       },
+      "FrameImg": {
+        "Label": "Imagem do encaixe vazio",
+        "Hint": "Arte exibida enquanto o encaixe está vazio, como um compartimento de bateria ou um entalhe de runa. Deixe em branco para usar o encaixe padrão.",
+        "Placeholder": "Imagem padrão do encaixe",
+        "Pick": "Trocar a imagem do encaixe vazio",
+        "Reset": "Restaurar a imagem padrão do encaixe",
+        "ResetLabel": "Padrão"
+      },
       "Validation": {
         "InvalidCondition": "A condição do slot contém código inválido."
       },
@@ -387,15 +395,20 @@
         "Name": "Ativar Socket Tab em todos os itens",
         "Hint": "Se ativado, a aba de soquetes aparece em todos os itens socketáveis. Se desativado, ela precisa ser habilitada por item em Detalhes."
       },
-      "SupportMenu": {
-        "Name": "Apoie o desenvolvedor",
-        "Label": "Abrir popup de suporte",
-        "Hint": "Abre o popup da Shattered Codex com notas da versão, destaques de módulos e links para Patreon, Discord e wiki."
-      },
-      "DocumentationMenu": {
-        "Name": "Documentação",
+      "WikiLink": {
         "Label": "Abrir wiki",
         "Hint": "Abre a wiki de documentação do SC - Simple Sockets."
+      },
+      "PatreonLink": {
+        "Label": "Apoiar no Patreon",
+        "Hint": "Apoie o desenvolvimento da Shattered Codex no Patreon."
+      },
+      "DiscordLink": {
+        "Label": "Discord",
+        "Hint": "Entre no servidor do Discord da Shattered Codex."
+      },
+      "CommunityLinks": {
+        "Aria": "Links da comunidade"
       },
       "SocketBehaviorMenu": {
         "Name": "Configurações de soquetes",
@@ -425,7 +438,9 @@
           "Types": "Tipos de item",
           "TypesHint": "Escolha quais tipos de item podem receber soquetes.",
           "Subtypes": "Subtipos de gema",
-          "SubtypesHint": "Selecione quais subtipos de saque contam como gemas e gerencie subtipos personalizados. Novos subtipos personalizados aparecem na seleção acima assim que são adicionados."
+          "SubtypesHint": "Selecione quais subtipos de saque contam como gemas e gerencie subtipos personalizados. Novos subtipos personalizados aparecem na seleção acima assim que são adicionados.",
+          "Advanced": "Avançado",
+          "AdvancedHint": "Opções pessoais deste navegador: o popup de novidades e os logs de diagnóstico."
         },
         "CustomBadge": "personalizado",
         "Save": "Salvar alterações",
@@ -438,6 +453,10 @@
       "HideSupportCard": {
         "Name": "Ocultar popup automático de novidades até a próxima atualização",
         "Hint": "Depois que o popup de novidades aparecer para a versão atual, esta opção pode mantê-lo oculto até a próxima atualização. Desmarque se quiser que o popup apareça sempre que o mundo carregar."
+      },
+      "DebugTrace": {
+        "Name": "Log de depuração",
+        "Hint": "Registra atualizações de itens, renderizações de fichas e mudanças de foco no console do navegador para diagnosticar problemas na interface de encaixes."
       }
     },
     "SupportCard": {
@@ -445,6 +464,7 @@
       "Intro": "Apoie-nos no Patreon para continuarmos criando.",
       "Exclusive": "Tenha acesso ao módulo exclusivo <strong>SC - More Gems</strong> com mais de 120 gemas e atualizações mensais. Também estamos criando o <strong>SC - Setforge</strong> para você montar sets de itens.",
       "Discord": "Discord",
+      "DiscordRequests": "Discord e Sugestões",
       "DiscordInvite": "Entrar na comunidade",
       "Issues": "Issues / Sugestões",
       "Link": "Patreon",
@@ -457,12 +477,12 @@
       "ReleaseSubtitle": "SC - Simple Sockets Changelog",
       "ViewModule": "Ver na wiki",
       "DontShowAgain": "Não mostrar novamente até a próxima atualização",
-      "FeatureRequest": "Sugerir recurso",
       "Close": "Fechar",
       "Status": {
         "Free": "Grátis",
         "Patreon": "Patreon",
-        "New": "Novo"
+        "New": "Novo",
+        "EarlyAccess": "Acesso Antecipado"
       }
     },
     "RollLayout": {

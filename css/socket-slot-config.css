@@ -312,12 +312,37 @@
 .socket-slot-config-app .slotcfg-config {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 16px 12px 16px 16px;
+  gap: 11px;
+  padding: 13px 12px 13px 16px;
   min-height: 0;
   overflow-y: auto;
   scrollbar-gutter: stable;
   border-right: 1px solid var(--slotcfg-border);
+}
+
+/* The window is sized so this column fits; when a socketed gem's charges and
+   recovery push it over on a short viewport, the scrollbar stays discreet
+   instead of painting a bright track down the middle of the window. */
+.socket-slot-config-app .slotcfg-config,
+.socket-slot-config-app .slotcfg-pane {
+  scrollbar-width: thin;
+  scrollbar-color: var(--slotcfg-border-strong) transparent;
+}
+
+.socket-slot-config-app .slotcfg-config::-webkit-scrollbar,
+.socket-slot-config-app .slotcfg-pane::-webkit-scrollbar {
+  width: 8px;
+}
+
+.socket-slot-config-app .slotcfg-config::-webkit-scrollbar-track,
+.socket-slot-config-app .slotcfg-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.socket-slot-config-app .slotcfg-config::-webkit-scrollbar-thumb,
+.socket-slot-config-app .slotcfg-pane::-webkit-scrollbar-thumb {
+  background: var(--slotcfg-border-strong);
+  border-radius: 999px;
 }
 
 .socket-slot-config-app .slotcfg-identity {
@@ -375,7 +400,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .socket-slot-config-app .slotcfg-section:last-child .slotcfg-section-head,
@@ -600,6 +625,87 @@
   transform: translateY(1px);
 }
 
+/* === Empty socket image =================================== */
+.socket-slot-config-app .slotcfg-img-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker input {
+  height: var(--slotcfg-control-h);
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 10px;
+  background: var(--slotcfg-bg-3);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  color: var(--slotcfg-text);
+  font-family: var(--slotcfg-font-mono);
+  font-size: 0.72rem;
+  outline: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker input:focus {
+  border-color: var(--slotcfg-accent);
+  box-shadow: 0 0 0 2px var(--slotcfg-accent-soft);
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker button {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--slotcfg-bg-2);
+  color: var(--slotcfg-text-dim);
+  border: 1px solid var(--slotcfg-border);
+  border-radius: var(--slotcfg-radius);
+  font-size: 0.72rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 120ms, color 120ms, border-color 120ms;
+}
+
+.socket-slot-config-app file-picker.slotcfg-img-picker button:hover,
+.socket-slot-config-app file-picker.slotcfg-img-picker button:focus-visible {
+  background: var(--slotcfg-bg-hover);
+  color: var(--slotcfg-text);
+}
+
+.socket-slot-config-app button.slotcfg-btn--reset {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* The slot preview doubles as a shortcut to the image picker. */
+.socket-slot-config-app button.slotcfg-tile-hit {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.socket-slot-config-app button.slotcfg-tile-hit:hover,
+.socket-slot-config-app button.slotcfg-tile-hit:focus-visible {
+  background: rgba(10, 16, 28, 0.24);
+  box-shadow: none;
+  outline: none;
+}
+
 /* === Tint picker ========================================== */
 .socket-slot-config-app .slotcfg-tint-row {
   display: flex;
@@ -756,9 +862,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   margin: 4px;
-  padding: 18px 14px;
+  padding: 13px 14px;
   text-align: center;
   border: 1px dashed var(--slotcfg-border);
   border-radius: var(--slotcfg-radius);
@@ -975,7 +1081,7 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 10px 2px;
+  padding: 7px 2px;
 }
 
 .socket-slot-config-app .slotcfg-switchrow-text {

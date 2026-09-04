@@ -29,8 +29,6 @@ export class ModuleSettings {
   static SETTING_SOCKETABLE_ITEM_TYPES = "socketableItemTypes";
   static SETTING_SOCKETABLE_ITEM_TYPES_MENU = "socketableItemTypesSettings";
   static SETTING_SOCKET_BEHAVIOR_MENU = "socketBehaviorSettings";
-  static SETTING_SUPPORT_MENU = "supportMenu";
-  static SETTING_DOCUMENTATION_MENU = "docsMenu";
   static SETTING_HIDE_SUPPORT_CARD = "hideSupportCardUntilNextUpdate";
   static SETTING_SUPPORT_CARD_VERSION = "supportCardAcknowledgedVersion";
   static SETTING_DEBUG_TRACE = "debugTrace";
@@ -239,6 +237,14 @@ export class ModuleSettings {
 
   static shouldUseSocketTabGridLayout() {
     return ModuleSettings.getSocketTabLayout() === ModuleSettings.SOCKET_TAB_LAYOUT_GRID;
+  }
+
+  static shouldHideSupportCard() {
+    if (!ModuleSettings.#isSettingRegistered(ModuleSettings.SETTING_HIDE_SUPPORT_CARD)) {
+      return true;
+    }
+
+    return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_HIDE_SUPPORT_CARD) === true;
   }
 
   static isDebugTraceEnabled() {

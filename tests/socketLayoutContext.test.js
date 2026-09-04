@@ -118,4 +118,21 @@ describe("buildSocketLayoutContext", () => {
       assert.equal(context.sockets[1].slotMaskStyle, "--sc-sockets-slot-color:#C44D24;");
     }
   });
+
+  test("empty sockets render their configured frame image", () => {
+    const context = buildSocketLayoutContext(
+      { uuid: "Item.test" },
+      {
+        sockets: [
+          { name: "Battery Bay", slotConfig: { frameImg: "modules/pack/battery-slot.webp" } },
+          { name: "Empty Socket", slotConfig: {} }
+        ]
+      }
+    );
+
+    assert.equal(context.sockets[0].slotFrameImg, "modules/pack/battery-slot.webp");
+    assert.equal(context.sockets[0].hasCustomSlotFrame, true);
+    assert.equal(context.sockets[1].slotFrameImg, Constants.SOCKET_SLOT_IMG);
+    assert.equal(context.sockets[1].hasCustomSlotFrame, false);
+  });
 });

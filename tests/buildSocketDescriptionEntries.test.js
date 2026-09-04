@@ -143,4 +143,20 @@ describe("buildSocketDescriptionEntries", () => {
       });
     }
   });
+
+  test("an empty slot uses its configured frame image as the entry icon", async () => {
+    const entries = await buildSocketDescriptionEntries({ isOwner: true }, [
+      {
+        name: "Battery Bay",
+        slotConfig: {
+          description: "slot description",
+          frameImg: "modules/pack/battery-slot.webp"
+        }
+      }
+    ]);
+
+    assert.equal(entries.length, 1);
+    assert.equal(entries[0].img, "modules/pack/battery-slot.webp");
+    assert.equal(entries[0].isEmptySlot, true);
+  });
 });

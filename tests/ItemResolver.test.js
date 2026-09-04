@@ -121,6 +121,7 @@ describe("ItemResolver", () => {
         condition: "",
         description: "",
         color: "#AABBCC",
+        frameImg: "",
         hidden: true,
         deleteGemOnRemoval: false
       },

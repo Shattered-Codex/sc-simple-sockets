@@ -1,6 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
-import { canUserSeeSlot, getSlotConfig } from "../helpers/socketSlotConfig.js";
+import { canUserSeeSlot, getSlotConfig, resolveSlotFrameImg } from "../helpers/socketSlotConfig.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { DebugTrace } from "../support/DebugTrace.js";
 
@@ -237,7 +237,9 @@ export class ActorGemBadges {
         ...slot,
         _index: index,
         name: slot?.name ?? Constants.localize("SCSockets.SocketEmptyName", "Empty"),
-        img: slot?.img ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
+        img: slot?.gem
+          ? slot?.img ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG
+          : resolveSlotFrameImg(slot),
         gem: slot?.gem ?? null
       };
     });
@@ -499,7 +501,9 @@ static #scheduleInjection(target) {
 
     const img = document.createElement("img");
     const label = slot?.gem?.name ?? slot?.name ?? this.#emptySlotLabel();
-    img.src = slot?.img ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG;
+    img.src = slot?.gem
+      ? slot?.img ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG
+      : resolveSlotFrameImg(slot);
     img.alt = label;
     img.draggable = false;
     if (slotColor) {

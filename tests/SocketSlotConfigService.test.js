@@ -141,6 +141,7 @@ describe("SocketSlotConfigService", () => {
                   condition: "",
                   description: "",
                   color: "",
+                  frameImg: "",
                   hidden: false,
                   deleteGemOnRemoval: false
                 }

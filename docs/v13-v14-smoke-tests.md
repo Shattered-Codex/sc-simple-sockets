@@ -12,6 +12,8 @@ Use the same world content on both targets:
 - Start the world with only `sc-simple-sockets` and `libWrapper`.
 - Confirm there is no startup exception in the console.
 - Open module settings and confirm socket settings menus open correctly.
+- Confirm the module section shows one row of links (wiki, Patreon support, Discord) and that no loose Simple Sockets option is left in Foundry's list.
+- Open the configuration window, switch to the Advanced tab, and confirm the What's New popup and debug logging toggles save and persist.
 
 ## 2. Item Socket Flow
 
@@ -20,6 +22,8 @@ Use the same world content on both targets:
 - Drag a valid gem into a socket.
 - Confirm the item sheet updates immediately.
 - Remove the gem and confirm the item sheet updates immediately.
+- Open Socket Slot Settings, set an `Empty socket image` on one slot (field and click on the slot preview) and save.
+- Confirm the empty slot shows the custom artwork in the Sockets tab, the actor badges, and the socket descriptions, and that the reset button restores the default socket image.
 
 ## 3. Actor Inventory Badges
 

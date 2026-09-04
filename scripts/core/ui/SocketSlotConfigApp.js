@@ -3,7 +3,7 @@ import { SocketStore } from "../SocketStore.js";
 import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js";
 import { SocketService } from "../services/SocketService.js";
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
-import { normalizeSlotColor } from "../helpers/socketSlotConfig.js";
+import { normalizeSlotColor, normalizeSlotFrameImg } from "../helpers/socketSlotConfig.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { DialogHelper } from "../../helpers/DialogHelper.js";
@@ -46,7 +46,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       id: `${Constants.MODULE_ID}-socket-slot-config`,
       tag: "form",
       classes: ["sc-sockets", "socket-slot-config-app"],
-      position: { width: 1140, height: 680 },
+      position: { width: 1140, height: 800 },
       window: {
         title: Constants.localize(
           "SCSockets.SocketSlotConfig.Title",
@@ -279,6 +279,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     this.#bindRoot();
     this.#bindDropZone();
     this.#refreshPreview();
+    this.#refreshFramePreview();
     this.#refreshRecoveryControls();
     this.#refreshChargesBar();
     this.#captureBaseline();
@@ -314,6 +315,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     const deleteGemOnRemoval = draft ? draft.deleteGemOnRemoval : slotConfig.deleteGemOnRemoval;
     const condition = draft?.condition ?? slotConfig.condition;
     const description = draft?.description ?? slotConfig.description;
+    const frameImg = normalizeSlotFrameImg(draft?.frameImg ?? slotConfig.frameImg);
 
     const resourceValue = draft?.gemResourceValue !== undefined && draft?.gemResourceValue !== ""
       ? Number(draft.gemResourceValue)
@@ -402,7 +404,9 @@ export class SocketSlotConfigApp extends BaseApplication {
       })),
       previewHasTint: Boolean(color),
       previewStyle: color ? `--sc-sockets-slot-color:${color};` : "",
-      slotFrameImg: Constants.SOCKET_SLOT_IMG,
+      frameImg,
+      hasCustomFrameImg: Boolean(frameImg),
+      slotFrameImg: frameImg || Constants.SOCKET_SLOT_IMG,
       conditionWikiUrl: `${Constants.MODULE_WIKI_URL}#slot-condition`,
       strings
     };
@@ -568,6 +572,30 @@ export class SocketSlotConfigApp extends BaseApplication {
         "SCSockets.SocketSlotConfig.Color.Clear",
         "Clear"
       ),
+      frameImgLabel: Constants.localize(
+        "SCSockets.SocketSlotConfig.FrameImg.Label",
+        "Empty socket image"
+      ),
+      frameImgHint: Constants.localize(
+        "SCSockets.SocketSlotConfig.FrameImg.Hint",
+        "Artwork shown while the slot is empty, such as a battery bay or a rune notch. Leave it blank to use the default socket."
+      ),
+      frameImgPlaceholder: Constants.localize(
+        "SCSockets.SocketSlotConfig.FrameImg.Placeholder",
+        "Default socket image"
+      ),
+      frameImgPick: Constants.localize(
+        "SCSockets.SocketSlotConfig.FrameImg.Pick",
+        "Change the empty socket image"
+      ),
+      frameImgReset: Constants.localize(
+        "SCSockets.SocketSlotConfig.FrameImg.Reset",
+        "Restore the default socket image"
+      ),
+      frameImgResetLabel: Constants.localize(
+        "SCSockets.SocketSlotConfig.FrameImg.ResetLabel",
+        "Default"
+      ),
       inspectHost: Constants.localize(
         "SCSockets.SocketSlotConfig.InspectHost",
         "Open Host Item"
@@ -720,7 +748,11 @@ export class SocketSlotConfigApp extends BaseApplication {
       return;
     }
 
-    const targetName = target.getAttribute?.("name");
+    // A <file-picker> keeps its name on the custom element, while the events
+    // originate from the plain input it renders inside itself.
+    const targetName = target.getAttribute?.("name")
+      ?? target.closest?.("file-picker[name]")?.getAttribute?.("name")
+      ?? null;
     if (targetName === "gemResource.recovery.type" || targetName === "gemResource.recovery.period") {
       this.#refreshRecoveryControls();
       return;
@@ -733,6 +765,11 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     if (targetName === "slotConfig.name") {
       this.#refreshRailName(target.value);
+      return;
+    }
+
+    if (targetName === "slotConfig.frameImg") {
+      this.#refreshFramePreview();
       return;
     }
 
@@ -809,6 +846,14 @@ export class SocketSlotConfigApp extends BaseApplication {
       case "unsocketGem":
         event.preventDefault();
         void this.#unsocketGem(event);
+        break;
+      case "pickFrameImg":
+        event.preventDefault();
+        this.#browseFrameImg();
+        break;
+      case "clearFrameImg":
+        event.preventDefault();
+        this.#setFrameImg("");
         break;
       case "clearColor":
         event.preventDefault();
@@ -1024,7 +1069,8 @@ export class SocketSlotConfigApp extends BaseApplication {
         deleteGemOnRemoval: this.#currentDeleteGemOnRemovalValue(),
         condition: "",
         description: "",
-        color: ""
+        color: "",
+        frameImg: ""
       };
     }
 
@@ -1035,6 +1081,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
       color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex")),
+      frameImg: normalizeSlotFrameImg(this.#readFieldValue("slotConfig.frameImg")),
       gemResourceValue: this.#readFieldValue("gemResource.value"),
       gemResourceRecovery: this.#readGemRecovery()
     };
@@ -1100,6 +1147,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       condition: String(payload.condition ?? ""),
       description: String(payload.description ?? ""),
       color: normalizeSlotColor(payload.color ?? ""),
+      frameImg: normalizeSlotFrameImg(payload.frameImg ?? ""),
       gemResourceValue: payload.gemResourceValue === undefined || payload.gemResourceValue === ""
         ? null
         : Number(payload.gemResourceValue),
@@ -1233,6 +1281,64 @@ export class SocketSlotConfigApp extends BaseApplication {
     }
   }
 
+  /**
+   * Delegates to the browse button rendered by <file-picker>, so clicking the
+   * slot preview opens the same dialog as the field itself. Users without
+   * FILES_BROWSE get no such button: they can still type a path.
+   */
+  #browseFrameImg() {
+    if (!this.#editable) {
+      return;
+    }
+    const picker = this.#frameImgPicker();
+    const browse = picker?.querySelector?.("button");
+    if (browse instanceof HTMLElement) {
+      browse.click();
+      return;
+    }
+    picker?.querySelector?.("input")?.focus?.();
+  }
+
+  #frameImgPicker() {
+    const picker = this.#queryNamedInput("slotConfig.frameImg");
+    if (picker instanceof HTMLElement) {
+      return picker;
+    }
+    return this.form?.querySelector?.('[name="slotConfig.frameImg"]') ?? null;
+  }
+
+  #setFrameImg(value) {
+    if (!this.#editable) {
+      return;
+    }
+    const picker = this.#frameImgPicker();
+    if (!picker) {
+      return;
+    }
+    // Assigning through the element fires its own input/change events, which
+    // the root listener turns into a preview and dirty-state refresh.
+    picker.value = normalizeSlotFrameImg(value);
+  }
+
+  #refreshFramePreview() {
+    const root = this.element;
+    if (!root) {
+      return;
+    }
+    const frameImg = normalizeSlotFrameImg(this.#readFieldValue("slotConfig.frameImg"));
+    const frame = root.querySelector("[data-slot-frame-preview]");
+    if (frame instanceof HTMLImageElement) {
+      const nextSrc = frameImg || Constants.SOCKET_SLOT_IMG;
+      if (frame.getAttribute("src") !== nextSrc) {
+        frame.setAttribute("src", nextSrc);
+      }
+    }
+    const reset = root.querySelector("[data-frame-reset]");
+    if (reset instanceof HTMLButtonElement) {
+      reset.disabled = !this.#editable || !frameImg;
+    }
+  }
+
   #clearColorInputs() {
     const hexInput = this.#queryNamedInput("slotConfig.colorHex");
     const pickerInput = this.#queryNamedInput("slotConfig.colorPicker");
@@ -1307,10 +1413,11 @@ export class SocketSlotConfigApp extends BaseApplication {
   #applyLayoutBounds() {
     const viewportWidth = window.innerWidth || document.documentElement?.clientWidth || 1280;
     const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 900;
-    // Prefer 880-1140 × 600-700, but never exceed the usable viewport on
-    // small screens.
+    // Prefer 880-1140 × 620-820, but never exceed the usable viewport on
+    // small screens. The height target fits the whole configuration column —
+    // identity, image, tint, contents and rules — without scrolling it.
     const targetWidth = Math.min(Math.max(880, Math.min(1140, viewportWidth - 48)), viewportWidth - 16);
-    const targetHeight = Math.min(Math.max(600, Math.min(700, viewportHeight - 48)), viewportHeight - 16);
+    const targetHeight = Math.min(Math.max(620, Math.min(820, viewportHeight - 48)), viewportHeight - 16);
     this.setPosition?.({ width: targetWidth, height: targetHeight });
   }
 }
