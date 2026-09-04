@@ -14,6 +14,17 @@ const carouselImage = (name) => `modules/${Constants.MODULE_ID}/assets/support/c
  */
 const CATALOG_ENTRIES = [
   {
+    id: "puzzle-engine-dexterity",
+    module: PUZZLE_ENGINE_NAME,
+    name: "Challenges the table plays",
+    status: "EarlyAccess",
+    eyebrow: "SC - PUZZLE ENGINE • SKILL & RHYTHM",
+    description: "Lockpicking stress bars, Timing Bar hit streaks, Simon crystal sequences, and Arrow Lane runs turn what used to be a flat ability check into something the players actually perform at the table.",
+    url: PUZZLE_ENGINE_URL,
+    image: carouselImage("puzzle-engine-lockpicking-solver"),
+    tone: "ember"
+  },
+  {
     id: "puzzle-engine-documents",
     module: PUZZLE_ENGINE_NAME,
     name: "Puzzles as real documents",
@@ -56,17 +67,6 @@ const CATALOG_ENTRIES = [
     url: PUZZLE_ENGINE_URL,
     image: carouselImage("puzzle-engine-mastermind-solver"),
     tone: "teal"
-  },
-  {
-    id: "puzzle-engine-dexterity",
-    module: PUZZLE_ENGINE_NAME,
-    name: "Challenges the table plays",
-    status: "EarlyAccess",
-    eyebrow: "SC - PUZZLE ENGINE • SKILL & RHYTHM",
-    description: "Lockpicking stress bars, Timing Bar hit streaks, Simon crystal sequences, and Arrow Lane runs turn what used to be a flat ability check into something the players actually perform at the table.",
-    url: PUZZLE_ENGINE_URL,
-    image: carouselImage("puzzle-engine-lockpicking-solver"),
-    tone: "ember"
   },
   {
     id: "puzzle-engine-presentation",
