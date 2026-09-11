@@ -1,4 +1,5 @@
 import { Constants } from "../../core/Constants.js";
+import { Compatibility } from "../../core/support/Compatibility.js";
 
 /**
  * Persists activities for gem items so they can be restored when the subtype changes back to gem.
@@ -39,7 +40,7 @@ export class GemActivityStore {
     // stash() is always called before removeAll() and preserves original uses.
     const update = { "system.uses": GemActivityStore.#RESET_USES };
     for (const id of ids) {
-      update[`system.activities.-=${id}`] = null;
+      Compatibility.addDeletion(update, `system.activities.${id}`);
     }
     await item.update(update);
   }

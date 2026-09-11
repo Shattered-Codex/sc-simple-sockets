@@ -77,7 +77,7 @@ describe("SocketEffectFormulaService", () => {
 
   beforeEach(() => {
     installFoundryStubs();
-    game.system = { id: "dnd5e" };
+    game.system = { id: "dnd5e", version: "5.3.3" };
     globalThis.foundry.dice = { Roll: FakeRoll };
     armor = makeItem([gemSlot(), gemSlot(), {}]);
     ring = makeItem([gemSlot()]);
@@ -164,6 +164,38 @@ describe("SocketEffectFormulaService", () => {
   test("falls back to the origin item for an effect copied onto the actor", () => {
     globalThis.fromUuidSync = (uuid) => (uuid === "Actor.a.Item.armor" ? armor : null);
     const effect = { parent: actor, origin: "Actor.a.Item.armor" };
+
+    assert.equal(SocketEffectFormulaService.resolveChangeValue(effect, actor, "@sc.sockets.gems"), "2");
+  });
+
+  test("resolves the granting item from a dnd5e 6 activity origin", () => {
+    const activity = { documentName: "Activity", item: armor };
+    globalThis.fromUuidSync = uuid => uuid === "Actor.a.Item.armor.Activity.buff" ? activity : null;
+    const effect = { parent: actor, origin: "Actor.a.Item.armor.Activity.buff" };
+
+    assert.equal(SocketEffectFormulaService.resolveChangeValue(effect, actor, "@sc.sockets.gems"), "2");
+    assert.equal(SocketEffectFormulaService.resolveChangeValue(effect, actor, "@sc.sockets.item.empty"), "1");
+    assert.equal(SocketEffectFormulaService.resolveChangeValue(effect, actor, "@sc.sockets.actor.gems"), "3");
+  });
+
+  test("prefers the structured activity origin over concentration and a stale item origin", () => {
+    const effect = {
+      parent: actor,
+      origin: "Actor.a.ActiveEffect.concentration",
+      system: { origin: { activity: "Actor.a.Item.armor.Activity.buff", item: "Item.old-gem" } }
+    };
+    globalThis.fromUuidSync = uuid => uuid === effect.system.origin.activity ? { item: armor } : ring;
+
+    assert.equal(SocketEffectFormulaService.resolveChangeValue(effect, actor, "@sc.sockets.gems"), "2");
+  });
+
+  test("falls back to a relative structured item origin when the activity is missing", () => {
+    const effect = { parent: actor, system: { origin: { activity: "missing", item: ".Item.armor" } } };
+    globalThis.fromUuidSync = (uuid, options) => {
+      if (uuid === "missing") throw new Error("Deleted activity");
+      assert.equal(options.relative, effect);
+      return uuid === ".Item.armor" ? armor : null;
+    };
 
     assert.equal(SocketEffectFormulaService.resolveChangeValue(effect, actor, "@sc.sockets.gems"), "2");
   });
@@ -313,6 +345,40 @@ describe("SocketEffectFormulaService", () => {
       const corrected = SocketEffectFormulaService.correctAttributions(rollActor, AC, []);
 
       assert.deepEqual(corrected, [{ value: 2, label: "Socket Bonus", document: effect, mode: 2 }]);
+    });
+
+    for (const target of [AC, "system.attributes.hp.max", "system.attributes.hp.bonuses.overall"]) {
+      test(`keeps v14 socket attributions visible to dnd5e 5.3 for ${target}`, () => {
+        game.release = { generation: 14 };
+        game.system.version = "5.3.3";
+        const effect = makeEffect(ring, [{ key: target, type: "add", value: "max(0, 2 - @sc.sockets.empty * 2)" }]);
+        const corrected = SocketEffectFormulaService.correctAttributions(rollActor, target, []);
+
+        // dnd5e 5.3's CA/HP windows filter plain attribution records by mode,
+        // even though v14's underlying effect change has already been migrated.
+        assert.deepEqual(corrected.filter(entry => entry.mode === 2), [
+          { value: 2, label: "Socket Bonus", document: effect, mode: 2 }
+        ]);
+      });
+    }
+
+    test("uses dnd5e 6 additive changes and attribution types", () => {
+      // Foundry v14 uses type; dnd5e 6 also consumes type in attributions.
+      game.system.version = "6.0.0";
+      game.release = { generation: 14 };
+      const effect = makeEffect(ring, [{ key: AC, type: "add", value: "max(0, 2 - @sc.sockets.empty * 2)" }]);
+
+      const corrected = SocketEffectFormulaService.correctAttributions(rollActor, AC, []);
+
+      assert.deepEqual(corrected, [{ value: 2, label: "Socket Bonus", document: effect, type: "add" }]);
+    });
+
+    test("ignores non-additive dnd5e 6 changes", () => {
+      const effect = makeEffect(armor, [{ key: AC, type: "override", value: "@sc.sockets.gems" }]);
+
+      const corrected = SocketEffectFormulaService.correctAttributions(rollActor, AC, []);
+
+      assert.deepEqual(corrected, []);
     });
 
     test("adds back an attribution whose scopes cancel out on the actor", () => {

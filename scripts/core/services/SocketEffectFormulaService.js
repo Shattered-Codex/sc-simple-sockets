@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { Dnd5eEffectCompatibility } from "../support/Dnd5eEffectCompatibility.js";
 import { SocketRollDataService } from "./SocketRollDataService.js";
 
 const EMPTY_COUNTS = Object.freeze({ total: 0, gems: 0, empty: 0 });
@@ -160,7 +161,6 @@ export class SocketEffectFormulaService {
    * @returns {object[]} The corrected attributions.
    */
   static correctAttributions(actor, target, attributions) {
-    const addMode = globalThis.CONST?.ACTIVE_EFFECT_MODES?.ADD ?? 2;
     const shims = globalThis.CONFIG?.ActiveEffect?.documentClass?.SHIM_FIELDS ?? {};
     const corrected = Array.isArray(attributions) ? [...attributions] : [];
     const byEffect = new Map();
@@ -171,10 +171,13 @@ export class SocketEffectFormulaService {
     let rollData = null;
     for (const effect of actor?.allApplicableEffects?.() ?? []) {
       let delta = 0;
+      let attributionOperation = null;
       for (const change of effect?.changes ?? []) {
-        if ((shims[change.key]?.key ?? change.key) !== target || change.mode !== addMode) continue;
+        if ((shims[change.key]?.key ?? change.key) !== target
+          || !Dnd5eEffectCompatibility.isAdditiveChange(change)) continue;
         const resolved = SocketEffectFormulaService.resolveChangeValue(effect, actor, change.value);
         if (resolved === change.value) continue;
+        attributionOperation ??= Dnd5eEffectCompatibility.getAttributionOperation();
         rollData ??= actor.getRollData({ deterministic: true });
         delta += SocketEffectFormulaService.#simplifyBonus(resolved, rollData)
           - SocketEffectFormulaService.#simplifyBonus(change.value, rollData);
@@ -191,7 +194,7 @@ export class SocketEffectFormulaService {
       // Absent from the list: dnd5e evaluated the whole effect as zero for this
       // target, so the corrected contribution is the delta itself.
       const label = SocketEffectFormulaService.#attributionLabel(effect, actor);
-      if (label) corrected.push({ value: delta, label, document: effect, mode: addMode });
+      if (label) corrected.push({ value: delta, label, document: effect, ...attributionOperation });
     }
 
     return corrected;
@@ -259,22 +262,30 @@ export class SocketEffectFormulaService {
   }
 
   /**
-   * The item scope is the item that grants the effect, so an effect sitting
-   * directly on the actor has no item scope and counts zero sockets.
+   * The item scope is the item that grants the effect. Actor effects without
+   * an originating item have no item scope and count zero sockets.
    */
   static #resolveItem(effect) {
     if (effect?.parent?.documentName === "Item") return effect.parent;
 
-    // Effects copied onto an actor instead of transferred still point back at
-    // the item that granted them, and those are the sockets that matter.
-    const origin = effect?.origin;
-    if (!origin) return null;
-    try {
-      const document = globalThis.fromUuidSync?.(origin);
-      return document?.documentName === "Item" ? document : null;
-    } catch {
-      return null;
+    // In dnd5e 6, origin may name a concentration effect instead of the
+    // granting activity. Prefer the structured activity/item origins.
+    const origins = new Set([
+      effect?.system?.origin?.activity,
+      effect?.system?.origin?.item,
+      effect?.origin
+    ]);
+    for (const origin of origins) {
+      if (!origin) continue;
+      try {
+        const document = globalThis.fromUuidSync?.(origin, { relative: effect, strict: false });
+        if (document?.documentName === "Item") return document;
+        if (document?.item?.documentName === "Item") return document.item;
+      } catch {
+        // A stale origin must not prevent trying the remaining references.
+      }
     }
+    return null;
   }
 
   static #resolveActor(effect, target, item) {

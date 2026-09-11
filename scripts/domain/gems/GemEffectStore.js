@@ -12,8 +12,8 @@ export class GemEffectStore {
     }
     const payload = item.effects.map(e => {
       const data = e.toObject();
-      delete data._id;                  
-      data.disabled = !!data.disabled;  
+      // Activity references must still resolve after a subtype round trip.
+      data.disabled = !!data.disabled;
       return data;
     });
     await item.setFlag(Constants.MODULE_ID, Constants.FLAG_STASH, payload);
@@ -34,7 +34,7 @@ export class GemEffectStore {
       await this.removeAll(item);
     }
 
-    await item.createEmbeddedDocuments("ActiveEffect", payload);
+    await item.createEmbeddedDocuments("ActiveEffect", payload, { keepId: true });
     if (clearAfter) {
       await item.unsetFlag(Constants.MODULE_ID, Constants.FLAG_STASH);
     }

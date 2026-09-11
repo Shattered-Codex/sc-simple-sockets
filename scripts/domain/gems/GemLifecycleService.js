@@ -33,8 +33,8 @@ export class GemLifecycleService {
       return;
     }
 
-    await this.activityStore.restore(item);
     await this.effectStore.restore(item);
+    await this.activityStore.restore(item);
   }
 
   handlePreUpdate(item, changes, options = {}) {

@@ -1,3 +1,4 @@
+import { Dnd5eActivityCompatibility } from "../support/Dnd5eActivityCompatibility.js";
 import { Constants } from "../Constants.js";
 
 export class EffectService {
@@ -59,7 +60,7 @@ export class EffectService {
       const effects = activity?.toObject?.()?.effects;
       if (!Array.isArray(effects)) continue;
       for (const effect of effects) {
-        const id = String(effect?._id ?? "").trim();
+        const id = Dnd5eActivityCompatibility.getLocalEffectId(effect, item);
         if (id) ids.add(id);
       }
     }

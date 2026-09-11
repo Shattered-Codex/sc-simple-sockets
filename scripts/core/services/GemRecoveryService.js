@@ -4,6 +4,7 @@ import { ItemResolver } from "../ItemResolver.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { HostOperationQueue } from "../support/HostOperationQueue.js";
+import { Dnd5eRecoveryCompatibility } from "../support/Dnd5eRecoveryCompatibility.js";
 
 /**
  * Restores gem resource charges when their recovery period triggers.
@@ -13,14 +14,14 @@ import { HostOperationQueue } from "../support/HostOperationQueue.js";
  * recovered here, mirroring the native periods:
  * - Rests (dnd5e.restCompleted): the rest type's recoverPeriods plus the
  *   explicit recoverShortRestUses/recoverLongRestUses/recoverDailyUses
- *   overrides and the day/dawn/dusk periods when the rest starts a new day,
+ *   overrides. Daily recovery follows the dnd5e version's calendar setting,
  *   matching Actor5e._getRestItemUsesRecovery. Runs after the system applies
  *   its own rest updates because recovery formulas may contain dice, which
  *   cannot be rolled inside the synchronous preRestCompleted hook. Known
  *   divergence from native recovery: formulas referencing actor state (HP,
  *   resources, uses) therefore see the post-rest values, not the pre-rest
  *   ones.
- * - Combat (dnd5e.postCombatRecovery): initiative, turnStart, turnEnd, and
+ * - Combat (dnd5e.postCombatRecovery): initiative, round, turnStart, turnEnd, and
  *   turn periods, per combatant, after the system's own combat recovery.
  * - Recharge: a manual d6 check against the configured threshold, rolled from
  *   the gem sheet or the Socket Descriptions die button.
@@ -55,24 +56,21 @@ export class GemRecoveryService {
           console.error(`[${Constants.MODULE_ID}] gem combat recovery failed:`, error);
         });
       });
+      // Calendar integrations register delta adjustments during init/setup.
+      // Register recovery late, as dnd5e does, so those callbacks run first.
+      Hooks.once("ready", () => {
+        if (!Dnd5eRecoveryCompatibility.supportsCalendarRecovery()) return;
+        Hooks.on("updateWorldTime", (_worldTime, deltaTime, options) => {
+          GemRecoveryService.recoverCalendarCharges(deltaTime, options).catch((error) => {
+            console.error(`[${Constants.MODULE_ID}] gem calendar recovery failed:`, error);
+          });
+        });
+      });
     });
   }
 
   static restPeriods(config) {
-    const restConfig = globalThis.CONFIG?.DND5E?.restTypes?.[config?.type];
-    const periods = new Set(restConfig?.recoverPeriods ?? []);
-    // Mirror Actor5e._getRestItemUsesRecovery: the rest configuration can force
-    // the short/long/daily periods regardless of the rest type's defaults.
-    if (config?.recoverShortRestUses) {
-      periods.add("sr");
-    }
-    if (config?.recoverLongRestUses) {
-      periods.add("lr");
-    }
-    if (config?.recoverDailyUses || config?.newDay) {
-      periods.add("day").add("dawn").add("dusk");
-    }
-    return periods;
+    return Dnd5eRecoveryCompatibility.restPeriods(config);
   }
 
   static async recoverRestCharges(actor, config) {
@@ -80,7 +78,23 @@ export class GemRecoveryService {
   }
 
   static async recoverCombatCharges(actor, periods) {
-    return GemRecoveryService.#recoverActorGems(actor, new Set(periods ?? []));
+    return GemRecoveryService.#recoverActorGems(actor, Dnd5eRecoveryCompatibility.combatPeriods(periods));
+  }
+
+  /** Recovers daily gem charges from dnd5e 6's automatic calendar passage. */
+  static async recoverCalendarCharges(deltaTime, options) {
+    if (!globalThis.game?.user?.isActiveGM) {
+      return;
+    }
+
+    const periods = Dnd5eRecoveryCompatibility.calendarPeriods(deltaTime, options);
+    if (!periods.size) {
+      return;
+    }
+
+    for (const actor of globalThis.game?.actors ?? []) {
+      await GemRecoveryService.#recoverActorGems(actor, periods);
+    }
   }
 
   static async #recoverActorGems(actor, periods) {
@@ -285,10 +299,11 @@ export class GemRecoveryService {
    */
   static async #plannedChange(resource, periods, getRollData) {
     const period = resource?.recovery?.period;
-    if (!period || period === "recharge" || !periods.has(period)) {
+    const count = periods.get(period) ?? 0;
+    if (!period || period === "recharge" || count < 1) {
       return null;
     }
-    return GemRecoveryService.#plannedRecovery(resource, getRollData);
+    return GemRecoveryService.#plannedRecovery(resource, getRollData, count);
   }
 
   /**
@@ -297,7 +312,7 @@ export class GemRecoveryService {
    * no change. Formula amounts apply signed, like UsesField.recoverUses, so a
    * negative total drains charges.
    */
-  static async #plannedRecovery(resource, getRollData) {
+  static async #plannedRecovery(resource, getRollData, occurrenceCount = 1) {
     const type = resource.recovery.type;
     if (type === "loseAll") {
       return resource.value > 0 ? { mode: "zero" } : null;
@@ -317,12 +332,7 @@ export class GemRecoveryService {
         return null;
       }
       const roll = new RollClass(formula, getRollData?.() ?? {});
-      // Mirror UsesField.recoverUses: daily formulas recover a week's worth
-      // under the gritty realism rest variant.
-      if (["day", "dawn", "dusk"].includes(resource.recovery.period)
-        && GemRecoveryService.#isGrittyRest()) {
-        roll.alter?.(7, 0, { multiplyNumeric: true });
-      }
+      await Dnd5eRecoveryCompatibility.scaleRecoveryRoll(roll, occurrenceCount, resource.max);
       const total = (await roll.evaluate()).total;
       const amount = Math.trunc(Number(total) || 0);
       if (!amount) {
@@ -335,14 +345,6 @@ export class GemRecoveryService {
         error
       );
       return null;
-    }
-  }
-
-  static #isGrittyRest() {
-    try {
-      return globalThis.game?.settings?.get?.("dnd5e", "restVariant") === "gritty";
-    } catch {
-      return false;
     }
   }
 

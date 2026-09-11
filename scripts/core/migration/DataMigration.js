@@ -1,3 +1,4 @@
+import { Compatibility } from "../support/Compatibility.js";
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
@@ -256,7 +257,7 @@ export class DataMigration {
       if (nextSubtype) {
         patch[`flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_SUBTYPE}`] = nextSubtype;
       } else {
-        patch[`flags.${Constants.MODULE_ID}.-=${Constants.FLAG_GEM_SUBTYPE}`] = null;
+        Compatibility.addDeletion(patch, `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_SUBTYPE}`);
       }
       toMigrate.push({ item, patch });
     }

@@ -1,6 +1,19 @@
 import { Constants } from "../Constants.js";
 
 export class Compatibility {
+  /** Adds a document field deletion using the supported Foundry syntax. */
+  static addDeletion(updateData, path) {
+    if (!updateData || !path) return updateData;
+
+    if (Number(globalThis.game?.release?.generation) >= 14 && globalThis._del !== undefined) {
+      updateData[path] = globalThis._del;
+    } else {
+      const separator = path.lastIndexOf(".") + 1;
+      updateData[`${path.slice(0, separator)}-=${path.slice(separator)}`] = null;
+    }
+    return updateData;
+  }
+
   static getDnd5eItemSheetClass() {
     return globalThis.dnd5e?.applications?.item?.ItemSheet5e ?? null;
   }
