@@ -8,1233 +8,133 @@
 
 [![Wiki](https://img.shields.io/badge/Wiki-SC%20Simple%20Sockets-1f6feb?logo=bookstack&logoColor=white&style=for-the-badge)](https://wiki.shattered-codex.com/modules/sc-simple-sockets)
 [![Support on Patreon](https://img.shields.io/badge/Patreon-Shattered%20Codex-FF424D?logo=patreon&logoColor=white&style=for-the-badge)](https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme)
+[![Discord](https://img.shields.io/badge/Discord-Join%20the%20community-5865F2?logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/6mWCQEJEwG)
 ![Foundry VTT 13-14](https://img.shields.io/badge/Foundry%20VTT-v13%20%7C%20v14-orange?logo=foundry-vtt&logoColor=white&style=for-the-badge)
-![System: dnd5e](https://img.shields.io/badge/System-dnd5e-blue?style=for-the-badge)
-[![libWrapper Recommended](https://img.shields.io/badge/libWrapper-Recommended-8A2BE2?style=for-the-badge)](https://github.com/ruipin/fvtt-lib-wrapper)
+![System dnd5e 5.3.0 and 6.0.0](https://img.shields.io/badge/System-dnd5e%205.3.0%20%7C%206.0.0-blue.svg?style=for-the-badge)
 ![Downloads](https://img.shields.io/github/downloads/Shattered-Codex/sc-simple-sockets/total?style=for-the-badge)
 ![Forks](https://img.shields.io/github/forks/Shattered-Codex/sc-simple-sockets.svg?style=for-the-badge)
 
-A lightweight module for adding sockets to **D&D 5e** items in **Foundry VTT**.
+Add sockets to **D&D 5e** items in **Foundry VTT**, then fill them with gems, runes, or crystals that provide Active Effects, activities, and optional charges.
 
-With it, you can:
-
-- add gem slots to weapons and equipment
-- drag gems into those slots
-- make the gem transfer effects and actions to the main item
-- show descriptions, icons, badges, and visual details without manual setup every time
-
-It is built to keep the workflow simple during play.
-
-[Report an issue or request a feature](https://github.com/Shattered-Codex/sc-simple-sockets/issues)  
-[Official Wiki](https://wiki.shattered-codex.com/modules/sc-simple-sockets)
-
----
-
-## New in This Update
-
-Gems can now do more than provide passive bonuses:
-
-- A gem can carry its own limited resource, such as energy, ammunition, or magic charges.
-- Actions can spend charges from one gem, several gems on the same item, or compatible socketed items across the character.
-- Socket counts can act as native item charges: use `@sc.sockets.total` or `@sc.sockets.gems` in an item's Limited Uses, consume them with **Item Uses**, and recover them with the item's own Recovery configuration.
-- Socket counts also work in the **Value** of an Active Effect change, so a bonus can scale with sockets. Three counts — `total`, `gems`, `empty` — in two scopes: `@sc.sockets.gems` counts the item that grants the effect, `@sc.sockets.actor.gems` counts the whole character. Arithmetic is allowed, so `@sc.sockets.gems * 2` or `floor(@sc.sockets.actor.total / 2)` work as values.
-- Activities copied from a socketed gem keep their internal `sc-chain` and
-  `sc-conditional-chain` references after Foundry assigns new activity IDs.
-- Macros and integrations can create sockets and insert gems through the public
-  socket API, using a specific slot or the first empty slot automatically.
-- Charges remain with the gem when it is removed and returned to inventory.
-- Gem tags make it easier to create sockets that accept a category such as `fire`, `poison`, or `healing`.
-- The optional **SC More Activities** integration can insert gems, extract gems, recharge one gem, or recharge a shared pool.
-
-Existing gems continue to work without configuring resources or tags. These new fields are optional.
-
-## Preview Image
-
-![Module overview image](https://i.imgur.com/xdOJCip.png)
-![Module overview image](https://i.imgur.com/ok1w56l.png)
-
-
-## What This Module Does
-
-The module works best when you understand these 3 parts:
-
-| Part | What it means | Example |
-| --- | --- | --- |
-| Host item | The item that will receive sockets | sword, armor, shield |
-| Gem | The item that goes into the socket | ruby, rune, shard, crystal |
-| Socket | The empty or filled slot inside the item | Slot 1, Slot 2, Slot 3 |
-
-
-Once a gem is inserted, the module can:
-
-- move the gem's **Active Effects** to the host item
-- move the gem's **Activities** to the host item
-- show which gems are equipped
-- show gem descriptions inside the host item sheet
-- return or delete the gem when it is removed, depending on your settings
-
-## Main Features
-
-- Adds a **Sockets** tab to supported item sheets.
-- Supports **list** and **grid** layouts.
-- Works with the default **dnd5e** sheet and **Tidy5e Sheet**.
-- Supports **drag and drop** gem socketing.
-- Automatically transfers **Active Effects** from the gem to the host item.
-- Automatically mirrors **Activities** from the gem to the host item.
-- Lets activities consume gem charges from the current item or from socketed items across the character.
-- Supports optional host-item filters so resources can stay isolated by set, category, or custom rule.
-- Lets each gem restrict which items it can be used on.
-- Lets each socket have its own rule, description, and color.
-- Adds **Socket Descriptions** to the item sheet, with a button to send them to chat.
-- Shows visual badges in actor inventory and activity icons.
-- Includes a socket config window with gem inspection.
-- Lets you control which user roles can add or remove sockets.
-- Lets you set a maximum number of sockets per item.
-- Lets you choose whether removed gems are returned or deleted.
-- Supports custom loot subtypes so other item categories can behave like gems.
-- Exposes an API for macros and automations.
-- Includes ready-to-use gem compendium content.
-
-## SC More Activities Integration
-
-When `sc-more-activities` is also active, `sc-simple-sockets` registers its own
-socket activities directly from this module. No extra bridge module is needed.
-
-- `sc-socket-slot`
-- `sc-socket-extraction`
-- `sc-socket-gem-reload`
-- `sc-socket-recharge`
-- `sc-socket-pool-recharge`
-
-That integration lives entirely inside `sc-simple-sockets`, so the socket
-behavior stays scoped to the module that owns it.
-
-### How these activities work
-
-All socket activities follow the same general idea:
-
-1. You use an activity created in `sc-more-activities`.
-2. The activity selects or targets an item that contains sockets.
-3. `sc-simple-sockets` performs the socket mutation, compatibility checks,
-   effect transfer, activity transfer, or charge update.
-
-Depending on the activity, the target item can be:
-
-- the next clicked item
-- the item that owns the activity
-- an item chosen from a socket picker dialog
-
-### Available activity types
-
-#### `sc-socket-slot`
-
-Use this activity to add a configured socket to a target item or remove one
-empty socket from an item.
-
-- **Add socket:** click a valid target item and the activity adds a new socket
-  using the configuration defined in the activity.
-- **Remove empty socket:** choose one empty socket from the item and remove it.
-- Supports per-activity socket config, descriptions, colors, conditions, and
-  optional targeting rules.
-
-#### `sc-socket-extraction`
-
-Use this activity to remove a socketed gem from a target item.
-
-- Click the target item.
-- Choose which socketed gem will be removed.
-- The activity can keep the extracted gem and return it to inventory, or
-  destroy the extracted gem immediately.
-
-This ignores the module's normal gem-removal behavior and follows the activity
-configuration instead.
-
-#### `sc-socket-gem-reload`
-
-Use this activity to insert a compatible gem into an empty socket on a target
-item.
-
-- Click the item that should receive the gem.
-- The activity looks for compatible gems in the inventory of the actor that
-  owns the activity item.
-- It can prompt the user to choose a gem, auto-pick a gem by exact name, or
-  auto-pick a gem by name match pattern.
-- It can then place the gem into the first compatible empty socket or prompt
-  the user to choose which compatible empty socket should be used.
-
-The reload still respects socket compatibility, allowed item types, and socket
-conditions.
-
-#### `sc-socket-recharge`
-
-Use this activity to restore charges to one socketed gem on a target item.
-
-- Click the target item.
-- Choose the socketed gem that should be recharged.
-- The activity can optionally require a check before the recharge succeeds.
-- The restored amount can be fully restored or rolled from a formula.
-
-This is useful for gems that carry their own limited-use resource.
-
-#### `sc-socket-pool-recharge`
-
-Use this activity to restore a shared charge pool across multiple socketed gems
-on the same item.
-
-- Click the target item.
-- Choose the resource pool that should be restored.
-- The activity can optionally require a check before the recharge succeeds.
-- The restored amount can be fully restored or rolled from a formula.
-
-This is useful when several socketed gems contribute to the same named charge
-pool.
-
-### Notes
-
-- These activities are registered only when both `sc-simple-sockets` and
-  `sc-more-activities` are active.
-- Socket mutations still use the same compatibility and permission checks as the
-  rest of `sc-simple-sockets`.
-- The activity icons used by this integration ship locally in
-  `assets/activity-icons/` and are based on artwork from
-  [Game-icons.net](https://game-icons.net/).
-
-> **Want even more content?**  
-> If you want **120+ ready-to-use gems**, you can get the **SC - More Gems** module as a **Patreon supporter**.
-
-## Requirements
-
-- **Foundry VTT:** v13 and v14
-- **System:** dnd5e
-- **Recommended:** `libWrapper`
+Use the included gem compendium or create your own upgrades. The module supports the default dnd5e sheets and Tidy5e Sheet, with socket badges, descriptions, and list or grid layouts.
 
 ## Installation
 
-1. In Foundry, open **Add-on Modules > Install Module**.
-2. Paste this manifest URL:
+Requires **Foundry VTT v13 or v14** and **dnd5e 5.3.0 or later** (verified with dnd5e 6.0.0).
+
+1. Open **Add-on Modules > Install Module** in Foundry VTT.
+2. Paste the manifest URL below and install the module.
+3. Enable **SC - Simple Sockets** in your world.
 
 ```text
 https://github.com/Shattered-Codex/sc-simple-sockets/releases/latest/download/module.json
 ```
 
-3. Install the module.
-4. Enable **SC - Simple Sockets** in your world.
-5. For better compatibility with other modules, also install and enable `libWrapper`.
+## Quick Start
 
+A **host item** receives sockets, a **gem** supplies the upgrade, and a **socket** holds one gem.
 
-## Recommended First Setup
+1. Create or open a weapon or equipment item.
+2. Import a gem from the included compendium, or create a **Loot** item with subtype **gem**.
+3. On the gem, set **Allowed Item Types** and add the Active Effects or activities it should provide.
+4. Open the host item's **Sockets** tab and add an empty socket.
+5. Drag the gem into the socket. Its effects and activities become available on the host item.
 
-If this is your first time using the module, do this in order:
+Removing a gem removes its transferred effects and activities. Gems return to inventory by default; removal settings or extraction activities can delete them instead.
 
-1. Choose which item types can receive sockets.
-2. Choose which loot subtypes count as gems.
-3. Create or import a few gems.
-4. Define which items each gem can be used on.
-5. Add sockets to your items.
-6. Test by dragging a gem into a socket.
+For detailed setup guidance, visit the [Simple Sockets wiki](https://wiki.shattered-codex.com/modules/sc-simple-sockets).
 
-## First Setup Image
+## Configuration
 
-Replace only the link below with your own image:
+Open **Configure Settings > Module Settings > SC - Simple Sockets > Module configuration** and select **Save Changes** after editing.
 
-
-
-## How To Use It
-
-### 1. Choose which items can receive sockets
-
-![First setup example](https://i.imgur.com/rluTKbj.png)
-
-By default, the module allows sockets on:
-
-- `weapon`
-- `equipment`
-
-That means weapons and equipment already work out of the box.
-
-You can change this in:
-
-**Configure Settings > Module Settings > SC - Simple Sockets > Module configuration**
-
-Look for the tab:
-
-- **Item types**
-
-Example:
-
-- If you want sockets only on weapons, leave only `weapon` selected.
-- If you want armor and shields too, keep `equipment` enabled.
-
-### 2. Decide what counts as a gem
-
-![First setup example](https://i.imgur.com/rluTKbj.png)
-![First setup example](https://i.imgur.com/lj24frK.png)
-
-By default, the module treats this as a gem:
-
-- an item of type **Loot**
-- with subtype **gem**
-
-You can change that in the **Gem subtypes** tab of the **Module configuration** window, which combines:
-
-- the selection of loot subtypes that count as gems
-- the custom loot subtype manager (new custom subtypes show up in the selection immediately)
-
-Example:
-
-| If you want to use... | Do this |
+| Tab | Options |
 | --- | --- |
-| Normal gems | Keep the subtype `gem` |
-| Runes | Create a custom subtype such as `rune` |
-| Fragments | Create a custom subtype such as `fragment` |
+| **Socket rules** | Who can edit sockets, the maximum sockets per item, and gem removal behavior |
+| **Display** | Socket tab visibility, list or grid layout, and gem damage presentation |
+| **Item types** | Which items accept sockets; weapons and equipment are enabled by default |
+| **Gem subtypes** | Which loot subtypes count as gems, including custom subtypes such as runes |
+| **Advanced** | Per-user update popup and debug logging preferences |
 
-### 3. Create or import gems
+Each socket can have its own description, color, empty socket image, and condition. Gem tags such as `fire`, `poison`, or `healing` help define compatibility rules. Once a socket is filled, it displays the gem's artwork and description.
 
-You can:
+## Charges and Automation
 
-- use the compendium that already comes with the module
-- duplicate one of the ready-made gems
-- create a new gem by hand
+Gems can carry a named resource with current and maximum charges, configured under **+Details > Socketed Resource**. Activities can spend charges from a gem, an item, or a pool of socketed items across the character. A gem returned to inventory keeps its remaining charges.
 
-To create one manually:
+Socket counts can also drive native item Limited Uses and Active Effect bonuses. For example, `@sc.sockets.gems` counts filled sockets on the item, while `@sc.sockets.actor.gems` counts them across the character.
 
-1. Create a **Loot** item.
-2. Choose a subtype that is accepted as a gem.
-3. Give it a name, image, and description.
-4. Add effects and activities if you want.
-5. Choose which items it can be used on.
+See the [Simple Sockets wiki](https://wiki.shattered-codex.com/modules/sc-simple-sockets) for resource configuration, formulas, and recovery rules.
 
-## Gem Sheet Image
+## Related Modules
 
-![Gem sheet example](https://i.imgur.com/NDWWcZW.png)
-![Gem sheet example](https://i.imgur.com/AyFNvzT.png)
+These optional Shattered Codex modules complement Simple Sockets:
 
-### 4. Choose where the gem can be used
-
-On the gem sheet, there is a section called:
-
-- **Allowed Item Types**
-
-![Gem sheet example](https://i.imgur.com/YMUEBk9.png)
-
-This tells the module which host items can accept that gem.
-
-Examples:
-
-| Situation | How to set it |
+| Module | How it complements your items |
 | --- | --- |
-| The gem can be used on any supported item | Choose `All Types` |
-| The gem should work only on weapons | Choose the weapon group |
-| The gem should work only on specific subtypes | Choose the item type and subtype |
+| [SC - More Activities](https://foundryvtt.com/packages/sc-more-activities) | Enables activities for adding sockets, inserting or extracting gems, and recharging individual gems or shared pools. |
+| [SC - Conditional AE](https://foundryvtt.com/packages/sc-conditional-ae) | Adds conditions and formulas to Active Effects for bonuses that depend on your rules. |
+| [SC - Conditional Activities](https://foundryvtt.com/packages/sc-conditional-activities) | Controls when activities are usable, including conditions that check socketed gems. |
+| [SC - Item Rarity Colors](https://foundryvtt.com/packages/sc-item-rarity-colors) | Makes item rarities easier to recognize through configurable colors on sheets, inventories, and the item directory. |
 
-This prevents players from placing the wrong gem in the wrong item.
+With **SC - More Activities** enabled, the following socket activities are available:
 
-### 5. Add sockets to the host item
-
-Open the weapon or equipment sheet.
-
-If the item is compatible, you will see the:
-
-- **Sockets** tab
-
-From there you can:
-
-- add a new socket
-- remove a socket
-- remove a gem from a socket
-- open the socket config window
-- open the gem inside the socket
-
-If your world is set so the socket tab does not appear on every supported item, there is also a field in the item's **Details** tab:
-
-
-- **Enable Socket Tab**
-
-![Gem sheet example](https://i.imgur.com/eQROqfE.png)
-![Gem sheet example](https://i.imgur.com/0jvQXC7.png)
-
-That field turns the socket tab on for that specific item.
-
-## Sockets Tab Image
-
-
-![Sockets tab example](https://i.imgur.com/g41AjAI.png)
-
-### 6. Drag the gem into the socket
-
-After setup:
-
-1. Open the host item.
-2. Go to the **Sockets** tab.
-3. Drag a gem into an empty socket.
-
-The module automatically checks:
-
-- whether the item is really a valid gem
-- whether the gem can be used on that type of host item
-- whether the socket has any extra restriction
-
-If everything is valid:
-
-- the gem is inserted
-- effects are applied to the host item
-- activities are copied to the host item
-- visual details are updated
-
-### 7. Remove the gem when needed
-
-When you remove a gem, the module:
-
-- removes transferred effects
-- removes mirrored activities
-- returns the gem to inventory or deletes it, depending on your settings
-
-Tip:
-
-- hold `Shift` when removing a gem or socket to skip the confirmation prompt
-
-## Full Usage Example
-
-1. Create a sword.
-2. Add 2 sockets.
-3. Create a loot item with subtype `gem`.
-4. On the gem, allow it for weapons.
-5. Drag the gem into the sword.
-6. Watch the item gain the gem's effects and actions.
-
-## Detailed Features
-
-### Sockets tab on the item
-
-Inside the **Sockets** tab, each socket can show:
-
-- the empty socket image
-- the equipped gem image
-- the gem name
-- a remove gem button
-- a remove socket button
-- an edit socket button
-- a button to open the gem
-
-### List or grid layout
-
-You can choose between:
-
-| Layout | What it looks like |
+| Activity type | Purpose |
 | --- | --- |
-| `Default list` | More detailed list view |
-| `Grid` | More compact visual view |
+| `sc-socket-slot` | Add a configured socket or remove an empty one |
+| `sc-socket-extraction` | Extract a gem, keeping or destroying it as configured |
+| `sc-socket-gem-reload` | Insert a compatible gem from the actor's inventory |
+| `sc-socket-recharge` | Restore charges to one socketed gem |
+| `sc-socket-pool-recharge` | Restore a shared charge pool on an item |
 
-![Module overview image](https://i.imgur.com/M6OZ5L3.png)
-![Module overview image](https://i.imgur.com/KWNJjWy.png)
+Socket activities respect compatibility and permission checks. Chained activities copied from gems retain their internal references to the copied activities.
 
-This changes only the look, not the rules.
+Shattered Codex also offers more modules on [Patreon](https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme), including **SC - More Gems** and other ways to bring variety and fun to your games. Explore the [wiki](https://wiki.shattered-codex.com) to see what each module adds.
 
-### Socket descriptions inside the item sheet
+## Screenshots
 
-![Module overview image](https://i.imgur.com/1A6L0yU.png)
+### Sockets and Slot Settings
 
-The module adds a block called:
+Empty sockets with individual colors, followed by the slot configuration window.
 
-- **Socket Descriptions**
+![Gauntlet of Perfect Convergence with six colored empty sockets](https://i.imgur.com/c1TCoSy.png)
 
-It can show:
+![Socket Slot Settings with custom artwork, color, description, and removal rules](https://i.imgur.com/BF1dVP9.png)
 
-- the empty socket description
-- the equipped gem description
-- the socket or gem icon
-- a button to send that description to chat
+### Gem Descriptions, Tags, and Combat Bonuses
 
-Important rule:
+The gem's socket description explains its contribution to the host item. Tags support compatibility rules, while combat settings define optional bonuses.
 
-- if the socket is empty, the socket description is shown
-- if the socket has a gem, the gem description is shown instead
+![Boilerglass Dynamo Cell with its item and socket descriptions](https://i.imgur.com/Pm3K292.png)
 
-### Badges on the actor inventory
+![Boilerglass Dynamo Cell gem tags](https://i.imgur.com/JxeHfCY.png)
 
-![Module overview image](https://i.imgur.com/sbgOY58.png)
+![Gem combat settings with attack, critical hit, and extra damage fields](https://i.imgur.com/FvDgWn3.png)
 
-Items with sockets show visual badges in the actor inventory.
+![Bloodstone configured with an attack bonus and extra necrotic damage](https://i.imgur.com/juSEE3Q.png)
 
-These badges help you quickly see:
+### Gem Resources and Activity Consumption
 
-- how many sockets the item has
-- which ones are filled
-- which ones are empty
-- whether an empty socket has a custom color
+Configure a gem's charges and recovery, then choose how an activity consumes socketed resources or gems.
 
-### Badge on activities
+![Boilerglass Dynamo Cell resource key, charges, recovery, and destruction option](https://i.imgur.com/ShggKOU.png)
 
-When an activity comes from a gem, the module adds a small badge with the gem image.
+![Activity consumption menu with Socketed Charges and Socketed Gem options](https://i.imgur.com/KnU3r3C.png)
 
-That makes it easier to see:
-
-- which action belongs to the original item
-- which action came from a socketed gem
-
-![Module overview image](https://i.imgur.com/pQOiRzu.png)
-
-### Transferred chained activities
-
-When a socketed gem provides activities, Foundry copies those activities onto
-the host item and assigns new IDs. The module also updates references used by
-the **SC More Activities** `sc-chain` and `sc-conditional-chain` activity types,
-so their steps continue to point to the copied activities.
-
-For example, a gem can contain these three activities:
-
-1. **Flame Strike**
-2. **Ember Push**
-3. **Ruby Combo**, an `sc-chain` that runs Flame Strike and then Ember Push
-
-After the gem is inserted, Ruby Combo on the host item uses the copied Flame
-Strike and Ember Push rather than the source IDs stored on the gem. References
-to a source activity that could not be transferred are removed; references to
-activities outside the gem are preserved.
-
-### Tidy5e integration
-
-The module works with:
-
-- the standard dnd5e item sheet
-- **Tidy5e Sheet**
-
-
-### Additional Details
-
-![Module overview image](https://i.imgur.com/8pNDRym.png)
-
-This section stores extra gem details.
-
-Right now it can include things such as:
-
-- extra damage
-- attack bonus
-- crit threshold
-- crit multiplier
-- relation to activity type
-
-In simple terms: this is where you place the more advanced combat details for the gem.
-
-### Socketed charges and character pools
-
-Each gem can provide a named resource such as `energy`, `battery`, or `magic`.
-The current and maximum charges remain stored on that gem. The module does not
-create a second charge balance on the character.
-
-Activities can use the **Socketed Charges** consumption type and choose where the
-resource may come from:
-
-| Pool scope | What contributes |
-| --- | --- |
-| **Sockets on this item** | Socketed gems on the item that owns the activity |
-| **Equipped sockets on this character** | Socketed gems on equipped items belonging to the same character |
-| **All sockets on this character** | Socketed gems on every item belonging to the same character |
-
-Slot-specific consumption and **Source gem** consumption always stay on the
-activity's own item. For character pools, charges are consumed in a stable order:
-the activity's item first when eligible, followed by the character's other items
-and each item's sockets in order.
-
-Removing a gem removes its charges from the available pool. If the gem is returned
-to inventory, it keeps its remaining charges.
-
-#### Give a gem its own charges
-
-1. Open the gem item.
-2. Open its **+Details** tab.
-3. Under **Socketed Resource**, enter a short resource name such as `battery`.
-4. Set the **Current** and **Maximum** charges.
-5. Optionally enable **Destroy when out of charges** if the gem should disappear when its last charge is spent.
-
-The resource is active only while the gem is inside a socket. The host item's
-**Sockets** tab shows the resource and its remaining charges.
-
-#### Use socket charges in formulas and Limited Uses
-
-The module adds socket resource pools to dnd5e item and activity roll data. This
-allows formula fields such as **Usage → Limited Uses → Max** to show the charges
-provided by socketed gems.
-
-For a resource named `Soul Harvest`, use the normalized key `soul-harvest`:
-
-| Formula | Value |
-| --- | --- |
-| `@sockets.soul-harvest.total` | Maximum capacity across all items owned by the character |
-| `@sockets.soul-harvest.item` | Maximum capacity on this item only |
-
-Use one of those exact formulas in **Limited Uses → Max**. The module makes
-**Spent** read-only and derives its numeric value as `capacity - current charges`.
-dnd5e therefore continues to calculate the available uses as `Max - Spent`, which
-is exactly the number of socket charges that remain.
-
-When dnd5e consumes the item's native Limited Uses, the same cost is deducted
-from socketed gems that provide the named resource. Character-wide pools consume
-the activity item's charged gems first, then the character's other items and
-their sockets in stable order. Item pools never leave the current item.
-
-If the activity already has an explicit **Socketed Charges** consumption target,
-that target remains responsible for the deduction and the automatic item-uses
-update is suppressed, preventing a double charge. dnd5e's **Spent** value remains
-numeric; it is recalculated from the gems whenever item data is prepared, so
-recharging, inserting, extracting, or destroying a gem also updates the counter.
-
-Resource keys are converted to lowercase formula-safe slugs: accents are removed,
-spaces and punctuation become hyphens. These values are always recalculated from
-the socketed gem snapshots; no duplicate balance is stored on the item or actor.
-For an unowned item, the character-wide scope falls back to that item.
-
-##### Important behavior and limitations
-
-- Use the formula exactly as shown. Additional arithmetic, alternative suffixes,
-  and partial paths do not create a Limited Uses socket binding.
-- The `.total` scope includes every owned item, including unequipped and unattuned
-  items. Use `.item` when charges must stay on the activity's item.
-- Native dnd5e Limited Uses recovery changes the numeric counter but does not
-  recharge socketed gems. Recharge the gems through their socket resource controls
-  or a socket recharge activity; the derived **Spent** value will then update.
-- Formula-safe names that normalize to the same slug share one pool. For example,
-  `Soul Harvest`, `Soul.Harvest`, and `soul-harvest` all resolve as `soul-harvest`.
-- If the activity also has an explicit **Socketed Charges** target for the same
-  resource, that target controls the deduction and the automatic binding does not
-  deduct a second time.
-
-After installing or updating the module, reload the Foundry world before testing
-these formulas so the roll-data and consumption integrations are active.
-
-#### Let an activity spend socketed charges
-
-In the activity's consumption settings, choose **Socketed Charges** and select
-where the charges should come from. The simplest options are:
-
-| Choose | Result |
-| --- | --- |
-| **Source gem (this activity)** | Spends charges from the gem that provided the activity |
-| **Any gem with resource** | Spends the named resource from compatible socketed gems |
-| **Specific slot** | Spends charges only from one socket position |
-| **Gem by tag** | Spends charges from gems carrying that tag |
-| **Gem by name** | Spends charges from gems with that exact name |
-| **Gem name matches** | Finds gems by a simple name pattern, such as `Fire*` |
-
-You can also choose whether the activity searches only its own item, equipped
-socketed items on the character, or all socketed items on the character.
-
-The same **Gem by tag** selector is available for **Socketed Gem** consumption,
-where matching gems are destroyed in slot order. Tag matching uses the same
-normalization as gem tags, so it ignores case, accents, and spaces converted to
-hyphens: the tag you type is stored normalized, and `Ácido Arcano` matches gems
-tagged `acido-arcano`.
-
-#### Restricting a pool with a host item filter
-
-An activity can optionally use a JavaScript **Host item filter**. Only socketed
-items for which the filter returns `true` contribute charges. Available variables
-include `item`, `hostItem`, `sourceItem`, `actor`, `activity`, `user`, `game`,
-`getProperty`, and `hasProperty`.
-
-For example, an activity granted by **SC - Setforge** can consume charges only
-from equipped items that belong to the same set. Choose **Equipped sockets on this
-character** and use:
-
-```js
-return getProperty(item, "flags.sc-setforge.setId")
-  === getProperty(sourceItem, "flags.sc-setforge.setId");
-```
-
-Here, `item` is a possible socket host and `sourceItem` is the item that owns the
-activity. If the filter has invalid code or throws an error, the consumption is
-blocked instead of drawing charges from an unintended item.
-
-### Native Item Uses from socket counts
-
-Besides the charges stored on gems, the sockets themselves can act as a charge
-pool. Two counts are available per item:
-
-- **Socketed Gems** — how many gems are currently socketed.
-- **Socket Slots** — how many sockets the item has, filled or empty.
-
-Nothing extra is stored for the maximum: it is always recalculated from the
-item's sockets, so inserting or extracting a gem resizes the pool immediately.
-
-#### Socket counts in formulas
-
-The counts are added to the item's roll data and work in any formula field,
-including **Limited Uses → Max** on the item and on activities:
-
-| Formula | Value |
-| --- | --- |
-| `@sc.sockets.total` | Socket slots on this item |
-| `@sc.sockets.gems` | Socketed gems on this item |
-| `@sc.sockets.empty` | Empty sockets on this item |
-| `@sc.sockets.actor.total` | Socket slots across the whole character |
-| `@sc.sockets.actor.gems` | Socketed gems across the whole character |
-| `@sc.sockets.actor.empty` | Empty sockets across the whole character |
-
-The same paths work in Active Effects, where the item scope becomes the item that
-grants the effect — see [Socket counts in Active Effects](#socket-counts-in-active-effects).
-
-Setting an item's **Limited Uses → Max** to exactly `@sc.sockets.gems` or
-`@sc.sockets.total` makes the native dnd5e Item Uses pool follow that socket
-count. Everything else remains native:
-
-- The native **Item Uses** consumption type on any of the item's activities.
-- The native **Recovery** configuration on the item, including recharge rolls.
-  Recovery formulas can use the socket counts too, for example `@sc.sockets.gems`.
-
-While either exact socket-count binding is active, the **Spent** field on the
-item sheet and its uses value on the actor sheet are read-only. Native Item Uses
-consumption and Recovery still update the pool normally; the lock prevents a
-manual edit from conflicting with the live socket-derived maximum.
-
-This is the simplest way to say "this staff has one use per socketed gem,
-recovered on a long rest": bind the maximum, add an **Item Uses** consumption
-row to the activity, and pick a recovery period. Note that an activity only
-spends a charge if it has a consumption row configured — attacking with a
-weapon that has no consumption does not spend anything, which is standard
-dnd5e behavior.
-
-Because the maximum is live, socketing or removing gems resizes the pool
-immediately. The module rebases the native Spent value during that socket
-change so the number of remaining charges stays the same, clamped only when
-the new maximum is smaller. A newly added capacity starts empty until recovery.
-
-Other formulas — `@sc.sockets.empty`, the `.actor.*` counts, and arithmetic
-such as `@sc.sockets.gems * 2` — are available to dnd5e formulas but do not get
-the capacity-rebase behavior reserved for the two exact bindings above. None
-of these count formulas consumes or modifies the socketed gems themselves.
-
-#### Recovery placement and formulas
-
-Configure Recovery on the **item**, in the same Details → Usage section as the
-socket-count maximum. An activity that consumes **Item Uses** spends this item
-pool, but the Recovery section on the activity belongs to the activity's own
-separate Limited Uses counter and does not recover the target item.
-
-The item's native recovery supports Recover All Uses, Lose All Uses, recharge,
-and Custom Formula. Socket counts are available in that formula. For example,
-`floor(@sc.sockets.gems / 2)` recovers half the number of socketed gems, while
-`floor(@item.uses.max / 2)` recovers half the item's maximum uses.
-
-#### Socket counts in Active Effects
-
-The same counts work in the **Value** of an Active Effect change, so an item can
-scale a bonus with its own sockets. "+1 AC for each socketed gem" is a single
-change on the item that has the sockets:
-
-| Attribute Key | Change Mode | Value |
-| --- | --- | --- |
-| `system.attributes.ac.bonus` | Add | `@sc.sockets.gems` |
-
-`@sc.sockets.gems` is the count itself, so it already means "+1 per gem".
-
-##### Every path available in an effect
-
-Three counts, in two scopes. The scope segment is optional and defaults to the
-item that grants the effect:
-
-| Formula | Value |
-| --- | --- |
-| `@sc.sockets.total` | Socket slots on the item that grants the effect |
-| `@sc.sockets.gems` | Socketed gems on that item |
-| `@sc.sockets.empty` | Empty sockets on that item |
-| `@sc.sockets.item.total` | Explicit spelling of `@sc.sockets.total` |
-| `@sc.sockets.item.gems` | Explicit spelling of `@sc.sockets.gems` |
-| `@sc.sockets.item.empty` | Explicit spelling of `@sc.sockets.empty` |
-| `@sc.sockets.actor.total` | Socket slots across the whole character |
-| `@sc.sockets.actor.gems` | Socketed gems across the whole character |
-| `@sc.sockets.actor.empty` | Empty sockets across the whole character |
-
-`gems + empty` always equals `total`. The `.item` spellings exist only for
-readability — they are the same numbers as the bare paths.
-
-##### Recipes
-
-| You want | Value |
-| --- | --- |
-| +1 per gem on this item | `@sc.sockets.gems` |
-| +2 per gem on this item | `@sc.sockets.gems * 2` |
-| +1 for every two gems | `floor(@sc.sockets.gems / 2)` |
-| +1 per socket, filled or not | `@sc.sockets.total` |
-| A penalty per empty socket | `-@sc.sockets.empty` |
-| +1 per gem anywhere on the character | `@sc.sockets.actor.gems` |
-| +2 only while every socket is filled | `max(0, 2 - @sc.sockets.empty * 2)` |
-| Scaling with something else too | `@sc.sockets.gems + @abilities.dex.mod` |
-
-Any dnd5e formula field accepts these, not just AC: `system.bonuses.mwak.damage`,
-`system.attributes.hp.bonuses.overall`, `system.bonuses.spell.dc`, and so on.
-Mixing a socket count with another `@` path is the one case that needs a formula
-field rather than a plain numeric one on Foundry v13, since v13 hands plain
-numeric targets to `Number()` and cannot evaluate a leftover expression. Values
-built only from socket counts work on any target, on both generations.
-
-##### Points worth knowing
-
-- The **item scope is the item carrying the effect**. An effect that lives
-  directly on the actor has no item scope and counts zero sockets there; use the
-  `.actor` counts for that case.
-- Only **filled** sockets count as gems. An empty socket is `@sc.sockets.empty`.
-- The bonus is **live**: socketing or extracting a gem re-prepares the actor and
-  the effect is re-evaluated immediately.
-- Effects from an unequipped or unattuned item are suppressed by dnd5e as usual,
-  so the bonus follows the item's equipped state without extra configuration.
-- The AC breakdown tooltip on the actor sheet reports the same number the effect
-  actually applied, for both scopes — including a value that only becomes
-  non-zero in the item scope, such as the `max(0, …)` recipe above.
-- Anything **outside** the table above is left untouched for dnd5e to resolve.
-  A near miss such as `@sc.sockets.gems.max` is not silently turned into a
-  number: it stays unresolved so the system reports it.
-- Both Foundry v13 and v14 are supported. The counts are resolved into literal
-  numbers before the change reaches the system, so a value such as
-  `@sc.sockets.gems * 2` behaves identically on both.
-- The per-resource pools (`@sockets.<resource>.*`) are **not** available in
-  effects — those are item-scoped formulas for Limited Uses and recovery. Only
-  the socket counts above cross into Active Effects.
-
-## Example Gem Setup
-
-| Field | Simple example |
-| --- | --- |
-| Type | Loot |
-| Subtype | `gem` |
-| Allowed Item Types | weapons |
-| Socket Description | "Adds fire to the strike" |
-| Active Effects | extra damage bonus |
-| Activities | blast, ray, elemental strike |
-
-
-## Socket Settings
-
-Each socket can have its own configuration.
-
-This is important because it lets you create special sockets instead of making every slot behave the same way.
-
-### What each socket can store
-
-![Module overview image](https://i.imgur.com/LC2BIB0.png)
-![Module overview image](https://i.imgur.com/M8R4tJC.png)
-![Module overview image](https://i.imgur.com/Pu6TaKS.png)
-![Module overview image](https://i.imgur.com/Fy2bjZl.png)
-
-| Field | What it does |
-| --- | --- |
-| `Slot condition` | Extra rule that accepts or blocks a gem |
-| `Slot description` | Text shown while the socket is empty |
-| `Slot color` | Color used for the empty socket |
-| `Empty socket image` | Artwork used for the empty socket |
-| `Inspect Gem` | Opens the gem currently inside that socket |
-
-### Slot description
-
-Good examples:
-
-- "Accepts only frost gems"
-- "Ancient socket"
-- "Weakened slot"
-
-### Empty socket image
-
-Each socket can use its own artwork while it is empty, so a battery bay, a rune notch, and a plain gem socket can live on the same item.
-
-Pick the image in `Socket Slot Settings`, either with the `Empty socket image` field or by clicking the slot preview. The `Default` button next to the field clears the custom image and brings back the socket artwork that ships with the module; it stays disabled while the slot already uses the default.
-
-The custom image appears wherever the empty socket is drawn:
-
-- the Sockets tab
-- Tidy views
-- actor inventory badges
-- socket description entries
-- the socket and gem pickers of the `sc-more-activities` activities
-
-Important:
-
-- the image is for the **empty socket**: once a gem is socketed, the gem image takes over
-- the slot color still tints whatever image the socket uses
-
-### Slot color
-
-The empty socket color can appear in:
-
-- the Sockets tab
-- Tidy views
-- actor inventory badges
-- socket description entries
-
-Important:
-
-- the color is for the **empty socket**
-
-### Slot condition
-
-This is an advanced field.
-
-If you do not like technical setup, you can ignore it.
-
-It is useful for extra rules such as:
-
-- only accept rare gems
-- only accept gems with a certain name
-- only accept gems in the first socket
-
-Ready-to-copy examples:
-
-Accept only gems with "Ruby" in the name:
-
-```js
-return gem?.name?.includes("Ruby");
-```
-
-Accept only rare gems:
-
-```js
-getProperty(gem, "system.rarity") === "rare"
-```
-
-Accept only in the first socket:
-
-```js
-slotIndex === 0
-```
-
-Accept only fire gems:
-
-```js
-return getProperty(gemItem, "flags.world.element") === "fire";
-```
-
-If the rule is invalid or cannot be read, the module blocks the gem and shows a warning.
-
-### Gem tags for simpler socket rules
-
-Tags let you group gems without depending on their exact names. For example,
-several differently named gems can all use the tag `fire`.
-
-1. Open a gem and go to its **+Details** tab.
-2. Add one or more values under **Gem Tags**.
-3. Open a socket's settings and use the tag in **Slot condition**.
-
-To accept only gems tagged `fire`, use:
-
-```js
-return hasGemTag("fire");
-```
-
-Tags are normalized automatically. For example, `Dynamo Battery` becomes
-`dynamo-battery`. Existing name-based conditions continue to work.
-
-## Socket Configuration Image
-
-Replace only the link below with your own image:
-
-![Socket configuration example](https://i.imgur.com/PXGNxG8.png)
-
-![Socket configuration example](https://i.imgur.com/NYEMiEx.png)
-
-## Module Settings
-
-All options are available in:
-
-**Configure Settings > Module Settings > SC - Simple Sockets**
-
-### Main options summary
-
-The **Module configuration** menu opens a single window with five tabs — no option is left loose in Foundry's module list. The footer shows an *Unsaved changes* pill whenever something differs from the saved values, and nothing is applied until you press **Save Changes**.
-
-Below the menu, a compact row of links opens the wiki, the Shattered Codex Patreon, and the Discord server.
-
-| Tab | Setting | Default | What it does |
-| --- | --- | --- | --- |
-| **Socket rules** | Edit Socket Permission | GM | Defines who can add or remove sockets |
-| **Socket rules** | Maximum Number of Sockets per Item | `6` | Limits how many sockets each item can have |
-| **Socket rules** | Delete Gem on Removal | `false` | Decides whether the gem is returned or deleted |
-| **Display** | Enable Socket Tab on all items | `true` | Shows the Sockets tab on all supported items |
-| **Display** | Socket tab layout | `Default list` | Chooses between list and grid |
-| **Display** | Gem damage layout in roll dialog | `true` | Groups damage in the roll dialog by gem |
-| **Item types** | Socketable Item Types | `weapon`, `equipment` | Defines which items can receive sockets |
-| **Gem subtypes** | Gem Loot Subtypes | `gem` | Defines which loot subtypes count as gems |
-| **Gem subtypes** | Custom Loot Subtypes | empty | Lets you create extra gem-like subtypes |
-| **Advanced** | Hide automatic What's New popup until next update | `true` | Keeps the release popup hidden until the module updates |
-| **Advanced** | Debug trace logging | `false` | Logs socket UI activity to the browser console |
-
-The **Advanced** tab holds per-user options: they only affect the browser you set them in, never the world.
+![Socketed Gem consumption with equipped character pool scope and host item filter](https://i.imgur.com/lUf22GX.png)
 
 ## Troubleshooting
 
-### "I cannot drop the gem into the socket"
-
-Check:
-
-1. whether the item is really **Loot**
-2. whether its subtype is marked as a gem subtype
-3. whether the gem allows that host item type
-4. whether the socket has an extra condition
-
-### "The Sockets tab did not appear"
-
-Check:
-
-1. whether the item type is compatible
-2. whether the global tab setting is enabled
-3. if the global setting is off, whether **Enable Socket Tab** is turned on for that item
-
-### "The gem disappeared when I removed it"
-
-That depends on:
-
-- **Delete Gem on Removal**
-
-If that option is on, the gem is deleted when removed.
-
-### "I want a more specific socket rule"
-
-Use:
-
-- **Slot condition**
-
-But this is optional and more advanced.
-
-## For Macros and Automation
-
-This section is optional.
-
-If you use macros, the module exposes an API at:
-
-```js
-game.modules.get("sc-simple-sockets").api
-```
-
-### Socket functions
-
-```js
-const sockets = game.modules.get("sc-simple-sockets")?.api?.sockets;
-```
-
-You can call:
-
-- `getItemSlots(itemOrUuid)`
-- `getItemGems(itemOrUuid)`
-- `hasItemGemTag(itemOrUuid, tag)`
-- `canEditSockets(itemOrUuid, options?)`
-- `addSlot(itemOrUuid, options?)`
-- `removeSlot(itemOrUuid, slotIndex, options?)`
-- `removeSlotWithContents(itemOrUuid, slotIndex, options?)`
-- `addGem(itemOrUuid, gemOrUuid, slotIndex?, options?)`
-- `removeGem(itemOrUuid, slotIndex, options?)`
-- `removeGemKeepingItem(itemOrUuid, slotIndex, options?)`
-- `updateSlotConfig(itemOrUuid, slotIndex, config, options?)`
-
-In simple terms:
-
-- one function lists all sockets on an item
-- another lists only the gems currently socketed in that item, including their normalized `tags`
-- `hasItemGemTag` checks whether at least one socketed gem has a specific tag
-- `canEditSockets` checks whether the current user, or the user selected with
-  `options.userId`, can edit sockets on the item
-- `addSlot` creates one empty socket and accepts the same optional slot
-  configuration used by the item sheet
-- `removeSlot` removes an empty socket by its zero-based index. Use
-  `removeSlotWithContents` when the slot contains a gem, so the gem's effects
-  and activities are cleaned up and the gem follows the requested removal mode.
-- `addGem` inserts a gem in the requested zero-based slot, or in the first empty
-  slot when `slotIndex` is omitted; both the host item and gem can be Item
-  documents or UUIDs. The normal permission, gem type, host compatibility, and
-  slot condition checks still apply.
-- `updateSlotConfig` updates the configuration of an existing slot, including
-  its name, description, condition, color, hidden state, and removal override.
-
-All mutation helpers accept the same `options` object used by the module's
-socket workflows. This includes normal permission checks by default and
-automation options such as `bypassPermission`, `notify`, and `render` when
-those options are appropriate for the caller.
-
-Create one default socket:
-
-```js
-const result = await sockets.addSlot(item);
-
-if (!result.success) {
-  ui.notifications.warn(`Could not add the socket: ${result.reason}`);
-}
-```
-
-Create a configured socket:
-
-```js
-await sockets.addSlot(item.uuid, {
-  slotConfig: {
-    name: "Ruby Socket",
-    description: "Accepts one adornment ruby.",
-    condition: "return hasGemTag('adornment-ruby');",
-    color: "#9f1239",
-    frameImg: "modules/my-art-pack/battery-slot.webp",
-    deleteGemOnRemoval: false
-  }
-});
-```
-
-The normal edit permission, socketable item type, and world maximum socket
-setting still apply. `result.data.slotIndex` is the zero-based index of the new
-slot and `result.data.totalSlots` is the new total.
-
-To bring an item up to twice an actor's proficiency bonus without adding
-duplicates when the macro runs again:
-
-```js
-const desiredSlots = Math.max(Number(actor.system.attributes.prof) || 0, 0) * 2;
-const currentSlots = await sockets.getItemSlots(item);
-
-for (let index = currentSlots.length; index < desiredSlots; index += 1) {
-  const result = await sockets.addSlot(item);
-  if (!result.success) {
-    ui.notifications.warn(`Stopped creating sockets: ${result.reason}`);
-    break;
-  }
-}
-```
-
-Set **Maximum Number of Sockets per Item** high enough for the intended result;
-at proficiency bonus 6, this example needs a limit of at least 12.
-
-Insert gems after the empty sockets exist:
-
-```js
-// Uses the first empty slot.
-const automaticResult = await sockets.addGem(item, gem);
-console.log(automaticResult.data.slotIndex);
-
-// Uses slot index 1 (the second slot).
-const selectedResult = await sockets.addGem(item.uuid, gem.uuid, 1);
-
-if (!selectedResult.success) {
-  ui.notifications.warn(`Could not socket the gem: ${selectedResult.reason}`);
-}
-```
-
-The automatic form checks the first empty slot. If that slot has a condition,
-the gem must satisfy it; the API does not skip ahead to a later empty slot. An
-explicit occupied slot follows the module's normal replacement rules, including
-whether the previous gem is returned or deleted.
-
-Remove an empty slot:
-
-```js
-const result = await sockets.removeSlot(item.uuid, 1);
-```
-
-Remove a slot and clean up its gem in one operation:
-
-```js
-const result = await sockets.removeSlotWithContents(item.uuid, 1, {
-  mode: "keep"
-});
-```
-
-`removeSlot` is intended for empty slots. For a filled slot, use
-`removeSlotWithContents` or call `removeGem` first. `removeSlotWithContents`
-uses the normal gem-removal behavior by default; set `mode` to `"keep"` or
-`"delete"` to override it.
-
-Mutation calls return the same structured shape:
-
-| Field | Meaning |
+| Problem | What to check |
 | --- | --- |
-| `success` | Whether the operation completed successfully |
-| `changed` | Whether the host item changed |
-| `reason` | A stable result code such as `slot-added`, `max-sockets-reached`, `gem-added`, `no-available-slot`, `gem-incompatible`, or `socket-condition-failed` |
-| `data.slotIndex` | The zero-based slot created or used by a successful mutation |
-| `data.totalSlots` | The new socket count after `addSlot` |
+| A gem cannot be inserted | Confirm its loot subtype, **Allowed Item Types**, and the socket's condition. |
+| The Sockets tab is missing | Check the supported item types and global tab setting. If automatic display is disabled, enable **Enable Socket Tab** in the item's **Details** tab. |
+| A removed gem disappeared | Check **Delete Gem on Removal**, the slot override, and any extraction activity's configuration. |
+| Resource formulas do not update after an upgrade | Reload the world and check the supported formulas in the [Simple Sockets wiki](https://wiki.shattered-codex.com/modules/sc-simple-sockets). |
 
-Example for **SC - Conditional Activities**:
+## Support and Feedback
 
-```js
-const sockets = game.modules.get("sc-simple-sockets")?.api?.sockets;
-
-if (!sockets || item?.system?.equipped !== true || item?.system?.attuned !== true) {
-  return false;
-}
-
-return sockets.hasItemGemTag(item, "dynamo-battery");
-```
-
-The helper normalizes the requested tag in the same way as the gem sheet. For
-example, `Dynamo Battery` and `dynamo-battery` resolve to the same identifier.
-
-### Macro functions
-
-```js
-const macroApi = game.modules.get("sc-simple-sockets")?.api?.macro;
-```
-
-Available helpers:
-
-- `addSocketInteractive()`
-- `extractGemInteractive()`
-- `selectItemForSocket()`
-- `removeGemWithoutDeleting(itemOrUuid, slotIndex)`
-
-Example:
-
-```js
-await game.modules.get("sc-simple-sockets")?.api?.macro?.addSocketInteractive({
-  notifications: true
-});
-```
-
-To extract a gem interactively, activate the macro and click a filled socket. This always keeps the gem instead of deleting it.
-
-```js
-await game.modules.get("sc-simple-sockets")?.api?.macro?.extractGemInteractive({
-  notifications: true
-});
-```
-
-You can also preconfigure socket defaults and optionally prompt for them before the slot is created:
-
-```js
-await game.modules.get("sc-simple-sockets")?.api?.macro?.addSocketInteractive({
-  notifications: true,
-  promptSlotConfig: true,
-  slotConfig: {
-    name: "Runeword Socket",
-    description: "Only accepts runes from your curated list.",
-    condition: "return gem?.type === 'loot' && gem?.name?.includes('Rune');",
-    color: "#C44D24",
-    frameImg: "modules/my-art-pack/rune-notch.webp"
-  }
-});
-```
-
-When `promptSlotConfig` is enabled, the dialog lets you edit `name`, `description`, `condition`, `color`, and the empty socket image. If a field is left blank, the configured default value is used.
-
-### Example macro: remove a gem without deleting it
-
-This helper always returns the gem to the actor inventory, ignoring both the global setting and the slot override.
-
-```js
-const macroApi = game.modules.get("sc-simple-sockets")?.api?.macro;
-const item = canvas.tokens?.controlled?.[0]?.actor?.items?.getName("Longsword");
-
-if (!macroApi || !item) {
-  ui.notifications?.warn("Select a token and make sure the item exists.");
-} else {
-  await macroApi.removeGemWithoutDeleting(item.uuid, 0);
-}
-```
-
-This removes the gem from slot `0` of the selected item's sockets and keeps the gem instead of deleting it.
-
-### Available hooks
-
-For automations, the module also triggers:
-
-- `sc-simple-sockets.socketAdded`
-- `sc-simple-sockets.socketRemoved`
-
-## Compatibility
-
-- **Foundry Version:** v13 and v14
-- **System:** dnd5e
-- **Sheets:** default dnd5e sheet and **Tidy5e Sheet**
-- **Recommended module:** [`libWrapper`](https://github.com/ruipin/fvtt-lib-wrapper)
+Questions and ideas are welcome on [Discord](https://discord.gg/6mWCQEJEwG). For bugs or feature requests, open a [GitHub issue](https://github.com/Shattered-Codex/sc-simple-sockets/issues). Documentation is available in the [official wiki](https://wiki.shattered-codex.com/modules/sc-simple-sockets).
 
 ## Icon Credits
 
@@ -1247,14 +147,3 @@ the [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) license.
 - `Cut Diamond` by Lorc, adapted for `sc-socket-gem-reload`
 - `Charging` by Delapouite, used for `sc-socket-recharge`
 - `Energy Tank` by Delapouite, used for `sc-socket-pool-recharge`
-
-## Useful Links
-
-- GitHub: https://github.com/Shattered-Codex/sc-simple-sockets
-- Issues: https://github.com/Shattered-Codex/sc-simple-sockets/issues
-- Wiki: https://wiki.shattered-codex.com/modules/sc-simple-sockets
-- Patreon: https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=github&utm_campaign=support_readme
-
----
-
-SC - Simple Sockets is a Shattered Codex project. Pull requests, suggestions, and bug reports are welcome.

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, test } from "node:test";
 
 import { Constants } from "../scripts/core/Constants.js";
 import { GemRecoveryService } from "../scripts/core/services/GemRecoveryService.js";
+import { GemDetailsBuilder } from "../scripts/domain/gems/GemDetailsBuilder.js";
 import { GemResourceService } from "../scripts/domain/gems/GemResourceService.js";
 import { SocketStore } from "../scripts/core/SocketStore.js";
 import { clearFoundryStubs, installFoundryStubs } from "./support/foundryStubs.js";
@@ -68,6 +69,7 @@ class StubRoll {
   static nextTotal = null;
   static lastData = null;
   static gate = null;
+  static lastMultiplier = null;
 
   constructor(formula, data) {
     this.formula = formula;
@@ -78,7 +80,12 @@ class StubRoll {
 
   alter(multiply, _add, _options) {
     this.multiplier = multiply;
+    StubRoll.lastMultiplier = multiply;
     return this;
+  }
+
+  clone() {
+    return new StubRoll(this.formula, this.data);
   }
 
   async evaluate() {
@@ -112,6 +119,7 @@ describe("GemRecoveryService", () => {
     StubRoll.nextTotal = null;
     StubRoll.lastData = null;
     StubRoll.gate = null;
+    StubRoll.lastMultiplier = null;
   });
 
   afterEach(() => {
@@ -121,18 +129,55 @@ describe("GemRecoveryService", () => {
   describe("restPeriods", () => {
     test("mirrors the rest type's recover periods plus the daily periods on a new day", () => {
       assert.deepEqual(
-        Array.from(GemRecoveryService.restPeriods({ type: "short" })),
-        ["sr"]
+        Array.from(GemRecoveryService.restPeriods({ type: "short" }).entries()),
+        [["sr", 1]]
       );
       assert.deepEqual(
-        Array.from(GemRecoveryService.restPeriods({ type: "long" })),
-        ["lr", "sr"]
+        Array.from(GemRecoveryService.restPeriods({ type: "long" }).entries()),
+        [["lr", 1], ["sr", 1]]
       );
       assert.deepEqual(
-        Array.from(GemRecoveryService.restPeriods({ type: "long", newDay: true })),
-        ["lr", "sr", "day", "dawn", "dusk"]
+        Array.from(GemRecoveryService.restPeriods({ type: "long", newDay: true }).entries()),
+        [["day", 1], ["dawn", 1], ["dusk", 1], ["lr", 1], ["sr", 1]]
       );
     });
+  });
+
+  test("calendar recovery runs after delta adjustments registered during setup", async () => {
+    const previousHooks = globalThis.Hooks;
+    const callbacks = new Map();
+    const on = (name, callback) => {
+      if (!callbacks.has(name)) callbacks.set(name, []);
+      callbacks.get(name).push(callback);
+    };
+    // Each lifecycle event is dispatched only once in this test.
+    globalThis.Hooks = { on, once: on };
+    try {
+      const { GemRecoveryService: service } = await import(
+        "../scripts/core/services/GemRecoveryService.js?calendar-hook-order"
+      );
+      game.system = { id: "dnd5e", version: "6.0.0" };
+      CONFIG.DND5E.calendarDeltasRecoveryMapping = new Map([["sunrises", "dawn"]]);
+      let recoveredCount;
+      service.recoverCalendarCharges = async (_deltaTime, options) => {
+        recoveredCount = options.dnd5e.deltas.sunrises;
+      };
+      service.register();
+      for (const callback of callbacks.get("init")) callback();
+      assert.equal(callbacks.has("updateWorldTime"), false);
+
+      // A calendar integration installs its delta adjustment before ready.
+      Hooks.on("updateWorldTime", (_time, _delta, options) => {
+        options.dnd5e.deltas.sunrises = 3;
+      });
+      for (const callback of callbacks.get("ready")) callback();
+      const options = { dnd5e: { deltas: { sunrises: 1 } } };
+      for (const callback of callbacks.get("updateWorldTime")) callback(86400, 86400, options);
+      assert.equal(recoveredCount, 3);
+    } finally {
+      if (previousHooks === undefined) delete globalThis.Hooks;
+      else globalThis.Hooks = previousHooks;
+    }
   });
 
   test("a long rest fully restores a socketed gem without a formula", async () => {
@@ -275,6 +320,154 @@ describe("GemRecoveryService", () => {
   });
 
   test("daily formulas recover sevenfold under the gritty realism rest variant", async () => {
+    stubs.settingsStore.set("dnd5e.restVariant", "gritty");
+    const actor = makeHostActor([
+      makeSlot("Dawn Trickle Gem", {
+        key: "magic", max: 20, value: 1, recovery: { period: "dawn", type: "formula", formula: "2" }
+      })
+    ]);
+
+    await GemRecoveryService.recoverRestCharges(actor, { type: "long", newDay: true });
+
+    assert.equal(hostSlotResource(actor).value, 15);
+  });
+
+  for (const period of ["day", "dawn", "dusk"]) {
+    for (const newDay of [false, true]) {
+      test(`5.3 gritty custom rests scale ${period} with newDay=${newDay}`, async () => {
+        stubs.settingsStore.set("dnd5e.restVariant", "gritty");
+        CONFIG.DND5E.restTypes.custom = { recoverPeriods: ["sr", period] };
+        const actor = makeHostActor([makeSlot("Daily Gem", {
+          key: "magic", max: 30, value: 0,
+          recovery: { period, type: "formula", formula: "2" }
+        })]);
+
+        await GemRecoveryService.recoverRestCharges(actor, { type: "custom", newDay });
+
+        assert.equal(hostSlotResource(actor).value, 14);
+        assert.equal(GemRecoveryService.restPeriods({ type: "custom", newDay }).get("sr"), 1);
+      });
+    }
+  }
+
+  test("dnd5e 6 preserves native counts for custom daily rest periods", () => {
+    CONFIG.DND5E.calendarDeltasRecoveryMapping = new Map([["sunrises", "dawn"]]);
+    CONFIG.DND5E.restTypes.long.recoverPeriods.push("dawn");
+    stubs.settingsStore.set("dnd5e.calendarConfig", { manualRecovery: true });
+    stubs.settingsStore.set("dnd5e.restVariant", "gritty");
+
+    const periods = GemRecoveryService.restPeriods({ type: "long", newDay: true });
+    assert.equal(periods.get("dawn"), 1);
+    assert.equal(periods.get("day"), 7);
+  });
+
+  test("dnd5e 6 only recovers daily gems on rests when calendar recovery is manual", async () => {
+    globalThis.CONFIG.DND5E.calendarDeltasRecoveryMapping = new Map([["sunrises", "dawn"]]);
+    stubs.settingsStore.set("dnd5e.calendarConfig", { manualRecovery: false });
+    const actor = makeHostActor([
+      makeSlot("Dawn Gem", {
+        key: "magic", max: 6, value: 1, recovery: { period: "dawn", formula: "" }
+      })
+    ]);
+
+    await GemRecoveryService.recoverRestCharges(actor, { type: "long", newDay: true });
+    assert.equal(hostSlotResource(actor).value, 1);
+
+    stubs.settingsStore.set("dnd5e.calendarConfig", { manualRecovery: true });
+    await GemRecoveryService.recoverRestCharges(actor, { type: "long", newDay: true });
+    assert.equal(hostSlotResource(actor).value, 6);
+  });
+
+  test("dnd5e 6 applies calendar daily recovery using its period count", async () => {
+    globalThis.CONFIG.DND5E.calendarDeltasRecoveryMapping = new Map([["sunrises", "dawn"]]);
+    stubs.settingsStore.set("dnd5e.calendarConfig", { manualRecovery: false });
+    globalThis.game.user.isActiveGM = true;
+    const actor = makeHostActor([
+      makeSlot("Dawn Trickle Gem", {
+        key: "magic", max: 20, value: 1, recovery: { period: "dawn", type: "formula", formula: "2" }
+      })
+    ]);
+    globalThis.game.actors = [actor];
+
+    await GemRecoveryService.recoverCalendarCharges(86_400, { dnd5e: { deltas: { sunrises: 3 } } });
+
+    assert.equal(hostSlotResource(actor).value, 7);
+  });
+
+  test("calendar recovery bounds positive rolls after a large time jump", async () => {
+    CONFIG.DND5E.calendarDeltasRecoveryMapping = new Map([["sunrises", "dawn"]]);
+    stubs.settingsStore.set("dnd5e.calendarConfig", { manualRecovery: false });
+    game.user.isActiveGM = true;
+    const actor = makeHostActor([makeSlot("Daily Gem", {
+      key: "magic", max: 6, value: 0,
+      recovery: { period: "dawn", type: "formula", formula: "2" }
+    })]);
+    game.actors = [actor];
+
+    await GemRecoveryService.recoverCalendarCharges(86400 * 10000, { dnd5e: { deltas: { sunrises: 10000 } } });
+
+    assert.equal(hostSlotResource(actor).value, 6);
+    assert.equal(StubRoll.lastMultiplier, 3);
+  });
+
+  test("calendar recovery preserves negative formula scaling", async () => {
+    CONFIG.DND5E.calendarDeltasRecoveryMapping = new Map([["sunrises", "dawn"]]);
+    game.user.isActiveGM = true;
+    const actor = makeHostActor([makeSlot("Draining Gem", {
+      key: "magic", max: 20, value: 20,
+      recovery: { period: "dawn", type: "formula", formula: "-2" }
+    })]);
+    game.actors = [actor];
+    await GemRecoveryService.recoverCalendarCharges(86400 * 3, { dnd5e: { deltas: { sunrises: 3 } } });
+    assert.equal(hostSlotResource(actor).value, 14);
+    assert.equal(StubRoll.lastMultiplier, 3);
+  });
+
+  test("calendar recovery ignores non-GMs, manual recovery, and backwards time", async () => {
+    CONFIG.DND5E.calendarDeltasRecoveryMapping = new Map([["sunrises", "dawn"]]);
+    const actor = makeHostActor([makeSlot("Daily Gem", {
+      key: "magic", max: 6, value: 0, recovery: { period: "dawn" }
+    })]);
+    game.actors = [actor];
+    const options = { dnd5e: { deltas: { sunrises: 1 } } };
+    await GemRecoveryService.recoverCalendarCharges(86400, options);
+    assert.equal(hostSlotResource(actor).value, 0);
+    game.user.isActiveGM = true;
+    stubs.settingsStore.set("dnd5e.calendarConfig", { manualRecovery: true });
+    await GemRecoveryService.recoverCalendarCharges(86400, options);
+    assert.equal(hostSlotResource(actor).value, 0);
+    stubs.settingsStore.set("dnd5e.calendarConfig", { manualRecovery: false });
+    await GemRecoveryService.recoverCalendarCharges(-86400, options);
+    await GemRecoveryService.recoverCalendarCharges(86400, {});
+    assert.equal(hostSlotResource(actor).value, 0);
+  });
+
+  test("round recovery remains selected in the native recovery options", () => {
+    CONFIG.DND5E.limitedUsePeriods = {
+      recoveryOptions: [{ value: "round", label: "Each Round", group: "Combat" }]
+    };
+    const groups = GemDetailsBuilder.buildRecoveryPeriodGroups("round");
+    const option = groups.flatMap(group => group.options).find(option => option.value === "round");
+    assert.equal(option.selected, true);
+    assert.equal(option.label, "Each Round");
+  });
+
+  test("round recovery accepts both legacy lists and v6 maps", async () => {
+    for (const periods of [["round"], new Map([["round", 1]])]) {
+      const actor = makeHostActor([makeSlot("Round Gem", {
+        key: "magic", max: 6, value: 0,
+        recovery: { period: "round", type: "formula", formula: "2" }
+      })]);
+      await GemRecoveryService.recoverCombatCharges(actor, periods);
+      assert.equal(hostSlotResource(actor).value, 2);
+      await GemRecoveryService.recoverCombatCharges(actor, ["turnStart"]);
+      assert.equal(hostSlotResource(actor).value, 2);
+    }
+  });
+
+  test("dnd5e 6 gritty long rests count seven manual daily recovery periods", async () => {
+    globalThis.CONFIG.DND5E.calendarDeltasRecoveryMapping = new Map([["sunrises", "dawn"]]);
+    stubs.settingsStore.set("dnd5e.calendarConfig", { manualRecovery: true });
     stubs.settingsStore.set("dnd5e.restVariant", "gritty");
     const actor = makeHostActor([
       makeSlot("Dawn Trickle Gem", {

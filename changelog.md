@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+
+- Added compatibility with D&D 5e (`dnd5e`) 6.0.0.
 - Added configurable resources to gems, including current and maximum charges and an option to destroy the gem when its charges reach zero.
 - Added native dnd5e consumption types for spending socketed charges or entire socketed gems from the source gem, a specific slot, a resource, a gem tag, an exact gem name, or a name pattern.
 - Added character-wide charge pools that can draw from equipped socketed items or every socketed item on the same actor, with an optional host-item filter for sets and other custom groupings.

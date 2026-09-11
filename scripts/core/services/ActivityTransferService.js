@@ -1,7 +1,9 @@
+import { Compatibility } from "../support/Compatibility.js";
 import { Constants } from "../Constants.js";
 import { ActivityReferenceRemapper } from "./ActivityReferenceRemapper.js";
 import { HostItemUpdateService } from "../support/HostItemUpdateService.js";
 import { ItemSheetSync } from "../support/ItemSheetSync.js";
+import { Dnd5eActivityCompatibility } from "../support/Dnd5eActivityCompatibility.js";
 
 export class ActivityTransferService {
   static UPDATE_OPTION_SKIP_RECONCILE = "skipActivityReconcile";
@@ -53,7 +55,7 @@ export class ActivityTransferService {
 
       const createData = foundry.utils.deepClone(original);
       delete createData._id;
-      ActivityTransferService.#remapActivityEffectReferences(createData, effectIdMap);
+      ActivityTransferService.#remapActivityEffectReferences(createData, effectIdMap, gemItem);
       createData.flags ??= {};
       createData.flags[Constants.MODULE_ID] ??= {};
       createData.flags[Constants.MODULE_ID][Constants.FLAG_SOURCE_GEM] = {
@@ -178,7 +180,7 @@ export class ActivityTransferService {
     }
 
     for (const id of idsToDelete) {
-      updateData[`system.activities.-=${id}`] = null;
+      Compatibility.addDeletion(updateData, `system.activities.${id}`);
     }
 
     await ActivityTransferService.#updateHostItem(hostItem, {
@@ -428,24 +430,13 @@ export class ActivityTransferService {
     );
   }
 
-  static #remapActivityEffectReferences(activityData, effectIdMap) {
+  static #remapActivityEffectReferences(activityData, effectIdMap, gemItem) {
     if (!effectIdMap?.size || !Array.isArray(activityData?.effects)) {
       return;
     }
-    activityData.effects = activityData.effects.map((effectRef) => {
-      if (!effectRef || typeof effectRef !== "object") {
-        return effectRef;
-      }
-      const sourceId = String(effectRef._id ?? "").trim();
-      const createdId = effectIdMap.get(sourceId);
-      if (!createdId) {
-        return effectRef;
-      }
-      return {
-        ...foundry.utils.deepClone(effectRef),
-        _id: createdId
-      };
-    });
+    activityData.effects = activityData.effects.map((effectRef) => (
+      Dnd5eActivityCompatibility.remapEffectReference(effectRef, effectIdMap, gemItem)
+    ));
   }
 
   static #sanitizeTransferredActivityPayload(payload, hostItem) {

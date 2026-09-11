@@ -15,7 +15,7 @@ export class GemResourceService {
    */
   static RECOVERY_PERIODS = [
     "sr", "lr", "day", "dawn", "dusk",
-    "initiative", "turnStart", "turnEnd", "turn",
+    "initiative", "round", "turnStart", "turnEnd", "turn",
     "recharge"
   ];
 
