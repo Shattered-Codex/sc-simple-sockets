@@ -12,8 +12,15 @@ export class GemLifecycleService {
     this.effectStore = effectStore;
   }
 
+  /**
+   * Snapshot owners may set options[MODULE_ID].skipGemLifecycle to replace activities
+   * and effects themselves. preUpdate still synchronizes the item's gem identity.
+   */
   async handleItemUpdated(item, changes, options = {}) {
-    if (!GemCriteria.hasTypeUpdate(changes)) {
+    if (
+      options?.[Constants.MODULE_ID]?.skipGemLifecycle === true
+      || !GemCriteria.hasTypeUpdate(changes)
+    ) {
       return;
     }
 
@@ -21,7 +28,7 @@ export class GemLifecycleService {
     const isGem = GemCriteria.matches(item);
     const wasGem = transition?.wasGem ?? !isGem;
 
-    if (!wasGem && !isGem) {
+    if (wasGem === isGem) {
       return;
     }
 
@@ -43,9 +50,28 @@ export class GemLifecycleService {
     }
 
     const previous = item?.toObject?.() ?? item;
-    const next = foundry.utils.mergeObject(previous, changes, { inplace: false });
-    const nextSubtype = GemCriteria.resolveGemSubtypeFromType(next);
+    const expanded = foundry.utils.expandObject(changes);
+    const next = foundry.utils.mergeObject(previous, expanded, {
+      inplace: false,
+      recursive: options.recursive !== false
+    });
     const gemSubtypePath = `flags.${Constants.MODULE_ID}.${Constants.FLAG_GEM_SUBTYPE}`;
+    const replacesContents = options?.[Constants.MODULE_ID]?.skipGemLifecycle === true;
+    const typeChanged = ["type", "system.type.value", "system.type.subtype"].some(
+      (path) => foundry.utils.getProperty(previous, path) !== foundry.utils.getProperty(next, path)
+    );
+    // Snapshot owners supply identity explicitly; legacy snapshots derive it from their type.
+    let nextSubtype = GemCriteria.resolveGemSubtypeFromType(next);
+    if (replacesContents && foundry.utils.hasProperty(expanded, gemSubtypePath)) {
+      nextSubtype ??= foundry.utils.getProperty(expanded, gemSubtypePath);
+    } else if (!replacesContents && !typeChanged) {
+      nextSubtype = GemCriteria.resolveGemSubtype(next);
+    }
+
+    // A non-recursive update replaces the entire flags object, including this added flag.
+    if (options.recursive === false) {
+      changes.flags = foundry.utils.deepClone(next.flags ?? {});
+    }
     foundry.utils.setProperty(changes, gemSubtypePath, nextSubtype);
     foundry.utils.setProperty(next, gemSubtypePath, nextSubtype);
 
