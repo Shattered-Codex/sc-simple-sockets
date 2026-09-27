@@ -63,6 +63,88 @@ describe("SocketConsumptionService actor pools", () => {
   beforeEach(() => installFoundryStubs());
   afterEach(() => clearFoundryStubs());
 
+  test("removes a gem from a serialized consumption result on the caller client", async () => {
+    const hooks = consumptionHookHandlers();
+    const actor = createTestActor({ items: [
+      { id: "ability", type: "feat" },
+      { id: "ring", flags: socketFlags([chargedSlot("Ruby", 2)]) }
+    ] });
+    const ability = actor.items.get("ability");
+    const ring = actor.items.get("ring");
+    const activity = { id: "use", actor, item: ability, flags: {} };
+    const target = {
+      item: ability, activity,
+      target: formatSocketTarget({ mode: "anyGem", scope: "actorAll" }),
+      async resolveCost() { return { total: 1 }; }
+    };
+    const coordinatorConfig = { consume: { resources: true } };
+    const callerConfig = { consume: { resources: true } };
+    const updates = { item: [], rolls: [] };
+    const removals = [];
+    const originalRemoveGem = SocketService.removeGem;
+    SocketService.removeGem = async (item, slotIndex) => {
+      removals.push({ item, slotIndex });
+      item.flags[Constants.MODULE_ID][Constants.FLAGS.sockets][slotIndex] = {};
+      hooks.get("updateItem")(item);
+    };
+
+    try {
+      hooks.get("dnd5e.preActivityConsumption")(activity, coordinatorConfig, {});
+      await SocketConsumptionService.consumeGem.call(target, coordinatorConfig, updates);
+      const wireResult = JSON.parse(JSON.stringify({ updates }));
+      assert.equal(wireResult.updates.scSimpleSockets.gemRemovals.length, 1);
+      hooks.get("dnd5e.postUseActivity")(activity, callerConfig, wireResult);
+      hooks.get("dnd5e.postUseActivity")(activity, callerConfig, wireResult);
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.deepEqual(removals, [{ item: ring, slotIndex: 0 }]);
+
+      // A slot replaced after planning must not lose its new gem.
+      const replaced = chargedSlot("Sapphire", 2);
+      ring.flags[Constants.MODULE_ID][Constants.FLAGS.sockets][0] = replaced;
+      hooks.get("dnd5e.postUseActivity")(activity, {}, wireResult);
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(removals.length, 1);
+    } finally {
+      SocketService.removeGem = originalRemoveGem;
+    }
+  });
+
+  test("removes a drained destroyOnEmpty gem after serialized charge consumption", async () => {
+    const hooks = consumptionHookHandlers();
+    const actor = createTestActor({ items: [
+      { id: "wand", flags: socketFlags([chargedSlot("Cell", 1, { destroyOnEmpty: true })]) }
+    ] });
+    const wand = actor.items.get("wand");
+    const activity = { id: "zap", actor, item: wand, flags: {} };
+    const target = {
+      item: wand, activity,
+      target: formatSocketTarget({ mode: "any", resourceKey: "energy" }),
+      async resolveCost() { return { total: 1 }; }
+    };
+    const coordinatorConfig = { consume: { resources: true } };
+    const updates = { item: [], rolls: [] };
+    const removals = [];
+    const originalRemoveGem = SocketService.removeGem;
+    SocketService.removeGem = async (item, slotIndex) => {
+      removals.push({ item, slotIndex });
+      item.flags[Constants.MODULE_ID][Constants.FLAGS.sockets][slotIndex] = {};
+      hooks.get("updateItem")(item);
+    };
+
+    try {
+      hooks.get("dnd5e.preActivityConsumption")(activity, coordinatorConfig, {});
+      await SocketConsumptionService.consumeCharge.call(target, coordinatorConfig, updates);
+      const result = JSON.parse(JSON.stringify({ updates }));
+      await actor.updateEmbeddedDocuments("Item", result.updates.item);
+      hooks.get("dnd5e.postActivityConsumption")(activity, coordinatorConfig, {}, updates);
+      hooks.get("dnd5e.postUseActivity")(activity, { consume: { resources: true } }, result);
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.deepEqual(removals, [{ item: wand, slotIndex: 0 }]);
+    } finally {
+      SocketService.removeGem = originalRemoveGem;
+    }
+  });
+
   test("spends an equipped actor pool across multiple host items in stable order", async () => {
     const actor = createTestActor({ items: [
       { id: "ability", type: "feat" },
