@@ -30,6 +30,7 @@ import {
 export class SocketConsumptionService {
   static #registered = false;
   static #pendingConsumptions = new Map();
+  static #inFlightIntents = new Set();
   static PENDING_TTL_MS = 60_000;
 
   static register() {
@@ -59,7 +60,9 @@ export class SocketConsumptionService {
       };
 
       Hooks.on("dnd5e.preActivityConsumption", SocketConsumptionService.#onPreConsumption);
+      Hooks.on("dnd5e.postActivityConsumption", SocketConsumptionService.#onPostConsumption);
       Hooks.on("dnd5e.postUseActivity", SocketConsumptionService.#onPostUse);
+      Hooks.on("updateItem", SocketConsumptionService.#onItemUpdate);
     });
   }
 
@@ -106,7 +109,7 @@ export class SocketConsumptionService {
 
     SocketConsumptionService.#writeCombinedSlotsUpdates(updates, combined, plan);
     SocketConsumptionService.#queueChargeReservations(config, plan, combined);
-    SocketConsumptionService.#queueEmptiedGems(config, plan, combined);
+    SocketConsumptionService.#queueEmptiedGems(config, updates, plan, combined);
   }
 
   static #queueChargeReservations(usageConfig, plan, combined) {
@@ -133,13 +136,13 @@ export class SocketConsumptionService {
    * Gems flagged with destroyOnEmpty are destroyed after the use when a charge
    * consumption drains them to zero.
    */
-  static #queueEmptiedGems(usageConfig, plan, combined) {
+  static #queueEmptiedGems(usageConfig, updates, plan, combined) {
     const emptied = [];
     for (const deduction of plan.deductions) {
       const resource = GemResourceService.getSlotResource(plan.updatedSlots[deduction.slotIndex]);
       if (resource?.destroyOnEmpty && resource.value === 0) {
         const location = SocketConsumptionService.#locationFor(combined, deduction.slotIndex);
-        if (location) emptied.push(location);
+        if (location) emptied.push({ ...location, slot: plan.updatedSlots[deduction.slotIndex] });
       }
     }
     if (!emptied.length) {
@@ -155,6 +158,7 @@ export class SocketConsumptionService {
     }
     pending.createdAt = Date.now();
     SocketConsumptionService.#pendingConsumptions.set(usageConfig, pending);
+    SocketConsumptionService.#recordGemIntents(updates, emptied);
   }
 
   /** @this {ConsumptionTargetData} */
@@ -188,14 +192,17 @@ export class SocketConsumptionService {
       return;
     }
 
+    const removals = [];
     for (const index of plan.removals) {
       const location = combined.locations[index];
       if (location && !SocketConsumptionService.#hasPendingTarget(pending.targets, location)) {
         pending.targets.push(location);
+        removals.push({ ...location, slot: combined.slots[index] });
       }
     }
     pending.createdAt = Date.now();
     SocketConsumptionService.#pendingConsumptions.set(config, pending);
+    SocketConsumptionService.#recordGemIntents(updates, removals);
   }
 
   /* -------------------------------------------- */
@@ -254,30 +261,102 @@ export class SocketConsumptionService {
     SocketConsumptionService.#purgeStale();
   };
 
-  static #onPostUse = (activity, usageConfig) => {
+  static #onPostConsumption = (activity, usageConfig) => {
     const pending = SocketConsumptionService.#pendingConsumptions.get(usageConfig);
-    if (!pending || pending.consuming) {
+    if (!pending) return;
+    pending.charges = [];
+    if (!pending.targets.length) SocketConsumptionService.#pendingConsumptions.delete(usageConfig);
+  };
+
+  static #onPostUse = (activity, usageConfig, results) => {
+    const pending = SocketConsumptionService.#pendingConsumptions.get(usageConfig);
+    if (pending?.consuming) {
       return;
     }
+    // The authority may calculate consumption on another client with a JSON copy
+    // of usageConfig. Its pending map cannot be read here; the successful native
+    // consume result carries only this module's serializable removal intents.
+    const intents = results?.updates?.scSimpleSockets?.gemRemovals;
+    const targets = Array.isArray(intents)
+      ? SocketConsumptionService.#resolveGemIntents(activity, intents)
+      : (pending?.targets ?? []);
+    if (!pending && !targets.length) return;
     // Charge updates have already been applied by dnd5e before postUseActivity.
     // Keep only whole-gem reservations while their asynchronous removal finishes.
-    pending.charges = [];
-    if (!pending.targets.length) {
+    if (pending) pending.charges = [];
+    if (!targets.length) {
       SocketConsumptionService.#pendingConsumptions.delete(usageConfig);
       return;
     }
 
-    pending.consuming = true;
-    void SocketConsumptionService.#consumeGems(pending.targets).finally(() => {
+    if (pending) pending.consuming = true;
+    const guarded = [];
+    for (const target of targets) {
+      const key = `${target.item?.uuid ?? target.item?.actor?.uuid ?? ""}:${target.item?.id}:${target.slotIndex}`;
+      if (SocketConsumptionService.#inFlightIntents.has(key)) continue;
+      SocketConsumptionService.#inFlightIntents.add(key);
+      guarded.push({ ...target, key });
+    }
+    void SocketConsumptionService.#consumeGems(guarded).finally(() => {
+      for (const { key } of guarded) SocketConsumptionService.#inFlightIntents.delete(key);
       if (SocketConsumptionService.#pendingConsumptions.get(usageConfig) === pending) {
         SocketConsumptionService.#pendingConsumptions.delete(usageConfig);
       }
     });
   };
 
+  static #recordGemIntents(updates, removals) {
+    if (!removals.length) return;
+    const intents = (updates.scSimpleSockets ??= { gemRemovals: [] }).gemRemovals;
+    for (const { item, slotIndex, slot } of removals) {
+      if (!item?.id || !Number.isInteger(slotIndex) || !slot?._gemData) continue;
+      const fingerprint = JSON.stringify(slot._gemData);
+      if (!intents.some((entry) => entry.itemId === item.id && entry.slotIndex === slotIndex)) {
+        intents.push({ itemId: item.id, slotIndex, fingerprint });
+      }
+    }
+  }
+
+  static #resolveGemIntents(activity, intents) {
+    const actor = activity?.actor ?? activity?.item?.actor;
+    const targets = [];
+    const seen = new Set();
+    for (const intent of intents) {
+      const itemId = intent?.itemId;
+      const slotIndex = intent?.slotIndex;
+      if (typeof itemId !== "string" || !Number.isInteger(slotIndex) || slotIndex < 0
+        || typeof intent.fingerprint !== "string") continue;
+      const key = `${itemId}:${slotIndex}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const item = actor?.items?.get?.(itemId);
+      const slot = item && SocketStore.peekSlots(item)[slotIndex];
+      if (slot?._gemData && JSON.stringify(slot._gemData) === intent.fingerprint) {
+        targets.push({ item, slotIndex, fingerprint: intent.fingerprint });
+      }
+    }
+    return targets;
+  }
+
+  static #onItemUpdate = (item) => {
+    // A remote authority has no postUseActivity for the caller's use. Once the
+    // live socket is empty, release that authority-side reservation promptly.
+    for (const [usageConfig, pending] of SocketConsumptionService.#pendingConsumptions.entries()) {
+      if (pending.consuming) continue;
+      pending.targets = pending.targets.filter((target) => !(
+        SocketConsumptionService.#sameItem(target.item, item)
+        && !SocketStore.peekSlots(item)[target.slotIndex]?._gemData
+      ));
+      if (!pending.targets.length && !pending.charges.length) {
+        SocketConsumptionService.#pendingConsumptions.delete(usageConfig);
+      }
+    }
+  };
+
   static async #consumeGems(targets) {
-    for (const { item, slotIndex } of targets) {
+    for (const { item, slotIndex, fingerprint } of targets) {
       try {
+        if (fingerprint && JSON.stringify(SocketStore.peekSlots(item)[slotIndex]?._gemData) !== fingerprint) continue;
         await SocketService.removeGem(item, slotIndex, {
           mode: SocketService.REMOVE_GEM_MODE_DELETE,
           bypassPermission: true,
