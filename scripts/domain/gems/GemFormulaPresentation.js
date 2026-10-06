@@ -1,6 +1,7 @@
 import { Constants } from "../../core/Constants.js";
 import { SocketStore } from "../../core/SocketStore.js";
 import { GemDamageService } from "./GemDamageService.js";
+import { GemConcealmentService } from "./GemConcealmentService.js";
 
 /**
  * Builds presentation-only summaries of the extra damage granted by socketed
@@ -87,8 +88,9 @@ export class GemFormulaPresentation {
       total += bonus;
       if (bonus !== 0) {
         parts.push({
-          gemName: gem.name ?? slot?.name ?? Constants.localize("SCSockets.GemDetails.ExtraDamage.Label", "Gem"),
-          gemImg: gem.img ?? slot?.img ?? Constants.SOCKET_SLOT_IMG,
+          gemName: GemConcealmentService.describeGem(item, slot, gem).name
+            ?? Constants.localize("SCSockets.GemDetails.ExtraDamage.Label", "Gem"),
+          gemImg: GemConcealmentService.describeGem(item, slot, gem).img ?? Constants.SOCKET_SLOT_IMG,
           bonus
         });
       }

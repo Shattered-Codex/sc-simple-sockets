@@ -127,6 +127,11 @@ export class InventoryService {
       return false;
     }
 
+    // Same reasoning for an unidentified gem and its identified twin.
+    if (itemStackData.unidentified !== payloadStackData.unidentified) {
+      return false;
+    }
+
     if (itemStackData.sourceId && payloadStackData.sourceId) {
       return itemStackData.sourceId === payloadStackData.sourceId;
     }
@@ -169,6 +174,7 @@ export class InventoryService {
       subtype,
       sourceId,
       broken: GemBreakService.isBroken(raw),
+      unidentified: raw?.system?.identified === false,
       hasAscendantState: InventoryService.#hasAscendantItemState(raw),
       fingerprint: sourceId ? "" : InventoryService.#buildStackFingerprint(raw)
     };

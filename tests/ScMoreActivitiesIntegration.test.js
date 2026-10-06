@@ -252,6 +252,31 @@ describe("ScMoreActivitiesIntegration", () => {
     }
   });
 
+  test("activity picker summaries conceal gem and socket descriptions for players", async () => {
+    const { ScMoreActivitiesIntegration } = await import(
+      "../scripts/core/integrations/sc-more-activities/ScMoreActivitiesIntegration.js"
+    );
+    game.user.isGM = false;
+    const item = { system: { identified: false } };
+    const entry = {
+      slotIndex: 0,
+      hasGem: true,
+      slot: {
+        name: "Venom Channel",
+        gem: { name: "Poison Gem", img: "icons/poison.webp" },
+        slotConfig: { name: "Venom Channel", description: "Contains a poison gem" }
+      }
+    };
+    const summary = ScMoreActivitiesIntegration.toSlotSummary(entry, item);
+    assert.equal(summary.concealed, true);
+    assert.equal(summary.gemName, "Unidentified Gem");
+    assert.equal(summary.slotName, "Unidentified Gem");
+    assert.equal(summary.description, "");
+    assert.equal(entry.slot.name, "Venom Channel");
+    game.user.isGM = true;
+    assert.equal(ScMoreActivitiesIntegration.toSlotSummary(entry, item).gemName, "Poison Gem");
+  });
+
   test("keeps extract-gem valid when the target item still resolves but the activity uuid does not", async () => {
     const actor = createTestActor({
       items: [{

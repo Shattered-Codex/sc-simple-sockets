@@ -71,12 +71,11 @@ export class SocketDescriptionsUI {
       return;
     }
 
+    // Players looking at an unidentified item get the unidentified description
+    // card instead of the regular one, so fall back to the last card shown.
     const descriptionCard = container.querySelector(
       `.card.description[data-target="${SocketDescriptionsUI.DESCRIPTION_TARGET}"]`
-    );
-    if (!descriptionCard) {
-      return;
-    }
+    ) ?? Array.from(container.querySelectorAll(".card.description")).at(-1) ?? null;
 
     const entries = await SocketDescriptionsUI.#buildEntries(item, slots);
     if (!entries.length) {
@@ -98,7 +97,11 @@ export class SocketDescriptionsUI {
     card.dataset.scSocketsHostName = item?.name ?? "";
     card.dataset.scSocketsHostImg = item?.img ?? "";
 
-    descriptionCard.after(card);
+    if (descriptionCard) {
+      descriptionCard.after(card);
+    } else {
+      container.append(card);
+    }
     SocketDescriptionsUI.#bindActions(card, item);
   }
 

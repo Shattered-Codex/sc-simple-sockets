@@ -36,6 +36,8 @@ export class Constants {
   };
   static GEM_ALLOWED_TYPES_ALL = "*";
   static SOCKET_SLOT_IMG = `modules/${this.MODULE_ID}/assets/imgs/socket-slot.webp`;
+  // Foundry core icon; the file name really ends in "-.webp".
+  static UNIDENTIFIED_GEM_IMG = "icons/commodities/gems/gem-faceted-diamond-silver-.webp";
   static BROKEN_GEM_OVERLAY_IMG = `modules/${this.MODULE_ID}/assets/imgs/broke.webp`;
   static MODULE_WIKI_URL = "https://wiki.shattered-codex.com/modules/sc-simple-sockets";
   static DISCORD_URL = "https://discord.gg/6mWCQEJEwG";

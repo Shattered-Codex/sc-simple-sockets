@@ -13,6 +13,7 @@ import { HostItemUpdateService } from "../support/HostItemUpdateService.js";
 import { HostOperationQueue } from "../support/HostOperationQueue.js";
 import { GemRemovalCheckService } from "./GemRemovalCheckService.js";
 import { GemBreakService } from "../../domain/gems/GemBreakService.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 export class SocketService {
   static REMOVE_GEM_MODE_DEFAULT = "default";
@@ -257,6 +258,7 @@ export class SocketService {
     const replacedGemSnapshot = shouldReturnReplacedGem
       ? ItemResolver.expandSnapshot(previousSlot?._gemData ?? null)
       : null;
+    SocketService.#keepGemUnidentified(hostItem, replacedGemSnapshot);
 
     const noRender = SocketService.#buildInternalUpdateOptions({ render: false }, options);
     DebugTrace.log("socket-service.addGem.noRender", {
@@ -442,6 +444,7 @@ export class SocketService {
     if (shouldBreakGem) {
       GemBreakService.markDataBroken(gemSnapshot);
     }
+    SocketService.#keepGemUnidentified(hostItem, gemSnapshot);
 
     const noRender = SocketService.#buildInternalUpdateOptions({ render: false }, options);
     DebugTrace.log("socket-service.removeGem.noRender", {
@@ -741,6 +744,20 @@ export class SocketService {
 
   static #isHostTypeSocketable(hostItem) {
     return ModuleSettings.isItemSocketableByType(hostItem);
+  }
+
+  /**
+   * A gem taken out of an unidentified item is still unknown, so it goes back
+   * to the inventory unidentified instead of revealing what the item held.
+   */
+  static #keepGemUnidentified(hostItem, gemData) {
+    if (
+      gemData
+      && GemConcealmentService.isEnabled()
+      && GemConcealmentService.isUnidentified(hostItem)
+    ) {
+      GemConcealmentService.markDataUnidentified(gemData);
+    }
   }
 
   static #normalizeRemoveGemMode(mode) {

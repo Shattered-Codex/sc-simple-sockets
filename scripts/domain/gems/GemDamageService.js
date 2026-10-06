@@ -3,6 +3,7 @@ import { ItemResolver } from "../../core/ItemResolver.js";
 import { SocketStore } from "../../core/SocketStore.js";
 import { GemDetailsBuilder } from "./GemDetailsBuilder.js";
 import { Compatibility } from "../../core/support/Compatibility.js";
+import { GemConcealmentService } from "./GemConcealmentService.js";
 
 export class GemDamageService {
   static #damageHandler = null;
@@ -131,8 +132,7 @@ export class GemDamageService {
           ...entry,
           formula,
           source: {
-            name: gem.name ?? slot?.name,
-            img: gem.img ?? slot?.img,
+            ...GemConcealmentService.describeGem(item, slot, gem),
             slot: slot?._slot ?? slotIndex,
             uuid: null
           }

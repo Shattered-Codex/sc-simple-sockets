@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 import { canUserSeeSlot, getSlotConfig, resolveSlotFrameImg } from "./socketSlotConfig.js";
 
 export function buildSocketLayoutContext(item, {
@@ -9,14 +10,18 @@ export function buildSocketLayoutContext(item, {
   canAddSocketSlot = false,
   sockets = []
 } = {}) {
+  // Players never get the identity of a gem that is still unidentified.
+  sockets = GemConcealmentService.maskSlots(item, sockets);
   const socketTabLayout = ModuleSettings.getSocketTabLayout();
   const useSocketGridLayout = socketTabLayout === ModuleSettings.SOCKET_TAB_LAYOUT_GRID;
   // The host item has no persistent charge of its own: pools are always derived
   // from the gems currently socketed into it.
-  const socketPools = GemResourceService.aggregatePools(sockets);
+  const socketPools = GemResourceService.aggregatePools(
+    Array.isArray(sockets) ? sockets.filter((slot) => !slot?.concealed) : []
+  );
   const socketResourceRows = (Array.isArray(sockets) ? sockets : []).reduce((rows, slot, index) => {
     const resource = GemResourceService.getSlotResource(slot);
-    if (resource && canUserSeeSlot({ ...slot, slotConfig: getSlotConfig(slot) })) {
+    if (resource && !slot?.concealed && canUserSeeSlot({ ...slot, slotConfig: getSlotConfig(slot) })) {
       rows.push({
         slotNumber: index + 1,
         gemName: String(slot?.gem?.name ?? slot?.name ?? "").trim(),

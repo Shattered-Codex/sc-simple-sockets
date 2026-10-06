@@ -510,6 +510,10 @@
           "Name": "O GM também rola",
           "Hint": "Por padrão, o GM remove gemas sem rolar."
         }
+      },
+      "ConcealUnidentified": {
+        "Name": "Ocultar gemas de itens não identificados",
+        "Hint": "Os jogadores veem as gemas encaixadas em um item não identificado, e as gemas que estão elas mesmas não identificadas, sem nome, imagem ou descrição. O GM sempre vê a gema real."
       }
     },
     "SupportCard": {
@@ -1089,6 +1093,11 @@
         "Repaired": "{name} foi reparada.",
         "Broken": "{name} agora está quebrada."
       }
+    },
+    "UnidentifiedGem": {
+      "Name": "Gema não identificada",
+      "CannotInspect": "Esta gema não pode ser inspecionada até ser identificada.",
+      "Description": "Esta gema não foi identificada."
     }
   }
 }

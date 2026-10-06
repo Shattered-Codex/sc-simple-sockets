@@ -464,12 +464,12 @@ export class ScMoreActivitiesGemReloadActivityService {
     slotEntries.forEach((entry, index) => {
       const condition = conditions[index];
       if (condition.error) {
-        conditionErrors.push(ScMoreActivitiesIntegration.toSlotSummary(entry));
+        conditionErrors.push(ScMoreActivitiesIntegration.toSlotSummary(entry, item));
         return;
       }
 
       if (condition.allowed) {
-        slots.push(ScMoreActivitiesIntegration.toSlotSummary(entry));
+        slots.push(ScMoreActivitiesIntegration.toSlotSummary(entry, item));
       }
     });
 

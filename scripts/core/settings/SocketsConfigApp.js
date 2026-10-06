@@ -520,6 +520,20 @@ export class SocketsConfigApp extends BaseApplication {
         defaultChecked: "false",
         checked: ModuleSettings.shouldDeleteGemOnRemoval()
       },
+      {
+        key: ModuleSettings.SETTING_CONCEAL_UNIDENTIFIED,
+        name: Constants.localize(
+          "SCSockets.Settings.ConcealUnidentified.Name",
+          "Hide gems of unidentified items"
+        ),
+        hint: Constants.localize(
+          "SCSockets.Settings.ConcealUnidentified.Hint",
+          "Players see gems socketed into an unidentified item, and gems that are themselves unidentified, without their name, image, or description. GMs always see the real gem."
+        ),
+        isCheckbox: true,
+        defaultChecked: "true",
+        checked: ModuleSettings.shouldConcealUnidentifiedGems()
+      },
       ...this.#buildRemovalCheckFields()
     ];
   }
@@ -1049,6 +1063,7 @@ export class SocketsConfigApp extends BaseApplication {
       editPermission,
       maxSockets,
       deleteOnRemoval: checkboxValue(ModuleSettings.SETTING_DELETE_ON_REMOVE, false),
+      concealUnidentified: checkboxValue(ModuleSettings.SETTING_CONCEAL_UNIDENTIFIED, true),
       removalCheck,
       gemRollLayout: DamageRollLayoutAdapterRegistry.normalizeMode(
         field(ModuleSettings.SETTING_GEM_ROLL_LAYOUT)?.value
@@ -1083,6 +1098,11 @@ export class SocketsConfigApp extends BaseApplication {
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_EDIT_SOCKET, behavior.editPermission);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_MAX_SOCKETS, behavior.maxSockets);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE, behavior.deleteOnRemoval);
+    await game.settings.set(
+      Constants.MODULE_ID,
+      ModuleSettings.SETTING_CONCEAL_UNIDENTIFIED,
+      behavior.concealUnidentified
+    );
     await this.#saveRemovalCheck(behavior.removalCheck);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT, behavior.gemRollLayout);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_FORMULA_LAYOUT, behavior.gemFormulaLayout);
@@ -1200,6 +1220,7 @@ export class SocketsConfigApp extends BaseApplication {
           behavior.editPermission,
           behavior.maxSockets,
           behavior.deleteOnRemoval,
+          behavior.concealUnidentified,
           behavior.removalCheck
         ]);
       }

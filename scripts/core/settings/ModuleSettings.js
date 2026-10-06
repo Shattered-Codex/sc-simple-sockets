@@ -19,6 +19,7 @@ export class ModuleSettings {
   static SETTING_EDIT_SOCKET = "editSocketPermission";
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
+  static SETTING_CONCEAL_UNIDENTIFIED = "concealUnidentifiedGems";
   static SETTING_REMOVAL_CHECK_ENABLED = "gemRemovalCheckEnabled";
   static SETTING_REMOVAL_CHECK_TYPE = "gemRemovalCheckType";
   static SETTING_REMOVAL_CHECK_DC_MODE = "gemRemovalCheckDcMode";
@@ -93,6 +94,11 @@ export class ModuleSettings {
 
   static shouldDeleteGemOnRemoval() {
     return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE);
+  }
+
+  /** Whether players see socketed gems masked while their identity is unknown. */
+  static shouldConcealUnidentifiedGems() {
+    return ModuleSettings.#getRegistered(ModuleSettings.SETTING_CONCEAL_UNIDENTIFIED, true) !== false;
   }
 
   // Gem removal check ----------------------------------------------------------

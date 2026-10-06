@@ -10,6 +10,7 @@ import {
   normalizeSlotRemovalCheckFailure
 } from "../helpers/socketSlotConfig.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { DialogHelper } from "../../helpers/DialogHelper.js";
@@ -163,6 +164,10 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     this.#captureDraft(form);
 
+    for (const index of this.#drafts.keys()) {
+      if (this.#isSlotConcealed(index)) this.#drafts.delete(index);
+    }
+
     for (const [index, payload] of this.#drafts) {
       const validation = SocketSlotConfigService.validateCondition(payload.condition);
       if (!validation.valid) {
@@ -235,6 +240,10 @@ export class SocketSlotConfigApp extends BaseApplication {
    * @returns {Promise<boolean>} False when the draft is invalid or fails to save; the action must abort then.
    */
   async #commitCurrentDraft() {
+    if (this.#isSlotConcealed(this.#slotIndex)) {
+      this.#drafts.delete(this.#slotIndex);
+      return true;
+    }
     this.#captureDraft();
     const draft = this.#drafts.get(this.#slotIndex);
     if (!draft) {
@@ -303,17 +312,19 @@ export class SocketSlotConfigApp extends BaseApplication {
   }
 
   async #buildContext() {
-    const slots = SocketStore.peekSlots(this.#hostItem);
+    const slots = GemConcealmentService.maskSlots(this.#hostItem, SocketStore.peekSlots(this.#hostItem));
     if (slots.length && (!Number.isInteger(this.#slotIndex) || this.#slotIndex < 0 || this.#slotIndex >= slots.length)) {
       this.#slotIndex = 0;
     }
 
-    const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    const sourceSlot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    const slot = GemConcealmentService.maskSlot(this.#hostItem, sourceSlot);
+    const concealed = this.#isSlotConcealed(this.#slotIndex);
     const slotConfig = SocketSlotConfigService.getConfig(slot);
-    const draft = this.#drafts.get(this.#slotIndex) ?? null;
-    const gemResource = GemResourceService.getSlotResource(slot);
+    const draft = concealed ? null : this.#drafts.get(this.#slotIndex) ?? null;
+    const gemResource = concealed ? null : GemResourceService.getSlotResource(slot);
     const slotNumber = Number.isInteger(this.#slotIndex) ? this.#slotIndex + 1 : null;
-    const canInspectGem = Boolean(slot?.gem || slot?._gemData);
+    const canInspectGem = !concealed && Boolean(slot?.gem || slot?._gemData);
 
     const name = draft?.name ?? slotConfig.name;
     const color = normalizeSlotColor(draft?.color ?? slotConfig.color);
@@ -353,7 +364,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     const strings = this.#buildStrings();
     const railSlots = slots.map((railSlot, index) => {
       const railConfig = SocketSlotConfigService.getConfig(railSlot);
-      const railDraft = this.#drafts.get(index);
+      const railDraft = this.#isSlotConcealed(index) ? null : this.#drafts.get(index);
       const railName = (index === this.#slotIndex ? name : railDraft?.name ?? railConfig.name)
         || `${strings.slotLabel} ${index + 1}`;
       const railGemName = railSlot?.gem?.name ?? railSlot?._gemData?.name ?? "";
@@ -369,7 +380,7 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     return {
       appId: this.id,
-      editable: this.#editable,
+      editable: this.#editable && !concealed,
       hostItemName: this.#hostItem?.name ?? "",
       hostItemImg: this.#hostItem?.img ?? Constants.SOCKET_SLOT_IMG,
       hostItemUuid: this.#hostItem?.uuid ?? "",
@@ -381,10 +392,10 @@ export class SocketSlotConfigApp extends BaseApplication {
       tabDescActive: this.#activeTab !== "cond",
       tabCondActive: this.#activeTab === "cond",
       hasGem: Boolean(slot?.gem || slot?._gemData),
-      gemName: slot?.gem?.name ?? slot?._gemData?.name ?? "",
-      gemImg: slot?.gem?.img ?? slot?._gemData?.img ?? "",
+      gemName: GemConcealmentService.describeGem(this.#hostItem, slot, slot?.gem ?? slot?._gemData).name ?? "",
+      gemImg: GemConcealmentService.describeGem(this.#hostItem, slot, slot?.gem ?? slot?._gemData).img ?? "",
       canInspectGem,
-      canUnsocketGem: this.#editable && canInspectGem,
+      canUnsocketGem: this.#editable && Boolean(slot?.gem || slot?._gemData),
       hasGemResource: Boolean(gemResource),
       gemResource: resourceContext,
       gemChargesPct,
@@ -1091,13 +1102,19 @@ export class SocketSlotConfigApp extends BaseApplication {
 
   /** Snapshots the current form values so slot switches keep unsaved edits. */
   #captureDraft(form = this.form) {
-    if (!this.#editable || !(form instanceof HTMLFormElement)) {
+    if (!this.#editable || this.#isSlotConcealed(this.#slotIndex) || !(form instanceof HTMLFormElement)) {
       return;
     }
     if (!SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex)) {
       return;
     }
     this.#drafts.set(this.#slotIndex, this.#readForm(form));
+  }
+
+  #isSlotConcealed(index) {
+    const slot = SocketSlotConfigService.getSlot(this.#hostItem, index);
+    return GemConcealmentService.isSlotConcealed(this.#hostItem, slot)
+      || GemConcealmentService.isEmptySlotConcealed(this.#hostItem, slot);
   }
 
   #readForm(form) {

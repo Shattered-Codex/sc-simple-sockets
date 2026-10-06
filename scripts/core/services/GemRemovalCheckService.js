@@ -3,6 +3,7 @@ import { getSlotRemovalCheckDc, getSlotRemovalCheckFailure } from "../helpers/so
 import { ItemResolver } from "../ItemResolver.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { GemCheckService } from "./GemCheckService.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 /**
  * Optional check a player must pass to pull a gem out of a socket.
@@ -48,7 +49,9 @@ export class GemRemovalCheckService {
       check: GemCheckService.parseCheckId(ModuleSettings.getGemRemovalCheckType()),
       dc,
       failure: GemRemovalCheckService.resolveFailureOutcome(slot),
-      gem
+      gem,
+      // The roll is posted to chat, so a concealed gem is not named there.
+      concealed: GemConcealmentService.isSlotConcealed(hostItem, slot, user)
     };
   }
 
@@ -86,7 +89,7 @@ export class GemRemovalCheckService {
    * `{ ok: true, success, total, dc, failure }`.
    */
   static async roll(plan) {
-    const gemName = String(plan?.gem?.name ?? "").trim();
+    const gemName = plan?.concealed ? "" : String(plan?.gem?.name ?? "").trim();
     const flavor = gemName.length
       ? game?.i18n?.format?.("SCSockets.RemovalCheck.FlavorNamed", { gem: gemName })
         ?? `Gem removal: ${gemName}`

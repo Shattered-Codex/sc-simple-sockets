@@ -11,6 +11,7 @@ import { ActivityTransferService } from "../../services/ActivityTransferService.
 import { GemResourceService } from "../../../domain/gems/GemResourceService.js";
 import { SOCKET_CONSUMPTION_SELECTOR_MODES } from "../../helpers/socketConsumptionConfig.js";
 import { ItemResolver } from "../../ItemResolver.js";
+import { GemConcealmentService } from "../../../domain/gems/GemConcealmentService.js";
 import { SocketSlot } from "../../model/SocketSlot.js";
 import { ScMoreActivitiesGemReloadActivity } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivity.js";
 import { ScMoreActivitiesGemReloadActivityData } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivityData.js";
@@ -138,12 +139,18 @@ export class ScMoreActivitiesIntegration {
         }
         return true;
       })
-      .map((entry) => ScMoreActivitiesIntegration.#toSlotSummary(entry))
+      .map((entry) => ScMoreActivitiesIntegration.#toSlotSummary({
+        ...entry,
+        slot: GemConcealmentService.maskSlot(item, entry?.slot)
+      }))
       .sort((left, right) => left.slotIndex - right.slotIndex);
   }
 
-  static toSlotSummary(entry = {}) {
-    return ScMoreActivitiesIntegration.#toSlotSummary(entry);
+  static toSlotSummary(entry = {}, item = null) {
+    return ScMoreActivitiesIntegration.#toSlotSummary({
+      ...entry,
+      slot: GemConcealmentService.maskSlot(item, entry.slot)
+    });
   }
 
   static async addConfiguredSlot(activity, slotConfig = {}) {
@@ -1124,15 +1131,16 @@ export class ScMoreActivitiesIntegration {
     const slotNumber = Number(entry?.slotIndex ?? 0) + 1;
     const tintColor = slotConfig.color ?? "";
     const slotName = slot?.name ?? slotConfig.name ?? gem?.name ?? Constants.localize("SCSockets.SocketEmptyName", "Empty");
-    const gemName = gem?.name ?? slot?._gemData?.name ?? "";
+    const gemName = slot?.concealed ? gem.name : (gem?.name ?? slot?._gemData?.name ?? "");
     const slotSummary = gemName && gemName !== slotName ? gemName : "";
     const slotAriaLabel = slotSummary ? `${slotName}: ${slotSummary}` : slotName;
 
     return {
+      concealed: slot?.concealed === true,
       color: slotConfig.color,
       colorStyle: slotConfig.color ? `background:${slotConfig.color};` : "",
       description: ScMoreActivitiesIntegration.#toPlainText(slotConfig.description),
-      gemImg: gem?.img ?? slot?._gemData?.img ?? "",
+      gemImg: slot?.concealed ? gem.img : (gem?.img ?? slot?._gemData?.img ?? ""),
       gemName,
       hasGem: entry?.hasGem === true,
       hasSlotTint: Boolean(tintColor),

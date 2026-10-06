@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 import { canUserSeeSlot, getSlotConfig, resolveSlotFrameImg } from "./socketSlotConfig.js";
 
 export async function buildSocketDescriptionEntries(item, slots) {
@@ -15,6 +16,26 @@ export async function buildSocketDescriptionEntries(item, slots) {
   for (const [slotIndex, slot] of (Array.isArray(slots) ? slots : []).entries()) {
     const slotConfig = getSlotConfig(slot);
     if (!canUserSeeSlot({ ...slot, slotConfig })) {
+      continue;
+    }
+
+    if (GemConcealmentService.isEmptySlotConcealed(item, slot)) {
+      continue;
+    }
+
+    // A concealed gem keeps its place in the list, without the socket
+    // description (or charges) that would give it away.
+    if (GemConcealmentService.isSlotConcealed(item, slot)) {
+      entries.push({
+        name: GemConcealmentService.placeholderName(),
+        img: GemConcealmentService.PLACEHOLDER_IMG,
+        description: `<p>${GemConcealmentService.placeholderDescription()}</p>`,
+        isEmptySlot: false,
+        slotColor: "",
+        resourceLabel: "",
+        slotIndex,
+        canRecharge: false
+      });
       continue;
     }
 

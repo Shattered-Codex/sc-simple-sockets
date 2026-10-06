@@ -4,6 +4,7 @@ import { CommunityLinks } from "./CommunityLinks.js";
 import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
 import { TidyIntegration } from "../integration/TidyIntegration.js";
 import { GemCheckService } from "../services/GemCheckService.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 /**
  * Registers all game settings and menus for the module.
@@ -32,6 +33,7 @@ export class ModuleSettingsRegistrar {
     this.#registerSocketableItemTypeSetting();
     this.#registerMaxSockets();
     this.#registerDeleteOnRemoval();
+    this.#registerConcealUnidentifiedGems();
     this.#registerGemRemovalCheckSettings();
     this.#registerGemRollLayoutSetting();
     this.#registerGemFormulaLayoutSettings();
@@ -187,6 +189,19 @@ export class ModuleSettingsRegistrar {
       config: false,
       type: Boolean,
       default: false
+    });
+  }
+
+  #registerConcealUnidentifiedGems() {
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_CONCEAL_UNIDENTIFIED, {
+      scope: "world",
+      config: false,
+      type: Boolean,
+      default: true,
+      onChange: () => {
+        GemConcealmentService.refreshPreparedContent();
+        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
+      }
     });
   }
 

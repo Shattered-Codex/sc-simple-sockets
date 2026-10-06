@@ -510,6 +510,10 @@
           "Name": "GMs also roll",
           "Hint": "By default a GM removes gems without rolling."
         }
+      },
+      "ConcealUnidentified": {
+        "Name": "Hide gems of unidentified items",
+        "Hint": "Players see gems socketed into an unidentified item, and gems that are themselves unidentified, without their name, image, or description. GMs always see the real gem."
       }
     },
     "SupportCard": {
@@ -1089,6 +1093,11 @@
         "Repaired": "{name} was repaired.",
         "Broken": "{name} is now broken."
       }
+    },
+    "UnidentifiedGem": {
+      "Name": "Unidentified Gem",
+      "CannotInspect": "This gem cannot be inspected until it is identified.",
+      "Description": "This gem has not been identified."
     }
   }
 }

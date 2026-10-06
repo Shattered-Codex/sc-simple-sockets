@@ -3,6 +3,7 @@ import { ItemResolver } from "../ItemResolver.js";
 import { canUserSeeSlot, getSlotConfig, resolveSlotFrameImg } from "../helpers/socketSlotConfig.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { DebugTrace } from "../support/DebugTrace.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 export class ActorGemBadges {
   static CSS_CLASS = "sc-sockets-badges";
@@ -114,7 +115,8 @@ export class ActorGemBadges {
     if (!socketed.length) return;
 
     for (const { item, sockets } of socketed) {
-      const slots = this.#normalizeSlots(sockets).filter((slot) => canUserSeeSlot(slot));
+      const slots = this.#normalizeSlots(GemConcealmentService.maskSlots(item, sockets))
+        .filter((slot) => canUserSeeSlot(slot));
 
       this.#removeExistingBadges(root, item.id);
       if (!slots.length) continue;
@@ -550,6 +552,12 @@ static #scheduleInjection(target) {
   static #buildSlotTooltip(slot, fallbackLabel, options = {}) {
     const label = slot?.gem?.name ?? slot?.name ?? fallbackLabel ?? this.#emptySlotLabel();
     const preferText = options?.preferText === true;
+
+    // A concealed gem shows its placeholder name only: the rich tooltip and
+    // the stored description would both reveal it.
+    if (slot?.concealed) {
+      return { type: "text", label };
+    }
 
     const uuids = this.#collectCandidateUuids(slot);
     if (!preferText && uuids.length && game?.system?.id === "dnd5e") {

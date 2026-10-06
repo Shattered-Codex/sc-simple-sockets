@@ -332,9 +332,10 @@
           <span class="slotcfg-switchrow-text">
             <strong>
               {{strings.hiddenLabel}}
+              <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.hiddenHint}}"></i>
               <span class="slotcfg-badge slotcfg-badge--warn" data-hidden-badge {{#unless hidden}}hidden{{/unless}}>{{strings.hiddenBadge}}</span>
             </strong>
-            <small id="{{appId}}-hidden-hint">{{strings.hiddenHint}}</small>
+            <small id="{{appId}}-hidden-hint" hidden>{{strings.hiddenHint}}</small>
           </span>
           <label class="slotcfg-toggle">
             <input
@@ -356,9 +357,10 @@
           <span class="slotcfg-switchrow-text">
             <strong>
               {{strings.deleteGemOnRemovalLabel}}
+              <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.deleteGemOnRemovalHint}}"></i>
               <span class="slotcfg-badge slotcfg-badge--warn" data-delete-gem-badge {{#unless deleteGemOnRemoval}}hidden{{/unless}}>{{strings.destructiveBadge}}</span>
             </strong>
-            <small id="{{appId}}-delete-gem-hint">{{strings.deleteGemOnRemovalHint}}</small>
+            <small id="{{appId}}-delete-gem-hint" hidden>{{strings.deleteGemOnRemovalHint}}</small>
           </span>
           <label class="slotcfg-toggle">
             <input
@@ -379,8 +381,11 @@
 
           <div class="slotcfg-switchrow">
             <span class="slotcfg-switchrow-text">
-              <strong>{{strings.removalCheckDcLabel}}</strong>
-              <small id="{{appId}}-removal-check-dc-hint">{{strings.removalCheckDcHint}}</small>
+              <strong>
+                {{strings.removalCheckDcLabel}}
+                <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.removalCheckDcHint}}"></i>
+              </strong>
+              <small id="{{appId}}-removal-check-dc-hint" hidden>{{strings.removalCheckDcHint}}</small>
             </span>
             <input
               type="text"
@@ -398,8 +403,11 @@
 
           <div class="slotcfg-switchrow">
             <span class="slotcfg-switchrow-text">
-              <strong>{{strings.removalCheckFailureLabel}}</strong>
-              <small id="{{appId}}-removal-check-failure-hint">{{strings.removalCheckFailureHint}}</small>
+              <strong>
+                {{strings.removalCheckFailureLabel}}
+                <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.removalCheckFailureHint}}"></i>
+              </strong>
+              <small id="{{appId}}-removal-check-failure-hint" hidden>{{strings.removalCheckFailureHint}}</small>
             </span>
             <select
               name="slotConfig.removalCheckFailure"

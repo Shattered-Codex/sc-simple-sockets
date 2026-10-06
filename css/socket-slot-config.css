@@ -1079,7 +1079,7 @@
 /* === Rules (switch rows) =================================== */
 .socket-slot-config-app .slotcfg-switchrow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   padding: 7px 2px;
 }
