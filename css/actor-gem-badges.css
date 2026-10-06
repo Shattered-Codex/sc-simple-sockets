@@ -2189,3 +2189,42 @@ body.sc-sockets-extract-cursor * {
     grid-column: 1 / -1;
   }
 }
+
+/* === Broken gems ===========================================
+   BrokenGemUI inserts the cracked overlay right after the gem artwork and
+   sizes it from the image box; the artwork itself is only dimmed. */
+.sc-sockets-broken-host {
+  position: relative;
+}
+
+img.sc-sockets-broken-image {
+  filter: grayscale(0.75) brightness(0.8);
+}
+
+img.sc-sockets-broken-overlay {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  object-fit: cover;
+  pointer-events: none;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+  z-index: 1;
+}
+
+/* Artwork painted as a background image instead of an <img>. */
+.sc-sockets-broken-box {
+  position: relative;
+}
+
+.sc-sockets-broken-box::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("../assets/imgs/broke.webp") center / cover no-repeat;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
+  pointer-events: none;
+}

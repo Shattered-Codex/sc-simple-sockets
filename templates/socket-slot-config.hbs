@@ -373,6 +373,47 @@
             <span class="slotcfg-toggle-track"></span>
           </label>
         </div>
+
+        {{#if removalCheck.enabled}}
+          <div class="slotcfg-card-divider"></div>
+
+          <div class="slotcfg-switchrow">
+            <span class="slotcfg-switchrow-text">
+              <strong>{{strings.removalCheckDcLabel}}</strong>
+              <small id="{{appId}}-removal-check-dc-hint">{{strings.removalCheckDcHint}}</small>
+            </span>
+            <input
+              type="text"
+              name="slotConfig.removalCheckDc"
+              class="slotcfg-input slotcfg-input--compact"
+              value="{{removalCheck.dc}}"
+              placeholder="{{strings.removalCheckDcPlaceholder}}"
+              aria-label="{{strings.removalCheckDcLabel}}"
+              aria-describedby="{{appId}}-removal-check-dc-hint"
+              {{#unless editable}}disabled{{/unless}}
+            />
+          </div>
+
+          <div class="slotcfg-card-divider"></div>
+
+          <div class="slotcfg-switchrow">
+            <span class="slotcfg-switchrow-text">
+              <strong>{{strings.removalCheckFailureLabel}}</strong>
+              <small id="{{appId}}-removal-check-failure-hint">{{strings.removalCheckFailureHint}}</small>
+            </span>
+            <select
+              name="slotConfig.removalCheckFailure"
+              class="slotcfg-input slotcfg-input--compact"
+              aria-label="{{strings.removalCheckFailureLabel}}"
+              aria-describedby="{{appId}}-removal-check-failure-hint"
+              {{#unless editable}}disabled{{/unless}}
+            >
+              {{#each removalCheck.failureOptions as |opt|}}
+                <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
+              {{/each}}
+            </select>
+          </div>
+        {{/if}}
       </div>
     </div>
 

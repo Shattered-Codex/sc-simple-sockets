@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "./ModuleSettings.js";
+import { GemCheckService } from "../services/GemCheckService.js";
 import { GemLootTypeExtension } from "../../domain/gems/GemLootTypeExtension.js";
 import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
 
@@ -136,6 +137,7 @@ export class SocketsConfigApp extends BaseApplication {
     root
       .querySelectorAll("select[data-dynamic-description]")
       .forEach((field) => this.#updateSelectDescription(field));
+    this.#refreshConditionalRows(root);
 
     // Remember each custom row's current key so edits can be recognized as
     // renames and carry the checked state over to the new key.
@@ -266,7 +268,9 @@ export class SocketsConfigApp extends BaseApplication {
         select.value = select.dataset.defaultValue;
         if (select.matches("[data-dynamic-description]")) this.#updateSelectDescription(select);
       }
-      for (const input of panel.querySelectorAll("input[type='number'][data-default-value]")) {
+      for (const input of panel.querySelectorAll(
+        "input[type='number'][data-default-value], input[type='text'][data-default-value]"
+      )) {
         input.value = input.dataset.defaultValue;
       }
       for (const input of panel.querySelectorAll("input[type='checkbox'][data-default-checked]")) {
@@ -291,6 +295,7 @@ export class SocketsConfigApp extends BaseApplication {
       this.#syncSubtypeGrid();
     }
 
+    this.#refreshConditionalRows();
     this.#refreshDirtyUI();
   }
 
@@ -514,6 +519,137 @@ export class SocketsConfigApp extends BaseApplication {
         isCheckbox: true,
         defaultChecked: "false",
         checked: ModuleSettings.shouldDeleteGemOnRemoval()
+      },
+      ...this.#buildRemovalCheckFields()
+    ];
+  }
+
+  /**
+   * Opt-in gem removal check. Every row but the toggle is shown only while the
+   * check is enabled, and the DC rows follow the selected DC mode.
+   */
+  #buildRemovalCheckFields() {
+    const enabledKey = ModuleSettings.SETTING_REMOVAL_CHECK_ENABLED;
+    const dcModeKey = ModuleSettings.SETTING_REMOVAL_CHECK_DC_MODE;
+    const whenEnabled = `${enabledKey}=true`;
+    const whenDcMode = (mode) => `${whenEnabled};${dcModeKey}=${mode}`;
+    const dc = ModuleSettings.getGemRemovalCheckDcConfig();
+
+    const storedCheck = GemCheckService.formatCheckId(
+      GemCheckService.parseCheckId(ModuleSettings.getGemRemovalCheckType())
+    );
+    const checkChoices = GemCheckService.listCheckChoices();
+    if (!checkChoices.some((choice) => choice.value === storedCheck)) {
+      checkChoices.push({ value: storedCheck, label: storedCheck });
+    }
+    const failure = ModuleSettings.getGemRemovalFailureOutcome();
+
+    return [
+      {
+        key: enabledKey,
+        sectionTitle: Constants.localize("SCSockets.Settings.RemovalCheck.Section", "Gem removal check"),
+        name: Constants.localize("SCSockets.Settings.RemovalCheck.Enabled.Name", "Require a check to remove gems"),
+        hint: Constants.localize(
+          "SCSockets.Settings.RemovalCheck.Enabled.Hint",
+          "When enabled, a player removing a gem from a socket must pass a check against a DC. A failed check can lose or break the gem."
+        ),
+        isCheckbox: true,
+        defaultChecked: "false",
+        checked: ModuleSettings.isGemRemovalCheckEnabled()
+      },
+      {
+        key: ModuleSettings.SETTING_REMOVAL_CHECK_TYPE,
+        requires: whenEnabled,
+        name: Constants.localize("SCSockets.Settings.RemovalCheck.Type.Name", "Check"),
+        hint: Constants.localize(
+          "SCSockets.Settings.RemovalCheck.Type.Hint",
+          "The roll made by the actor that owns the item: a tool, skill or ability check, or a flat d20."
+        ),
+        isSelect: true,
+        defaultValue: ModuleSettings.DEFAULT_REMOVAL_CHECK_TYPE,
+        choices: checkChoices.map((choice) => ({ ...choice, selected: choice.value === storedCheck }))
+      },
+      {
+        key: dcModeKey,
+        requires: whenEnabled,
+        name: Constants.localize("SCSockets.Settings.RemovalCheck.DcMode.Name", "DC"),
+        hint: Constants.localize(
+          "SCSockets.Settings.RemovalCheck.DcMode.Hint",
+          "How the DC is calculated. Each socket can override it in its own settings; a DC of 0 means no check."
+        ),
+        isSelect: true,
+        defaultValue: GemCheckService.DC_MODE_FIXED,
+        choices: ModuleSettings.getGemRemovalDcModeChoices().map((choice) => ({
+          ...choice,
+          selected: choice.value === dc.mode
+        }))
+      },
+      {
+        key: ModuleSettings.SETTING_REMOVAL_CHECK_DC,
+        requires: whenDcMode(GemCheckService.DC_MODE_FIXED),
+        name: Constants.localize("SCSockets.Settings.RemovalCheck.Dc.Name", "Fixed DC"),
+        hint: Constants.localize(
+          "SCSockets.Settings.RemovalCheck.Dc.Hint",
+          "The DC used for every gem."
+        ),
+        isNumber: true,
+        defaultValue: String(GemCheckService.DEFAULT_DC),
+        value: Number.isFinite(dc.value) ? dc.value : GemCheckService.DEFAULT_DC
+      },
+      {
+        key: ModuleSettings.SETTING_REMOVAL_CHECK_DC_FORMULA,
+        requires: whenDcMode(GemCheckService.DC_MODE_FORMULA),
+        name: Constants.localize("SCSockets.Settings.RemovalCheck.DcFormula.Name", "DC formula"),
+        hint: Constants.localize(
+          "SCSockets.Settings.RemovalCheck.DcFormula.Hint",
+          "A formula without dice. It can use the roll data of the item that holds the socket, plus @gem.rarity (0 for no rarity, 1 common … 6 artifact)."
+        ),
+        isText: true,
+        defaultValue: GemCheckService.DEFAULT_DC_FORMULA,
+        placeholder: GemCheckService.DEFAULT_DC_FORMULA,
+        value: dc.formula
+      },
+      {
+        key: ModuleSettings.SETTING_REMOVAL_CHECK_RARITY_DCS,
+        requires: whenDcMode(GemCheckService.DC_MODE_RARITY),
+        name: Constants.localize("SCSockets.Settings.RemovalCheck.RarityDcs.Name", "DC by gem rarity"),
+        hint: Constants.localize(
+          "SCSockets.Settings.RemovalCheck.RarityDcs.Hint",
+          "The DC used for each rarity of the gem being removed."
+        ),
+        isRarityTable: true,
+        rarities: GemCheckService.listRarityOptions().map((option) => ({
+          ...option,
+          dc: dc.rarity[option.value],
+          defaultValue: String(GemCheckService.DEFAULT_RARITY_DCS[option.value])
+        }))
+      },
+      {
+        key: ModuleSettings.SETTING_REMOVAL_CHECK_FAILURE,
+        requires: whenEnabled,
+        name: Constants.localize("SCSockets.Settings.RemovalCheck.Failure.Name", "On a failed check"),
+        hint: Constants.localize(
+          "SCSockets.Settings.RemovalCheck.Failure.Hint",
+          "A broken gem returns to the inventory but cannot be socketed until it is repaired. A lost gem is destroyed."
+        ),
+        isSelect: true,
+        defaultValue: ModuleSettings.REMOVAL_FAILURE_BREAK,
+        choices: ModuleSettings.getRemovalFailureChoices().map((choice) => ({
+          ...choice,
+          selected: choice.value === failure
+        }))
+      },
+      {
+        key: ModuleSettings.SETTING_REMOVAL_CHECK_GM,
+        requires: whenEnabled,
+        name: Constants.localize("SCSockets.Settings.RemovalCheck.Gm.Name", "GMs also roll"),
+        hint: Constants.localize(
+          "SCSockets.Settings.RemovalCheck.Gm.Hint",
+          "By default a GM removes gems without rolling."
+        ),
+        isCheckbox: true,
+        defaultChecked: "false",
+        checked: ModuleSettings.doesGemRemovalCheckApplyToGm()
       }
     ];
   }
@@ -879,10 +1015,41 @@ export class SocketsConfigApp extends BaseApplication {
       ? socketTabLayoutValue
       : ModuleSettings.SOCKET_TAB_LAYOUT_LIST;
 
+    const parsedRemovalDc = Number.parseInt(
+      String(field(ModuleSettings.SETTING_REMOVAL_CHECK_DC)?.value ?? ""),
+      10
+    );
+    const removalCheckRarityDcs = GemCheckService.normalizeRarityDcs(
+      Object.fromEntries(GemCheckService.RARITY_KEYS.map((key) => [
+        key,
+        Number.parseInt(
+          String(field(`${ModuleSettings.SETTING_REMOVAL_CHECK_RARITY_DCS}.${key}`)?.value ?? ""),
+          10
+        )
+      ]))
+    );
+    const removalCheck = {
+      enabled: checkboxValue(ModuleSettings.SETTING_REMOVAL_CHECK_ENABLED, false),
+      type: GemCheckService.formatCheckId(
+        GemCheckService.parseCheckId(
+          field(ModuleSettings.SETTING_REMOVAL_CHECK_TYPE)?.value ?? ModuleSettings.DEFAULT_REMOVAL_CHECK_TYPE
+        )
+      ),
+      dcMode: GemCheckService.normalizeDcMode(field(ModuleSettings.SETTING_REMOVAL_CHECK_DC_MODE)?.value),
+      dc: Number.isInteger(parsedRemovalDc) ? Math.max(parsedRemovalDc, 0) : GemCheckService.DEFAULT_DC,
+      dcFormula: String(field(ModuleSettings.SETTING_REMOVAL_CHECK_DC_FORMULA)?.value ?? "").trim(),
+      rarityDcs: removalCheckRarityDcs,
+      failure: ModuleSettings.normalizeRemovalFailureOutcome(
+        field(ModuleSettings.SETTING_REMOVAL_CHECK_FAILURE)?.value
+      ) || ModuleSettings.REMOVAL_FAILURE_BREAK,
+      appliesToGm: checkboxValue(ModuleSettings.SETTING_REMOVAL_CHECK_GM, false)
+    };
+
     return {
       editPermission,
       maxSockets,
       deleteOnRemoval: checkboxValue(ModuleSettings.SETTING_DELETE_ON_REMOVE, false),
+      removalCheck,
       gemRollLayout: DamageRollLayoutAdapterRegistry.normalizeMode(
         field(ModuleSettings.SETTING_GEM_ROLL_LAYOUT)?.value
       ),
@@ -916,6 +1083,7 @@ export class SocketsConfigApp extends BaseApplication {
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_EDIT_SOCKET, behavior.editPermission);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_MAX_SOCKETS, behavior.maxSockets);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE, behavior.deleteOnRemoval);
+    await this.#saveRemovalCheck(behavior.removalCheck);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_ROLL_LAYOUT, behavior.gemRollLayout);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_GEM_FORMULA_LAYOUT, behavior.gemFormulaLayout);
     await game.settings.set(
@@ -950,6 +1118,46 @@ export class SocketsConfigApp extends BaseApplication {
     );
   }
 
+  async #saveRemovalCheck(removalCheck) {
+    const entries = [
+      [ModuleSettings.SETTING_REMOVAL_CHECK_ENABLED, removalCheck.enabled],
+      [ModuleSettings.SETTING_REMOVAL_CHECK_TYPE, removalCheck.type],
+      [ModuleSettings.SETTING_REMOVAL_CHECK_DC_MODE, removalCheck.dcMode],
+      [ModuleSettings.SETTING_REMOVAL_CHECK_DC, removalCheck.dc],
+      [ModuleSettings.SETTING_REMOVAL_CHECK_DC_FORMULA, removalCheck.dcFormula],
+      [ModuleSettings.SETTING_REMOVAL_CHECK_RARITY_DCS, removalCheck.rarityDcs],
+      [ModuleSettings.SETTING_REMOVAL_CHECK_FAILURE, removalCheck.failure],
+      [ModuleSettings.SETTING_REMOVAL_CHECK_GM, removalCheck.appliesToGm]
+    ];
+    for (const [key, value] of entries) {
+      await game.settings.set(Constants.MODULE_ID, key, value);
+    }
+  }
+
+  /**
+   * Shows a row only while every `name=value` pair of its `data-requires`
+   * matches the form (checkboxes compare as "true"/"false").
+   */
+  #refreshConditionalRows(root = this.#root) {
+    if (!root) return;
+    const form = root instanceof HTMLFormElement ? root : this.form;
+    const read = (name) => {
+      const field = form?.elements?.namedItem?.(name) ?? root.querySelector?.(`[name="${name}"]`);
+      if (field instanceof HTMLInputElement && field.type === "checkbox") {
+        return String(field.checked);
+      }
+      return String(field?.value ?? "");
+    };
+
+    for (const row of root.querySelectorAll("[data-requires]")) {
+      const conditions = String(row.dataset.requires ?? "").split(";").filter(Boolean);
+      row.hidden = !conditions.every((condition) => {
+        const separator = condition.indexOf("=");
+        return read(condition.slice(0, separator)) === condition.slice(separator + 1);
+      });
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Dirty tracking + status pill
   // ---------------------------------------------------------------------------
@@ -962,6 +1170,7 @@ export class SocketsConfigApp extends BaseApplication {
     if (target instanceof HTMLElement && target.closest("[data-custom-subtypes]")) {
       this.#syncSubtypeGrid({ rename: this.#detectKeyRename(target) });
     }
+    this.#refreshConditionalRows();
     this.#refreshDirtyUI();
   }
 
@@ -987,7 +1196,12 @@ export class SocketsConfigApp extends BaseApplication {
     switch (tabId) {
       case TAB_RULES: {
         const behavior = this.#collectBehaviorValues();
-        return JSON.stringify([behavior.editPermission, behavior.maxSockets, behavior.deleteOnRemoval]);
+        return JSON.stringify([
+          behavior.editPermission,
+          behavior.maxSockets,
+          behavior.deleteOnRemoval,
+          behavior.removalCheck
+        ]);
       }
       case TAB_DISPLAY: {
         const behavior = this.#collectBehaviorValues();

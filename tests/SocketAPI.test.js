@@ -50,6 +50,27 @@ describe("SocketAPI", () => {
     assert.equal(typeof module.api.sockets.removeSlot, "function");
     assert.equal(typeof module.api.sockets.removeSlotWithContents, "function");
     assert.equal(typeof module.api.sockets.updateSlotConfig, "function");
+    assert.equal(typeof module.api.sockets.repairGem, "function");
+    assert.equal(typeof module.api.sockets.isGemDataBroken, "function");
+    assert.equal(typeof module.api.sockets.repairGemData, "function");
+  });
+
+  test("checks and repairs the broken state of stored gem data", () => {
+    const snapshot = {
+      name: "Ruby",
+      type: "loot",
+      flags: { [Constants.MODULE_ID]: { [Constants.FLAG_GEM_BROKEN]: true, gemTags: ["fire"] } }
+    };
+
+    assert.equal(SocketAPI.isGemDataBroken(snapshot), true);
+    assert.equal(SocketAPI.isGemDataBroken({ name: "Ruby", flags: {} }), false);
+    assert.equal(SocketAPI.isGemDataBroken(null), false);
+
+    const repaired = SocketAPI.repairGemData(snapshot);
+    assert.equal(SocketAPI.isGemDataBroken(repaired), false);
+    assert.deepEqual(repaired.flags[Constants.MODULE_ID], { gemTags: ["fire"] });
+    // The stored snapshot is left untouched for the caller to replace.
+    assert.equal(SocketAPI.isGemDataBroken(snapshot), true);
   });
 
   test("adds a configured socket through the public API", async () => {

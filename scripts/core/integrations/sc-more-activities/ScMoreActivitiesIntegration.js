@@ -15,6 +15,9 @@ import { SocketSlot } from "../../model/SocketSlot.js";
 import { ScMoreActivitiesGemReloadActivity } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivity.js";
 import { ScMoreActivitiesGemReloadActivityData } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivityData.js";
 import { ScMoreActivitiesGemReloadActivitySheet } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivitySheet.js";
+import { ScMoreActivitiesGemRepairActivity } from "./activities/gem-repair/ScMoreActivitiesGemRepairActivity.js";
+import { ScMoreActivitiesGemRepairActivityData } from "./activities/gem-repair/ScMoreActivitiesGemRepairActivityData.js";
+import { ScMoreActivitiesGemRepairActivitySheet } from "./activities/gem-repair/ScMoreActivitiesGemRepairActivitySheet.js";
 import { ScMoreActivitiesSocketExtractionActivity } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivity.js";
 import { ScMoreActivitiesSocketExtractionActivityData } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivityData.js";
 import { ScMoreActivitiesSocketExtractionActivitySheet } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivitySheet.js";
@@ -236,6 +239,7 @@ export class ScMoreActivitiesIntegration {
       ScMoreActivitiesIntegration.#registerSocketSlotActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerSocketExtractionActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerGemReloadActivity(activitiesApi),
+      ScMoreActivitiesIntegration.#registerGemRepairActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerSocketRechargeActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerSocketPoolRechargeActivity(activitiesApi)
     ];
@@ -371,6 +375,49 @@ export class ScMoreActivitiesIntegration {
         execute: "item-owner",
         hostItem: "activity-item",
         mutation: "gm-mediated"
+      },
+      source: Constants.MODULE_ID
+    });
+  }
+
+  static #registerGemRepairActivity(activitiesApi) {
+    return activitiesApi.registerType({
+      moduleId: Constants.MODULE_ID,
+      type: SC_MORE_ACTIVITIES_ACTIVITY_TYPES.GEM_REPAIR,
+      label: "SCSockets.Integrations.ScMoreActivities.GemRepair.Title",
+      hint: "SCSockets.Integrations.ScMoreActivities.GemRepair.Hint",
+      icon: SC_MORE_ACTIVITIES_ICONS.GEM_REPAIR,
+      documentClass: ScMoreActivitiesGemRepairActivity,
+      dataModel: ScMoreActivitiesGemRepairActivityData,
+      sheetClass: ScMoreActivitiesGemRepairActivitySheet,
+      configurable: true,
+      category: "sockets",
+      ui: {
+        scope: "external",
+        group: "sockets",
+        groupId: SC_MORE_ACTIVITIES_GROUP.id,
+        groupLabel: SC_MORE_ACTIVITIES_GROUP.label,
+        groupIcon: SC_MORE_ACTIVITIES_GROUP.icon,
+        groupOrder: SC_MORE_ACTIVITIES_GROUP.order,
+        order: 157
+      },
+      tags: ["sockets", "gem", "inventory", "repair"],
+      compatibility: {
+        dnd5e: "5.x",
+        scMoreActivities: {
+          moduleId: SC_MORE_ACTIVITIES_MODULE_ID,
+          required: true
+        },
+        scSimpleSockets: {
+          moduleId: Constants.MODULE_ID,
+          required: true
+        }
+      },
+      templates: [`modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-gem-repair-effect.hbs`],
+      ownership: {
+        execute: "item-owner",
+        hostItem: "activity-item",
+        mutation: "owner"
       },
       source: Constants.MODULE_ID
     });

@@ -1084,6 +1084,11 @@
   padding: 7px 2px;
 }
 
+.socket-slot-config-app .slotcfg-switchrow .slotcfg-input--compact {
+  flex: 0 0 170px;
+  width: 170px;
+}
+
 .socket-slot-config-app .slotcfg-switchrow-text {
   min-width: 0;
   flex: 1 1 auto;

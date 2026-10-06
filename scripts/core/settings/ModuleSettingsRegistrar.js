@@ -3,6 +3,7 @@ import { ModuleSettings } from "./ModuleSettings.js";
 import { CommunityLinks } from "./CommunityLinks.js";
 import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
 import { TidyIntegration } from "../integration/TidyIntegration.js";
+import { GemCheckService } from "../services/GemCheckService.js";
 
 /**
  * Registers all game settings and menus for the module.
@@ -31,6 +32,7 @@ export class ModuleSettingsRegistrar {
     this.#registerSocketableItemTypeSetting();
     this.#registerMaxSockets();
     this.#registerDeleteOnRemoval();
+    this.#registerGemRemovalCheckSettings();
     this.#registerGemRollLayoutSetting();
     this.#registerGemFormulaLayoutSettings();
     this.#registerGemBadgesFavoritesSetting();
@@ -186,6 +188,31 @@ export class ModuleSettingsRegistrar {
       type: Boolean,
       default: false
     });
+  }
+
+  /**
+   * Opt-in removal check. Everything stays inert while the first setting is
+   * disabled (its default), so existing worlds keep removing gems as before.
+   */
+  #registerGemRemovalCheckSettings() {
+    const register = (key, type, defaultValue) => {
+      game.settings.register(Constants.MODULE_ID, key, {
+        scope: "world",
+        config: false,
+        type,
+        default: defaultValue,
+        onChange: () => ModuleSettings.refreshOpenSheets({ item: true, actor: false })
+      });
+    };
+
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_ENABLED, Boolean, false);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_TYPE, String, ModuleSettings.DEFAULT_REMOVAL_CHECK_TYPE);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_DC_MODE, String, GemCheckService.DC_MODE_FIXED);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_DC, Number, GemCheckService.DEFAULT_DC);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_DC_FORMULA, String, GemCheckService.DEFAULT_DC_FORMULA);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_RARITY_DCS, Object, { ...GemCheckService.DEFAULT_RARITY_DCS });
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_FAILURE, String, ModuleSettings.REMOVAL_FAILURE_BREAK);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_GM, Boolean, false);
   }
 
   #registerGemRollLayoutSetting() {

@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
+import { GemCheckService } from "../services/GemCheckService.js";
 
 /**
  * Runtime API for reading and writing module settings.
@@ -18,6 +19,19 @@ export class ModuleSettings {
   static SETTING_EDIT_SOCKET = "editSocketPermission";
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
+  static SETTING_REMOVAL_CHECK_ENABLED = "gemRemovalCheckEnabled";
+  static SETTING_REMOVAL_CHECK_TYPE = "gemRemovalCheckType";
+  static SETTING_REMOVAL_CHECK_DC_MODE = "gemRemovalCheckDcMode";
+  static SETTING_REMOVAL_CHECK_DC = "gemRemovalCheckDc";
+  static SETTING_REMOVAL_CHECK_DC_FORMULA = "gemRemovalCheckDcFormula";
+  static SETTING_REMOVAL_CHECK_RARITY_DCS = "gemRemovalCheckRarityDcs";
+  static SETTING_REMOVAL_CHECK_FAILURE = "gemRemovalCheckFailure";
+  static SETTING_REMOVAL_CHECK_GM = "gemRemovalCheckAppliesToGm";
+  static REMOVAL_FAILURE_STAY = "stay";
+  static REMOVAL_FAILURE_LOSE = "lose";
+  static REMOVAL_FAILURE_BREAK = "break";
+  static REMOVAL_FAILURE_OUTCOMES = Object.freeze(["stay", "lose", "break"]);
+  static DEFAULT_REMOVAL_CHECK_TYPE = "tool:jeweler";
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
   static SETTING_GEM_FORMULA_LAYOUT = "gemFormulaLayout";
   static SETTING_GEM_FORMULA_SHOW_IMAGE = "gemFormulaShowImage";
@@ -79,6 +93,94 @@ export class ModuleSettings {
 
   static shouldDeleteGemOnRemoval() {
     return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE);
+  }
+
+  // Gem removal check ----------------------------------------------------------
+
+  static isGemRemovalCheckEnabled() {
+    return ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_ENABLED, false) === true;
+  }
+
+  static doesGemRemovalCheckApplyToGm() {
+    return ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_GM, false) === true;
+  }
+
+  /** Compact check id, e.g. "flat", "skill:slt" or "tool:jeweler". */
+  static getGemRemovalCheckType() {
+    const value = String(
+      ModuleSettings.#getRegistered(
+        ModuleSettings.SETTING_REMOVAL_CHECK_TYPE,
+        ModuleSettings.DEFAULT_REMOVAL_CHECK_TYPE
+      ) ?? ""
+    ).trim();
+    return value.length ? value : ModuleSettings.DEFAULT_REMOVAL_CHECK_TYPE;
+  }
+
+  /** Raw global DC configuration: `{ mode, value, formula, rarity }`. */
+  static getGemRemovalCheckDcConfig() {
+    return {
+      mode: GemCheckService.normalizeDcMode(
+        ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_DC_MODE, GemCheckService.DC_MODE_FIXED)
+      ),
+      value: Number(
+        ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_DC, GemCheckService.DEFAULT_DC)
+      ),
+      formula: String(
+        ModuleSettings.#getRegistered(
+          ModuleSettings.SETTING_REMOVAL_CHECK_DC_FORMULA,
+          GemCheckService.DEFAULT_DC_FORMULA
+        ) ?? ""
+      ),
+      rarity: GemCheckService.normalizeRarityDcs(
+        ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_RARITY_DCS, {})
+      )
+    };
+  }
+
+  static getGemRemovalFailureOutcome() {
+    return ModuleSettings.normalizeRemovalFailureOutcome(
+      ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_FAILURE, ModuleSettings.REMOVAL_FAILURE_BREAK)
+    ) || ModuleSettings.REMOVAL_FAILURE_BREAK;
+  }
+
+  /** Returns a valid failure outcome, or "" when the value is not one. */
+  static normalizeRemovalFailureOutcome(value) {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return ModuleSettings.REMOVAL_FAILURE_OUTCOMES.includes(normalized) ? normalized : "";
+  }
+
+  static getRemovalFailureChoices() {
+    return [
+      {
+        value: ModuleSettings.REMOVAL_FAILURE_BREAK,
+        label: Constants.localize("SCSockets.Settings.RemovalCheck.Failure.Choices.Break", "The gem breaks")
+      },
+      {
+        value: ModuleSettings.REMOVAL_FAILURE_LOSE,
+        label: Constants.localize("SCSockets.Settings.RemovalCheck.Failure.Choices.Lose", "The gem is lost")
+      },
+      {
+        value: ModuleSettings.REMOVAL_FAILURE_STAY,
+        label: Constants.localize("SCSockets.Settings.RemovalCheck.Failure.Choices.Stay", "The gem stays in the socket")
+      }
+    ];
+  }
+
+  static getGemRemovalDcModeChoices() {
+    return [
+      {
+        value: GemCheckService.DC_MODE_FIXED,
+        label: Constants.localize("SCSockets.GemCheck.DcModes.Fixed", "Fixed DC")
+      },
+      {
+        value: GemCheckService.DC_MODE_FORMULA,
+        label: Constants.localize("SCSockets.GemCheck.DcModes.Formula", "Formula")
+      },
+      {
+        value: GemCheckService.DC_MODE_RARITY,
+        label: Constants.localize("SCSockets.GemCheck.DcModes.Rarity", "By gem rarity")
+      }
+    ];
   }
 
   // Socketable item types ------------------------------------------------------
@@ -409,6 +511,13 @@ export class ModuleSettings {
 
   static #defaultSocketableItemTypes() {
     return ["weapon", "equipment"];
+  }
+
+  static #getRegistered(key, fallback) {
+    if (!ModuleSettings.#isSettingRegistered(key)) {
+      return fallback;
+    }
+    return game.settings.get(Constants.MODULE_ID, key) ?? fallback;
   }
 
   static #isSettingRegistered(key) {

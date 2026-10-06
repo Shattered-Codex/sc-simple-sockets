@@ -1,0 +1,98 @@
+<section class="tab activity-{{ tab.id }} {{ tab.cssClass }} sc-sockets-scma-activity sc-sockets-scma-effect sc-sockets-scma-effect--repair" data-tab="{{ tab.id }}" data-group="{{ tab.group }}">
+  {{#if appliedEffects}}{{> "systems/dnd5e/templates/activity/parts/activity-effects.hbs" }}{{/if}}
+
+  <fieldset class="sc-sockets-scma-fieldset sc-sockets-scma-fieldset--configuration">
+    <legend>{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Sections.Configuration" }}</legend>
+    <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.TargetingHint" }}</p>
+  </fieldset>
+
+  <fieldset class="sc-sockets-scma-fieldset sc-sockets-scma-fieldset--check">
+    <legend>{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Sections.Check" }}</legend>
+
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.Type.Label" }}</label>
+      <div class="form-fields">
+        <select name="repair.check.type">
+          {{ selectOptions checkTypeOptions selected=repair.check.type valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.Type.Hint" }}</p>
+    </div>
+
+    {{#if isToolCheck}}
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.Tool.Label" }}</label>
+      <div class="form-fields">
+        <select name="repair.check.tool">
+          {{ selectOptions toolOptions selected=repair.check.tool valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if isSkillCheck}}
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.Skill.Label" }}</label>
+      <div class="form-fields">
+        <select name="repair.check.skill">
+          {{ selectOptions skillOptions selected=repair.check.skill valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if isAbilityCheck}}
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.Ability.Label" }}</label>
+      <div class="form-fields">
+        <select name="repair.check.ability">
+          {{ selectOptions abilityOptions selected=repair.check.ability valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if hasCheck}}
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.DcMode.Label" }}</label>
+      <div class="form-fields">
+        <select name="repair.check.dcMode">
+          {{ selectOptions dcModeOptions selected=repair.check.dcMode valueAttr="value" labelAttr="label" }}
+        </select>
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.DcMode.Hint" }}</p>
+    </div>
+
+    {{#if isFixedDc}}
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.Dc.Label" }}</label>
+      <div class="form-fields">
+        <input type="number" name="repair.check.dc" value="{{ repair.check.dc }}" min="0" step="1">
+      </div>
+    </div>
+    {{/if}}
+
+    {{#if isFormulaDc}}
+    <div class="form-group">
+      <label>{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.Formula.Label" }}</label>
+      <div class="form-fields">
+        <input type="text" name="repair.check.formula" value="{{ repair.check.formula }}" placeholder="10 + 2 * @gem.rarity">
+      </div>
+      <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.Formula.Hint" }}</p>
+    </div>
+    {{/if}}
+
+    {{#if isRarityDc}}
+    <p class="hint">{{ localize "SCSockets.Integrations.ScMoreActivities.GemRepair.Fields.Check.Rarity.Hint" }}</p>
+    {{#each rarityDcs as |entry|}}
+    <div class="form-group">
+      <label>{{ entry.label }}</label>
+      <div class="form-fields">
+        <input type="number" name="repair.check.rarity.{{ entry.value }}" value="{{ entry.dc }}" min="0" step="1">
+      </div>
+    </div>
+    {{/each}}
+    {{/if}}
+    {{/if}}
+  </fieldset>
+</section>

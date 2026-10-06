@@ -38,8 +38,27 @@ export function normalizeSlotFrameImg(value) {
   return raw;
 }
 
+const REMOVAL_FAILURE_OUTCOMES = ["stay", "lose", "break"];
+
+/**
+ * Per-slot DC override for the gem removal check: a number or a deterministic
+ * formula. Blank inherits the global DC.
+ */
+export function normalizeSlotRemovalCheckDc(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(Math.trunc(value));
+  }
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/** Per-slot failure outcome override. Blank inherits the global outcome. */
+export function normalizeSlotRemovalCheckFailure(value) {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  return REMOVAL_FAILURE_OUTCOMES.includes(normalized) ? normalized : "";
+}
+
 export function normalizeSlotConfig(config = {}) {
-  return {
+  const normalized = {
     name: normalizeText(config?.name),
     condition: normalizeText(config?.condition),
     description: normalizeText(config?.description),
@@ -48,6 +67,27 @@ export function normalizeSlotConfig(config = {}) {
     hidden: normalizeBoolean(config?.hidden),
     deleteGemOnRemoval: normalizeBoolean(config?.deleteGemOnRemoval)
   };
+
+  // The removal check overrides are stored only when set, so slots that do not
+  // use them keep exactly the data they had before the feature existed.
+  const removalCheckDc = normalizeSlotRemovalCheckDc(config?.removalCheckDc);
+  if (removalCheckDc.length) {
+    normalized.removalCheckDc = removalCheckDc;
+  }
+  const removalCheckFailure = normalizeSlotRemovalCheckFailure(config?.removalCheckFailure);
+  if (removalCheckFailure.length) {
+    normalized.removalCheckFailure = removalCheckFailure;
+  }
+
+  return normalized;
+}
+
+export function getSlotRemovalCheckDc(slot) {
+  return getSlotConfig(slot).removalCheckDc ?? "";
+}
+
+export function getSlotRemovalCheckFailure(slot) {
+  return getSlotConfig(slot).removalCheckFailure ?? "";
 }
 
 export function getSlotConfig(slot) {

@@ -3,7 +3,13 @@ import { SocketStore } from "../SocketStore.js";
 import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js";
 import { SocketService } from "../services/SocketService.js";
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
-import { normalizeSlotColor, normalizeSlotFrameImg } from "../helpers/socketSlotConfig.js";
+import {
+  normalizeSlotColor,
+  normalizeSlotFrameImg,
+  normalizeSlotRemovalCheckDc,
+  normalizeSlotRemovalCheckFailure
+} from "../helpers/socketSlotConfig.js";
+import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { DialogHelper } from "../../helpers/DialogHelper.js";
@@ -313,6 +319,8 @@ export class SocketSlotConfigApp extends BaseApplication {
     const color = normalizeSlotColor(draft?.color ?? slotConfig.color);
     const hidden = draft ? draft.hidden : slotConfig.hidden;
     const deleteGemOnRemoval = draft ? draft.deleteGemOnRemoval : slotConfig.deleteGemOnRemoval;
+    const removalCheckDc = draft?.removalCheckDc ?? slotConfig.removalCheckDc ?? "";
+    const removalCheckFailure = draft?.removalCheckFailure ?? slotConfig.removalCheckFailure ?? "";
     const condition = draft?.condition ?? slotConfig.condition;
     const description = draft?.description ?? slotConfig.description;
     const frameImg = normalizeSlotFrameImg(draft?.frameImg ?? slotConfig.frameImg);
@@ -391,6 +399,17 @@ export class SocketSlotConfigApp extends BaseApplication {
       slotConfigName: name,
       hidden,
       deleteGemOnRemoval,
+      removalCheck: {
+        enabled: ModuleSettings.isGemRemovalCheckEnabled(),
+        dc: removalCheckDc,
+        failureOptions: [
+          {
+            value: "",
+            label: Constants.localize("SCSockets.SocketSlotConfig.RemovalCheck.Failure.Inherit", "Use the global setting")
+          },
+          ...ModuleSettings.getRemovalFailureChoices()
+        ].map((option) => ({ ...option, selected: option.value === removalCheckFailure }))
+      },
       canEditVisibility: this.#canEditVisibility(),
       condition,
       conditionVars: this.#buildConditionVars(),
@@ -511,6 +530,26 @@ export class SocketSlotConfigApp extends BaseApplication {
       deleteGemOnRemovalHint: Constants.localize(
         "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Hint",
         "When enabled, this slot deletes its gem when unsocketed even if the global setting is disabled."
+      ),
+      removalCheckDcLabel: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Dc.Label",
+        "Removal check DC"
+      ),
+      removalCheckDcHint: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Dc.Hint",
+        "A number or a formula without dice. Leave blank to use the global DC; 0 removes the check from this slot."
+      ),
+      removalCheckDcPlaceholder: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Dc.Placeholder",
+        "Global"
+      ),
+      removalCheckFailureLabel: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Failure.Label",
+        "On a failed removal check"
+      ),
+      removalCheckFailureHint: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Failure.Hint",
+        "What happens to the gem in this slot when the removal check fails."
       ),
       destructiveBadge: Constants.localize(
         "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Badge",
@@ -1067,6 +1106,7 @@ export class SocketSlotConfigApp extends BaseApplication {
         name: "",
         hidden: this.#currentHiddenValue(),
         deleteGemOnRemoval: this.#currentDeleteGemOnRemovalValue(),
+        ...this.#currentRemovalCheckValues(),
         condition: "",
         description: "",
         color: "",
@@ -1078,6 +1118,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       name: this.#readFieldValue("slotConfig.name"),
       hidden: this.#canEditVisibility() ? this.#readCheckboxValue("slotConfig.hidden") : this.#currentHiddenValue(),
       deleteGemOnRemoval: this.#readCheckboxValue("slotConfig.deleteGemOnRemoval"),
+      ...this.#readRemovalCheckValues(),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
       color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex")),
@@ -1115,6 +1156,32 @@ export class SocketSlotConfigApp extends BaseApplication {
     return SocketSlotConfigService.getConfig(slot).deleteGemOnRemoval;
   }
 
+  #currentRemovalCheckValues() {
+    const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    const config = SocketSlotConfigService.getConfig(slot);
+    return {
+      removalCheckDc: config.removalCheckDc ?? "",
+      removalCheckFailure: config.removalCheckFailure ?? ""
+    };
+  }
+
+  /**
+   * The removal check fields are rendered only while the feature is enabled.
+   * When they are absent the stored overrides are kept, so saving a slot with
+   * the feature turned off does not erase them.
+   */
+  #readRemovalCheckValues() {
+    if (!this.form?.querySelector?.('[name="slotConfig.removalCheckDc"]')) {
+      return this.#currentRemovalCheckValues();
+    }
+    return {
+      removalCheckDc: normalizeSlotRemovalCheckDc(this.#readFieldValue("slotConfig.removalCheckDc")),
+      removalCheckFailure: normalizeSlotRemovalCheckFailure(
+        this.#readFieldValue("slotConfig.removalCheckFailure")
+      )
+    };
+  }
+
   /**
    * Dirty tracking mirrors the module settings window: a footer pill plus a
    * dot on each rail slot while its edits differ from the saved state.
@@ -1144,6 +1211,8 @@ export class SocketSlotConfigApp extends BaseApplication {
       name: String(payload.name ?? "").trim(),
       hidden: Boolean(payload.hidden),
       deleteGemOnRemoval: Boolean(payload.deleteGemOnRemoval),
+      removalCheckDc: normalizeSlotRemovalCheckDc(payload.removalCheckDc),
+      removalCheckFailure: normalizeSlotRemovalCheckFailure(payload.removalCheckFailure),
       condition: String(payload.condition ?? ""),
       description: String(payload.description ?? ""),
       color: normalizeSlotColor(payload.color ?? ""),

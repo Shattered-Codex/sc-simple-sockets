@@ -33,6 +33,7 @@ import { SocketEffectFormulaService } from "./core/services/SocketEffectFormulaS
 import { SocketUsesBridgeService } from "./core/services/SocketUsesBridgeService.js";
 import { SocketCountUsesService } from "./core/services/SocketCountUsesService.js";
 import { SocketUsesUI } from "./core/ui/SocketUsesUI.js";
+import { BrokenGemUI } from "./core/ui/BrokenGemUI.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -70,6 +71,7 @@ Hooks.once("init", async function() {
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-slot-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-extraction-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-gem-reload-effect.hbs`,
+    `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-gem-repair-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-recharge-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-pool-recharge-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/slot-picker.hbs`
@@ -101,6 +103,7 @@ Hooks.once("setup", () => {
   SocketRollDataService.activate();
   SocketEffectFormulaService.activate();
   SocketUsesUI.activate();
+  BrokenGemUI.activate();
 
 });
 
