@@ -38,8 +38,6 @@ export function normalizeSlotFrameImg(value) {
   return raw;
 }
 
-const REMOVAL_FAILURE_OUTCOMES = ["stay", "lose", "break"];
-
 /**
  * Per-slot DC override for the gem removal check: a number or a deterministic
  * formula. Blank inherits the global DC.
@@ -53,8 +51,7 @@ export function normalizeSlotRemovalCheckDc(value) {
 
 /** Per-slot failure outcome override. Blank inherits the global outcome. */
 export function normalizeSlotRemovalCheckFailure(value) {
-  const normalized = String(value ?? "").trim().toLowerCase();
-  return REMOVAL_FAILURE_OUTCOMES.includes(normalized) ? normalized : "";
+  return Constants.normalizeRemovalFailureOutcome(value);
 }
 
 export function normalizeSlotConfig(config = {}) {

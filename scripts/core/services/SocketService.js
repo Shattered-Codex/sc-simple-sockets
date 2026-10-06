@@ -20,6 +20,9 @@ export class SocketService {
   static REMOVE_GEM_MODE_KEEP = "keep";
   static REMOVE_GEM_MODE_DELETE = "delete";
 
+  /** Slots with a removal check in flight, as `<host uuid>:<slot index>`. */
+  static #pendingRemovalChecks = new Set();
+
   static async addGem(hostItem, idx, source, options = {}) {
     return SocketService.#enqueueHostOperation(
       hostItem,
@@ -35,10 +38,14 @@ export class SocketService {
       return check.result;
     }
 
-    return SocketService.#enqueueHostOperation(
-      hostItem,
-      (currentHostItem) => SocketService.#removeGem(currentHostItem, idx, options, check.removal)
-    );
+    try {
+      return await SocketService.#enqueueHostOperation(
+        hostItem,
+        (currentHostItem) => SocketService.#removeGem(currentHostItem, idx, options, check.removal)
+      );
+    } finally {
+      check.release?.();
+    }
   }
 
   static async removeSlotWithContents(hostItem, idx, options = {}) {
@@ -46,10 +53,14 @@ export class SocketService {
     if (check.result) {
       return check.result;
     }
-    return SocketService.#enqueueHostOperation(
-      hostItem,
-      (currentHostItem) => SocketService.#removeSlotWithContents(currentHostItem, idx, options, check.removal)
-    );
+    try {
+      return await SocketService.#enqueueHostOperation(
+        hostItem,
+        (currentHostItem) => SocketService.#removeSlotWithContents(currentHostItem, idx, options, check.removal)
+      );
+    } finally {
+      check.release?.();
+    }
   }
 
   static async addSlot(hostItem, options = {}) {
@@ -327,15 +338,22 @@ export class SocketService {
    * Returns `{ result }` when the removal must stop here (cancelled roll, or a
    * failure that leaves the gem in place) and `{ removal }` otherwise, where
    * `removal` carries the outcome for `#removeGem` — null when no check applied.
+   * When a check was rolled, `release` must be called once the removal is done:
+   * until then the same slot cannot start a second check.
    */
   static async #runRemovalCheck(hostItem, idx, options = {}) {
     const proceed = { removal: null, result: null };
 
     // An explicit keep/delete mode is a caller-decided outcome (gem
     // consumption, extraction activities), not a player pulling a gem out.
+    // Callers that do act for a player (the Extract Gem macro) opt back in
+    // with `enforceRemovalCheck`.
     if (
       options?.skipRemovalCheck === true
-      || SocketService.#normalizeRemoveGemMode(options?.mode) !== SocketService.REMOVE_GEM_MODE_DEFAULT
+      || (
+        options?.enforceRemovalCheck !== true
+        && SocketService.#normalizeRemoveGemMode(options?.mode) !== SocketService.REMOVE_GEM_MODE_DEFAULT
+      )
       || !SocketService.#canMutateSockets(options)
     ) {
       return proceed;
@@ -351,14 +369,45 @@ export class SocketService {
       return proceed;
     }
 
-    const outcome = await GemRemovalCheckService.roll(plan);
+    // The roll dialog stays open for as long as the player wants, so a second
+    // click on the same slot must not start another check.
+    const hostKey = currentHostItem?.uuid ?? currentHostItem?.id ?? null;
+    const pendingKey = hostKey ? `${hostKey}:${idx}` : null;
+    if (pendingKey && SocketService.#pendingRemovalChecks.has(pendingKey)) {
+      return {
+        removal: null,
+        result: SocketService.#buildResult({ success: false, changed: false, reason: "removal-check-pending" })
+      };
+    }
+    if (pendingKey) {
+      SocketService.#pendingRemovalChecks.add(pendingKey);
+    }
+    const release = () => SocketService.#pendingRemovalChecks.delete(pendingKey);
+
+    let outcome;
+    try {
+      outcome = await GemRemovalCheckService.roll(plan);
+    } catch (error) {
+      release();
+      throw error;
+    }
     if (!outcome.ok) {
+      release();
+      const cancelled = outcome.reason === "roll-cancelled";
+      if (!cancelled && options?.notify !== false) {
+        ui.notifications?.warn?.(
+          Constants.localize(
+            "SCSockets.RemovalCheck.Notifications.RollFailed",
+            "The removal check could not be rolled, so the gem was not removed."
+          )
+        );
+      }
       return {
         removal: null,
         result: SocketService.#buildResult({
           success: false,
           changed: false,
-          reason: outcome.reason === "roll-cancelled" ? "removal-check-cancelled" : "removal-check-error"
+          reason: cancelled ? "removal-check-cancelled" : "removal-check-error"
         })
       };
     }
@@ -371,10 +420,11 @@ export class SocketService {
       failure: null
     };
     if (outcome.success) {
-      return { removal, result: null };
+      return { removal, result: null, release };
     }
 
     if (outcome.failure === ModuleSettings.REMOVAL_FAILURE_STAY) {
+      release();
       if (options?.notify !== false) {
         ui.notifications?.warn?.(
           Constants.localize(
@@ -395,7 +445,7 @@ export class SocketService {
     }
 
     removal.failure = outcome.failure;
-    return { removal, result: null };
+    return { removal, result: null, release };
   }
 
   static async #removeGem(hostItem, idx, options = {}, removal = null) {
@@ -514,7 +564,7 @@ export class SocketService {
     return SocketService.#buildResult({
       success: true,
       changed: true,
-      reason: shouldBreakGem ? "gem-broken" : removal?.failure ? "gem-lost" : "gem-removed",
+      reason: shouldBreakGem ? "gem-removed-broken" : removal?.failure ? "gem-lost" : "gem-removed",
       returnedGemItem,
       ...(removal?.removalCheck ? { removalCheck: removal.removalCheck } : {})
     });

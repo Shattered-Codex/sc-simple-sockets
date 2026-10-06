@@ -38,6 +38,8 @@ export class Constants {
   static SOCKET_SLOT_IMG = `modules/${this.MODULE_ID}/assets/imgs/socket-slot.webp`;
   // Foundry core icon; the file name really ends in "-.webp".
   static UNIDENTIFIED_GEM_IMG = "icons/commodities/gems/gem-faceted-diamond-silver-.webp";
+  /** What a failed gem removal check can do, shared by the settings and the slot overrides. */
+  static REMOVAL_FAILURE_OUTCOMES = Object.freeze(["stay", "lose", "break"]);
   static BROKEN_GEM_OVERLAY_IMG = `modules/${this.MODULE_ID}/assets/imgs/broke.webp`;
   static MODULE_WIKI_URL = "https://wiki.shattered-codex.com/modules/sc-simple-sockets";
   static DISCORD_URL = "https://discord.gg/6mWCQEJEwG";
@@ -57,6 +59,12 @@ export class Constants {
     return foundry?.applications?.ux?.TextEditor?.implementation
       ?? foundry?.applications?.ux?.TextEditor
       ?? null;
+  }
+
+  /** Returns a valid removal failure outcome, or "" when the value is not one. */
+  static normalizeRemovalFailureOutcome(value) {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return Constants.REMOVAL_FAILURE_OUTCOMES.includes(normalized) ? normalized : "";
   }
 
   static localize(key, fallback = key) {

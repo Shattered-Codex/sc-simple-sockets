@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 const LEGACY_ACTIVITY_BADGE_CLASS = "sc-sockets-activity-badge";
 const BADGE_HOST_CLASS = "sc-sockets-entry-name-with-badges";
@@ -198,13 +199,13 @@ export class ItemActivityBadges {
         const info = meta[activityId] ?? {};
         const flagImg = info.gemImg !== Constants.SOCKET_SLOT_IMG ? info.gemImg : null;
         const entryImg = entry.gemImg !== Constants.SOCKET_SLOT_IMG ? entry.gemImg : null;
-        map.set(activityId, {
+        map.set(activityId, this.#concealGem(item, socketInfo, {
           slot: slotKey,
           gemImg: socketInfo?.gem?.img ?? flagImg ?? entryImg ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
           gemName: info.gemName ?? entry.gemName ?? socketInfo?.gem?.name ?? socketInfo?.name ?? item.name,
           activityName: info.activityName ?? null,
           sourceId: info.sourceId ?? null
-        });
+        }));
       }
     }
 
@@ -216,13 +217,13 @@ export class ItemActivityBadges {
 
       const slotKey = String(sourceGem.slot);
       const socketInfo = Array.isArray(sockets) ? sockets[sourceGem.slot] : sockets?.[slotKey];
-      map.set(activity.id, {
+      map.set(activity.id, this.#concealGem(item, socketInfo, {
         slot: slotKey,
         gemImg: socketInfo?.gem?.img ?? socketInfo?._gemData?.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
         gemName: socketInfo?.gem?.name ?? socketInfo?._gemData?.name ?? socketInfo?.name ?? item.name,
         activityName: activity.name ?? null,
         sourceId: sourceGem.sourceId ?? null
-      });
+      }));
     }
 
     return map;
@@ -243,15 +244,27 @@ export class ItemActivityBadges {
       const socketInfo = Array.isArray(sockets) ? sockets[slotIndex] : sockets?.[slotKey];
       const socketGem = socketInfo?.gem ?? {};
 
-      map.set(effect.id, {
+      map.set(effect.id, this.#concealGem(item, socketInfo, {
         slot: slotKey,
         gemImg: socketGem.img ?? socketInfo?._gemData?.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
         gemName: socketGem.name ?? socketInfo?._gemData?.name ?? socketInfo?.name ?? item.name,
         sourceId: sourceGem.sourceId ?? null
-      });
+      }));
     }
 
     return map;
+  }
+
+  /** Badge data never names a gem the current user must not identify. */
+  static #concealGem(item, slot, meta) {
+    if (!GemConcealmentService.isSlotConcealed(item, slot)) {
+      return meta;
+    }
+    return {
+      ...meta,
+      gemImg: GemConcealmentService.PLACEHOLDER_IMG,
+      gemName: GemConcealmentService.placeholderName()
+    };
   }
 
   static #getModuleFlags(documentLike) {

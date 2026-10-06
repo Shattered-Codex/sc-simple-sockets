@@ -422,6 +422,7 @@ export class SocketSlotConfigApp extends BaseApplication {
         ].map((option) => ({ ...option, selected: option.value === removalCheckFailure }))
       },
       canEditVisibility: this.#canEditVisibility(),
+      canEditRemovalCheck: this.#canEditRemovalCheck(),
       condition,
       conditionVars: this.#buildConditionVars(),
       description,
@@ -1163,6 +1164,11 @@ export class SocketSlotConfigApp extends BaseApplication {
     return Boolean(this.#editable && game.user?.isGM);
   }
 
+  /** The removal check overrides decide the risk of pulling a gem out, so only a GM sets them. */
+  #canEditRemovalCheck() {
+    return Boolean(this.#editable && game.user?.isGM);
+  }
+
   #currentHiddenValue() {
     const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
     return SocketSlotConfigService.getConfig(slot).hidden;
@@ -1185,10 +1191,14 @@ export class SocketSlotConfigApp extends BaseApplication {
   /**
    * The removal check fields are rendered only while the feature is enabled.
    * When they are absent the stored overrides are kept, so saving a slot with
-   * the feature turned off does not erase them.
+   * the feature turned off does not erase them. They are also kept for anyone
+   * who is not a GM, whatever the form holds.
    */
   #readRemovalCheckValues() {
-    if (!this.form?.querySelector?.('[name="slotConfig.removalCheckDc"]')) {
+    if (
+      !this.#canEditRemovalCheck()
+      || !this.form?.querySelector?.('[name="slotConfig.removalCheckDc"]')
+    ) {
       return this.#currentRemovalCheckValues();
     }
     return {

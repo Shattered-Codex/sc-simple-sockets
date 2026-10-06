@@ -2,6 +2,7 @@ import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SelectionController } from "./SelectionController.js";
 import { SocketService } from "../services/SocketService.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 const DEFAULT_OPTIONS = {
   notifications: true
@@ -10,6 +11,26 @@ const DEFAULT_OPTIONS = {
 const canEditItem = (item) => game.user?.isGM || item?.isOwner;
 
 export class ExtractGemWorkflow {
+  /** Removal check outcomes that replace the plain "extracted" message. */
+  static #REMOVAL_CHECK_MESSAGES = {
+    "removal-check-failed": {
+      key: "SCSockets.RemovalCheck.Notifications.Stay",
+      fallback: "The check failed: the gem stays in the socket."
+    },
+    "removal-check-error": {
+      key: "SCSockets.RemovalCheck.Notifications.RollFailed",
+      fallback: "The removal check could not be rolled, so the gem was not removed."
+    },
+    "gem-removed-broken": {
+      key: "SCSockets.RemovalCheck.Notifications.Broke",
+      fallback: "The check failed: the gem broke while being removed."
+    },
+    "gem-lost": {
+      key: "SCSockets.RemovalCheck.Notifications.Lost",
+      fallback: "The check failed: the gem was destroyed while being removed."
+    }
+  };
+
   constructor(options = {}) {
     this.options = {
       ...DEFAULT_OPTIONS,
@@ -62,8 +83,8 @@ export class ExtractGemWorkflow {
       }
 
       const slot = SocketService.getSlots(item)?.[slotIndex] ?? null;
-      const gemName = slot?.gem?.name ?? slot?._gemData?.name ?? "";
-      if (!gemName.length) {
+      const storedGemName = slot?.gem?.name ?? slot?._gemData?.name ?? "";
+      if (!storedGemName.length) {
         this.#notify(
           "warn",
           "SCSockets.Macro.ExtractGem.EmptySlot",
@@ -72,12 +93,25 @@ export class ExtractGemWorkflow {
         continue;
       }
 
+      // A concealed gem is not named back to the player who extracts it.
+      const gemName = GemConcealmentService.describeGem(item, slot, { name: storedGemName }).name;
+
       try {
+        // The macro acts for the player, so the removal check still applies.
         const result = await SocketService.removeGem(item, slotIndex, {
           bypassPermission: !hasModulePermission,
           mode: SocketService.REMOVE_GEM_MODE_KEEP,
+          enforceRemovalCheck: true,
           notify: false
         });
+        const checkReason = ExtractGemWorkflow.#REMOVAL_CHECK_MESSAGES[result?.reason];
+        if (checkReason) {
+          this.#notify("warn", checkReason.key, checkReason.fallback);
+          return { success: result.success === true, reason: result.reason, result };
+        }
+        if (result?.reason === "removal-check-cancelled" || result?.reason === "removal-check-pending") {
+          return { success: false, reason: result.reason, result };
+        }
         if (!result?.success) {
           this.#notify(
             "warn",

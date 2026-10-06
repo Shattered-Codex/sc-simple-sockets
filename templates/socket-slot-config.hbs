@@ -395,7 +395,7 @@
               placeholder="{{strings.removalCheckDcPlaceholder}}"
               aria-label="{{strings.removalCheckDcLabel}}"
               aria-describedby="{{appId}}-removal-check-dc-hint"
-              {{#unless editable}}disabled{{/unless}}
+              {{#unless canEditRemovalCheck}}disabled{{/unless}}
             />
           </div>
 
@@ -414,7 +414,7 @@
               class="slotcfg-input slotcfg-input--compact"
               aria-label="{{strings.removalCheckFailureLabel}}"
               aria-describedby="{{appId}}-removal-check-failure-hint"
-              {{#unless editable}}disabled{{/unless}}
+              {{#unless canEditRemovalCheck}}disabled{{/unless}}
             >
               {{#each removalCheck.failureOptions as |opt|}}
                 <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>

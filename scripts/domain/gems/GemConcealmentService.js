@@ -19,6 +19,11 @@ export class GemConcealmentService {
 
   static #wrapped = false;
   static #maskedDocuments = new WeakMap();
+  /** Items holding at least one masked activity or effect. */
+  static #maskedItems = new WeakSet();
+  /** Encoded snapshot -> whether it holds an unidentified gem. */
+  static #snapshotCache = new Map();
+  static #SNAPSHOT_CACHE_LIMIT = 500;
 
   static isEnabled() {
     return ModuleSettings.shouldConcealUnidentifiedGems();
@@ -55,10 +60,23 @@ export class GemConcealmentService {
       return GemConcealmentService.isUnidentified(snapshot);
     }
     const encoded = typeof snapshot.data === "string" ? snapshot.data : "";
-    if (!/"identified"\s*:\s*false/.test(encoded)) {
+    if (!encoded.length) {
       return false;
     }
-    return GemConcealmentService.isUnidentified(ItemResolver.expandSnapshot(snapshot));
+    // Item preparation asks this for every slot on every pass, so the answer
+    // is kept per encoded snapshot instead of scanning the text again.
+    const cache = GemConcealmentService.#snapshotCache;
+    const cached = cache.get(encoded);
+    if (cached !== undefined) {
+      return cached;
+    }
+    const unidentified = /"identified"\s*:\s*false/.test(encoded)
+      && GemConcealmentService.isUnidentified(ItemResolver.expandSnapshot(snapshot));
+    if (cache.size >= GemConcealmentService.#SNAPSHOT_CACHE_LIMIT) {
+      cache.clear();
+    }
+    cache.set(encoded, unidentified);
+    return unidentified;
   }
 
   static isSlotConcealed(hostItem, slot, user = globalThis.game?.user) {
@@ -248,35 +266,45 @@ export class GemConcealmentService {
   }
 
   static maskTransferredContent(item, user = globalThis.game?.user) {
+    // This runs on every item preparation for every user, so the common cases
+    // (a GM, an item without sockets, nothing concealed) leave before any work.
+    const wasMasked = GemConcealmentService.#maskedItems.has(item);
+    const slots = user && !user.isGM
+      ? item?.flags?.[Constants.MODULE_ID]?.[Constants.FLAGS.sockets]
+      : null;
+    const concealedSlots = new Set();
+    if (Array.isArray(slots) && slots.length && GemConcealmentService.isEnabled()) {
+      const hostUnidentified = GemConcealmentService.isUnidentified(item);
+      slots.forEach((slot, index) => {
+        if (!slot?.gem && !slot?._gemData) return;
+        if (hostUnidentified || GemConcealmentService.isSnapshotUnidentified(slot._gemData)) {
+          concealedSlots.add(index);
+        }
+      });
+    }
+    if (!wasMasked && !concealedSlots.size) {
+      return;
+    }
+
     const activities = item?.system?.activities ?? [];
     const effects = item?.effects?.contents ?? item?.effects ?? [];
     const documents = [
       ...(typeof activities[Symbol.iterator] === "function" ? activities : Object.values(activities)),
       ...(typeof effects[Symbol.iterator] === "function" ? effects : Object.values(effects))
     ];
-    for (const document of documents) {
-      const previous = GemConcealmentService.#maskedDocuments.get(document);
-      if (!previous) continue;
-      if (document.name === previous.maskedName) document.name = previous.name;
-      if (document.img === GemConcealmentService.PLACEHOLDER_IMG) document.img = previous.img;
-      if (document.description === previous.maskedDescription) document.description = previous.description;
-      GemConcealmentService.#maskedDocuments.delete(document);
-    }
-    // Restore any previous mask before checking whether concealment still applies.
-    if (!user || user.isGM) {
-      return;
-    }
-    const slots = item?.flags?.[Constants.MODULE_ID]?.[Constants.FLAGS.sockets];
-    if (!Array.isArray(slots) || !slots.length || !GemConcealmentService.isEnabled()) {
-      return;
-    }
 
-    const concealedSlots = new Set();
-    slots.forEach((slot, index) => {
-      if (GemConcealmentService.isSlotConcealed(item, slot, user)) {
-        concealedSlots.add(index);
+    // Restore any previous mask before applying the current one.
+    if (wasMasked) {
+      for (const document of documents) {
+        const previous = GemConcealmentService.#maskedDocuments.get(document);
+        if (!previous) continue;
+        if (document.name === previous.maskedName) document.name = previous.name;
+        if (document.img === GemConcealmentService.PLACEHOLDER_IMG) document.img = previous.img;
+        if (document.description === previous.maskedDescription) document.description = previous.description;
+        GemConcealmentService.#maskedDocuments.delete(document);
       }
-    });
+      GemConcealmentService.#maskedItems.delete(item);
+    }
     if (!concealedSlots.size) {
       return;
     }
@@ -299,6 +327,7 @@ export class GemConcealmentService {
         maskedName: name,
         maskedDescription
       });
+      GemConcealmentService.#maskedItems.add(item);
       document.name = name;
       document.img = GemConcealmentService.PLACEHOLDER_IMG;
       document.description = maskedDescription;

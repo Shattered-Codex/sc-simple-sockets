@@ -8,6 +8,7 @@ import { SocketSlotConfigService } from "../../../../services/SocketSlotConfigSe
 import { ScMoreActivitiesIntegration } from "../../ScMoreActivitiesIntegration.js";
 import { ScMoreActivitiesGemPickerApp } from "../../ScMoreActivitiesGemPickerApp.js";
 import { ScMoreActivitiesSlotPickerApp } from "../../ScMoreActivitiesSlotPickerApp.js";
+import { GemBreakService } from "../../../../../domain/gems/GemBreakService.js";
 
 const escapeHtml = (str) => foundry.utils?.escapeHtml?.(str) ?? String(str ?? "");
 const canEditItem = (item) => game.user?.isGM === true || item?.isOwner === true;
@@ -320,7 +321,7 @@ export class ScMoreActivitiesGemReloadActivityService {
 
     const prospects = [];
     for (const gemItem of ScMoreActivitiesGemReloadActivityService.#getActorItems(sourceActor)) {
-      if (!ItemResolver.isGem(gemItem)) {
+      if (!ItemResolver.isGem(gemItem) || GemBreakService.isBroken(gemItem)) {
         continue;
       }
 

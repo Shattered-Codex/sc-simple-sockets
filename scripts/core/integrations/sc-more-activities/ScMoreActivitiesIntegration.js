@@ -12,6 +12,7 @@ import { GemResourceService } from "../../../domain/gems/GemResourceService.js";
 import { SOCKET_CONSUMPTION_SELECTOR_MODES } from "../../helpers/socketConsumptionConfig.js";
 import { ItemResolver } from "../../ItemResolver.js";
 import { GemConcealmentService } from "../../../domain/gems/GemConcealmentService.js";
+import { GemBreakService } from "../../../domain/gems/GemBreakService.js";
 import { SocketSlot } from "../../model/SocketSlot.js";
 import { ScMoreActivitiesGemReloadActivity } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivity.js";
 import { ScMoreActivitiesGemReloadActivityData } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivityData.js";
@@ -782,6 +783,14 @@ export class ScMoreActivitiesIntegration {
           "gem-not-available",
           "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.GemNotFound",
           "The selected gem is no longer available in the source actor inventory."
+        );
+      }
+
+      if (GemBreakService.isBroken(currentGemItem)) {
+        return ScMoreActivitiesIntegration.#failure(
+          "gem-broken",
+          "SCSockets.Notifications.GemBroken",
+          "This gem is broken and must be repaired before it can be socketed."
         );
       }
 

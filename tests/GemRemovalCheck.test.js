@@ -110,7 +110,7 @@ describe("gem removal check", () => {
     const result = await SocketService.removeGem(hostItem, 0);
 
     assert.equal(result.success, true);
-    assert.equal(result.reason, "gem-broken");
+    assert.equal(result.reason, "gem-removed-broken");
     assert.equal(slot().gem, null);
     assert.equal(inventoryGems().length, 1);
     assert.equal(GemBreakService.isBroken(inventoryGems()[0]), true);
@@ -241,7 +241,7 @@ describe("gem removal check", () => {
     const second = createHost({ rollTotal: 1 });
     const rolled = await SocketService.removeGem(second.hostItem, 0);
     assert.equal(second.rolls.length, 1);
-    assert.equal(rolled.reason, "gem-broken");
+    assert.equal(rolled.reason, "gem-removed-broken");
   });
 
   test("explicit keep/delete removals never roll", async () => {
@@ -257,6 +257,67 @@ describe("gem removal check", () => {
     await SocketService.removeGem(deleted.hostItem, 0, { mode: SocketService.REMOVE_GEM_MODE_DELETE });
     assert.equal(deleted.rolls.length, 0);
     assert.equal(deleted.inventoryGems().length, 0);
+  });
+
+  test("a keep removal still rolls when the caller enforces the check", async () => {
+    install();
+    const { hostItem, inventoryGems, rolls } = createHost({ rollTotal: 1 });
+
+    const result = await SocketService.removeGem(hostItem, 0, {
+      mode: SocketService.REMOVE_GEM_MODE_KEEP,
+      enforceRemovalCheck: true,
+      notify: false
+    });
+
+    assert.equal(rolls.length, 1);
+    assert.equal(result.reason, "gem-removed-broken");
+    assert.equal(GemBreakService.isBroken(inventoryGems()[0]), true);
+  });
+
+  test("a second removal of the same slot does not roll while the first is pending", async () => {
+    install();
+    const { actor, hostItem, inventoryGems, rolls } = createHost();
+    let finishRoll;
+    actor.rollToolCheck = (config) => {
+      rolls.push(config);
+      return new Promise((resolve) => { finishRoll = () => resolve([{ total: 20 }]); });
+    };
+
+    const first = SocketService.removeGem(hostItem, 0);
+    await new Promise((resolve) => setImmediate(resolve));
+    const second = await SocketService.removeGem(hostItem, 0);
+    finishRoll();
+
+    assert.equal(second.success, false);
+    assert.equal(second.reason, "removal-check-pending");
+    assert.equal((await first).reason, "gem-removed");
+    assert.equal(rolls.length, 1);
+    assert.equal(inventoryGems().length, 1);
+  });
+
+  test("a roll that cannot be made tells the player and keeps the gem", async () => {
+    install();
+    const { actor, hostItem, slot } = createHost();
+    actor.rollToolCheck = async () => { throw new Error("no such tool"); };
+    const warnings = [];
+    globalThis.ui.notifications.warn = (message) => warnings.push(message);
+    const originalError = console.error;
+    console.error = () => {};
+
+    let result;
+    try {
+      result = await SocketService.removeGem(hostItem, 0);
+    } finally {
+      console.error = originalError;
+    }
+
+    assert.equal(result.reason, "removal-check-error");
+    assert.equal(warnings.length, 1);
+    assert.equal(slot().gem.name, "Ruby");
+
+    // The failed attempt released the slot, so it can be tried again.
+    actor.rollToolCheck = async () => [{ total: 20 }];
+    assert.equal((await SocketService.removeGem(hostItem, 0)).reason, "gem-removed");
   });
 
   test("a gem cannot be swapped out by dropping another one on a checked socket", async () => {

@@ -31,7 +31,7 @@ export class ModuleSettings {
   static REMOVAL_FAILURE_STAY = "stay";
   static REMOVAL_FAILURE_LOSE = "lose";
   static REMOVAL_FAILURE_BREAK = "break";
-  static REMOVAL_FAILURE_OUTCOMES = Object.freeze(["stay", "lose", "break"]);
+  static REMOVAL_FAILURE_OUTCOMES = Constants.REMOVAL_FAILURE_OUTCOMES;
   static DEFAULT_REMOVAL_CHECK_TYPE = "tool:jeweler";
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
   static SETTING_GEM_FORMULA_LAYOUT = "gemFormulaLayout";
@@ -151,8 +151,7 @@ export class ModuleSettings {
 
   /** Returns a valid failure outcome, or "" when the value is not one. */
   static normalizeRemovalFailureOutcome(value) {
-    const normalized = String(value ?? "").trim().toLowerCase();
-    return ModuleSettings.REMOVAL_FAILURE_OUTCOMES.includes(normalized) ? normalized : "";
+    return Constants.normalizeRemovalFailureOutcome(value);
   }
 
   static getRemovalFailureChoices() {

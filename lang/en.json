@@ -1079,7 +1079,8 @@
         "ReplaceBlocked": "Remove the gem in this socket first: taking it out requires a check.",
         "Stay": "The check failed: the gem stays in the socket.",
         "Broke": "The check failed: the gem broke while being removed.",
-        "Lost": "The check failed: the gem was destroyed while being removed."
+        "Lost": "The check failed: the gem was destroyed while being removed.",
+        "RollFailed": "The removal check could not be rolled, so the gem was not removed."
       }
     },
     "BrokenGem": {

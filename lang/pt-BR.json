@@ -1079,7 +1079,8 @@
         "ReplaceBlocked": "Remova primeiro a gema deste soquete: retirá-la exige um teste.",
         "Stay": "O teste falhou: a gema continua no soquete.",
         "Broke": "O teste falhou: a gema quebrou ao ser removida.",
-        "Lost": "O teste falhou: a gema foi destruída ao ser removida."
+        "Lost": "O teste falhou: a gema foi destruída ao ser removida.",
+        "RollFailed": "Não foi possível rolar o teste de remoção, então a gema não foi removida."
       }
     },
     "BrokenGem": {

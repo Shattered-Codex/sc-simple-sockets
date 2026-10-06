@@ -226,7 +226,12 @@ export class BrokenGemUI {
       return;
     }
     target.classList.add(BrokenGemUI.IMAGE_CLASS);
-    if (target.nextElementSibling?.classList.contains(BrokenGemUI.OVERLAY_CLASS)) {
+    const existing = target.nextElementSibling;
+    if (existing?.classList.contains(BrokenGemUI.OVERLAY_CLASS)) {
+      // A row moved back into the document lost its observer when it left.
+      if (!BrokenGemUI.#observers.has(existing)) {
+        BrokenGemUI.#observe(target, parent, existing);
+      }
       return;
     }
 
@@ -242,22 +247,37 @@ export class BrokenGemUI {
       parent.classList.add(BrokenGemUI.HOST_CLASS);
     }
     target.insertAdjacentElement("afterend", overlay);
+    BrokenGemUI.#observe(target, parent, overlay);
+  }
 
-    // The overlay copies the image box. A ResizeObserver keeps it aligned when
-    // the image only gets its size later (hidden tab) or is resized.
+  /**
+   * The overlay copies the image box. A ResizeObserver keeps it aligned when
+   * the image only gets its size later (hidden tab) or is resized.
+   *
+   * A sheet re-render throws the row away without going through
+   * `#removeOverlay`; the image collapsing to no size is reported here, which
+   * is where the observer of a discarded row lets go of it.
+   */
+  static #observe(target, parent, overlay) {
+    let observer = null;
     const sync = () => {
+      if (!overlay.isConnected || !target.isConnected) {
+        observer?.disconnect();
+        BrokenGemUI.#observers.delete(overlay);
+        return;
+      }
       overlay.style.left = `${target.offsetLeft}px`;
       overlay.style.top = `${target.offsetTop}px`;
       overlay.style.width = `${target.offsetWidth}px`;
       overlay.style.height = `${target.offsetHeight}px`;
     };
-    sync();
     if (typeof ResizeObserver === "function") {
-      const observer = new ResizeObserver(sync);
+      observer = new ResizeObserver(sync);
       observer.observe(target);
       observer.observe(parent);
       BrokenGemUI.#observers.set(overlay, observer);
     }
+    sync();
   }
 
   static #removeOverlay(overlay) {
