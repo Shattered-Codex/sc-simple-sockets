@@ -1,5 +1,6 @@
 import { Constants } from "../Constants.js";
 import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
+import { GemCheckService } from "../services/GemCheckService.js";
 
 /**
  * Runtime API for reading and writing module settings.
@@ -15,9 +16,39 @@ export class ModuleSettings {
   static SOCKET_TAB_LAYOUT_GRID = "grid";
   static SETTING_GEM_BADGES = "gemBadgesEnabled";
   static SETTING_GEM_BADGES_FAVORITES = "gemBadgesFavoritesEnabled";
+  /** Legacy single permission. It is only read as the starting value of the slot permissions. */
   static SETTING_EDIT_SOCKET = "editSocketPermission";
+  static SETTING_ADD_SLOT_PERMISSION = "addSlotPermission";
+  static SETTING_REMOVE_SLOT_PERMISSION = "removeSlotPermission";
+  static SETTING_ADD_GEM_PERMISSION = "addGemPermission";
+  static SETTING_REMOVE_GEM_PERMISSION = "removeGemPermission";
+  static SOCKET_ACTION_ADD_SLOT = "addSlot";
+  static SOCKET_ACTION_REMOVE_SLOT = "removeSlot";
+  static SOCKET_ACTION_ADD_GEM = "addGem";
+  static SOCKET_ACTION_REMOVE_GEM = "removeGem";
+  /** Socket action -> the setting holding the minimum role allowed to perform it. */
+  static SOCKET_PERMISSION_SETTINGS = Object.freeze({
+    addSlot: "addSlotPermission",
+    removeSlot: "removeSlotPermission",
+    addGem: "addGemPermission",
+    removeGem: "removeGemPermission"
+  });
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
+  static SETTING_CONCEAL_UNIDENTIFIED = "concealUnidentifiedGems";
+  static SETTING_REMOVAL_CHECK_ENABLED = "gemRemovalCheckEnabled";
+  static SETTING_REMOVAL_CHECK_TYPE = "gemRemovalCheckType";
+  static SETTING_REMOVAL_CHECK_DC_MODE = "gemRemovalCheckDcMode";
+  static SETTING_REMOVAL_CHECK_DC = "gemRemovalCheckDc";
+  static SETTING_REMOVAL_CHECK_DC_FORMULA = "gemRemovalCheckDcFormula";
+  static SETTING_REMOVAL_CHECK_RARITY_DCS = "gemRemovalCheckRarityDcs";
+  static SETTING_REMOVAL_CHECK_FAILURE = "gemRemovalCheckFailure";
+  static SETTING_REMOVAL_CHECK_GM = "gemRemovalCheckAppliesToGm";
+  static REMOVAL_FAILURE_STAY = "stay";
+  static REMOVAL_FAILURE_LOSE = "lose";
+  static REMOVAL_FAILURE_BREAK = "break";
+  static REMOVAL_FAILURE_OUTCOMES = Constants.REMOVAL_FAILURE_OUTCOMES;
+  static DEFAULT_REMOVAL_CHECK_TYPE = "tool:jeweler";
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
   static SETTING_GEM_FORMULA_LAYOUT = "gemFormulaLayout";
   static SETTING_GEM_FORMULA_SHOW_IMAGE = "gemFormulaShowImage";
@@ -40,22 +71,59 @@ export class ModuleSettings {
 
   // Permission -----------------------------------------------------------------
 
-  static canAddOrRemoveSocket(user = game.user) {
+  /**
+   * Whether the user's role allows a socket action: adding or removing a slot,
+   * or adding or removing a gem. A GM is always allowed.
+   */
+  static canPerformSocketAction(action, user = game.user) {
     if (!user) return false;
     if (user.isGM) return true;
-    const stored = game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_EDIT_SOCKET);
-    return user.hasRole(ModuleSettings.#resolveRoleLevel(stored));
+    if (!ModuleSettings.SOCKET_PERMISSION_SETTINGS[action]) return false;
+    return user.hasRole(ModuleSettings.getSocketPermissionRole(action));
   }
 
-  /** Exposed for `ModuleSettingsRegistrar` to use as the default value. */
-  static getDefaultEditSocketRole() {
+  /** The minimum role stored for a socket action, falling back to its default. */
+  static getSocketPermissionRole(action) {
+    const key = ModuleSettings.SOCKET_PERMISSION_SETTINGS[action];
+    const stored = key ? game.settings.get(Constants.MODULE_ID, key) : null;
+    return ModuleSettings.#resolveRoleLevel(stored, ModuleSettings.getDefaultSocketPermissionRole(action));
+  }
+
+  static canAddSlot(user = game.user) {
+    return ModuleSettings.canPerformSocketAction(ModuleSettings.SOCKET_ACTION_ADD_SLOT, user);
+  }
+
+  static canRemoveSlot(user = game.user) {
+    return ModuleSettings.canPerformSocketAction(ModuleSettings.SOCKET_ACTION_REMOVE_SLOT, user);
+  }
+
+  static canAddGem(user = game.user) {
+    return ModuleSettings.canPerformSocketAction(ModuleSettings.SOCKET_ACTION_ADD_GEM, user);
+  }
+
+  static canRemoveGem(user = game.user) {
+    return ModuleSettings.canPerformSocketAction(ModuleSettings.SOCKET_ACTION_REMOVE_GEM, user);
+  }
+
+  /** Whoever may create slots may also define them (name, rules, artwork). */
+  static canConfigureSlots(user = game.user) {
+    return ModuleSettings.canAddSlot(user);
+  }
+
+  /** Slots are the GM's to shape by default; gems are the players' to move. */
+  static getDefaultSocketPermissionRole(action) {
     const roles = CONST?.USER_ROLES ?? {};
+    const isGemAction = action === ModuleSettings.SOCKET_ACTION_ADD_GEM
+      || action === ModuleSettings.SOCKET_ACTION_REMOVE_GEM;
+    if (isGemAction) {
+      return Number.isFinite(roles.PLAYER) ? roles.PLAYER : 1;
+    }
     if (Number.isFinite(roles.GAMEMASTER)) return roles.GAMEMASTER;
     if (Number.isFinite(roles.GM)) return roles.GM;
     return 4;
   }
 
-  static getEditSocketPermissionChoices() {
+  static getSocketPermissionChoices() {
     const roleEntries = Object.entries(CONST?.USER_ROLES ?? {})
       .filter(([, level]) => Number.isFinite(level))
       .sort((a, b) => a[1] - b[1]);
@@ -79,6 +147,98 @@ export class ModuleSettings {
 
   static shouldDeleteGemOnRemoval() {
     return game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE);
+  }
+
+  /** Whether players see socketed gems masked while their identity is unknown. */
+  static shouldConcealUnidentifiedGems() {
+    return ModuleSettings.#getRegistered(ModuleSettings.SETTING_CONCEAL_UNIDENTIFIED, true) !== false;
+  }
+
+  // Gem removal check ----------------------------------------------------------
+
+  static isGemRemovalCheckEnabled() {
+    return ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_ENABLED, false) === true;
+  }
+
+  static doesGemRemovalCheckApplyToGm() {
+    return ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_GM, false) === true;
+  }
+
+  /** Compact check id, e.g. "flat", "skill:slt" or "tool:jeweler". */
+  static getGemRemovalCheckType() {
+    const value = String(
+      ModuleSettings.#getRegistered(
+        ModuleSettings.SETTING_REMOVAL_CHECK_TYPE,
+        ModuleSettings.DEFAULT_REMOVAL_CHECK_TYPE
+      ) ?? ""
+    ).trim();
+    return value.length ? value : ModuleSettings.DEFAULT_REMOVAL_CHECK_TYPE;
+  }
+
+  /** Raw global DC configuration: `{ mode, value, formula, rarity }`. */
+  static getGemRemovalCheckDcConfig() {
+    return {
+      mode: GemCheckService.normalizeDcMode(
+        ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_DC_MODE, GemCheckService.DC_MODE_FIXED)
+      ),
+      value: Number(
+        ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_DC, GemCheckService.DEFAULT_DC)
+      ),
+      formula: String(
+        ModuleSettings.#getRegistered(
+          ModuleSettings.SETTING_REMOVAL_CHECK_DC_FORMULA,
+          GemCheckService.DEFAULT_DC_FORMULA
+        ) ?? ""
+      ),
+      rarity: GemCheckService.normalizeRarityDcs(
+        ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_RARITY_DCS, {})
+      )
+    };
+  }
+
+  static getGemRemovalFailureOutcome() {
+    return ModuleSettings.normalizeRemovalFailureOutcome(
+      ModuleSettings.#getRegistered(ModuleSettings.SETTING_REMOVAL_CHECK_FAILURE, ModuleSettings.REMOVAL_FAILURE_BREAK)
+    ) || ModuleSettings.REMOVAL_FAILURE_BREAK;
+  }
+
+  /** Returns a valid failure outcome, or "" when the value is not one. */
+  static normalizeRemovalFailureOutcome(value) {
+    return Constants.normalizeRemovalFailureOutcome(value);
+  }
+
+  static getRemovalFailureChoices() {
+    return [
+      {
+        value: ModuleSettings.REMOVAL_FAILURE_BREAK,
+        label: Constants.localize("SCSockets.Settings.RemovalCheck.Failure.Choices.Break", "The gem breaks")
+      },
+      {
+        value: ModuleSettings.REMOVAL_FAILURE_LOSE,
+        label: Constants.localize("SCSockets.Settings.RemovalCheck.Failure.Choices.Lose", "The gem is lost")
+      },
+      {
+        value: ModuleSettings.REMOVAL_FAILURE_STAY,
+        label: Constants.localize("SCSockets.Settings.RemovalCheck.Failure.Choices.Stay", "The gem stays in the socket")
+      }
+    ];
+  }
+
+  static getGemRemovalDcModeChoices() {
+    return [
+      {
+        value: GemCheckService.DC_MODE_FIXED,
+        label: Constants.localize("SCSockets.GemCheck.DcModes.Fixed", "Fixed DC")
+      },
+      {
+        value: GemCheckService.DC_MODE_FORMULA,
+        label: Constants.localize("SCSockets.GemCheck.DcModes.Formula", "Formula")
+      },
+      {
+        value: GemCheckService.DC_MODE_RARITY,
+        label: Constants.localize("SCSockets.GemCheck.DcModes.Rarity", "By gem rarity")
+      }
+    ];
   }
 
   // Socketable item types ------------------------------------------------------
@@ -411,6 +571,13 @@ export class ModuleSettings {
     return ["weapon", "equipment"];
   }
 
+  static #getRegistered(key, fallback) {
+    if (!ModuleSettings.#isSettingRegistered(key)) {
+      return fallback;
+    }
+    return game.settings.get(Constants.MODULE_ID, key) ?? fallback;
+  }
+
   static #isSettingRegistered(key) {
     const registered = game?.settings?.settings;
     if (!(registered instanceof Map)) return false;
@@ -449,8 +616,8 @@ export class ModuleSettings {
     return ModuleSettings.formatSubtypeLabel(fallback);
   }
 
-  static #resolveRoleLevel(value) {
-    const numeric = Number(value);
+  static #resolveRoleLevel(value, fallback) {
+    const numeric = value === null || value === undefined || value === "" ? NaN : Number(value);
     if (Number.isFinite(numeric)) return numeric;
 
     if (typeof value === "string" && value.trim().length) {
@@ -461,7 +628,7 @@ export class ModuleSettings {
       if (normalized === "GAMEMASTER" && Number.isFinite(roles.GM)) return roles.GM;
     }
 
-    return ModuleSettings.getDefaultEditSocketRole();
+    return fallback;
   }
 
   static #roleLabel(roleKey) {

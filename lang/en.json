@@ -18,6 +18,8 @@
       "CannotOpenGem": "Could not open the gem item.",
       "SocketGemChanged": "The socketed gem changed since this sheet was opened. Close it and open the gem again.",
       "MaxReached": "Maximum number of sockets reached.",
+      "EditPermissionDenied": "You do not have permission to modify sockets on this item.",
+      "RemoveGemPermissionDenied": "You do not have permission to remove the gem already in this socket.",
       "GemRequiresSocket": "This gem must be socketed before it can be used.",
       "HostNotSocketable": "This item type cannot receive sockets.",
       "SocketConditionFailed": "That gem does not meet this socket's requirements.",
@@ -27,7 +29,8 @@
       "InsufficientSocketGems": "Not enough socketed gems to consume ({available}/{required}).",
       "SourceGemMissing": "The gem that provides this activity is no longer socketed.",
       "InvalidConsumptionSlot": "The socket slot configured for consumption does not exist.",
-      "InvalidConsumptionTarget": "This socket consumption target is not configured."
+      "InvalidConsumptionTarget": "This socket consumption target is not configured.",
+      "GemBroken": "This gem is broken and must be repaired before it can be socketed."
     },
     "Effects": {
       "DefaultName": "Gem Effect"
@@ -257,6 +260,18 @@
         "Label": "Recharge",
         "Hint": "When and how this gem's charges change automatically — rests, combat periods, or the Recharge d6 check — recovering all charges, losing all charges, or rolling a custom formula.",
         "FormulaPlaceholder": "e.g. 1d4"
+      },
+      "RemovalCheck": {
+        "Dc": {
+          "Label": "Removal check DC",
+          "Hint": "A number or a formula without dice. Leave blank to use the global DC; 0 removes the check from this slot.",
+          "Placeholder": "Global"
+        },
+        "Failure": {
+          "Label": "On a failed removal check",
+          "Hint": "What happens to the gem in this slot when the removal check fails.",
+          "Inherit": "Use the global setting"
+        }
       }
     },
     "SocketDescriptions": {
@@ -275,9 +290,23 @@
       "ShowSlot": "Show this slot to players."
     },
     "Settings": {
-      "EditPermission": {
-        "Name": "Edit Socket Permission",
-        "Hint": "The minimum role required to add or remove sockets from items."
+      "Permissions": {
+        "AddSlot": {
+          "Name": "Add Slots",
+          "Hint": "The minimum role required to add new socket slots to items."
+        },
+        "RemoveSlot": {
+          "Name": "Remove Slots",
+          "Hint": "The minimum role required to remove socket slots from items."
+        },
+        "AddGem": {
+          "Name": "Add Gems to Slots",
+          "Hint": "The minimum role required to socket gems into slots."
+        },
+        "RemoveGem": {
+          "Name": "Remove Gems from Slots",
+          "Hint": "The minimum role required to remove gems from slots."
+        }
       },
       "SocketableItemTypes": {
         "Name": "Socketable Item Types",
@@ -457,6 +486,50 @@
       "DebugTrace": {
         "Name": "Debug trace logging",
         "Hint": "Logs item updates, sheet renders, and focus changes to the browser console to diagnose socket UI issues."
+      },
+      "RemovalCheck": {
+        "Section": "Gem removal check",
+        "Enabled": {
+          "Name": "Require a check to remove gems",
+          "Hint": "When enabled, a player removing a gem from a socket must pass a check against a DC. A failed check can lose or break the gem."
+        },
+        "Type": {
+          "Name": "Check",
+          "Hint": "The roll made by the actor that owns the item: a tool, skill or ability check, or a flat d20."
+        },
+        "DcMode": {
+          "Name": "DC",
+          "Hint": "How the DC is calculated. Each socket can override it in its own settings; a DC of 0 means no check."
+        },
+        "Dc": {
+          "Name": "Fixed DC",
+          "Hint": "The DC used for every gem."
+        },
+        "DcFormula": {
+          "Name": "DC formula",
+          "Hint": "A formula without dice. It can use the roll data of the item that holds the socket, plus @gem.rarity (0 for no rarity, 1 common … 6 artifact)."
+        },
+        "RarityDcs": {
+          "Name": "DC by gem rarity",
+          "Hint": "The DC used for each rarity of the gem being removed."
+        },
+        "Failure": {
+          "Name": "On a failed check",
+          "Hint": "A broken gem returns to the inventory but cannot be socketed until it is repaired. A lost gem is destroyed.",
+          "Choices": {
+            "Break": "The gem breaks",
+            "Lose": "The gem is lost",
+            "Stay": "The gem stays in the socket"
+          }
+        },
+        "Gm": {
+          "Name": "GMs also roll",
+          "Hint": "By default a GM removes gems without rolling."
+        }
+      },
+      "ConcealUnidentified": {
+        "Name": "Hide gems of unidentified items",
+        "Hint": "Players see gems socketed into an unidentified item, and gems that are themselves unidentified, without their name, image, or description. GMs always see the real gem."
       }
     },
     "SupportCard": {
@@ -865,6 +938,67 @@
             "Subtitle": "{item} has {count} charge pools with missing charges. Choose which one to recharge.",
             "Title": "Choose Charge Pool"
           }
+        },
+        "GemRepair": {
+          "Title": "Gem Repair",
+          "Hint": "Repair a broken gem from the user's inventory, optionally after a check.",
+          "Sections": {
+            "Configuration": "Gem Repair Configuration",
+            "Check": "Repair Check"
+          },
+          "Fields": {
+            "TargetingHint": "When used, this activity repairs one broken gem from the inventory of the actor using it. If the actor carries more than one broken gem, a prompt asks which one to repair.",
+            "Check": {
+              "Type": {
+                "Label": "Check",
+                "Hint": "Optional roll required to repair the gem. On a failure the gem stays broken.",
+                "Choices": {
+                  "None": "No check",
+                  "Tool": "Tool check",
+                  "Skill": "Skill check",
+                  "Ability": "Ability check",
+                  "Flat": "Flat d20"
+                }
+              },
+              "Tool": {
+                "Label": "Tool"
+              },
+              "Skill": {
+                "Label": "Skill"
+              },
+              "Ability": {
+                "Label": "Ability"
+              },
+              "DcMode": {
+                "Label": "DC",
+                "Hint": "Use a fixed DC, a formula, or a DC for each gem rarity."
+              },
+              "Dc": {
+                "Label": "Fixed DC"
+              },
+              "Formula": {
+                "Label": "DC formula",
+                "Hint": "A formula without dice. It can use the activity's roll data, plus @gem.rarity (0 for no rarity, 1 common … 6 artifact)."
+              },
+              "Rarity": {
+                "Hint": "The DC used for each rarity of the gem being repaired."
+              }
+            }
+          },
+          "App": {
+            "Title": "Choose Gem to Repair",
+            "Subtitle": "{actor} has {count} broken gems. Choose which one to repair."
+          },
+          "RollFlavor": "Gem repair: {gem}",
+          "Notifications": {
+            "Repaired": "{name} was repaired.",
+            "Failed": "The attempt to repair {name} failed."
+          },
+          "Warnings": {
+            "NoActor": "This activity must be used by an actor.",
+            "NoBrokenGems": "{actor} has no broken gems to repair.",
+            "InvalidDcFormula": "The repair DC formula \"{formula}\" could not be resolved; using DC {dc}."
+          }
         }
       }
     },
@@ -936,6 +1070,51 @@
         "NamePattern": "Name Pattern",
         "NamePatternPlaceholder": "e.g. Fire* or Battery"
       }
+    },
+    "GemCheck": {
+      "DcLabel": "DC {dc}",
+      "Types": {
+        "Flat": "Flat d20",
+        "Tool": "Tool",
+        "Skill": "Skill",
+        "Ability": "Ability"
+      },
+      "DcModes": {
+        "Fixed": "Fixed DC",
+        "Formula": "Formula",
+        "Rarity": "By gem rarity"
+      },
+      "Rarity": {
+        "None": "No rarity"
+      }
+    },
+    "RemovalCheck": {
+      "Flavor": "Gem removal",
+      "FlavorNamed": "Gem removal: {gem}",
+      "Notifications": {
+        "ReplaceBlocked": "Remove the gem in this socket first: taking it out requires a check.",
+        "Stay": "The check failed: the gem stays in the socket.",
+        "Broke": "The check failed: the gem broke while being removed.",
+        "Lost": "The check failed: the gem was destroyed while being removed.",
+        "RollFailed": "The removal check could not be rolled, so the gem was not removed."
+      }
+    },
+    "BrokenGem": {
+      "Label": "Broken gem",
+      "Actions": {
+        "Repair": "Repair gem",
+        "Break": "Mark gem as broken",
+        "Toggle": "Break or repair gem"
+      },
+      "Notifications": {
+        "Repaired": "{name} was repaired.",
+        "Broken": "{name} is now broken."
+      }
+    },
+    "UnidentifiedGem": {
+      "Name": "Unidentified Gem",
+      "CannotInspect": "This gem cannot be inspected until it is identified.",
+      "Description": "This gem has not been identified."
     }
   }
 }

@@ -1,5 +1,6 @@
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { DebugTrace } from "../support/DebugTrace.js";
+import { GemBreakService } from "../../domain/gems/GemBreakService.js";
 
 export class InventoryService {
   static #ASCENDANT_ITEMS_MODULE_ID = "sc-ascendant-items";
@@ -120,6 +121,17 @@ export class InventoryService {
       return false;
     }
 
+    // A broken gem shares its source with the intact one, so the source check
+    // below would otherwise merge the two into a single stack.
+    if (itemStackData.broken !== payloadStackData.broken) {
+      return false;
+    }
+
+    // Same reasoning for an unidentified gem and its identified twin.
+    if (itemStackData.unidentified !== payloadStackData.unidentified) {
+      return false;
+    }
+
     if (itemStackData.sourceId && payloadStackData.sourceId) {
       return itemStackData.sourceId === payloadStackData.sourceId;
     }
@@ -161,6 +173,8 @@ export class InventoryService {
       img,
       subtype,
       sourceId,
+      broken: GemBreakService.isBroken(raw),
+      unidentified: raw?.system?.identified === false,
       hasAscendantState: InventoryService.#hasAscendantItemState(raw),
       fingerprint: sourceId ? "" : InventoryService.#buildStackFingerprint(raw)
     };

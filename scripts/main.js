@@ -33,6 +33,8 @@ import { SocketEffectFormulaService } from "./core/services/SocketEffectFormulaS
 import { SocketUsesBridgeService } from "./core/services/SocketUsesBridgeService.js";
 import { SocketCountUsesService } from "./core/services/SocketCountUsesService.js";
 import { SocketUsesUI } from "./core/ui/SocketUsesUI.js";
+import { BrokenGemUI } from "./core/ui/BrokenGemUI.js";
+import { GemConcealmentService } from "./domain/gems/GemConcealmentService.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -64,12 +66,14 @@ Hooks.once("init", async function() {
   LootActivitiesExtension.ensure();
   SocketRollDataService.activate();
   SocketEffectFormulaService.activate();
+  GemConcealmentService.activate();
 
   await foundry.applications.handlebars.loadTemplates([
     `modules/${Constants.MODULE_ID}/templates/item-socket-details-toggle.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-slot-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-extraction-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-gem-reload-effect.hbs`,
+    `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-gem-repair-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-recharge-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-pool-recharge-effect.hbs`,
     `modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/slot-picker.hbs`
@@ -101,6 +105,8 @@ Hooks.once("setup", () => {
   SocketRollDataService.activate();
   SocketEffectFormulaService.activate();
   SocketUsesUI.activate();
+  BrokenGemUI.activate();
+  GemConcealmentService.activate();
 
 });
 
@@ -124,6 +130,17 @@ Hooks.on("preUpdateItem", (item, changes, options) => {
     SocketCountUsesService.rebaseSpentForSocketChange(item, changes);
   } catch (e) {
     console.error(`[${Constants.MODULE_ID}] handlePreUpdate failed:`, e);
+  }
+});
+
+// Identifying an item also identifies the gems socketed into it. Only the
+// client that made the change writes, so the update happens once.
+Hooks.on("updateItem", async (item, changes, _options, userId) => {
+  if (changes?.system?.identified !== true || userId !== game.userId) return;
+  try {
+    await GemConcealmentService.identifyHostGems(item);
+  } catch (e) {
+    console.error(`[${Constants.MODULE_ID}] failed to identify socketed gems:`, e);
   }
 });
 

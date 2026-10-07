@@ -3,6 +3,8 @@ import { ModuleSettings } from "./ModuleSettings.js";
 import { CommunityLinks } from "./CommunityLinks.js";
 import { DamageRollLayoutAdapterRegistry } from "../ui/damage-roll-layout/DamageRollLayoutAdapterRegistry.js";
 import { TidyIntegration } from "../integration/TidyIntegration.js";
+import { GemCheckService } from "../services/GemCheckService.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 /**
  * Registers all game settings and menus for the module.
@@ -27,10 +29,12 @@ export class ModuleSettingsRegistrar {
 
     ModuleSettingsRegistrar.#registerRuntimeHooks();
     ModuleSettingsRegistrar.#registerSettingsConfigHook();
-    this.#registerEditSocketPermission();
+    this.#registerSocketPermissions();
     this.#registerSocketableItemTypeSetting();
     this.#registerMaxSockets();
     this.#registerDeleteOnRemoval();
+    this.#registerConcealUnidentifiedGems();
+    this.#registerGemRemovalCheckSettings();
     this.#registerGemRollLayoutSetting();
     this.#registerGemFormulaLayoutSettings();
     this.#registerGemBadgesFavoritesSetting();
@@ -123,25 +127,49 @@ export class ModuleSettingsRegistrar {
   // Settings
   // ---------------------------------------------------------------------------
 
-  #registerEditSocketPermission() {
+  #registerSocketPermissions() {
+    // The single permission older versions had. It is kept registered so a
+    // world that customised it starts with the same role on the slot
+    // permissions, which is what that setting was named after.
     game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_EDIT_SOCKET, {
-      name: Constants.localize("SCSockets.Settings.EditPermission.Name", "Edit Socket Permission"),
-      hint: Constants.localize(
-        "SCSockets.Settings.EditPermission.Hint",
-        "The minimum role required to add or remove sockets from items."
-      ),
       scope: "world",
       config: false,
       type: Number,
-      choices: ModuleSettings.getEditSocketPermissionChoices(),
-      default: ModuleSettings.getDefaultEditSocketRole(),
-      onChange: (value) => {
-        if (Constants.isDebugEnabled()) {
-          console.log(`${Constants.MODULE_ID} | editSocketPermission changed to ${value}`);
-        }
-        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
-      }
+      default: ModuleSettings.getDefaultSocketPermissionRole(ModuleSettings.SOCKET_ACTION_ADD_SLOT)
     });
+    const choices = ModuleSettings.getSocketPermissionChoices();
+    let legacyRole = null;
+    try {
+      const stored = Number(game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_EDIT_SOCKET));
+      legacyRole = Object.hasOwn(choices, String(stored)) ? stored : null;
+    } catch {
+      legacyRole = null;
+    }
+
+    const permissions = [
+      [ModuleSettings.SOCKET_ACTION_ADD_SLOT, "AddSlot", "Add Slots", "The minimum role required to add new socket slots to items.", legacyRole],
+      [ModuleSettings.SOCKET_ACTION_REMOVE_SLOT, "RemoveSlot", "Remove Slots", "The minimum role required to remove socket slots from items.", legacyRole],
+      [ModuleSettings.SOCKET_ACTION_ADD_GEM, "AddGem", "Add Gems to Slots", "The minimum role required to socket gems into slots.", null],
+      [ModuleSettings.SOCKET_ACTION_REMOVE_GEM, "RemoveGem", "Remove Gems from Slots", "The minimum role required to remove gems from slots.", null]
+    ];
+    for (const [action, langKey, name, hint, inherited] of permissions) {
+      const key = ModuleSettings.SOCKET_PERMISSION_SETTINGS[action];
+      game.settings.register(Constants.MODULE_ID, key, {
+        name: Constants.localize(`SCSockets.Settings.Permissions.${langKey}.Name`, name),
+        hint: Constants.localize(`SCSockets.Settings.Permissions.${langKey}.Hint`, hint),
+        scope: "world",
+        config: false,
+        type: Number,
+        choices,
+        default: inherited ?? ModuleSettings.getDefaultSocketPermissionRole(action),
+        onChange: (value) => {
+          if (Constants.isDebugEnabled()) {
+            console.log(`${Constants.MODULE_ID} | ${key} changed to ${value}`);
+          }
+          ModuleSettings.refreshOpenSheets({ item: true, actor: true });
+        }
+      });
+    }
   }
 
   #registerSocketableItemTypeSetting() {
@@ -186,6 +214,44 @@ export class ModuleSettingsRegistrar {
       type: Boolean,
       default: false
     });
+  }
+
+  #registerConcealUnidentifiedGems() {
+    game.settings.register(Constants.MODULE_ID, ModuleSettings.SETTING_CONCEAL_UNIDENTIFIED, {
+      scope: "world",
+      config: false,
+      type: Boolean,
+      default: true,
+      onChange: () => {
+        GemConcealmentService.refreshPreparedContent();
+        ModuleSettings.refreshOpenSheets({ item: true, actor: true });
+      }
+    });
+  }
+
+  /**
+   * Opt-in removal check. Everything stays inert while the first setting is
+   * disabled (its default), so existing worlds keep removing gems as before.
+   */
+  #registerGemRemovalCheckSettings() {
+    const register = (key, type, defaultValue) => {
+      game.settings.register(Constants.MODULE_ID, key, {
+        scope: "world",
+        config: false,
+        type,
+        default: defaultValue,
+        onChange: () => ModuleSettings.refreshOpenSheets({ item: true, actor: false })
+      });
+    };
+
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_ENABLED, Boolean, false);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_TYPE, String, ModuleSettings.DEFAULT_REMOVAL_CHECK_TYPE);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_DC_MODE, String, GemCheckService.DC_MODE_FIXED);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_DC, Number, GemCheckService.DEFAULT_DC);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_DC_FORMULA, String, GemCheckService.DEFAULT_DC_FORMULA);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_RARITY_DCS, Object, { ...GemCheckService.DEFAULT_RARITY_DCS });
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_FAILURE, String, ModuleSettings.REMOVAL_FAILURE_BREAK);
+    register(ModuleSettings.SETTING_REMOVAL_CHECK_GM, Boolean, false);
   }
 
   #registerGemRollLayoutSetting() {

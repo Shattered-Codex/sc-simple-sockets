@@ -185,12 +185,13 @@ export class ScMoreActivitiesSocketRechargeActivityService {
           return null;
         }
 
-        const summary = ScMoreActivitiesIntegration.toSlotSummary(entry);
-        const chargesLabel = `${resource.key} ${resource.value}/${resource.max}`;
+        const summary = ScMoreActivitiesIntegration.toSlotSummary(entry, item);
+        const chargesLabel = summary.concealed ? "" : `${resource.key} ${resource.value}/${resource.max}`;
         return {
           ...summary,
           chargesLabel,
-          gemName: summary.gemName ? `${summary.gemName} (${chargesLabel})` : chargesLabel
+          gemName: summary.concealed ? summary.gemName
+            : summary.gemName ? `${summary.gemName} (${chargesLabel})` : chargesLabel
         };
       })
       .filter(Boolean)

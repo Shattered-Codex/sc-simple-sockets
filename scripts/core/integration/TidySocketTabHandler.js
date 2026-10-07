@@ -58,12 +58,8 @@ export class TidySocketTabHandler {
 
     const expanded = tabContents.querySelector(".sc-sockets-tidy")?.dataset?.scExpanded !== "false";
     const editable = Boolean(sheet?.isEditable);
-    const canManageSockets = editable && ModuleSettings.canAddOrRemoveSocket(game.user);
-    const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(item);
     const context = buildSocketLayoutContext(item, {
       editable,
-      canManageSockets,
-      canAddSocketSlot,
       sockets: SocketService.getSlots(item)
     });
 
@@ -233,7 +229,7 @@ export class TidySocketTabHandler {
 
     SocketSlotConfigApp.open(ItemSheetSync.syncSheetDocument(sheet, sheet.item), idx, {
       parentApp: sheet,
-      editable: sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
+      editable: sheet?.isEditable && ModuleSettings.canConfigureSlots(game.user)
     });
   }
 
@@ -241,7 +237,7 @@ export class TidySocketTabHandler {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!game.user?.isGM || !ModuleSettings.canAddOrRemoveSocket(game.user)) {
+    if (!game.user?.isGM) {
       return;
     }
 

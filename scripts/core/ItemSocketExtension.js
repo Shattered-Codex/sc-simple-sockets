@@ -73,16 +73,9 @@ export class ItemSocketExtension extends SheetExtension {
     partId = ItemSocketExtension.PART_ID
   } = {}) {
     const editable = !!sheet?.isEditable;
-    const canManageSockets = editable && ModuleSettings.canAddOrRemoveSocket(game.user);
     item = item ?? sheet?.item ?? null;
-    const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(item);
     const sockets = SocketService.getSlots(item);
-    const context = buildSocketLayoutContext(item, {
-      editable,
-      canManageSockets,
-      canAddSocketSlot,
-      sockets
-    });
+    const context = buildSocketLayoutContext(item, { editable, sockets });
 
     if (includePartId) {
       context.partId = partId;
@@ -298,7 +291,7 @@ export class ItemSocketExtension extends SheetExtension {
         const sheet = resolveActionSheet(this);
         SocketSlotConfigApp.open(ItemSheetSync.syncSheetDocument(sheet, sheet?.item ?? this.item), idx, {
           parentApp: sheet,
-          editable: sheet?.isEditable && ModuleSettings.canAddOrRemoveSocket(game.user)
+          editable: sheet?.isEditable && ModuleSettings.canConfigureSlots(game.user)
         });
       },
 
@@ -306,7 +299,7 @@ export class ItemSocketExtension extends SheetExtension {
         event.preventDefault();
         event.stopPropagation();
 
-        if (!game.user?.isGM || !ModuleSettings.canAddOrRemoveSocket(game.user)) {
+        if (!game.user?.isGM) {
           return;
         }
 

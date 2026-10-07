@@ -6,6 +6,7 @@ import { TransferFilterUI } from "../ui/TransferFilterUI.js";
 import { GemDetailsUI } from "../ui/GemDetailsUI.js";
 import { TidySocketDescriptionsUI } from "../ui/TidySocketDescriptionsUI.js";
 import { ActorGemBadges } from "../ui/ActorGemBadges.js";
+import { BrokenGemUI } from "../ui/BrokenGemUI.js";
 import { ActorGemFormulaUI } from "../ui/ActorGemFormulaUI.js";
 import { ItemActivityBadges } from "../ui/ItemActivityBadges.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
@@ -168,6 +169,7 @@ export class TidyIntegration {
         renderScheme: "force",
         onRender: (params) => {
           ActorGemBadges.render(params.app, params.element);
+          BrokenGemUI.render(params.app, params.element);
           ActorGemFormulaUI.render(params.app, params.element);
         }
       })
@@ -583,13 +585,8 @@ export class TidyIntegration {
       item?.sheet?.isEditable ??
       false
     );
-    const canManageSockets = editable && ModuleSettings.canAddOrRemoveSocket(game.user);
-    const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(item);
-
     return buildSocketLayoutContext(item, {
       editable,
-      canManageSockets,
-      canAddSocketSlot,
       sockets: SocketService.getSlots(item)
     });
   }

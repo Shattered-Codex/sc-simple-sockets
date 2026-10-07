@@ -2,12 +2,24 @@ import { Constants } from "../Constants.js";
 import { SocketService } from "./SocketService.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { Compatibility } from "../support/Compatibility.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 export class SocketGemSheetService {
   static async openFromHost(hostItem, slotIndex, { editable = true } = {}) {
     const slots = SocketService.getSlots(hostItem);
     const slot = Array.isArray(slots) ? slots[slotIndex] : null;
     if (!slot?.gem && !slot?._gemData) {
+      return false;
+    }
+
+    // The gem sheet would show everything a concealed gem is hiding.
+    if (GemConcealmentService.isSlotConcealed(hostItem, slot)) {
+      ui.notifications?.warn?.(
+        Constants.localize(
+          "SCSockets.UnidentifiedGem.CannotInspect",
+          "This gem cannot be inspected until it is identified."
+        )
+      );
       return false;
     }
 

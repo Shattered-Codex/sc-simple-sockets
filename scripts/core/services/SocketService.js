@@ -11,11 +11,17 @@ import { ItemSheetSync } from "../support/ItemSheetSync.js";
 import { DebugTrace } from "../support/DebugTrace.js";
 import { HostItemUpdateService } from "../support/HostItemUpdateService.js";
 import { HostOperationQueue } from "../support/HostOperationQueue.js";
+import { GemRemovalCheckService } from "./GemRemovalCheckService.js";
+import { GemBreakService } from "../../domain/gems/GemBreakService.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 export class SocketService {
   static REMOVE_GEM_MODE_DEFAULT = "default";
   static REMOVE_GEM_MODE_KEEP = "keep";
   static REMOVE_GEM_MODE_DELETE = "delete";
+
+  /** Slots with a removal check in flight, as `<host uuid>:<slot index>`. */
+  static #pendingRemovalChecks = new Set();
 
   static async addGem(hostItem, idx, source, options = {}) {
     return SocketService.#enqueueHostOperation(
@@ -25,17 +31,39 @@ export class SocketService {
   }
 
   static async removeGem(hostItem, idx, options = {}) {
-    return SocketService.#enqueueHostOperation(
-      hostItem,
-      (currentHostItem) => SocketService.#removeGem(currentHostItem, idx, options)
-    );
+    // The check may open a roll dialog, so it runs before the operation is
+    // queued: a pending dialog must not hold up other writes to the host item.
+    const check = await SocketService.#runRemovalCheck(hostItem, idx, options);
+    if (check.result) {
+      return check.result;
+    }
+
+    try {
+      return await SocketService.#enqueueHostOperation(
+        hostItem,
+        (currentHostItem) => SocketService.#removeGem(currentHostItem, idx, options, check.removal)
+      );
+    } finally {
+      check.release?.();
+    }
   }
 
   static async removeSlotWithContents(hostItem, idx, options = {}) {
-    return SocketService.#enqueueHostOperation(
-      hostItem,
-      (currentHostItem) => SocketService.#removeSlotWithContents(currentHostItem, idx, options)
-    );
+    const check = await SocketService.#runRemovalCheck(hostItem, idx, options, [
+      ModuleSettings.SOCKET_ACTION_REMOVE_SLOT,
+      ModuleSettings.SOCKET_ACTION_REMOVE_GEM
+    ]);
+    if (check.result) {
+      return check.result;
+    }
+    try {
+      return await SocketService.#enqueueHostOperation(
+        hostItem,
+        (currentHostItem) => SocketService.#removeSlotWithContents(currentHostItem, idx, options, check.removal)
+      );
+    } finally {
+      check.release?.();
+    }
   }
 
   static async addSlot(hostItem, options = {}) {
@@ -67,7 +95,9 @@ export class SocketService {
           );
         }
 
-        if (!SocketService.#canMutateSockets(options)) {
+        // `options.permission` names the socket action the operation amounts to.
+        const action = options?.permission ?? ModuleSettings.SOCKET_ACTION_ADD_GEM;
+        if (!SocketService.#canMutateSockets(options, action)) {
           return SocketService.#warnAndReturnResult(
             "warn",
             "permission-denied",
@@ -113,7 +143,7 @@ export class SocketService {
       );
     }
 
-    if (!SocketService.#canMutateSockets(options)) {
+    if (!SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_ADD_GEM)) {
       return SocketService.#warnAndReturnResult(
         "warn",
         "permission-denied",
@@ -179,6 +209,17 @@ export class SocketService {
       );
     }
 
+    if (GemBreakService.isBroken(gemItem)) {
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "gem-broken",
+        Constants.localize(
+          "SCSockets.Notifications.GemBroken",
+          "This gem is broken and must be repaired before it can be socketed."
+        )
+      );
+    }
+
     if (!SocketService.#gemMatchesHostType(gemItem, hostItem)) {
       return SocketService.#warnAndReturnResult(
         "warn",
@@ -211,12 +252,45 @@ export class SocketService {
       );
     }
 
+    // Dropping a gem onto a filled socket takes the old gem out, which needs
+    // the permission to remove gems as well.
+    if (
+      (slots[idx]?.gem || slots[idx]?._gemData)
+      && !SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_REMOVE_GEM)
+    ) {
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "permission-denied",
+        Constants.localize(
+          "SCSockets.Notifications.RemoveGemPermissionDenied",
+          "You do not have permission to remove the gem already in this socket."
+        )
+      );
+    }
+
+    // Dropping a gem onto a filled socket would swap the old gem out without
+    // the removal check, so the old gem has to be removed first.
+    if (
+      options?.skipRemovalCheck !== true
+      && GemRemovalCheckService.plan({ hostItem, slot: slots[idx] }).required
+    ) {
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "removal-check-required",
+        Constants.localize(
+          "SCSockets.RemovalCheck.Notifications.ReplaceBlocked",
+          "Remove the gem in this socket first: taking it out requires a check."
+        )
+      );
+    }
+
     const previousSlot = slots[idx] ?? {};
     const shouldDeleteReplacedGem = SocketService.#shouldDeleteGemOnRemoval(previousSlot);
     const shouldReturnReplacedGem = Boolean(previousSlot?.gem || previousSlot?._gemData) && !shouldDeleteReplacedGem;
     const replacedGemSnapshot = shouldReturnReplacedGem
       ? ItemResolver.expandSnapshot(previousSlot?._gemData ?? null)
       : null;
+    SocketService.#keepGemUnidentified(hostItem, replacedGemSnapshot);
 
     const noRender = SocketService.#buildInternalUpdateOptions({ render: false }, options);
     DebugTrace.log("socket-service.addGem.noRender", {
@@ -247,6 +321,9 @@ export class SocketService {
       const effectIdMap = await EffectService.applyGemEffects(hostItem, idx, gemItem, noRender);
       await ActivityTransferService.applyFromGem(hostItem, idx, gemItem, {
         ...noRender,
+        // Publish the completed state to actor sheets on every client. The
+        // effect writes above stay silent, but their bonuses must now appear.
+        render: true,
         [Constants.MODULE_ID]: {
           ...(noRender?.[Constants.MODULE_ID] ?? {}),
           [ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]: true,
@@ -280,7 +357,130 @@ export class SocketService {
     });
   }
 
-  static async #removeGem(hostItem, idx, options = {}) {
+  /**
+   * Rolls the optional removal check for a default-mode removal.
+   * Returns `{ result }` when the removal must stop here (cancelled roll, or a
+   * failure that leaves the gem in place) and `{ removal }` otherwise, where
+   * `removal` carries the outcome for `#removeGem` — null when no check applied.
+   * When a check was rolled, `release` must be called once the removal is done:
+   * until then the same slot cannot start a second check.
+   */
+  static async #runRemovalCheck(
+    hostItem,
+    idx,
+    options = {},
+    actions = [ModuleSettings.SOCKET_ACTION_REMOVE_GEM]
+  ) {
+    const proceed = { removal: null, result: null };
+
+    // An explicit keep/delete mode is a caller-decided outcome (gem
+    // consumption, extraction activities), not a player pulling a gem out.
+    // Callers that do act for a player (the Extract Gem macro) opt back in
+    // with `enforceRemovalCheck`.
+    if (
+      options?.skipRemovalCheck === true
+      || (
+        options?.enforceRemovalCheck !== true
+        && SocketService.#normalizeRemoveGemMode(options?.mode) !== SocketService.REMOVE_GEM_MODE_DEFAULT
+      )
+      || !SocketService.#canMutateSockets(options, ...actions)
+    ) {
+      return proceed;
+    }
+
+    const currentHostItem = SocketService.#resolveHostItem(hostItem);
+    if (!SocketService.#canUseSocketsOnHost(currentHostItem) || !Number.isInteger(idx) || idx < 0) {
+      return proceed;
+    }
+    const slot = SocketStore.getSlots(currentHostItem)?.[idx] ?? null;
+    const plan = GemRemovalCheckService.plan({ hostItem: currentHostItem, slot });
+    // The slot is identified even when it needs no check: the removal runs
+    // later, from the queue, and must not land on a gem that replaced this one.
+    const removal = {
+      gemInstanceId: slot?._gemInstanceId ?? null,
+      legacyGemIdentity: JSON.stringify([slot?.gem, slot?._srcGemId, slot?._gemData]),
+      removalCheck: null,
+      failure: null
+    };
+    if (!plan.required) {
+      return { removal, result: null };
+    }
+
+    // The roll dialog stays open for as long as the player wants, so a second
+    // click on the same slot must not start another check.
+    const hostKey = currentHostItem?.uuid ?? currentHostItem?.id ?? null;
+    const pendingKey = hostKey ? `${hostKey}:${idx}` : null;
+    if (pendingKey && SocketService.#pendingRemovalChecks.has(pendingKey)) {
+      return {
+        removal: null,
+        result: SocketService.#buildResult({ success: false, changed: false, reason: "removal-check-pending" })
+      };
+    }
+    if (pendingKey) {
+      SocketService.#pendingRemovalChecks.add(pendingKey);
+    }
+    const release = () => SocketService.#pendingRemovalChecks.delete(pendingKey);
+
+    let outcome;
+    try {
+      outcome = await GemRemovalCheckService.roll(plan);
+    } catch (error) {
+      release();
+      throw error;
+    }
+    if (!outcome.ok) {
+      release();
+      const cancelled = outcome.reason === "roll-cancelled";
+      if (!cancelled && options?.notify !== false) {
+        ui.notifications?.warn?.(
+          Constants.localize(
+            "SCSockets.RemovalCheck.Notifications.RollFailed",
+            "The removal check could not be rolled, so the gem was not removed."
+          )
+        );
+      }
+      return {
+        removal: null,
+        result: SocketService.#buildResult({
+          success: false,
+          changed: false,
+          reason: cancelled ? "removal-check-cancelled" : "removal-check-error"
+        })
+      };
+    }
+
+    const removalCheck = { success: outcome.success, total: outcome.total, dc: outcome.dc };
+    removal.removalCheck = removalCheck;
+    if (outcome.success) {
+      return { removal, result: null, release };
+    }
+
+    if (outcome.failure === ModuleSettings.REMOVAL_FAILURE_STAY) {
+      release();
+      if (options?.notify !== false) {
+        ui.notifications?.warn?.(
+          Constants.localize(
+            "SCSockets.RemovalCheck.Notifications.Stay",
+            "The check failed: the gem stays in the socket."
+          )
+        );
+      }
+      return {
+        removal: null,
+        result: SocketService.#buildResult({
+          success: false,
+          changed: false,
+          reason: "removal-check-failed",
+          removalCheck
+        })
+      };
+    }
+
+    removal.failure = outcome.failure;
+    return { removal, result: null, release };
+  }
+
+  static async #removeGem(hostItem, idx, options = {}, removal = null) {
     DebugTrace.log("socket-service.removeGem.start", {
       hostItem: DebugTrace.describeItem(hostItem),
       actor: DebugTrace.describeActor(hostItem?.actor ?? hostItem?.parent),
@@ -289,7 +489,7 @@ export class SocketService {
     });
     const slots = SocketStore.getSlots(hostItem);
 
-    if (!SocketService.#canMutateSockets(options)) {
+    if (!SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_REMOVE_GEM)) {
       return SocketService.#warnAndReturnResult(
         "warn",
         "permission-denied",
@@ -308,9 +508,25 @@ export class SocketService {
     if (!slot?.gem && !slot?._gemData) {
       return SocketService.#buildResult({ success: false, changed: false, reason: "empty-slot" });
     }
+    // The check was planned before this operation was queued: make sure it
+    // still refers to the gem that is in the slot now.
+    if (removal && (
+      (slot?._gemInstanceId ?? null) !== removal.gemInstanceId
+      || (!removal.gemInstanceId
+        && JSON.stringify([slot?.gem, slot?._srcGemId, slot?._gemData]) !== removal.legacyGemIdentity)
+    )) {
+      return SocketService.#buildResult({ success: false, changed: false, reason: "slot-changed" });
+    }
+
     const removalMode = SocketService.#normalizeRemoveGemMode(options?.mode);
-    const shouldDeleteGem = SocketService.#shouldDeleteGemOnRemoval(slot, { mode: removalMode });
+    const shouldDeleteGem = removal?.failure === ModuleSettings.REMOVAL_FAILURE_LOSE
+      || SocketService.#shouldDeleteGemOnRemoval(slot, { mode: removalMode });
+    const shouldBreakGem = !shouldDeleteGem && removal?.failure === ModuleSettings.REMOVAL_FAILURE_BREAK;
     const gemSnapshot = ItemResolver.expandSnapshot(slot?._gemData ?? null);
+    if (shouldBreakGem) {
+      GemBreakService.markDataBroken(gemSnapshot);
+    }
+    SocketService.#keepGemUnidentified(hostItem, gemSnapshot);
 
     const noRender = SocketService.#buildInternalUpdateOptions({ render: false }, options);
     DebugTrace.log("socket-service.removeGem.noRender", {
@@ -333,6 +549,8 @@ export class SocketService {
       ItemResolver.normalizeSocketSlots(slots);
       await ActivityTransferService.removeForSlot(hostItem, idx, {
         ...noRender,
+        // Also refresh when the gem is deleted and no inventory update follows.
+        render: true,
         [Constants.MODULE_ID]: {
           ...(noRender?.[Constants.MODULE_ID] ?? {}),
           [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
@@ -352,9 +570,25 @@ export class SocketService {
     }
 
     if (options?.notify !== false) {
-      ui.notifications?.info?.(
-        Constants.localize("SCSockets.Notifications.GemUnsocketed", "Gem unsocketed.")
-      );
+      if (shouldBreakGem) {
+        ui.notifications?.warn?.(
+          Constants.localize(
+            "SCSockets.RemovalCheck.Notifications.Broke",
+            "The check failed: the gem broke while being removed."
+          )
+        );
+      } else if (removal?.failure) {
+        ui.notifications?.warn?.(
+          Constants.localize(
+            "SCSockets.RemovalCheck.Notifications.Lost",
+            "The check failed: the gem was destroyed while being removed."
+          )
+        );
+      } else {
+        ui.notifications?.info?.(
+          Constants.localize("SCSockets.Notifications.GemUnsocketed", "Gem unsocketed.")
+        );
+      }
     }
 
     DebugTrace.log("socket-service.removeGem.done", {
@@ -364,8 +598,9 @@ export class SocketService {
     return SocketService.#buildResult({
       success: true,
       changed: true,
-      reason: "gem-removed",
-      returnedGemItem
+      reason: shouldBreakGem ? "gem-removed-broken" : removal?.failure ? "gem-lost" : "gem-removed",
+      returnedGemItem,
+      ...(removal?.removalCheck ? { removalCheck: removal.removalCheck } : {})
     });
   }
 
@@ -399,7 +634,7 @@ export class SocketService {
       });
     }
 
-    if (!bypassPermission && !ModuleSettings.canAddOrRemoveSocket()) {
+    if (!bypassPermission && !ModuleSettings.canAddSlot()) {
       return SocketService.#buildResult({
         success: false,
         changed: false,
@@ -453,12 +688,18 @@ export class SocketService {
       slotIndex: idx,
       options: DebugTrace.describeOptions(options)
     });
-    if (!SocketService.#canMutateSockets(options)) {
+    if (!SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_REMOVE_SLOT)) {
       return;
     }
     const currentSlots = SocketStore.peekSlots(hostItem);
     if (!Number.isInteger(idx) || idx < 0 || idx >= currentSlots.length) {
       return;
+    }
+
+    // Only empty slots go this way: a filled one has a gem to hand back and
+    // effects to clean up, which is `removeSlotWithContents`' job.
+    if (currentSlots[idx]?.gem || currentSlots[idx]?._gemData) {
+      return SocketService.#buildResult({ success: false, changed: false, reason: "slot-not-empty" });
     }
 
     const removedSlot = foundry.utils.deepClone(currentSlots[idx] ?? null);
@@ -481,11 +722,24 @@ export class SocketService {
     return result;
   }
 
-  static async #removeSlotWithContents(hostItem, idx, options = {}) {
+  static async #removeSlotWithContents(hostItem, idx, options = {}, removal = null) {
     hostItem = SocketService.#resolveHostItem(hostItem);
     const currentSlots = SocketStore.peekSlots(hostItem);
     if (!Number.isInteger(idx) || idx < 0 || idx >= currentSlots.length) {
       return SocketService.#buildResult({ success: false, changed: false, reason: "invalid-slot-index" });
+    }
+
+    // Checked before the gem is touched: a slot that cannot be removed must
+    // not lose its gem on the way.
+    if (!SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_REMOVE_SLOT)) {
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "permission-denied",
+        Constants.localize(
+          "SCSockets.Notifications.EditPermissionDenied",
+          "You do not have permission to modify sockets on this item."
+        )
+      );
     }
 
     const hostState = SocketService.#captureHostState(hostItem);
@@ -493,7 +747,7 @@ export class SocketService {
 
     try {
       if (currentSlots[idx]?.gem || currentSlots[idx]?._gemData) {
-        removeGemResult = await SocketService.#removeGem(hostItem, idx, options);
+        removeGemResult = await SocketService.#removeGem(hostItem, idx, options, removal);
         if (!removeGemResult?.success) {
           return removeGemResult;
         }
@@ -512,7 +766,7 @@ export class SocketService {
   }
 
   static async #updateSlotConfig(hostItem, idx, config, options = {}) {
-    if (!SocketService.#canMutateSockets(options)) {
+    if (!options?.bypassPermission && !ModuleSettings.canConfigureSlots()) {
       if (options?.notify !== false) {
         ui.notifications?.warn?.(
           Constants.localize(
@@ -522,6 +776,15 @@ export class SocketService {
         );
       }
       return false;
+    }
+
+    // Visibility and the removal check overrides are the GM's to set: anyone
+    // else keeps what the slot already has, whatever the config asks for.
+    if (!options?.bypassPermission && !game?.user?.isGM) {
+      const { hidden, removalCheckDc, removalCheckFailure } = SocketSlotConfigService.getConfig(
+        SocketSlotConfigService.getSlot(hostItem, idx) ?? {}
+      );
+      config = { ...config, hidden, removalCheckDc, removalCheckFailure };
     }
 
     return SocketSlotConfigService.updateConfig(hostItem, idx, config, options);
@@ -595,6 +858,20 @@ export class SocketService {
     return ModuleSettings.isItemSocketableByType(hostItem);
   }
 
+  /**
+   * A gem taken out of an unidentified item is still unknown, so it goes back
+   * to the inventory unidentified instead of revealing what the item held.
+   */
+  static #keepGemUnidentified(hostItem, gemData) {
+    if (
+      gemData
+      && GemConcealmentService.isEnabled()
+      && GemConcealmentService.isUnidentified(hostItem)
+    ) {
+      GemConcealmentService.markDataUnidentified(gemData);
+    }
+  }
+
   static #normalizeRemoveGemMode(mode) {
     const normalized = String(mode ?? SocketService.REMOVE_GEM_MODE_DEFAULT).trim().toLowerCase();
     if (normalized === SocketService.REMOVE_GEM_MODE_KEEP || normalized === SocketService.REMOVE_GEM_MODE_DELETE) {
@@ -639,8 +916,10 @@ export class SocketService {
     return ItemSheetSync.resolve(hostItem);
   }
 
-  static #canMutateSockets(options = {}) {
-    return Boolean(options?.bypassPermission) || ModuleSettings.canAddOrRemoveSocket();
+  /** Whether the current user may perform every one of the given socket actions. */
+  static #canMutateSockets(options = {}, ...actions) {
+    return Boolean(options?.bypassPermission)
+      || actions.every((action) => ModuleSettings.canPerformSocketAction(action));
   }
 
   static #buildResult({ success = false, changed = false, reason = "unknown", ...data } = {}) {
@@ -685,6 +964,10 @@ export class SocketService {
     consumedIncomingSnapshot = null,
     returnedGemItem = null
   } = {}) {
+    // The failed operation may already have shown its half-done state, so
+    // the writes that undo it are rendered even when the operation was silent.
+    const publish = { ...options, render: true };
+
     try {
       await SocketService.#restoreHostState(hostItem, hostState, options);
     } catch (restoreError) {
@@ -693,7 +976,7 @@ export class SocketService {
 
     if (returnedGemItem) {
       try {
-        await InventoryService.consumeOne(returnedGemItem, options);
+        await InventoryService.consumeOne(returnedGemItem, publish);
       } catch (inventoryError) {
         console.warn(`[${Constants.MODULE_ID}] failed to revert returned gem after socket error:`, inventoryError);
       }
@@ -701,7 +984,7 @@ export class SocketService {
 
     if (consumedIncomingGem && consumedIncomingSnapshot) {
       try {
-        await InventoryService.returnOne(SocketService.#resolveHostItem(hostItem), consumedIncomingSnapshot, options);
+        await InventoryService.returnOne(SocketService.#resolveHostItem(hostItem), consumedIncomingSnapshot, publish);
       } catch (inventoryError) {
         console.warn(`[${Constants.MODULE_ID}] failed to restore consumed gem after socket error:`, inventoryError);
       }
@@ -713,14 +996,6 @@ export class SocketService {
     if (!currentHostItem || !hostState) {
       return currentHostItem ?? null;
     }
-
-    currentHostItem = await HostItemUpdateService.update(currentHostItem, {
-      "system.activities": foundry.utils.deepClone(hostState.activities ?? {}),
-      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]:
-        foundry.utils.deepClone(hostState.socketActivities ?? {}),
-      [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]:
-        foundry.utils.deepClone(hostState.sockets ?? [])
-    }, options);
 
     const effectIds = (currentHostItem?.effects?.contents ?? [])
       .map((effect) => effect?.id)
@@ -736,6 +1011,16 @@ export class SocketService {
         options
       );
     }
+
+    // Written last and rendered: sheets get the restored sockets together with
+    // the effects put back above.
+    currentHostItem = await HostItemUpdateService.update(currentHostItem, {
+      "system.activities": foundry.utils.deepClone(hostState.activities ?? {}),
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]:
+        foundry.utils.deepClone(hostState.socketActivities ?? {}),
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]:
+        foundry.utils.deepClone(hostState.sockets ?? [])
+    }, { ...options, render: true });
 
     return SocketService.#resolveHostItem(currentHostItem);
   }

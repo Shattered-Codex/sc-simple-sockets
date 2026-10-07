@@ -18,6 +18,8 @@
       "CannotOpenGem": "Não foi possível abrir o item da gema.",
       "SocketGemChanged": "A gema encaixada mudou desde que esta ficha foi aberta. Feche-a e abra a gema novamente.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
+      "EditPermissionDenied": "Você não tem permissão para modificar os soquetes deste item.",
+      "RemoveGemPermissionDenied": "Você não tem permissão para remover a gema que já está neste soquete.",
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada.",
       "HostNotSocketable": "Este tipo de item não pode receber soquetes.",
       "SocketConditionFailed": "Essa gema não atende aos requisitos deste slot.",
@@ -27,7 +29,8 @@
       "InsufficientSocketGems": "Gemas socketadas insuficientes para consumir ({available}/{required}).",
       "SourceGemMissing": "A gema que fornece esta atividade não está mais socketada.",
       "InvalidConsumptionSlot": "O slot de socket configurado para consumo não existe.",
-      "InvalidConsumptionTarget": "Este alvo de consumo socketado não está configurado."
+      "InvalidConsumptionTarget": "Este alvo de consumo socketado não está configurado.",
+      "GemBroken": "Esta gema está quebrada e precisa ser reparada antes de ser encaixada."
     },
     "Effects": {
       "DefaultName": "Efeito de Gema"
@@ -257,6 +260,18 @@
         "Label": "Recarga",
         "Hint": "Quando e como as cargas desta gema mudam automaticamente — descansos, períodos de combate ou o teste de Recarga no d6 — recuperando todas as cargas, perdendo todas ou rolando uma fórmula customizada.",
         "FormulaPlaceholder": "ex.: 1d4"
+      },
+      "RemovalCheck": {
+        "Dc": {
+          "Label": "CD do teste de remoção",
+          "Hint": "Um número ou uma fórmula sem dados. Deixe em branco para usar a CD global; 0 remove o teste deste slot.",
+          "Placeholder": "Global"
+        },
+        "Failure": {
+          "Label": "Em caso de falha no teste de remoção",
+          "Hint": "O que acontece com a gema deste slot quando o teste de remoção falha.",
+          "Inherit": "Usar a configuração global"
+        }
       }
     },
     "SocketDescriptions": {
@@ -275,9 +290,23 @@
       "ShowSlot": "Mostrar este slot para os jogadores."
     },
     "Settings": {
-      "EditPermission": {
-        "Name": "Permissão para editar soquetes",
-        "Hint": "Cargo mínimo necessário para adicionar ou remover soquetes de itens."
+      "Permissions": {
+        "AddSlot": {
+          "Name": "Adicionar slots",
+          "Hint": "Cargo mínimo necessário para adicionar novos slots de soquete aos itens."
+        },
+        "RemoveSlot": {
+          "Name": "Remover slots",
+          "Hint": "Cargo mínimo necessário para remover slots de soquete dos itens."
+        },
+        "AddGem": {
+          "Name": "Adicionar gemas nos slots",
+          "Hint": "Cargo mínimo necessário para encaixar gemas nos slots."
+        },
+        "RemoveGem": {
+          "Name": "Remover gemas dos slots",
+          "Hint": "Cargo mínimo necessário para remover gemas dos slots."
+        }
       },
       "SocketableItemTypes": {
         "Name": "Tipos de item socketáveis",
@@ -457,6 +486,50 @@
       "DebugTrace": {
         "Name": "Log de depuração",
         "Hint": "Registra atualizações de itens, renderizações de fichas e mudanças de foco no console do navegador para diagnosticar problemas na interface de encaixes."
+      },
+      "RemovalCheck": {
+        "Section": "Teste de remoção de gema",
+        "Enabled": {
+          "Name": "Exigir um teste para remover gemas",
+          "Hint": "Se ativado, o jogador que remover uma gema de um soquete precisa passar em um teste contra uma CD. Uma falha pode fazer a gema ser perdida ou quebrar."
+        },
+        "Type": {
+          "Name": "Teste",
+          "Hint": "A rolagem feita pelo ator dono do item: um teste de ferramenta, perícia ou atributo, ou um d20 puro."
+        },
+        "DcMode": {
+          "Name": "CD",
+          "Hint": "Como a CD é calculada. Cada soquete pode sobrescrevê-la em suas próprias configurações; uma CD 0 significa sem teste."
+        },
+        "Dc": {
+          "Name": "CD fixa",
+          "Hint": "A CD usada para todas as gemas."
+        },
+        "DcFormula": {
+          "Name": "Fórmula da CD",
+          "Hint": "Uma fórmula sem dados. Pode usar os dados de rolagem do item que tem o soquete, além de @gem.rarity (0 para sem raridade, 1 comum … 6 artefato)."
+        },
+        "RarityDcs": {
+          "Name": "CD pela raridade da gema",
+          "Hint": "A CD usada para cada raridade da gema que está sendo removida."
+        },
+        "Failure": {
+          "Name": "Em caso de falha no teste",
+          "Hint": "Uma gema quebrada volta para o inventário, mas não pode ser encaixada até ser reparada. Uma gema perdida é destruída.",
+          "Choices": {
+            "Break": "A gema quebra",
+            "Lose": "A gema é perdida",
+            "Stay": "A gema continua no soquete"
+          }
+        },
+        "Gm": {
+          "Name": "O GM também rola",
+          "Hint": "Por padrão, o GM remove gemas sem rolar."
+        }
+      },
+      "ConcealUnidentified": {
+        "Name": "Ocultar gemas de itens não identificados",
+        "Hint": "Os jogadores veem as gemas encaixadas em um item não identificado, e as gemas que estão elas mesmas não identificadas, sem nome, imagem ou descrição. O GM sempre vê a gema real."
       }
     },
     "SupportCard": {
@@ -865,6 +938,67 @@
             "Subtitle": "{item} possui {count} pools de carga com cargas faltando. Escolha qual recarregar.",
             "Title": "Escolher Pool de Cargas"
           }
+        },
+        "GemRepair": {
+          "Title": "Gem Repair",
+          "Hint": "Repara uma gema quebrada do inventário do usuário, opcionalmente após um teste.",
+          "Sections": {
+            "Configuration": "Configuração do Gem Repair",
+            "Check": "Teste de reparo"
+          },
+          "Fields": {
+            "TargetingHint": "Ao usar esta atividade, uma gema quebrada do inventário do ator que a usa é reparada. Se o ator tiver mais de uma gema quebrada, uma janela pergunta qual reparar.",
+            "Check": {
+              "Type": {
+                "Label": "Teste",
+                "Hint": "Rolagem opcional exigida para reparar a gema. Em caso de falha, a gema continua quebrada.",
+                "Choices": {
+                  "None": "Sem teste",
+                  "Tool": "Teste de ferramenta",
+                  "Skill": "Teste de perícia",
+                  "Ability": "Teste de atributo",
+                  "Flat": "d20 puro"
+                }
+              },
+              "Tool": {
+                "Label": "Ferramenta"
+              },
+              "Skill": {
+                "Label": "Perícia"
+              },
+              "Ability": {
+                "Label": "Atributo"
+              },
+              "DcMode": {
+                "Label": "CD",
+                "Hint": "Use uma CD fixa, uma fórmula ou uma CD para cada raridade de gema."
+              },
+              "Dc": {
+                "Label": "CD fixa"
+              },
+              "Formula": {
+                "Label": "Fórmula da CD",
+                "Hint": "Uma fórmula sem dados. Pode usar os dados de rolagem da atividade, além de @gem.rarity (0 para sem raridade, 1 comum … 6 artefato)."
+              },
+              "Rarity": {
+                "Hint": "A CD usada para cada raridade da gema que está sendo reparada."
+              }
+            }
+          },
+          "App": {
+            "Title": "Escolha a gema para reparar",
+            "Subtitle": "{actor} tem {count} gemas quebradas. Escolha qual reparar."
+          },
+          "RollFlavor": "Reparo de gema: {gem}",
+          "Notifications": {
+            "Repaired": "{name} foi reparada.",
+            "Failed": "A tentativa de reparar {name} falhou."
+          },
+          "Warnings": {
+            "NoActor": "Esta atividade precisa ser usada por um ator.",
+            "NoBrokenGems": "{actor} não tem gemas quebradas para reparar.",
+            "InvalidDcFormula": "A fórmula da CD de reparo \"{formula}\" não pôde ser resolvida; usando CD {dc}."
+          }
         }
       }
     },
@@ -936,6 +1070,51 @@
         "NamePattern": "Padrão do Nome",
         "NamePatternPlaceholder": "ex.: Fogo* ou Bateria"
       }
+    },
+    "GemCheck": {
+      "DcLabel": "CD {dc}",
+      "Types": {
+        "Flat": "d20 puro",
+        "Tool": "Ferramenta",
+        "Skill": "Perícia",
+        "Ability": "Atributo"
+      },
+      "DcModes": {
+        "Fixed": "CD fixa",
+        "Formula": "Fórmula",
+        "Rarity": "Pela raridade da gema"
+      },
+      "Rarity": {
+        "None": "Sem raridade"
+      }
+    },
+    "RemovalCheck": {
+      "Flavor": "Remoção de gema",
+      "FlavorNamed": "Remoção de gema: {gem}",
+      "Notifications": {
+        "ReplaceBlocked": "Remova primeiro a gema deste soquete: retirá-la exige um teste.",
+        "Stay": "O teste falhou: a gema continua no soquete.",
+        "Broke": "O teste falhou: a gema quebrou ao ser removida.",
+        "Lost": "O teste falhou: a gema foi destruída ao ser removida.",
+        "RollFailed": "Não foi possível rolar o teste de remoção, então a gema não foi removida."
+      }
+    },
+    "BrokenGem": {
+      "Label": "Gema quebrada",
+      "Actions": {
+        "Repair": "Reparar gema",
+        "Break": "Marcar gema como quebrada",
+        "Toggle": "Quebrar ou reparar gema"
+      },
+      "Notifications": {
+        "Repaired": "{name} foi reparada.",
+        "Broken": "{name} agora está quebrada."
+      }
+    },
+    "UnidentifiedGem": {
+      "Name": "Gema não identificada",
+      "CannotInspect": "Esta gema não pode ser inspecionada até ser identificada.",
+      "Description": "Esta gema não foi identificada."
     }
   }
 }

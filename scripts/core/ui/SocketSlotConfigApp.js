@@ -3,7 +3,14 @@ import { SocketStore } from "../SocketStore.js";
 import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js";
 import { SocketService } from "../services/SocketService.js";
 import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
-import { normalizeSlotColor, normalizeSlotFrameImg } from "../helpers/socketSlotConfig.js";
+import {
+  normalizeSlotColor,
+  normalizeSlotFrameImg,
+  normalizeSlotRemovalCheckDc,
+  normalizeSlotRemovalCheckFailure
+} from "../helpers/socketSlotConfig.js";
+import { ModuleSettings } from "../settings/ModuleSettings.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { DialogHelper } from "../../helpers/DialogHelper.js";
@@ -157,6 +164,10 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     this.#captureDraft(form);
 
+    for (const index of this.#drafts.keys()) {
+      if (this.#isSlotConcealed(index)) this.#drafts.delete(index);
+    }
+
     for (const [index, payload] of this.#drafts) {
       const validation = SocketSlotConfigService.validateCondition(payload.condition);
       if (!validation.valid) {
@@ -229,6 +240,10 @@ export class SocketSlotConfigApp extends BaseApplication {
    * @returns {Promise<boolean>} False when the draft is invalid or fails to save; the action must abort then.
    */
   async #commitCurrentDraft() {
+    if (this.#isSlotConcealed(this.#slotIndex)) {
+      this.#drafts.delete(this.#slotIndex);
+      return true;
+    }
     this.#captureDraft();
     const draft = this.#drafts.get(this.#slotIndex);
     if (!draft) {
@@ -297,22 +312,26 @@ export class SocketSlotConfigApp extends BaseApplication {
   }
 
   async #buildContext() {
-    const slots = SocketStore.peekSlots(this.#hostItem);
+    const slots = GemConcealmentService.maskSlots(this.#hostItem, SocketStore.peekSlots(this.#hostItem));
     if (slots.length && (!Number.isInteger(this.#slotIndex) || this.#slotIndex < 0 || this.#slotIndex >= slots.length)) {
       this.#slotIndex = 0;
     }
 
-    const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    const sourceSlot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    const slot = GemConcealmentService.maskSlot(this.#hostItem, sourceSlot);
+    const concealed = this.#isSlotConcealed(this.#slotIndex);
     const slotConfig = SocketSlotConfigService.getConfig(slot);
-    const draft = this.#drafts.get(this.#slotIndex) ?? null;
-    const gemResource = GemResourceService.getSlotResource(slot);
+    const draft = concealed ? null : this.#drafts.get(this.#slotIndex) ?? null;
+    const gemResource = concealed ? null : GemResourceService.getSlotResource(slot);
     const slotNumber = Number.isInteger(this.#slotIndex) ? this.#slotIndex + 1 : null;
-    const canInspectGem = Boolean(slot?.gem || slot?._gemData);
+    const canInspectGem = !concealed && Boolean(slot?.gem || slot?._gemData);
 
     const name = draft?.name ?? slotConfig.name;
     const color = normalizeSlotColor(draft?.color ?? slotConfig.color);
     const hidden = draft ? draft.hidden : slotConfig.hidden;
     const deleteGemOnRemoval = draft ? draft.deleteGemOnRemoval : slotConfig.deleteGemOnRemoval;
+    const removalCheckDc = draft?.removalCheckDc ?? slotConfig.removalCheckDc ?? "";
+    const removalCheckFailure = draft?.removalCheckFailure ?? slotConfig.removalCheckFailure ?? "";
     const condition = draft?.condition ?? slotConfig.condition;
     const description = draft?.description ?? slotConfig.description;
     const frameImg = normalizeSlotFrameImg(draft?.frameImg ?? slotConfig.frameImg);
@@ -345,7 +364,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     const strings = this.#buildStrings();
     const railSlots = slots.map((railSlot, index) => {
       const railConfig = SocketSlotConfigService.getConfig(railSlot);
-      const railDraft = this.#drafts.get(index);
+      const railDraft = this.#isSlotConcealed(index) ? null : this.#drafts.get(index);
       const railName = (index === this.#slotIndex ? name : railDraft?.name ?? railConfig.name)
         || `${strings.slotLabel} ${index + 1}`;
       const railGemName = railSlot?.gem?.name ?? railSlot?._gemData?.name ?? "";
@@ -361,7 +380,7 @@ export class SocketSlotConfigApp extends BaseApplication {
 
     return {
       appId: this.id,
-      editable: this.#editable,
+      editable: this.#editable && !concealed,
       hostItemName: this.#hostItem?.name ?? "",
       hostItemImg: this.#hostItem?.img ?? Constants.SOCKET_SLOT_IMG,
       hostItemUuid: this.#hostItem?.uuid ?? "",
@@ -373,10 +392,10 @@ export class SocketSlotConfigApp extends BaseApplication {
       tabDescActive: this.#activeTab !== "cond",
       tabCondActive: this.#activeTab === "cond",
       hasGem: Boolean(slot?.gem || slot?._gemData),
-      gemName: slot?.gem?.name ?? slot?._gemData?.name ?? "",
-      gemImg: slot?.gem?.img ?? slot?._gemData?.img ?? "",
+      gemName: GemConcealmentService.describeGem(this.#hostItem, slot, slot?.gem ?? slot?._gemData).name ?? "",
+      gemImg: GemConcealmentService.describeGem(this.#hostItem, slot, slot?.gem ?? slot?._gemData).img ?? "",
       canInspectGem,
-      canUnsocketGem: this.#editable && canInspectGem,
+      canUnsocketGem: this.#editable && Boolean(slot?.gem || slot?._gemData),
       hasGemResource: Boolean(gemResource),
       gemResource: resourceContext,
       gemChargesPct,
@@ -391,7 +410,19 @@ export class SocketSlotConfigApp extends BaseApplication {
       slotConfigName: name,
       hidden,
       deleteGemOnRemoval,
+      removalCheck: {
+        enabled: ModuleSettings.isGemRemovalCheckEnabled(),
+        dc: removalCheckDc,
+        failureOptions: [
+          {
+            value: "",
+            label: Constants.localize("SCSockets.SocketSlotConfig.RemovalCheck.Failure.Inherit", "Use the global setting")
+          },
+          ...ModuleSettings.getRemovalFailureChoices()
+        ].map((option) => ({ ...option, selected: option.value === removalCheckFailure }))
+      },
       canEditVisibility: this.#canEditVisibility(),
+      canEditRemovalCheck: this.#canEditRemovalCheck(),
       condition,
       conditionVars: this.#buildConditionVars(),
       description,
@@ -511,6 +542,26 @@ export class SocketSlotConfigApp extends BaseApplication {
       deleteGemOnRemovalHint: Constants.localize(
         "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Hint",
         "When enabled, this slot deletes its gem when unsocketed even if the global setting is disabled."
+      ),
+      removalCheckDcLabel: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Dc.Label",
+        "Removal check DC"
+      ),
+      removalCheckDcHint: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Dc.Hint",
+        "A number or a formula without dice. Leave blank to use the global DC; 0 removes the check from this slot."
+      ),
+      removalCheckDcPlaceholder: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Dc.Placeholder",
+        "Global"
+      ),
+      removalCheckFailureLabel: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Failure.Label",
+        "On a failed removal check"
+      ),
+      removalCheckFailureHint: Constants.localize(
+        "SCSockets.SocketSlotConfig.RemovalCheck.Failure.Hint",
+        "What happens to the gem in this slot when the removal check fails."
       ),
       destructiveBadge: Constants.localize(
         "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Badge",
@@ -1052,7 +1103,7 @@ export class SocketSlotConfigApp extends BaseApplication {
 
   /** Snapshots the current form values so slot switches keep unsaved edits. */
   #captureDraft(form = this.form) {
-    if (!this.#editable || !(form instanceof HTMLFormElement)) {
+    if (!this.#editable || this.#isSlotConcealed(this.#slotIndex) || !(form instanceof HTMLFormElement)) {
       return;
     }
     if (!SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex)) {
@@ -1061,12 +1112,19 @@ export class SocketSlotConfigApp extends BaseApplication {
     this.#drafts.set(this.#slotIndex, this.#readForm(form));
   }
 
+  #isSlotConcealed(index) {
+    const slot = SocketSlotConfigService.getSlot(this.#hostItem, index);
+    return GemConcealmentService.isSlotConcealed(this.#hostItem, slot)
+      || GemConcealmentService.isEmptySlotConcealed(this.#hostItem, slot);
+  }
+
   #readForm(form) {
     if (!(form instanceof HTMLFormElement)) {
       return {
         name: "",
         hidden: this.#currentHiddenValue(),
         deleteGemOnRemoval: this.#currentDeleteGemOnRemovalValue(),
+        ...this.#currentRemovalCheckValues(),
         condition: "",
         description: "",
         color: "",
@@ -1078,6 +1136,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       name: this.#readFieldValue("slotConfig.name"),
       hidden: this.#canEditVisibility() ? this.#readCheckboxValue("slotConfig.hidden") : this.#currentHiddenValue(),
       deleteGemOnRemoval: this.#readCheckboxValue("slotConfig.deleteGemOnRemoval"),
+      ...this.#readRemovalCheckValues(),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
       color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex")),
@@ -1105,6 +1164,11 @@ export class SocketSlotConfigApp extends BaseApplication {
     return Boolean(this.#editable && game.user?.isGM);
   }
 
+  /** The removal check overrides decide the risk of pulling a gem out, so only a GM sets them. */
+  #canEditRemovalCheck() {
+    return Boolean(this.#editable && game.user?.isGM);
+  }
+
   #currentHiddenValue() {
     const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
     return SocketSlotConfigService.getConfig(slot).hidden;
@@ -1113,6 +1177,36 @@ export class SocketSlotConfigApp extends BaseApplication {
   #currentDeleteGemOnRemovalValue() {
     const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
     return SocketSlotConfigService.getConfig(slot).deleteGemOnRemoval;
+  }
+
+  #currentRemovalCheckValues() {
+    const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    const config = SocketSlotConfigService.getConfig(slot);
+    return {
+      removalCheckDc: config.removalCheckDc ?? "",
+      removalCheckFailure: config.removalCheckFailure ?? ""
+    };
+  }
+
+  /**
+   * The removal check fields are rendered only while the feature is enabled.
+   * When they are absent the stored overrides are kept, so saving a slot with
+   * the feature turned off does not erase them. They are also kept for anyone
+   * who is not a GM, whatever the form holds.
+   */
+  #readRemovalCheckValues() {
+    if (
+      !this.#canEditRemovalCheck()
+      || !this.form?.querySelector?.('[name="slotConfig.removalCheckDc"]')
+    ) {
+      return this.#currentRemovalCheckValues();
+    }
+    return {
+      removalCheckDc: normalizeSlotRemovalCheckDc(this.#readFieldValue("slotConfig.removalCheckDc")),
+      removalCheckFailure: normalizeSlotRemovalCheckFailure(
+        this.#readFieldValue("slotConfig.removalCheckFailure")
+      )
+    };
   }
 
   /**
@@ -1144,6 +1238,8 @@ export class SocketSlotConfigApp extends BaseApplication {
       name: String(payload.name ?? "").trim(),
       hidden: Boolean(payload.hidden),
       deleteGemOnRemoval: Boolean(payload.deleteGemOnRemoval),
+      removalCheckDc: normalizeSlotRemovalCheckDc(payload.removalCheckDc),
+      removalCheckFailure: normalizeSlotRemovalCheckFailure(payload.removalCheckFailure),
       condition: String(payload.condition ?? ""),
       description: String(payload.description ?? ""),
       color: normalizeSlotColor(payload.color ?? ""),

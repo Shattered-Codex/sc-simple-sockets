@@ -1079,9 +1079,14 @@
 /* === Rules (switch rows) =================================== */
 .socket-slot-config-app .slotcfg-switchrow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   padding: 7px 2px;
+}
+
+.socket-slot-config-app .slotcfg-switchrow .slotcfg-input--compact {
+  flex: 0 0 170px;
+  width: 170px;
 }
 
 .socket-slot-config-app .slotcfg-switchrow-text {

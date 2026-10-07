@@ -1,5 +1,6 @@
 import { SocketService } from "../services/SocketService.js";
 import { ActorGemBadges } from "./ActorGemBadges.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
 export class SocketTooltipUI {
   static #handler = null;
@@ -42,7 +43,7 @@ export class SocketTooltipUI {
       return;
     }
 
-    const slots = SocketService.getSlots(item);
+    const slots = GemConcealmentService.maskSlots(item, SocketService.getSlots(item));
     rows.forEach((row) => {
       const index = Number(row.dataset.index);
       if (!Number.isInteger(index) || index < 0) {

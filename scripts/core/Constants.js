@@ -21,6 +21,7 @@ export class Constants {
   static FLAG_SOCKET_DESCRIPTION = "socketDescription";
   static FLAG_SOCKET_TAB_ENABLED = "socketTabEnabled";
   static FLAG_GEM_RESOURCE = "gemResource";
+  static FLAG_GEM_BROKEN = "gemBroken";
   static FLAGS = {
     sockets: "sockets",
     gemAllowedTypes: "gemAllowedTypes",
@@ -35,6 +36,11 @@ export class Constants {
   };
   static GEM_ALLOWED_TYPES_ALL = "*";
   static SOCKET_SLOT_IMG = `modules/${this.MODULE_ID}/assets/imgs/socket-slot.webp`;
+  // Foundry core icon; the file name really ends in "-.webp".
+  static UNIDENTIFIED_GEM_IMG = "icons/commodities/gems/gem-faceted-diamond-silver-.webp";
+  /** What a failed gem removal check can do, shared by the settings and the slot overrides. */
+  static REMOVAL_FAILURE_OUTCOMES = Object.freeze(["stay", "lose", "break"]);
+  static BROKEN_GEM_OVERLAY_IMG = `modules/${this.MODULE_ID}/assets/imgs/broke.webp`;
   static MODULE_WIKI_URL = "https://wiki.shattered-codex.com/modules/sc-simple-sockets";
   static DISCORD_URL = "https://discord.gg/6mWCQEJEwG";
   static PATREON_URL = "https://www.patreon.com/c/shatteredcodex?utm_source=sc-simple-sockets&utm_medium=foundry_module&utm_campaign=support_popup";
@@ -53,6 +59,12 @@ export class Constants {
     return foundry?.applications?.ux?.TextEditor?.implementation
       ?? foundry?.applications?.ux?.TextEditor
       ?? null;
+  }
+
+  /** Returns a valid removal failure outcome, or "" when the value is not one. */
+  static normalizeRemovalFailureOutcome(value) {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return Constants.REMOVAL_FAILURE_OUTCOMES.includes(normalized) ? normalized : "";
   }
 
   static localize(key, fallback = key) {

@@ -332,9 +332,10 @@
           <span class="slotcfg-switchrow-text">
             <strong>
               {{strings.hiddenLabel}}
+              <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.hiddenHint}}"></i>
               <span class="slotcfg-badge slotcfg-badge--warn" data-hidden-badge {{#unless hidden}}hidden{{/unless}}>{{strings.hiddenBadge}}</span>
             </strong>
-            <small id="{{appId}}-hidden-hint">{{strings.hiddenHint}}</small>
+            <small id="{{appId}}-hidden-hint" hidden>{{strings.hiddenHint}}</small>
           </span>
           <label class="slotcfg-toggle">
             <input
@@ -356,9 +357,10 @@
           <span class="slotcfg-switchrow-text">
             <strong>
               {{strings.deleteGemOnRemovalLabel}}
+              <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.deleteGemOnRemovalHint}}"></i>
               <span class="slotcfg-badge slotcfg-badge--warn" data-delete-gem-badge {{#unless deleteGemOnRemoval}}hidden{{/unless}}>{{strings.destructiveBadge}}</span>
             </strong>
-            <small id="{{appId}}-delete-gem-hint">{{strings.deleteGemOnRemovalHint}}</small>
+            <small id="{{appId}}-delete-gem-hint" hidden>{{strings.deleteGemOnRemovalHint}}</small>
           </span>
           <label class="slotcfg-toggle">
             <input
@@ -373,6 +375,53 @@
             <span class="slotcfg-toggle-track"></span>
           </label>
         </div>
+
+        {{#if removalCheck.enabled}}
+          <div class="slotcfg-card-divider"></div>
+
+          <div class="slotcfg-switchrow">
+            <span class="slotcfg-switchrow-text">
+              <strong>
+                {{strings.removalCheckDcLabel}}
+                <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.removalCheckDcHint}}"></i>
+              </strong>
+              <small id="{{appId}}-removal-check-dc-hint" hidden>{{strings.removalCheckDcHint}}</small>
+            </span>
+            <input
+              type="text"
+              name="slotConfig.removalCheckDc"
+              class="slotcfg-input slotcfg-input--compact"
+              value="{{removalCheck.dc}}"
+              placeholder="{{strings.removalCheckDcPlaceholder}}"
+              aria-label="{{strings.removalCheckDcLabel}}"
+              aria-describedby="{{appId}}-removal-check-dc-hint"
+              {{#unless canEditRemovalCheck}}disabled{{/unless}}
+            />
+          </div>
+
+          <div class="slotcfg-card-divider"></div>
+
+          <div class="slotcfg-switchrow">
+            <span class="slotcfg-switchrow-text">
+              <strong>
+                {{strings.removalCheckFailureLabel}}
+                <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.removalCheckFailureHint}}"></i>
+              </strong>
+              <small id="{{appId}}-removal-check-failure-hint" hidden>{{strings.removalCheckFailureHint}}</small>
+            </span>
+            <select
+              name="slotConfig.removalCheckFailure"
+              class="slotcfg-input slotcfg-input--compact"
+              aria-label="{{strings.removalCheckFailureLabel}}"
+              aria-describedby="{{appId}}-removal-check-failure-hint"
+              {{#unless canEditRemovalCheck}}disabled{{/unless}}
+            >
+              {{#each removalCheck.failureOptions as |opt|}}
+                <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
+              {{/each}}
+            </select>
+          </div>
+        {{/if}}
       </div>
     </div>
 

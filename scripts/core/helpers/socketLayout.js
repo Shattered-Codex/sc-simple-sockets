@@ -1,22 +1,32 @@
 import { Constants } from "../Constants.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { GemResourceService } from "../../domain/gems/GemResourceService.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 import { canUserSeeSlot, getSlotConfig, resolveSlotFrameImg } from "./socketSlotConfig.js";
 
 export function buildSocketLayoutContext(item, {
   editable = false,
-  canManageSockets = false,
-  canAddSocketSlot = false,
-  sockets = []
+  sockets = [],
+  user = globalThis.game?.user
 } = {}) {
+  // Each control follows its own permission; none shows on a locked sheet.
+  const canAddSocketSlot = editable && ModuleSettings.canAddSlot(user)
+    && ModuleSettings.isItemSocketableByType(item);
+  const canRemoveSocketSlot = editable && ModuleSettings.canRemoveSlot(user);
+  const canConfigureSlots = editable && ModuleSettings.canConfigureSlots(user);
+  const canRemoveGems = editable && ModuleSettings.canRemoveGem(user);
+  // Players never get the identity of a gem that is still unidentified.
+  sockets = GemConcealmentService.maskSlots(item, sockets);
   const socketTabLayout = ModuleSettings.getSocketTabLayout();
   const useSocketGridLayout = socketTabLayout === ModuleSettings.SOCKET_TAB_LAYOUT_GRID;
   // The host item has no persistent charge of its own: pools are always derived
   // from the gems currently socketed into it.
-  const socketPools = GemResourceService.aggregatePools(sockets);
+  const socketPools = GemResourceService.aggregatePools(
+    Array.isArray(sockets) ? sockets.filter((slot) => !slot?.concealed) : []
+  );
   const socketResourceRows = (Array.isArray(sockets) ? sockets : []).reduce((rows, slot, index) => {
     const resource = GemResourceService.getSlotResource(slot);
-    if (resource && canUserSeeSlot({ ...slot, slotConfig: getSlotConfig(slot) })) {
+    if (resource && !slot?.concealed && canUserSeeSlot({ ...slot, slotConfig: getSlotConfig(slot) })) {
       rows.push({
         slotNumber: index + 1,
         gemName: String(slot?.gem?.name ?? slot?.name ?? "").trim(),
@@ -43,10 +53,11 @@ export function buildSocketLayoutContext(item, {
     socketResourceRows,
     hasSocketResourceRows: socketResourceRows.length > 0,
     editable,
-    canManageSockets,
-    canConfigureSlots: canManageSockets,
-    canToggleSlotVisibility: canManageSockets && Boolean(globalThis.game?.user?.isGM),
+    canConfigureSlots,
+    canToggleSlotVisibility: editable && Boolean(user?.isGM),
     canAddSocketSlot,
+    canRemoveSocketSlot,
+    canRemoveGems,
     dataEditable: editable ? "true" : "false",
     socketTabLayout,
     socketTabVariant: useSocketGridLayout ? "cauldron" : "default",

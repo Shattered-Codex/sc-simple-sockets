@@ -4,6 +4,7 @@ import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { SocketService } from "../services/SocketService.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { GemTagService } from "../../domain/gems/GemTagService.js";
+import { GemBreakService } from "../../domain/gems/GemBreakService.js";
 
 export class SocketAPI {
   static register() {
@@ -39,6 +40,16 @@ export class SocketAPI {
         });
       module.api.sockets.updateSlotConfig = async (itemOrUuid, slotIndex, config = {}, options = {}) =>
         SocketAPI.updateSlotConfig(itemOrUuid, slotIndex, config, options);
+      module.api.sockets.isGemBroken = async (gemOrUuid) =>
+        SocketAPI.isGemBroken(gemOrUuid);
+      module.api.sockets.breakGem = async (gemOrUuid) =>
+        SocketAPI.setGemBroken(gemOrUuid, true);
+      module.api.sockets.repairGem = async (gemOrUuid) =>
+        SocketAPI.setGemBroken(gemOrUuid, false);
+      module.api.sockets.isGemDataBroken = (itemData) =>
+        SocketAPI.isGemDataBroken(itemData);
+      module.api.sockets.repairGemData = (itemData) =>
+        SocketAPI.repairGemData(itemData);
 
       module.api.sockets.HOOK_SOCKET_ADDED = Constants.HOOK_SOCKET_ADDED;
       module.api.sockets.HOOK_SOCKET_REMOVED = Constants.HOOK_SOCKET_REMOVED;
@@ -101,7 +112,57 @@ export class SocketAPI {
     ));
   }
 
-  static async canEditSockets(itemOrUuid, { userId = null } = {}) {
+  static async isGemBroken(gemOrUuid) {
+    return GemBreakService.isBroken(await SocketAPI.#resolveItem(gemOrUuid));
+  }
+
+  /**
+   * Broken state of plain item data — for integrations that hold gems as
+   * stored snapshots instead of documents (e.g. a container module).
+   */
+  static isGemDataBroken(itemData) {
+    return GemBreakService.isBroken(itemData);
+  }
+
+  /** Returns a repaired copy of plain item data; the input is not modified. */
+  static repairGemData(itemData) {
+    if (!itemData || typeof itemData !== "object") {
+      return itemData;
+    }
+    const source = typeof itemData.toObject === "function" ? itemData.toObject() : itemData;
+    return GemBreakService.clearDataBroken(foundry.utils.deepClone(source));
+  }
+
+  /** Breaks or repairs a loose gem (the whole stack). Socketed gems are never broken. */
+  static async setGemBroken(gemOrUuid, broken) {
+    const gem = await SocketAPI.#resolveItem(gemOrUuid);
+    if (!gem) {
+      return SocketAPI.#buildResult({ success: false, changed: false, reason: "item-not-found" });
+    }
+    if (!ItemResolver.isGem(gem)) {
+      return SocketAPI.#buildResult({ success: false, changed: false, reason: "not-a-gem" });
+    }
+    if (!game?.user?.isGM && !gem.isOwner) {
+      return SocketAPI.#buildResult({ success: false, changed: false, reason: "permission-denied" });
+    }
+
+    const changed = broken
+      ? await GemBreakService.break(gem)
+      : await GemBreakService.repair(gem);
+    return SocketAPI.#buildResult({
+      success: true,
+      changed,
+      reason: changed ? (broken ? "gem-broken" : "gem-repaired") : "unchanged"
+    });
+  }
+
+  /**
+   * Whether a user may change the sockets of an item they own. `action` is one
+   * of "addSlot", "removeSlot", "addGem" or "removeGem"; without it the answer
+   * covers adding and removing slots, which is what this meant before the
+   * permission was split.
+   */
+  static async canEditSockets(itemOrUuid, { userId = null, action = null } = {}) {
     const item = await SocketAPI.#resolveItem(itemOrUuid);
     const user = userId ? game?.users?.get?.(userId) ?? null : game?.user ?? null;
     if (!item || !user) {
@@ -111,7 +172,11 @@ export class SocketAPI {
     return Boolean(
       user.isGM
       || (
-        ModuleSettings.canAddOrRemoveSocket(user)
+        (
+          action
+            ? ModuleSettings.canPerformSocketAction(action, user)
+            : ModuleSettings.canAddSlot(user) && ModuleSettings.canRemoveSlot(user)
+        )
         && (
           item.isOwner
           || item.testUserPermission?.(user, "OWNER")
@@ -144,6 +209,10 @@ export class SocketAPI {
 
     const beforeCount = SocketAPI.#slotCount(item);
     const result = await SocketService.removeSlot(item, idx, options);
+    if (result && typeof result === "object" && "success" in result && result.success !== true) {
+      return SocketAPI.#buildResult(result);
+    }
+
     const currentItem = await SocketAPI.#resolveCurrentItem(item);
     const afterCount = SocketAPI.#slotCount(currentItem);
 

@@ -109,6 +109,22 @@ const RELEASE_SECTIONS = [
     tone: "added",
     items: [
       {
+        title: "Optional gem removal checks",
+        text: "Enable removal checks in Module configuration → Socket rules. Choose a tool, skill, ability, or flat d20 check, with a fixed DC, a formula, or a DC per gem rarity. Failure can break the gem, destroy it, or leave it socketed. GMs skip checks by default and can override each slot's DC and failure outcome; DC 0 skips the check. The Extract Gem macro follows the same checks."
+      },
+      {
+        title: "Broken gems and GM repair controls",
+        text: "Broken gems return to inventory with a cracked image overlay and cannot be socketed until repaired. GMs can break or repair gems from the item sheet header or inventory context menu. Macros and integrations gain helpers to check, break, and repair gems, including repair helpers for stored item data."
+      },
+      {
+        title: "Gem Repair activity",
+        text: "With SC - More Activities, use the new Gem Repair activity to repair an inventory gem, optionally requiring a check with a fixed, formula, or rarity-based DC. It repairs one gem at a time, keeping the rest of a broken stack intact."
+      },
+      {
+        title: "Unidentified gem concealment",
+        text: "Enabled by default in Socket rules, concealment masks gem names, images, descriptions, combat breakdowns, and granted activity and effect names for players when the host item or socketed gem is unidentified. Custom socket details are masked too, while gem mechanics keep working. Extracted gems stay unidentified; identifying the host identifies its socketed gems. GMs always see the real content."
+      },
+      {
         title: "Custom empty socket artwork",
         text: "Each socket slot can carry its own image for the empty state, so one item can mix a battery bay, a rune notch, and a plain socket instead of only tinting the same frame. Set it in Socket Slot Settings — through the field or by clicking the slot preview — and press Default to restore the original artwork."
       },
@@ -136,6 +152,10 @@ const RELEASE_SECTIONS = [
     tone: "improved",
     items: [
       {
+        title: "Separate slot and gem permissions",
+        text: "Set separate permissions for adding slots, removing slots, inserting gems, and removing gems. Slot actions default to Gamemaster, gem actions to Player. Existing custom Edit Socket Permission settings carry over to the slot permissions. Configuring slots follows Add Slots; replacing gems requires both gem permissions, and deleting filled slots requires both removal permissions. Macros can query each action through canEditSockets."
+      },
+      {
         title: "Every option in one window",
         text: "The What's New popup toggle and debug trace logging moved into a new Advanced tab of the Module configuration window, so nothing is left loose in Foundry's module list. The wiki, Patreon, and Discord links now sit in a single compact row."
       },
@@ -158,6 +178,30 @@ const RELEASE_SECTIONS = [
     title: "Fixed",
     tone: "fixed",
     items: [
+      {
+        text: "Removal rolls no longer allow duplicate checks on the same slot. Cancelled or unavailable rolls leave the gem untouched, and replacing a gem cannot bypass a required removal check."
+      },
+      {
+        text: "Broken and intact gems, and unidentified and identified gems, now stay in separate inventory stacks."
+      },
+      {
+        text: "Concurrent gem repairs preserve stack quantities, failed inventory updates restore the broken stack, and a repair check cannot repair a gem removed from inventory while the roll was pending."
+      },
+      {
+        text: "The removeSlot API refuses filled sockets; use removeSlotWithContents to remove their gems too. Socket Slot activities require only the remove-slots permission when removing empty slots."
+      },
+      {
+        text: "Character sheets now refresh after inserting or removing a gem, including passive bonuses and gems destroyed on removal."
+      },
+      {
+        text: "If a socket operation fails and is rolled back, sheets refresh to show the restored gems and effects."
+      },
+      {
+        text: "A pending removal now stops if another gem replaces the original, even when the original gem needed no removal check."
+      },
+      {
+        text: "Player updates through the socket configuration API now preserve the GM's slot visibility, removal DC, and failure outcome settings."
+      },
       {
         text: "Fixed transferred sc-chain and sc-conditional-chain activities keeping stale source activity IDs after a gem's activities were copied to the host item."
       },

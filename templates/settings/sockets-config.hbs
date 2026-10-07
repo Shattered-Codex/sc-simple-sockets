@@ -37,12 +37,25 @@
 
         <div class="sc-config__rows">
           {{#each rules.fields}}
-            <label class="sc-config-row">
+            {{#if this.sectionTitle}}
+              <h3 class="sc-config__section-title">{{this.sectionTitle}}</h3>
+            {{/if}}
+            <label class="sc-config-row" {{#if this.requires}}data-requires="{{this.requires}}"{{/if}}>
               <span class="sc-config-row__copy">
                 <span class="sc-config-row__name">{{this.name}}</span>
                 <span class="sc-config-row__hint">{{this.hint}}</span>
               </span>
               <span class="sc-config-row__control">
+                {{#if this.isText}}
+                  <input
+                    type="text"
+                    name="{{this.key}}"
+                    class="sc-input sc-input--formula"
+                    value="{{this.value}}"
+                    placeholder="{{this.placeholder}}"
+                    data-default-value="{{this.defaultValue}}"
+                  />
+                {{/if}}
                 {{#if this.isSelect}}
                   <span class="sc-select-wrap">
                     <select
@@ -86,6 +99,25 @@
               </span>
               {{#if this.isDynamicDescription}}
                 <span class="sc-config-row__description" data-select-description>{{this.selectedDescription}}</span>
+              {{/if}}
+              {{#if this.isRarityTable}}
+                <span class="sc-config-rarity">
+                  {{#each this.rarities}}
+                    <span class="sc-config-rarity__cell">
+                      <span class="sc-config-rarity__label">{{this.label}}</span>
+                      <input
+                        type="number"
+                        name="{{../key}}.{{this.value}}"
+                        class="sc-input sc-input--number"
+                        min="0"
+                        step="1"
+                        value="{{this.dc}}"
+                        aria-label="{{this.label}}"
+                        data-default-value="{{this.defaultValue}}"
+                      />
+                    </span>
+                  {{/each}}
+                </span>
               {{/if}}
             </label>
           {{/each}}

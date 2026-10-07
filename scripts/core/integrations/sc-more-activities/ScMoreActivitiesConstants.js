@@ -7,6 +7,7 @@ export const SC_MORE_ACTIVITIES_QUERY_TIMEOUT = 120000;
 
 export const SC_MORE_ACTIVITIES_ACTIVITY_TYPES = Object.freeze({
   GEM_RELOAD: "sc-socket-gem-reload",
+  GEM_REPAIR: "sc-socket-gem-repair",
   SOCKET_EXTRACTION: "sc-socket-extraction",
   SOCKET_POOL_RECHARGE: "sc-socket-pool-recharge",
   SOCKET_RECHARGE: "sc-socket-recharge",
@@ -22,6 +23,7 @@ export const SC_MORE_ACTIVITIES_GROUP = Object.freeze({
 
 export const SC_MORE_ACTIVITIES_ICONS = Object.freeze({
   GEM_RELOAD: `modules/${Constants.MODULE_ID}/assets/activity-icons/scma-socket-gem-reload.svg`,
+  GEM_REPAIR: `modules/${Constants.MODULE_ID}/assets/activity-icons/scma-socket-gem-repair.svg`,
   SOCKET_EXTRACTION: `modules/${Constants.MODULE_ID}/assets/activity-icons/scma-socket-extraction-pincers.svg`,
   SOCKET_POOL_RECHARGE: `modules/${Constants.MODULE_ID}/assets/activity-icons/scma-socket-pool-recharge-energy-tank.svg`,
   SOCKET_RECHARGE: `modules/${Constants.MODULE_ID}/assets/activity-icons/scma-socket-recharge-charging.svg`,

@@ -302,6 +302,34 @@
   color: var(--sc-text-dim);
 }
 
+.sc-config-row[hidden] {
+  display: none;
+}
+
+/* Per-rarity DC table: one small number input per rarity, spanning the row. */
+.sc-config-rarity {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.sc-config-rarity__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sc-config-rarity__label {
+  font-size: 11px;
+  color: var(--sc-text-dim);
+}
+
+.sc-config .sc-config-rarity .sc-input--number {
+  width: 100%;
+}
+
 /* === Inputs / selects ===================================== */
 
 .sc-config .sc-input {
@@ -319,6 +347,12 @@
 .sc-config .sc-input--number {
   width: 90px;
   text-align: right;
+  font-family: var(--sc-font-mono);
+  font-size: 12px;
+}
+
+.sc-config .sc-input--formula {
+  width: 220px;
   font-family: var(--sc-font-mono);
   font-size: 12px;
 }

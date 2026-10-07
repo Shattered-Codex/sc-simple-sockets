@@ -11,10 +11,15 @@ import { ActivityTransferService } from "../../services/ActivityTransferService.
 import { GemResourceService } from "../../../domain/gems/GemResourceService.js";
 import { SOCKET_CONSUMPTION_SELECTOR_MODES } from "../../helpers/socketConsumptionConfig.js";
 import { ItemResolver } from "../../ItemResolver.js";
+import { GemConcealmentService } from "../../../domain/gems/GemConcealmentService.js";
+import { GemBreakService } from "../../../domain/gems/GemBreakService.js";
 import { SocketSlot } from "../../model/SocketSlot.js";
 import { ScMoreActivitiesGemReloadActivity } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivity.js";
 import { ScMoreActivitiesGemReloadActivityData } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivityData.js";
 import { ScMoreActivitiesGemReloadActivitySheet } from "./activities/gem-reload/ScMoreActivitiesGemReloadActivitySheet.js";
+import { ScMoreActivitiesGemRepairActivity } from "./activities/gem-repair/ScMoreActivitiesGemRepairActivity.js";
+import { ScMoreActivitiesGemRepairActivityData } from "./activities/gem-repair/ScMoreActivitiesGemRepairActivityData.js";
+import { ScMoreActivitiesGemRepairActivitySheet } from "./activities/gem-repair/ScMoreActivitiesGemRepairActivitySheet.js";
 import { ScMoreActivitiesSocketExtractionActivity } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivity.js";
 import { ScMoreActivitiesSocketExtractionActivityData } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivityData.js";
 import { ScMoreActivitiesSocketExtractionActivitySheet } from "./activities/socket-extraction/ScMoreActivitiesSocketExtractionActivitySheet.js";
@@ -135,12 +140,18 @@ export class ScMoreActivitiesIntegration {
         }
         return true;
       })
-      .map((entry) => ScMoreActivitiesIntegration.#toSlotSummary(entry))
+      .map((entry) => ScMoreActivitiesIntegration.#toSlotSummary({
+        ...entry,
+        slot: GemConcealmentService.maskSlot(item, entry?.slot)
+      }))
       .sort((left, right) => left.slotIndex - right.slotIndex);
   }
 
-  static toSlotSummary(entry = {}) {
-    return ScMoreActivitiesIntegration.#toSlotSummary(entry);
+  static toSlotSummary(entry = {}, item = null) {
+    return ScMoreActivitiesIntegration.#toSlotSummary({
+      ...entry,
+      slot: GemConcealmentService.maskSlot(item, entry.slot)
+    });
   }
 
   static async addConfiguredSlot(activity, slotConfig = {}) {
@@ -236,6 +247,7 @@ export class ScMoreActivitiesIntegration {
       ScMoreActivitiesIntegration.#registerSocketSlotActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerSocketExtractionActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerGemReloadActivity(activitiesApi),
+      ScMoreActivitiesIntegration.#registerGemRepairActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerSocketRechargeActivity(activitiesApi),
       ScMoreActivitiesIntegration.#registerSocketPoolRechargeActivity(activitiesApi)
     ];
@@ -376,6 +388,49 @@ export class ScMoreActivitiesIntegration {
     });
   }
 
+  static #registerGemRepairActivity(activitiesApi) {
+    return activitiesApi.registerType({
+      moduleId: Constants.MODULE_ID,
+      type: SC_MORE_ACTIVITIES_ACTIVITY_TYPES.GEM_REPAIR,
+      label: "SCSockets.Integrations.ScMoreActivities.GemRepair.Title",
+      hint: "SCSockets.Integrations.ScMoreActivities.GemRepair.Hint",
+      icon: SC_MORE_ACTIVITIES_ICONS.GEM_REPAIR,
+      documentClass: ScMoreActivitiesGemRepairActivity,
+      dataModel: ScMoreActivitiesGemRepairActivityData,
+      sheetClass: ScMoreActivitiesGemRepairActivitySheet,
+      configurable: true,
+      category: "sockets",
+      ui: {
+        scope: "external",
+        group: "sockets",
+        groupId: SC_MORE_ACTIVITIES_GROUP.id,
+        groupLabel: SC_MORE_ACTIVITIES_GROUP.label,
+        groupIcon: SC_MORE_ACTIVITIES_GROUP.icon,
+        groupOrder: SC_MORE_ACTIVITIES_GROUP.order,
+        order: 157
+      },
+      tags: ["sockets", "gem", "inventory", "repair"],
+      compatibility: {
+        dnd5e: "5.x",
+        scMoreActivities: {
+          moduleId: SC_MORE_ACTIVITIES_MODULE_ID,
+          required: true
+        },
+        scSimpleSockets: {
+          moduleId: Constants.MODULE_ID,
+          required: true
+        }
+      },
+      templates: [`modules/${Constants.MODULE_ID}/templates/integrations/sc-more-activities/socket-gem-repair-effect.hbs`],
+      ownership: {
+        execute: "item-owner",
+        hostItem: "activity-item",
+        mutation: "owner"
+      },
+      source: Constants.MODULE_ID
+    });
+  }
+
   static #registerSocketRechargeActivity(activitiesApi) {
     return activitiesApi.registerType({
       moduleId: Constants.MODULE_ID,
@@ -485,7 +540,7 @@ export class ScMoreActivitiesIntegration {
       );
     }
 
-    if (game?.user?.isGM || await ScMoreActivitiesIntegration.#canEditSockets(hostItem)) {
+    if (game?.user?.isGM || await ScMoreActivitiesIntegration.#canEditSockets(hostItem, request?.operation)) {
       return ScMoreActivitiesIntegration.#executeRequest(request, {
         bypassPermission: game?.user?.isGM === true,
         requestUser: game?.user ?? null
@@ -728,6 +783,14 @@ export class ScMoreActivitiesIntegration {
           "gem-not-available",
           "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.GemNotFound",
           "The selected gem is no longer available in the source actor inventory."
+        );
+      }
+
+      if (GemBreakService.isBroken(currentGemItem)) {
+        return ScMoreActivitiesIntegration.#failure(
+          "gem-broken",
+          "SCSockets.Notifications.GemBroken",
+          "This gem is broken and must be repaired before it can be socketed."
         );
       }
 
@@ -1077,15 +1140,16 @@ export class ScMoreActivitiesIntegration {
     const slotNumber = Number(entry?.slotIndex ?? 0) + 1;
     const tintColor = slotConfig.color ?? "";
     const slotName = slot?.name ?? slotConfig.name ?? gem?.name ?? Constants.localize("SCSockets.SocketEmptyName", "Empty");
-    const gemName = gem?.name ?? slot?._gemData?.name ?? "";
+    const gemName = slot?.concealed ? gem.name : (gem?.name ?? slot?._gemData?.name ?? "");
     const slotSummary = gemName && gemName !== slotName ? gemName : "";
     const slotAriaLabel = slotSummary ? `${slotName}: ${slotSummary}` : slotName;
 
     return {
+      concealed: slot?.concealed === true,
       color: slotConfig.color,
       colorStyle: slotConfig.color ? `background:${slotConfig.color};` : "",
       description: ScMoreActivitiesIntegration.#toPlainText(slotConfig.description),
-      gemImg: gem?.img ?? slot?._gemData?.img ?? "",
+      gemImg: slot?.concealed ? gem.img : (gem?.img ?? slot?._gemData?.img ?? ""),
       gemName,
       hasGem: entry?.hasGem === true,
       hasSlotTint: Boolean(tintColor),
@@ -1257,15 +1321,37 @@ export class ScMoreActivitiesIntegration {
     return Array.from(keys);
   }
 
-  static async #canEditSockets(item) {
+  /**
+   * Socket permissions each operation needs to run on the requesting client.
+   * Recharging counts as loading a gem, and removing a slot only ever takes an
+   * empty one. Without them the request goes to a GM instead.
+   */
+  static #OPERATION_PERMISSIONS = {
+    "add-slot": [ModuleSettings.SOCKET_ACTION_ADD_SLOT],
+    "remove-slot": [ModuleSettings.SOCKET_ACTION_REMOVE_SLOT],
+    "extract-gem": [ModuleSettings.SOCKET_ACTION_REMOVE_GEM],
+    "reload-gem": [ModuleSettings.SOCKET_ACTION_ADD_GEM],
+    "recharge-gem": [ModuleSettings.SOCKET_ACTION_ADD_GEM],
+    "recharge-pool": [ModuleSettings.SOCKET_ACTION_ADD_GEM]
+  };
+
+  static async #canEditSockets(item, operation = null) {
     if (!item?.uuid) {
       return false;
     }
 
     try {
-      return await SocketAPI.canEditSockets(item.uuid, {
-        userId: game?.user?.id ?? null
-      });
+      const actions = ScMoreActivitiesIntegration.#OPERATION_PERMISSIONS[operation] ?? [null];
+      for (const action of actions) {
+        const allowed = await SocketAPI.canEditSockets(item.uuid, {
+          userId: game?.user?.id ?? null,
+          ...(action ? { action } : {})
+        });
+        if (!allowed) {
+          return false;
+        }
+      }
+      return true;
     } catch {
       return false;
     }
