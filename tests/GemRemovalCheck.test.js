@@ -319,6 +319,61 @@ describe("gem removal check", () => {
     assert.equal((await SocketService.removeGem(hostItem, 0)).reason, "gem-removed");
   });
 
+  test("a removal planned without a check cannot land on a gem swapped in meanwhile", async () => {
+    install({
+      removalCheck: {
+        gemRemovalCheckDcMode: "rarity",
+        gemRemovalCheckRarityDcs: { rare: 0, legendary: 20 }
+      }
+    });
+    const { actor, hostItem, rolls, slot } = createHost();
+    const incoming = createTestItem({
+      id: "gem-2",
+      ...GEM_DATA,
+      name: "Diamond",
+      system: { ...GEM_DATA.system, rarity: "legendary" },
+      actor,
+      parent: actor
+    });
+    actor.items.set(incoming.id, incoming);
+
+    // The removal is planned against the Ruby (no check) while the swap is
+    // already queued ahead of it.
+    const [removed, added] = await Promise.all([
+      SocketService.removeGem(hostItem, 0),
+      SocketService.addGem(hostItem, 0, incoming)
+    ]);
+
+    assert.equal(added.success, true);
+    assert.equal(removed.reason, "slot-changed");
+    assert.equal(rolls.length, 0);
+    assert.equal(slot().gem.name, "Diamond");
+
+    // Asked again, the removal now rolls for the gem that is actually there.
+    assert.equal((await SocketService.removeGem(hostItem, 0)).reason, "gem-removed");
+    assert.deepEqual(rolls, [{ tool: "jeweler", target: 20 }]);
+  });
+
+  test("only a GM changes the visibility and removal check overrides of a slot", async () => {
+    install();
+    const { hostItem, slot } = createHost({
+      slotConfig: { hidden: true, removalCheckDc: "15", removalCheckFailure: "lose" }
+    });
+    const request = { name: "Bay", hidden: false, removalCheckDc: "0", removalCheckFailure: "stay" };
+
+    assert.equal(await SocketService.updateSlotConfig(hostItem, 0, request), true);
+    assert.equal(slot().slotConfig.name, "Bay");
+    assert.equal(slot().slotConfig.hidden, true);
+    assert.equal(slot().slotConfig.removalCheckDc, "15");
+    assert.equal(slot().slotConfig.removalCheckFailure, "lose");
+
+    game.user.isGM = true;
+    assert.equal(await SocketService.updateSlotConfig(hostItem, 0, request), true);
+    assert.equal(slot().slotConfig.hidden, false);
+    assert.equal(slot().slotConfig.removalCheckDc, "0");
+    assert.equal(slot().slotConfig.removalCheckFailure, "stay");
+  });
+
   test("a gem cannot be swapped out by dropping another one on a checked socket", async () => {
     install();
     const { actor, hostItem, rolls, slot } = createHost();

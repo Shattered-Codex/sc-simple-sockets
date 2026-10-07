@@ -159,6 +159,18 @@ const RELEASE_SECTIONS = [
     tone: "fixed",
     items: [
       {
+        text: "Character sheets now refresh after inserting or removing a gem, including passive bonuses and gems destroyed on removal."
+      },
+      {
+        text: "If a socket operation fails and is rolled back, sheets refresh to show the restored gems and effects."
+      },
+      {
+        text: "A pending removal now stops if another gem replaces the original, even when the original gem needed no removal check."
+      },
+      {
+        text: "Player updates through the socket configuration API now preserve the GM's slot visibility, removal DC, and failure outcome settings."
+      },
+      {
         text: "Fixed transferred sc-chain and sc-conditional-chain activities keeping stale source activity IDs after a gem's activities were copied to the host item."
       },
       {

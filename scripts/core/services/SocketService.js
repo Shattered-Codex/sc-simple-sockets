@@ -321,6 +321,9 @@ export class SocketService {
       const effectIdMap = await EffectService.applyGemEffects(hostItem, idx, gemItem, noRender);
       await ActivityTransferService.applyFromGem(hostItem, idx, gemItem, {
         ...noRender,
+        // Publish the completed state to actor sheets on every client. The
+        // effect writes above stay silent, but their bonuses must now appear.
+        render: true,
         [Constants.MODULE_ID]: {
           ...(noRender?.[Constants.MODULE_ID] ?? {}),
           [ActivityTransferService.UPDATE_OPTION_SKIP_REMOVE_EXISTING]: true,
@@ -391,8 +394,16 @@ export class SocketService {
     }
     const slot = SocketStore.getSlots(currentHostItem)?.[idx] ?? null;
     const plan = GemRemovalCheckService.plan({ hostItem: currentHostItem, slot });
+    // The slot is identified even when it needs no check: the removal runs
+    // later, from the queue, and must not land on a gem that replaced this one.
+    const removal = {
+      gemInstanceId: slot?._gemInstanceId ?? null,
+      legacyGemIdentity: JSON.stringify([slot?.gem, slot?._srcGemId, slot?._gemData]),
+      removalCheck: null,
+      failure: null
+    };
     if (!plan.required) {
-      return proceed;
+      return { removal, result: null };
     }
 
     // The roll dialog stays open for as long as the player wants, so a second
@@ -439,12 +450,7 @@ export class SocketService {
     }
 
     const removalCheck = { success: outcome.success, total: outcome.total, dc: outcome.dc };
-    const removal = {
-      gemInstanceId: slot?._gemInstanceId ?? null,
-      legacyGemIdentity: JSON.stringify([slot?.gem, slot?._srcGemId, slot?._gemData]),
-      removalCheck,
-      failure: null
-    };
+    removal.removalCheck = removalCheck;
     if (outcome.success) {
       return { removal, result: null, release };
     }
@@ -502,7 +508,7 @@ export class SocketService {
     if (!slot?.gem && !slot?._gemData) {
       return SocketService.#buildResult({ success: false, changed: false, reason: "empty-slot" });
     }
-    // The check was rolled before this operation was queued: make sure it
+    // The check was planned before this operation was queued: make sure it
     // still refers to the gem that is in the slot now.
     if (removal && (
       (slot?._gemInstanceId ?? null) !== removal.gemInstanceId
@@ -543,6 +549,8 @@ export class SocketService {
       ItemResolver.normalizeSocketSlots(slots);
       await ActivityTransferService.removeForSlot(hostItem, idx, {
         ...noRender,
+        // Also refresh when the gem is deleted and no inventory update follows.
+        render: true,
         [Constants.MODULE_ID]: {
           ...(noRender?.[Constants.MODULE_ID] ?? {}),
           [ActivityTransferService.UPDATE_OPTION_EXTRA_UPDATE_DATA]: {
@@ -770,6 +778,15 @@ export class SocketService {
       return false;
     }
 
+    // Visibility and the removal check overrides are the GM's to set: anyone
+    // else keeps what the slot already has, whatever the config asks for.
+    if (!options?.bypassPermission && !game?.user?.isGM) {
+      const { hidden, removalCheckDc, removalCheckFailure } = SocketSlotConfigService.getConfig(
+        SocketSlotConfigService.getSlot(hostItem, idx) ?? {}
+      );
+      config = { ...config, hidden, removalCheckDc, removalCheckFailure };
+    }
+
     return SocketSlotConfigService.updateConfig(hostItem, idx, config, options);
   }
 
@@ -947,6 +964,10 @@ export class SocketService {
     consumedIncomingSnapshot = null,
     returnedGemItem = null
   } = {}) {
+    // The failed operation may already have shown its half-done state, so
+    // the writes that undo it are rendered even when the operation was silent.
+    const publish = { ...options, render: true };
+
     try {
       await SocketService.#restoreHostState(hostItem, hostState, options);
     } catch (restoreError) {
@@ -955,7 +976,7 @@ export class SocketService {
 
     if (returnedGemItem) {
       try {
-        await InventoryService.consumeOne(returnedGemItem, options);
+        await InventoryService.consumeOne(returnedGemItem, publish);
       } catch (inventoryError) {
         console.warn(`[${Constants.MODULE_ID}] failed to revert returned gem after socket error:`, inventoryError);
       }
@@ -963,7 +984,7 @@ export class SocketService {
 
     if (consumedIncomingGem && consumedIncomingSnapshot) {
       try {
-        await InventoryService.returnOne(SocketService.#resolveHostItem(hostItem), consumedIncomingSnapshot, options);
+        await InventoryService.returnOne(SocketService.#resolveHostItem(hostItem), consumedIncomingSnapshot, publish);
       } catch (inventoryError) {
         console.warn(`[${Constants.MODULE_ID}] failed to restore consumed gem after socket error:`, inventoryError);
       }
@@ -975,14 +996,6 @@ export class SocketService {
     if (!currentHostItem || !hostState) {
       return currentHostItem ?? null;
     }
-
-    currentHostItem = await HostItemUpdateService.update(currentHostItem, {
-      "system.activities": foundry.utils.deepClone(hostState.activities ?? {}),
-      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]:
-        foundry.utils.deepClone(hostState.socketActivities ?? {}),
-      [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]:
-        foundry.utils.deepClone(hostState.sockets ?? [])
-    }, options);
 
     const effectIds = (currentHostItem?.effects?.contents ?? [])
       .map((effect) => effect?.id)
@@ -998,6 +1011,16 @@ export class SocketService {
         options
       );
     }
+
+    // Written last and rendered: sheets get the restored sockets together with
+    // the effects put back above.
+    currentHostItem = await HostItemUpdateService.update(currentHostItem, {
+      "system.activities": foundry.utils.deepClone(hostState.activities ?? {}),
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}`]:
+        foundry.utils.deepClone(hostState.socketActivities ?? {}),
+      [`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`]:
+        foundry.utils.deepClone(hostState.sockets ?? [])
+    }, { ...options, render: true });
 
     return SocketService.#resolveHostItem(currentHostItem);
   }

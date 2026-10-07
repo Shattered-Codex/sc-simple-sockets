@@ -44,6 +44,10 @@
 - Formula breakdowns now derive from the same socket snapshot and extra-damage collection logic used during gem damage rolls so sheet display stays aligned with the actual socketed gem effects.
 
 ### Fixed
+- Character sheets now refresh after inserting or removing a gem, including passive bonuses and gems destroyed on removal.
+- Failed socket operations now refresh sheets after rollback so the restored gems and effects are displayed correctly.
+- A pending removal now stops if another gem replaces the original, even when the original gem needed no removal check.
+- Player updates through `module.api.sockets.updateSlotConfig` now preserve the GM's slot visibility, removal DC, and failure outcome settings unless the caller explicitly bypasses permissions.
 - `module.api.sockets.removeSlot` now refuses a filled slot with `slot-not-empty` instead of deleting the gem along with it, which also bypassed the remove-gems permission. Use `removeSlotWithContents` to delete a slot together with its gem.
 - The Socket Slot activity no longer asks for the remove-gems permission to remove an empty slot, so a player allowed to remove slots can use it without a GM online.
 - Fixed Socket Extraction validation when no activity document is available.

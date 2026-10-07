@@ -73,6 +73,121 @@ describe("SocketService", () => {
     assert.equal(actor.items.has("gem-1"), false);
   });
 
+  for (const equipped of [true, false]) {
+    test(`refreshes the actor after adding and deleting a passive gem (equipped: ${equipped})`, async () => {
+      const actor = createTestActor({
+        items: [{
+          id: "host-1",
+          name: "Sword",
+          type: "weapon",
+          system: { equipped, activities: {} },
+          flags: { [Constants.MODULE_ID]: { sockets: [SocketSlot.makeDefault()] } }
+        }]
+      });
+      const hostItem = actor.items.get("host-1");
+      // No activities or socket-bound uses to trigger an incidental refresh.
+      const gemItem = createTestItem({
+        id: "gem-1",
+        name: "Ruby",
+        type: "loot",
+        actor,
+        parent: actor,
+        system: { quantity: 1, type: { value: "gem" }, activities: { contents: [] } },
+        effects: [{ _id: "passive", name: "Protection", disabled: true }]
+      });
+      actor.items.set(gemItem.id, gemItem);
+
+      const effectOperations = [];
+      for (const method of ["createEmbeddedDocuments", "deleteEmbeddedDocuments"]) {
+        const original = hostItem[method];
+        hostItem[method] = async (type, data, options) => {
+          effectOperations.push({ method, data, options });
+          return original.call(hostItem, type, data, options);
+        };
+      }
+
+      // Foundry propagates the final Item update's render option to the actor
+      // on every client. Record what an open sheet can see at that point.
+      const renderedStates = [];
+      const updateItems = actor.updateEmbeddedDocuments;
+      actor.updateEmbeddedDocuments = async (type, updates, options = {}) => {
+        const result = await updateItems.call(actor, type, updates, options);
+        if (options.render !== false) {
+          renderedStates.push({
+            gem: hostItem.flags[Constants.MODULE_ID].sockets[0].gem?.name ?? null,
+            effects: hostItem.effects.contents.map((effect) => effect.name),
+            equipped: hostItem.system.equipped
+          });
+        }
+        return result;
+      };
+
+      assert.equal((await SocketService.addGem(hostItem, 0, gemItem)).success, true);
+      assert.equal(actor.items.has(gemItem.id), false);
+      assert.equal(effectOperations[0].data[0].transfer, true);
+      assert.equal(effectOperations[0].data[0].disabled, false);
+      assert.deepEqual(renderedStates, [{ gem: "Ruby", effects: ["Protection"], equipped }]);
+
+      // Deletion returns no inventory item that could otherwise refresh the
+      // actor and hide the missing final render.
+      assert.equal((await SocketService.removeGem(hostItem, 0, { mode: "delete" })).success, true);
+      assert.deepEqual(renderedStates, [
+        { gem: "Ruby", effects: ["Protection"], equipped },
+        { gem: null, effects: [], equipped }
+      ]);
+      assert.ok(effectOperations.every(({ options }) => options.render === false));
+    });
+  }
+
+  test("a rolled back removal leaves sheets showing the restored gem", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        name: "Sword",
+        type: "weapon",
+        system: { equipped: true, activities: {} },
+        flags: { [Constants.MODULE_ID]: { sockets: [SocketSlot.makeDefault()] } }
+      }]
+    });
+    const hostItem = actor.items.get("host-1");
+    const gemItem = createTestItem({
+      id: "gem-1",
+      name: "Ruby",
+      type: "loot",
+      actor,
+      parent: actor,
+      system: { quantity: 1, type: { value: "gem" }, activities: { contents: [] } },
+      effects: [{ _id: "passive", name: "Protection", disabled: true }]
+    });
+    actor.items.set(gemItem.id, gemItem);
+    assert.equal((await SocketService.addGem(hostItem, 0, gemItem)).success, true);
+
+    const renderedStates = [];
+    const updateItems = actor.updateEmbeddedDocuments;
+    actor.updateEmbeddedDocuments = async (type, updates, options = {}) => {
+      const result = await updateItems.call(actor, type, updates, options);
+      if (options.render !== false) {
+        renderedStates.push({
+          gem: hostItem.flags[Constants.MODULE_ID].sockets[0].gem?.name ?? null,
+          effects: hostItem.effects.contents.map((effect) => effect.name)
+        });
+      }
+      return result;
+    };
+    // Handing the gem back to the inventory fails after the socket was emptied.
+    actor.createEmbeddedDocuments = async () => {
+      throw new Error("inventory is unavailable");
+    };
+
+    await assert.rejects(SocketService.removeGem(hostItem, 0), /inventory is unavailable/);
+
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets[0].gem.name, "Ruby");
+    assert.deepEqual(renderedStates, [
+      { gem: null, effects: [] },
+      { gem: "Ruby", effects: ["Protection"] }
+    ]);
+  });
+
   test("uses gem tags in slot conditions before consuming the gem", async () => {
     const actor = createTestActor({
       items: [{
