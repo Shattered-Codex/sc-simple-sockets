@@ -16,7 +16,23 @@ export class ModuleSettings {
   static SOCKET_TAB_LAYOUT_GRID = "grid";
   static SETTING_GEM_BADGES = "gemBadgesEnabled";
   static SETTING_GEM_BADGES_FAVORITES = "gemBadgesFavoritesEnabled";
+  /** Legacy single permission. It is only read as the starting value of the slot permissions. */
   static SETTING_EDIT_SOCKET = "editSocketPermission";
+  static SETTING_ADD_SLOT_PERMISSION = "addSlotPermission";
+  static SETTING_REMOVE_SLOT_PERMISSION = "removeSlotPermission";
+  static SETTING_ADD_GEM_PERMISSION = "addGemPermission";
+  static SETTING_REMOVE_GEM_PERMISSION = "removeGemPermission";
+  static SOCKET_ACTION_ADD_SLOT = "addSlot";
+  static SOCKET_ACTION_REMOVE_SLOT = "removeSlot";
+  static SOCKET_ACTION_ADD_GEM = "addGem";
+  static SOCKET_ACTION_REMOVE_GEM = "removeGem";
+  /** Socket action -> the setting holding the minimum role allowed to perform it. */
+  static SOCKET_PERMISSION_SETTINGS = Object.freeze({
+    addSlot: "addSlotPermission",
+    removeSlot: "removeSlotPermission",
+    addGem: "addGemPermission",
+    removeGem: "removeGemPermission"
+  });
   static SETTING_MAX_SOCKETS = "maxSockets";
   static SETTING_DELETE_ON_REMOVE = "deleteGemOnRemoval";
   static SETTING_CONCEAL_UNIDENTIFIED = "concealUnidentifiedGems";
@@ -55,22 +71,59 @@ export class ModuleSettings {
 
   // Permission -----------------------------------------------------------------
 
-  static canAddOrRemoveSocket(user = game.user) {
+  /**
+   * Whether the user's role allows a socket action: adding or removing a slot,
+   * or adding or removing a gem. A GM is always allowed.
+   */
+  static canPerformSocketAction(action, user = game.user) {
     if (!user) return false;
     if (user.isGM) return true;
-    const stored = game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_EDIT_SOCKET);
-    return user.hasRole(ModuleSettings.#resolveRoleLevel(stored));
+    if (!ModuleSettings.SOCKET_PERMISSION_SETTINGS[action]) return false;
+    return user.hasRole(ModuleSettings.getSocketPermissionRole(action));
   }
 
-  /** Exposed for `ModuleSettingsRegistrar` to use as the default value. */
-  static getDefaultEditSocketRole() {
+  /** The minimum role stored for a socket action, falling back to its default. */
+  static getSocketPermissionRole(action) {
+    const key = ModuleSettings.SOCKET_PERMISSION_SETTINGS[action];
+    const stored = key ? game.settings.get(Constants.MODULE_ID, key) : null;
+    return ModuleSettings.#resolveRoleLevel(stored, ModuleSettings.getDefaultSocketPermissionRole(action));
+  }
+
+  static canAddSlot(user = game.user) {
+    return ModuleSettings.canPerformSocketAction(ModuleSettings.SOCKET_ACTION_ADD_SLOT, user);
+  }
+
+  static canRemoveSlot(user = game.user) {
+    return ModuleSettings.canPerformSocketAction(ModuleSettings.SOCKET_ACTION_REMOVE_SLOT, user);
+  }
+
+  static canAddGem(user = game.user) {
+    return ModuleSettings.canPerformSocketAction(ModuleSettings.SOCKET_ACTION_ADD_GEM, user);
+  }
+
+  static canRemoveGem(user = game.user) {
+    return ModuleSettings.canPerformSocketAction(ModuleSettings.SOCKET_ACTION_REMOVE_GEM, user);
+  }
+
+  /** Whoever may create slots may also define them (name, rules, artwork). */
+  static canConfigureSlots(user = game.user) {
+    return ModuleSettings.canAddSlot(user);
+  }
+
+  /** Slots are the GM's to shape by default; gems are the players' to move. */
+  static getDefaultSocketPermissionRole(action) {
     const roles = CONST?.USER_ROLES ?? {};
+    const isGemAction = action === ModuleSettings.SOCKET_ACTION_ADD_GEM
+      || action === ModuleSettings.SOCKET_ACTION_REMOVE_GEM;
+    if (isGemAction) {
+      return Number.isFinite(roles.PLAYER) ? roles.PLAYER : 1;
+    }
     if (Number.isFinite(roles.GAMEMASTER)) return roles.GAMEMASTER;
     if (Number.isFinite(roles.GM)) return roles.GM;
     return 4;
   }
 
-  static getEditSocketPermissionChoices() {
+  static getSocketPermissionChoices() {
     const roleEntries = Object.entries(CONST?.USER_ROLES ?? {})
       .filter(([, level]) => Number.isFinite(level))
       .sort((a, b) => a[1] - b[1]);
@@ -563,8 +616,8 @@ export class ModuleSettings {
     return ModuleSettings.formatSubtypeLabel(fallback);
   }
 
-  static #resolveRoleLevel(value) {
-    const numeric = Number(value);
+  static #resolveRoleLevel(value, fallback) {
+    const numeric = value === null || value === undefined || value === "" ? NaN : Number(value);
     if (Number.isFinite(numeric)) return numeric;
 
     if (typeof value === "string" && value.trim().length) {
@@ -575,7 +628,7 @@ export class ModuleSettings {
       if (normalized === "GAMEMASTER" && Number.isFinite(roles.GM)) return roles.GM;
     }
 
-    return ModuleSettings.getDefaultEditSocketRole();
+    return fallback;
   }
 
   static #roleLabel(roleKey) {

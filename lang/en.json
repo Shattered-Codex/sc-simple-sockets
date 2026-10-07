@@ -18,6 +18,8 @@
       "CannotOpenGem": "Could not open the gem item.",
       "SocketGemChanged": "The socketed gem changed since this sheet was opened. Close it and open the gem again.",
       "MaxReached": "Maximum number of sockets reached.",
+      "EditPermissionDenied": "You do not have permission to modify sockets on this item.",
+      "RemoveGemPermissionDenied": "You do not have permission to remove the gem already in this socket.",
       "GemRequiresSocket": "This gem must be socketed before it can be used.",
       "HostNotSocketable": "This item type cannot receive sockets.",
       "SocketConditionFailed": "That gem does not meet this socket's requirements.",
@@ -288,9 +290,23 @@
       "ShowSlot": "Show this slot to players."
     },
     "Settings": {
-      "EditPermission": {
-        "Name": "Edit Socket Permission",
-        "Hint": "The minimum role required to add or remove sockets from items."
+      "Permissions": {
+        "AddSlot": {
+          "Name": "Add Slots",
+          "Hint": "The minimum role required to add new socket slots to items."
+        },
+        "RemoveSlot": {
+          "Name": "Remove Slots",
+          "Hint": "The minimum role required to remove socket slots from items."
+        },
+        "AddGem": {
+          "Name": "Add Gems to Slots",
+          "Hint": "The minimum role required to socket gems into slots."
+        },
+        "RemoveGem": {
+          "Name": "Remove Gems from Slots",
+          "Hint": "The minimum role required to remove gems from slots."
+        }
       },
       "SocketableItemTypes": {
         "Name": "Socketable Item Types",

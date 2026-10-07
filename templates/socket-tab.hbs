@@ -54,7 +54,7 @@
               </a>
               {{/if}}
               {{#if slot.hasGem}}
-                {{#if ../editable}}
+                {{#if ../canRemoveGems}}
                 <a class="socket-control item-control sc-sockets-slot-action sc-sockets-slot-action--remove-gem"
                   data-action="removeGemFromSlot" data-index="{{slot.index}}"
                   aria-label="{{slot.removeGemTooltip}}"
@@ -64,7 +64,7 @@
                 </a>
                 {{/if}}
               {{/if}}
-              {{#if ../canManageSockets}}
+              {{#if ../canRemoveSocketSlot}}
               <a class="socket-control item-control sc-sockets-slot-action sc-sockets-slot-action--remove-slot"
                 data-action="removeSocketSlot" data-index="{{slot.index}}" data-tooltip
                 aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}"
@@ -129,7 +129,7 @@
                 <i class="fas fa-pen-to-square"></i>
               </a>
               {{/if}}
-              {{#if ../editable}}
+              {{#if ../canRemoveGems}}
               <a class="socket-control item-control" data-action="removeGemFromSlot" data-index="{{slot.index}}"
                 aria-label="{{slot.removeGemTooltip}}"
                 data-tooltip="{{slot.removeGemTooltip}}"
@@ -137,7 +137,7 @@
                 <i class="fas {{slot.removeGemIcon}}"></i>
               </a>
               {{/if}}
-              {{#if ../canManageSockets}}
+              {{#if ../canRemoveSocketSlot}}
               <a class="socket-control item-control" data-action="removeSocketSlot" data-index="{{slot.index}}" data-tooltip
                 aria-label="{{ localize 'SCSockets.Tooltips.DeleteSlotLabel' }}"
                 data-tooltip="{{ localize 'SCSockets.Tooltips.DeleteSocket' }}"

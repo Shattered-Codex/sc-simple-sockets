@@ -474,27 +474,48 @@ export class SocketsConfigApp extends BaseApplication {
   }
 
   #buildRuleFields() {
-    const storedRole = Number(game.settings.get(Constants.MODULE_ID, ModuleSettings.SETTING_EDIT_SOCKET));
-    const editPermissionChoices = Object.entries(ModuleSettings.getEditSocketPermissionChoices()).map(
-      ([value, label]) => ({
-        value,
-        label,
-        selected: Number(value) === storedRole
-      })
-    );
+    const roleChoices = Object.entries(ModuleSettings.getSocketPermissionChoices());
+    const permissionField = (action, langKey, name, hint) => {
+      const storedRole = ModuleSettings.getSocketPermissionRole(action);
+      return {
+        key: ModuleSettings.SOCKET_PERMISSION_SETTINGS[action],
+        name: Constants.localize(`SCSockets.Settings.Permissions.${langKey}.Name`, name),
+        hint: Constants.localize(`SCSockets.Settings.Permissions.${langKey}.Hint`, hint),
+        isSelect: true,
+        defaultValue: String(ModuleSettings.getDefaultSocketPermissionRole(action)),
+        choices: roleChoices.map(([value, label]) => ({
+          value,
+          label,
+          selected: Number(value) === storedRole
+        }))
+      };
+    };
 
     return [
-      {
-        key: ModuleSettings.SETTING_EDIT_SOCKET,
-        name: Constants.localize("SCSockets.Settings.EditPermission.Name", "Edit Socket Permission"),
-        hint: Constants.localize(
-          "SCSockets.Settings.EditPermission.Hint",
-          "The minimum role required to add or remove sockets from items."
-        ),
-        isSelect: true,
-        defaultValue: String(ModuleSettings.getDefaultEditSocketRole()),
-        choices: editPermissionChoices
-      },
+      permissionField(
+        ModuleSettings.SOCKET_ACTION_ADD_SLOT,
+        "AddSlot",
+        "Add Slots",
+        "The minimum role required to add new socket slots to items."
+      ),
+      permissionField(
+        ModuleSettings.SOCKET_ACTION_REMOVE_SLOT,
+        "RemoveSlot",
+        "Remove Slots",
+        "The minimum role required to remove socket slots from items."
+      ),
+      permissionField(
+        ModuleSettings.SOCKET_ACTION_ADD_GEM,
+        "AddGem",
+        "Add Gems to Slots",
+        "The minimum role required to socket gems into slots."
+      ),
+      permissionField(
+        ModuleSettings.SOCKET_ACTION_REMOVE_GEM,
+        "RemoveGem",
+        "Remove Gems from Slots",
+        "The minimum role required to remove gems from slots."
+      ),
       {
         key: ModuleSettings.SETTING_MAX_SOCKETS,
         name: Constants.localize(
@@ -998,11 +1019,16 @@ export class SocketsConfigApp extends BaseApplication {
     const form = root instanceof HTMLFormElement ? root : this.form;
     const field = (name) => form?.elements?.namedItem?.(name) ?? root?.querySelector?.(`[name="${name}"]`);
 
-    const roleChoices = ModuleSettings.getEditSocketPermissionChoices();
-    const editPermissionValue = String(field(ModuleSettings.SETTING_EDIT_SOCKET)?.value ?? "");
-    const editPermission = Object.hasOwn(roleChoices, editPermissionValue)
-      ? Number(editPermissionValue)
-      : ModuleSettings.getDefaultEditSocketRole();
+    const roleChoices = ModuleSettings.getSocketPermissionChoices();
+    const permissions = Object.fromEntries(
+      Object.entries(ModuleSettings.SOCKET_PERMISSION_SETTINGS).map(([action, key]) => {
+        const value = String(field(key)?.value ?? "");
+        return [
+          key,
+          Object.hasOwn(roleChoices, value) ? Number(value) : ModuleSettings.getDefaultSocketPermissionRole(action)
+        ];
+      })
+    );
 
     const parsedMaxSockets = Number.parseInt(String(field(ModuleSettings.SETTING_MAX_SOCKETS)?.value ?? ""), 10);
     const maxSockets = Number.isInteger(parsedMaxSockets) ? parsedMaxSockets : 6;
@@ -1060,7 +1086,7 @@ export class SocketsConfigApp extends BaseApplication {
     };
 
     return {
-      editPermission,
+      permissions,
       maxSockets,
       deleteOnRemoval: checkboxValue(ModuleSettings.SETTING_DELETE_ON_REMOVE, false),
       concealUnidentified: checkboxValue(ModuleSettings.SETTING_CONCEAL_UNIDENTIFIED, true),
@@ -1095,7 +1121,9 @@ export class SocketsConfigApp extends BaseApplication {
     await ModuleSettings.setSocketableItemTypes(this.#collectSelectedTypes());
 
     const behavior = this.#collectBehaviorValues();
-    await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_EDIT_SOCKET, behavior.editPermission);
+    for (const [key, role] of Object.entries(behavior.permissions)) {
+      await game.settings.set(Constants.MODULE_ID, key, role);
+    }
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_MAX_SOCKETS, behavior.maxSockets);
     await game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_DELETE_ON_REMOVE, behavior.deleteOnRemoval);
     await game.settings.set(
@@ -1217,7 +1245,7 @@ export class SocketsConfigApp extends BaseApplication {
       case TAB_RULES: {
         const behavior = this.#collectBehaviorValues();
         return JSON.stringify([
-          behavior.editPermission,
+          behavior.permissions,
           behavior.maxSockets,
           behavior.deleteOnRemoval,
           behavior.concealUnidentified,

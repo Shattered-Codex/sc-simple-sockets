@@ -9,7 +9,6 @@ describe("ModuleSettings", () => {
   beforeEach(() => {
     installFoundryStubs({
       settings: {
-        [`${Constants.MODULE_ID}.${ModuleSettings.SETTING_EDIT_SOCKET}`]: 2,
         [`${Constants.MODULE_ID}.${ModuleSettings.SETTING_SOCKETABLE_ITEM_TYPES}`]: ["weapon", "container", "Weapon", "equipment"],
         [`${Constants.MODULE_ID}.${ModuleSettings.SETTING_ENABLE_SOCKET_TAB_FOR_ALL_ITEMS}`]: false,
         [`${Constants.MODULE_ID}.${ModuleSettings.SETTING_GEM_LOOT_SUBTYPES}`]: ["gem", "rune"],
@@ -50,22 +49,28 @@ describe("ModuleSettings", () => {
     clearFoundryStubs();
   });
 
-  test("checks permission by role level for non-GM users", () => {
-    const allowedUser = {
-      isGM: false,
-      hasRole(level) {
-        return level === 2;
-      }
-    };
-    const deniedUser = {
-      isGM: false,
-      hasRole() {
-        return false;
-      }
-    };
+  test("checks each socket permission by role level for non-GM users", () => {
+    const userWithRole = (role) => ({ isGM: false, hasRole: (level) => role >= level });
+    const player = userWithRole(1);
+    const trusted = userWithRole(2);
 
-    assert.equal(ModuleSettings.canAddOrRemoveSocket(allowedUser), true);
-    assert.equal(ModuleSettings.canAddOrRemoveSocket(deniedUser), false);
+    // Defaults: slots belong to the GM, gems to the players.
+    assert.equal(ModuleSettings.canAddSlot(player), false);
+    assert.equal(ModuleSettings.canRemoveSlot(player), false);
+    assert.equal(ModuleSettings.canAddGem(player), true);
+    assert.equal(ModuleSettings.canRemoveGem(player), true);
+    assert.equal(ModuleSettings.canAddSlot({ isGM: true }), true);
+
+    game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_ADD_SLOT_PERMISSION, 2);
+    game.settings.set(Constants.MODULE_ID, ModuleSettings.SETTING_REMOVE_GEM_PERMISSION, 2);
+
+    assert.equal(ModuleSettings.canAddSlot(trusted), true);
+    assert.equal(ModuleSettings.canAddSlot(player), false);
+    assert.equal(ModuleSettings.canRemoveSlot(trusted), false);
+    assert.equal(ModuleSettings.canAddGem(player), true);
+    assert.equal(ModuleSettings.canRemoveGem(player), false);
+    assert.equal(ModuleSettings.canRemoveGem(trusted), true);
+    assert.equal(ModuleSettings.canPerformSocketAction("unknown", trusted), false);
   });
 
   test("sanitizes socketable item types and excludes disallowed values", () => {

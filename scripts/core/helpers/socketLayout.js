@@ -6,10 +6,15 @@ import { canUserSeeSlot, getSlotConfig, resolveSlotFrameImg } from "./socketSlot
 
 export function buildSocketLayoutContext(item, {
   editable = false,
-  canManageSockets = false,
-  canAddSocketSlot = false,
-  sockets = []
+  sockets = [],
+  user = globalThis.game?.user
 } = {}) {
+  // Each control follows its own permission; none shows on a locked sheet.
+  const canAddSocketSlot = editable && ModuleSettings.canAddSlot(user)
+    && ModuleSettings.isItemSocketableByType(item);
+  const canRemoveSocketSlot = editable && ModuleSettings.canRemoveSlot(user);
+  const canConfigureSlots = editable && ModuleSettings.canConfigureSlots(user);
+  const canRemoveGems = editable && ModuleSettings.canRemoveGem(user);
   // Players never get the identity of a gem that is still unidentified.
   sockets = GemConcealmentService.maskSlots(item, sockets);
   const socketTabLayout = ModuleSettings.getSocketTabLayout();
@@ -48,10 +53,11 @@ export function buildSocketLayoutContext(item, {
     socketResourceRows,
     hasSocketResourceRows: socketResourceRows.length > 0,
     editable,
-    canManageSockets,
-    canConfigureSlots: canManageSockets,
-    canToggleSlotVisibility: canManageSockets && Boolean(globalThis.game?.user?.isGM),
+    canConfigureSlots,
+    canToggleSlotVisibility: editable && Boolean(user?.isGM),
     canAddSocketSlot,
+    canRemoveSocketSlot,
+    canRemoveGems,
     dataEditable: editable ? "true" : "false",
     socketTabLayout,
     socketTabVariant: useSocketGridLayout ? "cauldron" : "default",

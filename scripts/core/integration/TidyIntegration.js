@@ -585,13 +585,8 @@ export class TidyIntegration {
       item?.sheet?.isEditable ??
       false
     );
-    const canManageSockets = editable && ModuleSettings.canAddOrRemoveSocket(game.user);
-    const canAddSocketSlot = canManageSockets && ModuleSettings.isItemSocketableByType(item);
-
     return buildSocketLayoutContext(item, {
       editable,
-      canManageSockets,
-      canAddSocketSlot,
       sockets: SocketService.getSlots(item)
     });
   }

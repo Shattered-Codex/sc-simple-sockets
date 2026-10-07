@@ -304,7 +304,7 @@ export class AddSocketWorkflow {
   }
 
   async run() {
-    const hasModulePermission = ModuleSettings.canAddOrRemoveSocket(game.user);
+    const hasModulePermission = ModuleSettings.canAddSlot(game.user);
     const bypassWorldSocketLimit = this.options.bypassWorldSocketLimit === true || this.options.ignoreMaxSockets === true;
 
     const { DialogV2 } = foundry.applications.api;

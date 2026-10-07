@@ -49,7 +49,10 @@ export class SocketService {
   }
 
   static async removeSlotWithContents(hostItem, idx, options = {}) {
-    const check = await SocketService.#runRemovalCheck(hostItem, idx, options);
+    const check = await SocketService.#runRemovalCheck(hostItem, idx, options, [
+      ModuleSettings.SOCKET_ACTION_REMOVE_SLOT,
+      ModuleSettings.SOCKET_ACTION_REMOVE_GEM
+    ]);
     if (check.result) {
       return check.result;
     }
@@ -92,7 +95,9 @@ export class SocketService {
           );
         }
 
-        if (!SocketService.#canMutateSockets(options)) {
+        // `options.permission` names the socket action the operation amounts to.
+        const action = options?.permission ?? ModuleSettings.SOCKET_ACTION_ADD_GEM;
+        if (!SocketService.#canMutateSockets(options, action)) {
           return SocketService.#warnAndReturnResult(
             "warn",
             "permission-denied",
@@ -138,7 +143,7 @@ export class SocketService {
       );
     }
 
-    if (!SocketService.#canMutateSockets(options)) {
+    if (!SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_ADD_GEM)) {
       return SocketService.#warnAndReturnResult(
         "warn",
         "permission-denied",
@@ -247,6 +252,22 @@ export class SocketService {
       );
     }
 
+    // Dropping a gem onto a filled socket takes the old gem out, which needs
+    // the permission to remove gems as well.
+    if (
+      (slots[idx]?.gem || slots[idx]?._gemData)
+      && !SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_REMOVE_GEM)
+    ) {
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "permission-denied",
+        Constants.localize(
+          "SCSockets.Notifications.RemoveGemPermissionDenied",
+          "You do not have permission to remove the gem already in this socket."
+        )
+      );
+    }
+
     // Dropping a gem onto a filled socket would swap the old gem out without
     // the removal check, so the old gem has to be removed first.
     if (
@@ -341,7 +362,12 @@ export class SocketService {
    * When a check was rolled, `release` must be called once the removal is done:
    * until then the same slot cannot start a second check.
    */
-  static async #runRemovalCheck(hostItem, idx, options = {}) {
+  static async #runRemovalCheck(
+    hostItem,
+    idx,
+    options = {},
+    actions = [ModuleSettings.SOCKET_ACTION_REMOVE_GEM]
+  ) {
     const proceed = { removal: null, result: null };
 
     // An explicit keep/delete mode is a caller-decided outcome (gem
@@ -354,7 +380,7 @@ export class SocketService {
         options?.enforceRemovalCheck !== true
         && SocketService.#normalizeRemoveGemMode(options?.mode) !== SocketService.REMOVE_GEM_MODE_DEFAULT
       )
-      || !SocketService.#canMutateSockets(options)
+      || !SocketService.#canMutateSockets(options, ...actions)
     ) {
       return proceed;
     }
@@ -457,7 +483,7 @@ export class SocketService {
     });
     const slots = SocketStore.getSlots(hostItem);
 
-    if (!SocketService.#canMutateSockets(options)) {
+    if (!SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_REMOVE_GEM)) {
       return SocketService.#warnAndReturnResult(
         "warn",
         "permission-denied",
@@ -600,7 +626,7 @@ export class SocketService {
       });
     }
 
-    if (!bypassPermission && !ModuleSettings.canAddOrRemoveSocket()) {
+    if (!bypassPermission && !ModuleSettings.canAddSlot()) {
       return SocketService.#buildResult({
         success: false,
         changed: false,
@@ -654,12 +680,18 @@ export class SocketService {
       slotIndex: idx,
       options: DebugTrace.describeOptions(options)
     });
-    if (!SocketService.#canMutateSockets(options)) {
+    if (!SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_REMOVE_SLOT)) {
       return;
     }
     const currentSlots = SocketStore.peekSlots(hostItem);
     if (!Number.isInteger(idx) || idx < 0 || idx >= currentSlots.length) {
       return;
+    }
+
+    // Only empty slots go this way: a filled one has a gem to hand back and
+    // effects to clean up, which is `removeSlotWithContents`' job.
+    if (currentSlots[idx]?.gem || currentSlots[idx]?._gemData) {
+      return SocketService.#buildResult({ success: false, changed: false, reason: "slot-not-empty" });
     }
 
     const removedSlot = foundry.utils.deepClone(currentSlots[idx] ?? null);
@@ -689,6 +721,19 @@ export class SocketService {
       return SocketService.#buildResult({ success: false, changed: false, reason: "invalid-slot-index" });
     }
 
+    // Checked before the gem is touched: a slot that cannot be removed must
+    // not lose its gem on the way.
+    if (!SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_REMOVE_SLOT)) {
+      return SocketService.#warnAndReturnResult(
+        "warn",
+        "permission-denied",
+        Constants.localize(
+          "SCSockets.Notifications.EditPermissionDenied",
+          "You do not have permission to modify sockets on this item."
+        )
+      );
+    }
+
     const hostState = SocketService.#captureHostState(hostItem);
     let removeGemResult = null;
 
@@ -713,7 +758,7 @@ export class SocketService {
   }
 
   static async #updateSlotConfig(hostItem, idx, config, options = {}) {
-    if (!SocketService.#canMutateSockets(options)) {
+    if (!options?.bypassPermission && !ModuleSettings.canConfigureSlots()) {
       if (options?.notify !== false) {
         ui.notifications?.warn?.(
           Constants.localize(
@@ -854,8 +899,10 @@ export class SocketService {
     return ItemSheetSync.resolve(hostItem);
   }
 
-  static #canMutateSockets(options = {}) {
-    return Boolean(options?.bypassPermission) || ModuleSettings.canAddOrRemoveSocket();
+  /** Whether the current user may perform every one of the given socket actions. */
+  static #canMutateSockets(options = {}, ...actions) {
+    return Boolean(options?.bypassPermission)
+      || actions.every((action) => ModuleSettings.canPerformSocketAction(action));
   }
 
   static #buildResult({ success = false, changed = false, reason = "unknown", ...data } = {}) {

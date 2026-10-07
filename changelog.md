@@ -28,6 +28,7 @@
 - Added **unidentified gem concealment**, on by default (Module configuration → Socket rules). While an item is unidentified, players see its socketed gems as "Unidentified Gem" with a placeholder image: the Sockets tab, inventory badges and tooltips, socket descriptions (which only say the gem is not identified), damage and attack breakdowns, activity pickers, and the names of the activities and effects the gem grants are all masked, while the gem keeps working. The same applies to a gem that was itself unidentified when socketed, and an unidentified gem no longer shows its socket description on its own sheet. A gem removed from an unidentified item returns to the inventory unidentified, and identifying the item identifies its gems. Custom slot names are hidden too, and the empty slots of an unidentified item show as plain empty sockets without their custom name or description. GMs always see the real gem.
 
 ### Changed
+- Split **Edit Socket Permission** into four permissions in Module configuration → Socket rules: add slots and remove slots (Gamemaster by default), and add gems and remove gems (Player by default). A world that had customised the old permission keeps that role on the two slot permissions; the gem permissions start at Player. Configuring a slot follows the add-slots permission, replacing a socketed gem needs both gem permissions, and deleting a filled slot needs the remove-slots and remove-gems permissions. `module.api.sockets.canEditSockets` accepts an `action` (`addSlot`, `removeSlot`, `addGem`, `removeGem`).
 - Moved every remaining module option into the Module configuration window: a new **Advanced** tab holds the What's New popup toggle and debug trace logging, so Foundry's module list no longer carries loose Simple Sockets settings.
 - Replaced the Documentation and Support settings rows with a single compact strip of links — wiki, Patreon support, and Discord — matching the layout used by SC - More Activities.
 - The What's New popup showcase is now dedicated to **SC - Puzzle Engine**, with eight slides taken from its wiki covering puzzle journal pages, the twenty challenge types, attempts and consequences, player solver windows, skill and rhythm challenges, presentation themes, the Puzzle Hub, and canvas triggers with puzzle chaining.
@@ -43,6 +44,8 @@
 - Formula breakdowns now derive from the same socket snapshot and extra-damage collection logic used during gem damage rolls so sheet display stays aligned with the actual socketed gem effects.
 
 ### Fixed
+- `module.api.sockets.removeSlot` now refuses a filled slot with `slot-not-empty` instead of deleting the gem along with it, which also bypassed the remove-gems permission. Use `removeSlotWithContents` to delete a slot together with its gem.
+- The Socket Slot activity no longer asks for the remove-gems permission to remove an empty slot, so a player allowed to remove slots can use it without a GM online.
 - Fixed Socket Extraction validation when no activity document is available.
 - Fixed follow-up clicks leaking through after an item-selection prompt completes.
 - Updated support UI and sheet refresh compatibility for Foundry VTT v14 APIs.

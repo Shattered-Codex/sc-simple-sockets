@@ -13,7 +13,6 @@ describe("SocketAPI", () => {
     installFoundryStubs({
       isGM: true,
       settings: {
-        [`${Constants.MODULE_ID}.editSocketPermission`]: 0,
         [`${Constants.MODULE_ID}.maxSockets`]: 6,
         [`${Constants.MODULE_ID}.deleteGemOnRemoval`]: false,
         [`${Constants.MODULE_ID}.socketableItemTypes`]: ["weapon", "equipment"],
@@ -159,6 +158,37 @@ describe("SocketAPI", () => {
       }
     });
     assert.equal(hostItem.flags[Constants.MODULE_ID].sockets.length, 1);
+  });
+
+  test("refuses to remove a filled socket without its contents", async () => {
+    const actor = createTestActor({
+      items: [{
+        id: "host-filled-slot",
+        name: "Ruby Mantle",
+        type: "equipment",
+        system: { activities: {} },
+        flags: { [Constants.MODULE_ID]: { sockets: [SocketSlot.makeDefault()] } }
+      }, {
+        id: "gem-1",
+        name: "Ruby",
+        type: "loot",
+        img: "icons/ruby.webp",
+        system: { quantity: 1, type: { value: "gem" } }
+      }]
+    });
+    const hostItem = actor.items.get("host-filled-slot");
+    assert.equal((await SocketAPI.addGem(hostItem, actor.items.get("gem-1"))).success, true);
+
+    const result = await SocketAPI.removeSlot(hostItem, 0);
+
+    assert.equal(result.success, false);
+    assert.equal(result.reason, "slot-not-empty");
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets.length, 1);
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets[0].gem.name, "Ruby");
+
+    const withContents = await SocketAPI.removeSlotWithContents(hostItem, 0);
+    assert.equal(withContents.success, true);
+    assert.equal(hostItem.flags[Constants.MODULE_ID].sockets.length, 0);
   });
 
   test("returns structured failure for invalid slot removal", async () => {

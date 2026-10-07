@@ -540,7 +540,7 @@ export class ScMoreActivitiesIntegration {
       );
     }
 
-    if (game?.user?.isGM || await ScMoreActivitiesIntegration.#canEditSockets(hostItem)) {
+    if (game?.user?.isGM || await ScMoreActivitiesIntegration.#canEditSockets(hostItem, request?.operation)) {
       return ScMoreActivitiesIntegration.#executeRequest(request, {
         bypassPermission: game?.user?.isGM === true,
         requestUser: game?.user ?? null
@@ -1321,15 +1321,37 @@ export class ScMoreActivitiesIntegration {
     return Array.from(keys);
   }
 
-  static async #canEditSockets(item) {
+  /**
+   * Socket permissions each operation needs to run on the requesting client.
+   * Recharging counts as loading a gem, and removing a slot only ever takes an
+   * empty one. Without them the request goes to a GM instead.
+   */
+  static #OPERATION_PERMISSIONS = {
+    "add-slot": [ModuleSettings.SOCKET_ACTION_ADD_SLOT],
+    "remove-slot": [ModuleSettings.SOCKET_ACTION_REMOVE_SLOT],
+    "extract-gem": [ModuleSettings.SOCKET_ACTION_REMOVE_GEM],
+    "reload-gem": [ModuleSettings.SOCKET_ACTION_ADD_GEM],
+    "recharge-gem": [ModuleSettings.SOCKET_ACTION_ADD_GEM],
+    "recharge-pool": [ModuleSettings.SOCKET_ACTION_ADD_GEM]
+  };
+
+  static async #canEditSockets(item, operation = null) {
     if (!item?.uuid) {
       return false;
     }
 
     try {
-      return await SocketAPI.canEditSockets(item.uuid, {
-        userId: game?.user?.id ?? null
-      });
+      const actions = ScMoreActivitiesIntegration.#OPERATION_PERMISSIONS[operation] ?? [null];
+      for (const action of actions) {
+        const allowed = await SocketAPI.canEditSockets(item.uuid, {
+          userId: game?.user?.id ?? null,
+          ...(action ? { action } : {})
+        });
+        if (!allowed) {
+          return false;
+        }
+      }
+      return true;
     } catch {
       return false;
     }

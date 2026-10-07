@@ -156,7 +156,13 @@ export class SocketAPI {
     });
   }
 
-  static async canEditSockets(itemOrUuid, { userId = null } = {}) {
+  /**
+   * Whether a user may change the sockets of an item they own. `action` is one
+   * of "addSlot", "removeSlot", "addGem" or "removeGem"; without it the answer
+   * covers adding and removing slots, which is what this meant before the
+   * permission was split.
+   */
+  static async canEditSockets(itemOrUuid, { userId = null, action = null } = {}) {
     const item = await SocketAPI.#resolveItem(itemOrUuid);
     const user = userId ? game?.users?.get?.(userId) ?? null : game?.user ?? null;
     if (!item || !user) {
@@ -166,7 +172,11 @@ export class SocketAPI {
     return Boolean(
       user.isGM
       || (
-        ModuleSettings.canAddOrRemoveSocket(user)
+        (
+          action
+            ? ModuleSettings.canPerformSocketAction(action, user)
+            : ModuleSettings.canAddSlot(user) && ModuleSettings.canRemoveSlot(user)
+        )
         && (
           item.isOwner
           || item.testUserPermission?.(user, "OWNER")
@@ -199,6 +209,10 @@ export class SocketAPI {
 
     const beforeCount = SocketAPI.#slotCount(item);
     const result = await SocketService.removeSlot(item, idx, options);
+    if (result && typeof result === "object" && "success" in result && result.success !== true) {
+      return SocketAPI.#buildResult(result);
+    }
+
     const currentItem = await SocketAPI.#resolveCurrentItem(item);
     const afterCount = SocketAPI.#slotCount(currentItem);
 

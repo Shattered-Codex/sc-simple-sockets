@@ -45,7 +45,7 @@ export class ExtractGemWorkflow {
   }
 
   async run() {
-    const hasModulePermission = ModuleSettings.canAddOrRemoveSocket(game.user);
+    const hasModulePermission = ModuleSettings.canRemoveGem(game.user);
     while (true) {
       const selection = await SelectionController.selectSocketSlot({
         notifications: this.options.notifications,

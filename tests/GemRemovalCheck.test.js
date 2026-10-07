@@ -21,7 +21,6 @@ function install({ isGM = false, removalCheck = {}, extraSettings = {} } = {}) {
   installFoundryStubs({
     user: { id: "player-1", isGM, hasRole: () => true },
     settings: {
-      [setting("editSocketPermission")]: 1,
       [setting("maxSockets")]: 6,
       [setting("deleteGemOnRemoval")]: false,
       [setting("socketableItemTypes")]: ["weapon", "equipment"],

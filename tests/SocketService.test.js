@@ -13,7 +13,6 @@ describe("SocketService", () => {
     installFoundryStubs({
       isGM: true,
       settings: {
-        [`${Constants.MODULE_ID}.editSocketPermission`]: 0,
         [`${Constants.MODULE_ID}.maxSockets`]: 6,
         [`${Constants.MODULE_ID}.deleteGemOnRemoval`]: false,
         [`${Constants.MODULE_ID}.socketableItemTypes`]: ["weapon", "equipment"],
@@ -372,7 +371,7 @@ describe("SocketService", () => {
     installFoundryStubs({
       isGM: false,
       settings: {
-        [`${Constants.MODULE_ID}.editSocketPermission`]: 4,
+        [`${Constants.MODULE_ID}.removeGemPermission`]: 4,
         [`${Constants.MODULE_ID}.deleteGemOnRemoval`]: false,
         [`${Constants.MODULE_ID}.socketableItemTypes`]: ["weapon", "equipment"],
         [`${Constants.MODULE_ID}.${Constants.SETTING_GEM_LOOT_SUBTYPES}`]: ["gem"]
@@ -430,6 +429,54 @@ describe("SocketService", () => {
     });
     assert.equal(allowed.success, true);
     assert.equal(allowed.changed, true);
+  });
+
+  test("slots and gems follow separate permissions", async () => {
+    clearFoundryStubs();
+    installFoundryStubs({
+      settings: {
+        [`${Constants.MODULE_ID}.maxSockets`]: 6,
+        [`${Constants.MODULE_ID}.deleteGemOnRemoval`]: false,
+        [`${Constants.MODULE_ID}.socketableItemTypes`]: ["weapon", "equipment"],
+        [`${Constants.MODULE_ID}.${Constants.SETTING_GEM_LOOT_SUBTYPES}`]: ["gem"]
+      },
+      // A plain player: allowed on gems by default, not on slots.
+      user: { id: "player-1", isGM: false, hasRole: (level) => level <= 1 }
+    });
+    globalThis.CONST.USER_ROLES = { NONE: 0, PLAYER: 1, TRUSTED: 2, ASSISTANT: 3, GAMEMASTER: 4 };
+
+    const actor = createTestActor({
+      items: [{
+        id: "host-1",
+        name: "Sword",
+        type: "weapon",
+        system: { activities: {} },
+        flags: { [Constants.MODULE_ID]: { sockets: [SocketSlot.makeDefault()] } }
+      }, {
+        id: "gem-1",
+        name: "Ruby",
+        type: "loot",
+        img: "icons/ruby.webp",
+        system: { quantity: 1, type: { value: "gem" } }
+      }]
+    });
+    const hostItem = actor.items.get("host-1");
+    const slots = () => hostItem.flags[Constants.MODULE_ID].sockets;
+
+    assert.equal((await SocketService.addSlot(hostItem)).reason, "permission-denied");
+    assert.equal(slots().length, 1);
+
+    assert.equal((await SocketService.addGem(hostItem, 0, actor.items.get("gem-1"))).success, true);
+    assert.equal(slots()[0].gem.name, "Ruby");
+
+    // Deleting the slot is refused before its gem is touched.
+    const denied = await SocketService.removeSlotWithContents(hostItem, 0);
+    assert.equal(denied.reason, "permission-denied");
+    assert.equal(slots().length, 1);
+    assert.equal(slots()[0].gem.name, "Ruby");
+
+    assert.equal((await SocketService.removeGem(hostItem, 0)).success, true);
+    assert.equal(slots()[0].gem, null);
   });
 
   test("serializes generic socket mutations on the same host item", async () => {

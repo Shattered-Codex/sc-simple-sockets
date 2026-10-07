@@ -18,6 +18,8 @@
       "CannotOpenGem": "Não foi possível abrir o item da gema.",
       "SocketGemChanged": "A gema encaixada mudou desde que esta ficha foi aberta. Feche-a e abra a gema novamente.",
       "MaxReached": "Quantidade máxima de soquetes atingida.",
+      "EditPermissionDenied": "Você não tem permissão para modificar os soquetes deste item.",
+      "RemoveGemPermissionDenied": "Você não tem permissão para remover a gema que já está neste soquete.",
       "GemRequiresSocket": "Esta gema precisa estar em um soquete para ser utilizada.",
       "HostNotSocketable": "Este tipo de item não pode receber soquetes.",
       "SocketConditionFailed": "Essa gema não atende aos requisitos deste slot.",
@@ -288,9 +290,23 @@
       "ShowSlot": "Mostrar este slot para os jogadores."
     },
     "Settings": {
-      "EditPermission": {
-        "Name": "Permissão para editar soquetes",
-        "Hint": "Cargo mínimo necessário para adicionar ou remover soquetes de itens."
+      "Permissions": {
+        "AddSlot": {
+          "Name": "Adicionar slots",
+          "Hint": "Cargo mínimo necessário para adicionar novos slots de soquete aos itens."
+        },
+        "RemoveSlot": {
+          "Name": "Remover slots",
+          "Hint": "Cargo mínimo necessário para remover slots de soquete dos itens."
+        },
+        "AddGem": {
+          "Name": "Adicionar gemas nos slots",
+          "Hint": "Cargo mínimo necessário para encaixar gemas nos slots."
+        },
+        "RemoveGem": {
+          "Name": "Remover gemas dos slots",
+          "Hint": "Cargo mínimo necessário para remover gemas dos slots."
+        }
       },
       "SocketableItemTypes": {
         "Name": "Tipos de item socketáveis",
