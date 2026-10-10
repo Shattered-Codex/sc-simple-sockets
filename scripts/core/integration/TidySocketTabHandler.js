@@ -37,7 +37,7 @@ export class TidySocketTabHandler {
           item: DebugTrace.describeItem(item),
           slotIndex: index
         });
-        await SocketService.addGem(item, index, data);
+        await SocketService.addGem(item, index, data, { insertionCheck: true });
         await TidySocketTabHandler.refresh(tabContents, sheet);
       }
     );

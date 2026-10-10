@@ -42,6 +42,9 @@
     ],
     "styles": [
         {
+            "src": "css/socket-content-visibility.css"
+        },
+        {
             "src": "css/actor-gem-badges.css"
         },
         {

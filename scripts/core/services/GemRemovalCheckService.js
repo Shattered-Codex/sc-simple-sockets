@@ -1,5 +1,10 @@
 import { Constants } from "../Constants.js";
-import { getSlotRemovalCheckDc, getSlotRemovalCheckFailure } from "../helpers/socketSlotConfig.js";
+import {
+  getSlotCheckRarityDcs,
+  getSlotRemovalCheckDc,
+  getSlotRemovalCheckFailure,
+  getSlotRemovalCheckType
+} from "../helpers/socketSlotConfig.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { GemCheckService } from "./GemCheckService.js";
@@ -9,8 +14,8 @@ import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.j
  * Optional check a player must pass to pull a gem out of a socket.
  *
  * The feature is opt-in through the module settings. The global settings pick
- * the check, the DC and what a failure does; a slot can override the DC and
- * the failure outcome. A resolved DC of 0 means the slot needs no check.
+ * the check, the DC and what a failure does; a slot can override each of
+ * them. A resolved DC of 0 means the slot needs no check.
  */
 export class GemRemovalCheckService {
   /**
@@ -24,6 +29,10 @@ export class GemRemovalCheckService {
       return notRequired;
     }
     if (!slot?.gem && !slot?._gemData) {
+      return notRequired;
+    }
+    const slotCheck = getSlotRemovalCheckType(slot);
+    if (slotCheck === GemCheckService.TYPE_NONE) {
       return notRequired;
     }
     if (user?.isGM && !ModuleSettings.doesGemRemovalCheckApplyToGm()) {
@@ -46,7 +55,7 @@ export class GemRemovalCheckService {
     return {
       required: true,
       actor,
-      check: GemCheckService.parseCheckId(ModuleSettings.getGemRemovalCheckType()),
+      check: GemCheckService.parseCheckId(slotCheck || ModuleSettings.getGemRemovalCheckType()),
       dc,
       failure: GemRemovalCheckService.resolveFailureOutcome(slot),
       gem,
@@ -58,6 +67,10 @@ export class GemRemovalCheckService {
   /** The slot override when set and resolvable, otherwise the global DC. */
   static resolveDc({ hostItem = null, slot = null, gem = null } = {}) {
     const rollData = GemRemovalCheckService.#rollData(hostItem);
+    const rarity = getSlotCheckRarityDcs(slot, "removal");
+    if (rarity) {
+      return GemCheckService.resolveDc({ mode: GemCheckService.DC_MODE_RARITY, rarity }, { gem });
+    }
     const override = getSlotRemovalCheckDc(slot);
 
     if (override.length) {

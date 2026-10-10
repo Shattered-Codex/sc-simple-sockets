@@ -1,6 +1,7 @@
 import { Constants } from "../../core/Constants.js";
 import { ModuleSettings } from "../../core/settings/ModuleSettings.js";
 import { GemCriteria } from "./GemCriteria.js";
+import { GemConcealmentService } from "./GemConcealmentService.js";
 
 /**
  * Helper responsible for building the data model used by the gem target filter UI.
@@ -31,6 +32,7 @@ export class GemTargetFilterBuilder {
     label,
     hint
   } = {}) {
+    if (GemConcealmentService.isGemConcealed(item)) return { isGem: false, editable: false, concealed: true, part };
     const isGem = GemCriteria.matches(item);
     const stored = this.getStoredAllowedTypes(item);
     const selected = stored.length ? stored : [Constants.GEM_ALLOWED_TYPES_ALL];

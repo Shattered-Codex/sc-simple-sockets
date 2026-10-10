@@ -2,6 +2,7 @@ import { Constants } from "../../core/Constants.js";
 import { GemCriteria } from "./GemCriteria.js";
 import { GemResourceService } from "./GemResourceService.js";
 import { GemTagService } from "./GemTagService.js";
+import { GemConcealmentService } from "./GemConcealmentService.js";
 
 export class GemDetailsBuilder {
   static #dieOptionsCache = null;
@@ -24,6 +25,7 @@ export class GemDetailsBuilder {
     part,
     includeHints = true
   } = {}) {
+    if (GemConcealmentService.isGemConcealed(item)) return { isGem: false, editable: false, concealed: true, part };
     const isGem = GemCriteria.matches(item);
     const value = "weapons";
     const showWeaponDetails = true;

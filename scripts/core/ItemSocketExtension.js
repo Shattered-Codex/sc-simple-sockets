@@ -341,7 +341,7 @@ export class ItemSocketExtension extends SheetExtension {
           item: DebugTrace.describeItem(item),
           slotIndex: index
         });
-        await SocketService.addGem(item, index, data);
+        await SocketService.addGem(item, index, data, { insertionCheck: true });
         await this.#refreshSocketUi(sheet);
       }
     );

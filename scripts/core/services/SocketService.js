@@ -12,6 +12,7 @@ import { DebugTrace } from "../support/DebugTrace.js";
 import { HostItemUpdateService } from "../support/HostItemUpdateService.js";
 import { HostOperationQueue } from "../support/HostOperationQueue.js";
 import { GemRemovalCheckService } from "./GemRemovalCheckService.js";
+import { GemInsertionCheckService } from "./GemInsertionCheckService.js";
 import { GemBreakService } from "../../domain/gems/GemBreakService.js";
 import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 
@@ -21,13 +22,44 @@ export class SocketService {
   static REMOVE_GEM_MODE_DELETE = "delete";
 
   /** Slots with a removal check in flight, as `<host uuid>:<slot index>`. */
+  static #GM_SLOT_CONFIG_KEYS = Object.freeze([
+    "hidden",
+    "removalCheckType", "removalCheckDc", "removalCheckDcMode", "removalCheckRarityDcs", "removalCheckFailure",
+    "insertionCheckType", "insertionCheckDc", "insertionCheckDcMode", "insertionCheckRarityDcs", "insertionCheckFailure"
+  ]);
   static #pendingRemovalChecks = new Set();
+  /** Slots with an insertion check in flight, keyed the same way. */
+  static #pendingInsertionChecks = new Set();
 
   static async addGem(hostItem, idx, source, options = {}) {
-    return SocketService.#enqueueHostOperation(
-      hostItem,
-      (currentHostItem) => SocketService.#addGem(currentHostItem, idx, source, options)
-    );
+    // Without an insertion check the operation is queued right away, in the
+    // order it was asked for.
+    if (
+      options?.insertionCheck !== true
+      || options?.skipInsertionCheck === true
+      || !GemInsertionCheckService.applies({ hostItem: SocketService.#resolveHostItem(hostItem) })
+    ) {
+      return SocketService.#enqueueHostOperation(
+        hostItem,
+        (currentHostItem) => SocketService.#addGem(currentHostItem, idx, source, options)
+      );
+    }
+
+    // Like the removal check, the insertion check may open a roll dialog, so
+    // it runs before the operation is queued.
+    const check = await SocketService.#runInsertionCheck(hostItem, idx, source, options);
+    if (check.result) {
+      return check.result;
+    }
+
+    try {
+      return await SocketService.#enqueueHostOperation(
+        hostItem,
+        (currentHostItem) => SocketService.#addGem(currentHostItem, check.idx ?? idx, check.source ?? source, options)
+      );
+    } finally {
+      check.release?.();
+    }
   }
 
   static async removeGem(hostItem, idx, options = {}) {
@@ -124,34 +156,34 @@ export class SocketService {
     );
   }
 
-  static async #addGem(hostItem, idx, source, options = {}) {
-    DebugTrace.log("socket-service.addGem.start", {
-      hostItem: DebugTrace.describeItem(hostItem),
-      actor: DebugTrace.describeActor(hostItem?.actor ?? hostItem?.parent),
-      slotIndex: idx,
-      sourceUuid: typeof source === "string" ? source : source?.uuid ?? null,
-      options: DebugTrace.describeOptions(options)
-    });
+  /**
+   * Everything that can refuse a gem before anything is written: the host,
+   * the permissions, the slot, the gem and the slot's condition.
+   * Returns `{ result }` with the refusal, or `{ idx, gemItem, slots }`.
+   */
+  static async #validateAddGem(hostItem, idx, source, options = {}) {
+    const invalid = (result) => ({ result });
+
     if (!SocketService.#canUseSocketsOnHost(hostItem)) {
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         "host-not-socketable",
         Constants.localize(
           "SCSockets.Notifications.HostNotSocketable",
           "This item type cannot receive sockets."
         )
-      );
+      ));
     }
 
     if (!SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_ADD_GEM)) {
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         "permission-denied",
         Constants.localize(
           "SCSockets.Notifications.EditPermissionDenied",
           "You do not have permission to modify sockets on this item."
         )
-      );
+      ));
     }
 
     const slots = SocketStore.getSlots(hostItem);
@@ -159,20 +191,20 @@ export class SocketService {
     if (idx == null) {
       idx = slots.findIndex((slot) => !slot?.gem && !slot?._gemData);
       if (idx < 0) {
-        return SocketService.#buildResult({
+        return invalid(SocketService.#buildResult({
           success: false,
           changed: false,
           reason: "no-available-slot"
-        });
+        }));
       }
     }
 
     if (!Number.isInteger(idx) || idx < 0 || idx >= slots.length) {
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         "invalid-slot-index",
         Constants.localize("SCSockets.Notifications.InvalidSocketIndex", "Invalid socket index.")
-      );
+      ));
     }
 
     let gemItem = null;
@@ -191,44 +223,44 @@ export class SocketService {
     }
 
     if (!gemItem) {
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         "cannot-resolve-item",
         Constants.localize("SCSockets.Notifications.CannotResolveItem", "Cannot resolve dropped item.")
-      );
+      ));
     }
 
     if (!ItemResolver.isGem(gemItem)) {
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         "not-a-gem",
         Constants.localize(
           "SCSockets.Notifications.OnlyGems",
           "Only socket-compatible items can be inserted."
         )
-      );
+      ));
     }
 
     if (GemBreakService.isBroken(gemItem)) {
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         "gem-broken",
         Constants.localize(
           "SCSockets.Notifications.GemBroken",
           "This gem is broken and must be repaired before it can be socketed."
         )
-      );
+      ));
     }
 
     if (!SocketService.#gemMatchesHostType(gemItem, hostItem)) {
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         "gem-incompatible",
         Constants.localize(
           "SCSockets.Notifications.GemIncompatible",
           "That item is not compatible with this socket."
         )
-      );
+      ));
     }
 
     const conditionResult = await SocketSlotConfigService.evaluateCondition({
@@ -245,11 +277,11 @@ export class SocketService {
       const fallback = conditionResult.error
         ? "This socket condition could not be evaluated."
         : "That gem does not meet this socket's requirements.";
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         conditionResult.error ? "socket-condition-error" : "socket-condition-failed",
         Constants.localize(key, fallback)
-      );
+      ));
     }
 
     // Dropping a gem onto a filled socket takes the old gem out, which needs
@@ -258,14 +290,14 @@ export class SocketService {
       (slots[idx]?.gem || slots[idx]?._gemData)
       && !SocketService.#canMutateSockets(options, ModuleSettings.SOCKET_ACTION_REMOVE_GEM)
     ) {
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         "permission-denied",
         Constants.localize(
           "SCSockets.Notifications.RemoveGemPermissionDenied",
           "You do not have permission to remove the gem already in this socket."
         )
-      );
+      ));
     }
 
     // Dropping a gem onto a filled socket would swap the old gem out without
@@ -274,15 +306,33 @@ export class SocketService {
       options?.skipRemovalCheck !== true
       && GemRemovalCheckService.plan({ hostItem, slot: slots[idx] }).required
     ) {
-      return SocketService.#warnAndReturnResult(
+      return invalid(SocketService.#warnAndReturnResult(
         "warn",
         "removal-check-required",
         Constants.localize(
           "SCSockets.RemovalCheck.Notifications.ReplaceBlocked",
           "Remove the gem in this socket first: taking it out requires a check."
         )
-      );
+      ));
     }
+
+    return { result: null, idx, gemItem, slots };
+  }
+
+  static async #addGem(hostItem, idx, source, options = {}) {
+    DebugTrace.log("socket-service.addGem.start", {
+      hostItem: DebugTrace.describeItem(hostItem),
+      actor: DebugTrace.describeActor(hostItem?.actor ?? hostItem?.parent),
+      slotIndex: idx,
+      sourceUuid: typeof source === "string" ? source : source?.uuid ?? null,
+      options: DebugTrace.describeOptions(options)
+    });
+    const validated = await SocketService.#validateAddGem(hostItem, idx, source, options);
+    if (validated.result) {
+      return validated.result;
+    }
+    const { gemItem, slots } = validated;
+    idx = validated.idx;
 
     const previousSlot = slots[idx] ?? {};
     const shouldDeleteReplacedGem = SocketService.#shouldDeleteGemOnRemoval(previousSlot);
@@ -304,8 +354,16 @@ export class SocketService {
     let consumedIncomingGem = false;
 
     try {
-      await InventoryService.consumeOne(gemItem);
-      consumedIncomingGem = Boolean(gemItem?.actor);
+      // The gem may have been spent or broken by another operation on the
+      // same stack since it was validated; then there is nothing to socket.
+      consumedIncomingGem = await InventoryService.consumeOne(gemItem, {}, { requireIntact: true });
+      if (gemItem?.actor && !consumedIncomingGem) {
+        return SocketService.#warnAndReturnResult(
+          "warn",
+          "gem-unavailable",
+          Constants.localize("SCSockets.Notifications.GemUnavailable", "That gem is no longer available.")
+        );
+      }
 
       try {
         await EffectService.removeGemEffects(hostItem, idx, noRender);
@@ -354,6 +412,143 @@ export class SocketService {
       changed: true,
       reason: "gem-added",
       slotIndex: idx
+    });
+  }
+
+  /**
+   * Rolls the optional insertion check, once `addGem` decided it may apply.
+   * Only callers acting for a player dropping a gem ask for it
+   * (`insertionCheck: true`); activities, macros and other automation decide
+   * the outcome themselves.
+   * Returns `{ result }` when the gem must not be socketed (invalid request,
+   * cancelled roll or failed check) and `{ idx, source }` with the resolved
+   * slot and gem otherwise. `release` must be called once the gem is in.
+   */
+  static async #runInsertionCheck(hostItem, idx, source, options = {}) {
+    const currentHostItem = SocketService.#resolveHostItem(hostItem);
+
+    // The request is validated first, so nobody rolls for a gem the socket
+    // would refuse anyway.
+    const validated = await SocketService.#validateAddGem(currentHostItem, idx, source, options);
+    if (validated.result) {
+      return { result: validated.result };
+    }
+    const { gemItem } = validated;
+    const resolved = { result: null, idx: validated.idx, source: gemItem };
+    const plan = GemInsertionCheckService.plan({
+      hostItem: currentHostItem,
+      slot: validated.slots[validated.idx],
+      gemItem
+    });
+    if (!plan.required) {
+      return resolved;
+    }
+
+    const hostKey = currentHostItem?.uuid ?? currentHostItem?.id ?? null;
+    const pendingKey = hostKey ? `${hostKey}:${validated.idx}` : null;
+    if (pendingKey && SocketService.#pendingInsertionChecks.has(pendingKey)) {
+      return {
+        result: SocketService.#buildResult({ success: false, changed: false, reason: "insertion-check-pending" })
+      };
+    }
+    if (pendingKey) {
+      SocketService.#pendingInsertionChecks.add(pendingKey);
+    }
+    const release = () => SocketService.#pendingInsertionChecks.delete(pendingKey);
+    const notify = (key, fallback) => {
+      if (options?.notify !== false) {
+        ui.notifications?.warn?.(Constants.localize(`SCSockets.InsertionCheck.Notifications.${key}`, fallback));
+      }
+    };
+
+    try {
+      const outcome = await GemInsertionCheckService.roll(plan);
+      if (!outcome.ok) {
+        const cancelled = outcome.reason === "roll-cancelled";
+        if (!cancelled) {
+          notify("RollFailed", "The insertion check could not be rolled, so the gem was not socketed.");
+        }
+        release();
+        return {
+          result: SocketService.#buildResult({
+            success: false,
+            changed: false,
+            reason: cancelled ? "insertion-check-cancelled" : "insertion-check-error"
+          })
+        };
+      }
+      if (outcome.success) {
+        return { ...resolved, release };
+      }
+
+      const failure = await SocketService.#applyInsertionFailure(gemItem, outcome.failure);
+      notify(...{
+        [ModuleSettings.INSERTION_FAILURE_BREAK]: ["Broke", "The check failed: the gem broke while being socketed."],
+        [ModuleSettings.INSERTION_FAILURE_LOSE]: ["Lost", "The check failed: the gem was destroyed while being socketed."],
+        [ModuleSettings.INSERTION_FAILURE_KEEP]: ["Keep", "The check failed: the gem was not socketed."]
+      }[failure]);
+      release();
+      return {
+        result: SocketService.#buildResult({
+          success: false,
+          changed: failure !== ModuleSettings.INSERTION_FAILURE_KEEP,
+          reason: "insertion-check-failed",
+          insertionCheck: { success: false, total: outcome.total, dc: outcome.dc },
+          failure
+        })
+      };
+    } catch (error) {
+      release();
+      throw error;
+    }
+  }
+
+  /**
+   * Applies a failed insertion check to one unit of the gem and returns the
+   * outcome that took effect. A gem that is not in an inventory (dragged from
+   * the sidebar or a compendium) is never changed.
+   *
+   * It runs in the actor's queue and reads the gem again inside it, so
+   * failures on the same stack (two sockets, a repair activity) cannot each
+   * act on the quantity the other one saw.
+   */
+  static async #applyInsertionFailure(gemItem, failure) {
+    const actor = gemItem?.actor;
+    const keep = ModuleSettings.INSERTION_FAILURE_KEEP;
+    if (!actor || failure === keep) {
+      return keep;
+    }
+
+    return HostOperationQueue.enqueue(actor, async () => {
+      const current = actor.items?.get?.(gemItem.id) ?? null;
+      const quantity = Number(current?.system?.quantity ?? 1);
+      // The gem was spent or broken while the roll was open: nothing is left to lose.
+      if (!current || !(quantity > 0) || GemBreakService.isBroken(current)) {
+        return keep;
+      }
+
+      if (failure === ModuleSettings.INSERTION_FAILURE_LOSE) {
+        await InventoryService.consumeOneLocked(current);
+        return failure;
+      }
+      if (quantity <= 1) {
+        await GemBreakService.break(current);
+        return failure;
+      }
+
+      const broken = current.toObject();
+      delete broken._id;
+      GemBreakService.markDataBroken(broken);
+      await current.update({ "system.quantity": quantity - 1 });
+      try {
+        if (!(await InventoryService.returnOneLocked(current, broken))) {
+          throw new Error("The broken gem could not be returned to the inventory.");
+        }
+      } catch (error) {
+        await current.update({ "system.quantity": quantity });
+        throw error;
+      }
+      return failure;
     });
   }
 
@@ -778,13 +973,14 @@ export class SocketService {
       return false;
     }
 
-    // Visibility and the removal check overrides are the GM's to set: anyone
+    // Visibility and the check overrides are the GM's to set: anyone
     // else keeps what the slot already has, whatever the config asks for.
     if (!options?.bypassPermission && !game?.user?.isGM) {
-      const { hidden, removalCheckDc, removalCheckFailure } = SocketSlotConfigService.getConfig(
-        SocketSlotConfigService.getSlot(hostItem, idx) ?? {}
-      );
-      config = { ...config, hidden, removalCheckDc, removalCheckFailure };
+      const current = SocketSlotConfigService.getConfig(SocketSlotConfigService.getSlot(hostItem, idx) ?? {});
+      config = { ...config };
+      for (const key of SocketService.#GM_SLOT_CONFIG_KEYS) {
+        config[key] = current[key];
+      }
     }
 
     return SocketSlotConfigService.updateConfig(hostItem, idx, config, options);

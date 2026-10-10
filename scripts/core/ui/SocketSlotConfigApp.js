@@ -1,3 +1,4 @@
+import { GemCheckService } from "../services/GemCheckService.js";
 import { Constants } from "../Constants.js";
 import { SocketStore } from "../SocketStore.js";
 import { SocketSlotConfigService } from "../services/SocketSlotConfigService.js";
@@ -6,6 +7,9 @@ import { SocketGemSheetService } from "../services/SocketGemSheetService.js";
 import {
   normalizeSlotColor,
   normalizeSlotFrameImg,
+  normalizeSlotCheckType,
+  normalizeSlotInsertionCheckDc,
+  normalizeSlotInsertionCheckFailure,
   normalizeSlotRemovalCheckDc,
   normalizeSlotRemovalCheckFailure
 } from "../helpers/socketSlotConfig.js";
@@ -332,6 +336,20 @@ export class SocketSlotConfigApp extends BaseApplication {
     const deleteGemOnRemoval = draft ? draft.deleteGemOnRemoval : slotConfig.deleteGemOnRemoval;
     const removalCheckDc = draft?.removalCheckDc ?? slotConfig.removalCheckDc ?? "";
     const removalCheckFailure = draft?.removalCheckFailure ?? slotConfig.removalCheckFailure ?? "";
+    const insertionCheckDc = draft?.insertionCheckDc ?? slotConfig.insertionCheckDc ?? "";
+    const insertionCheckFailure = draft?.insertionCheckFailure ?? slotConfig.insertionCheckFailure ?? "";
+    const insertionCheckType = draft?.insertionCheckType ?? slotConfig.insertionCheckType ?? "";
+    // Listing the checks resolves every tool label, so both sections share one list.
+    const checkChoices = GemCheckService.listCheckChoices();
+    const removalCheckType = draft?.removalCheckType ?? slotConfig.removalCheckType ?? "";
+    const checkDc = (prefix) => {
+      const source = draft ?? slotConfig;
+      const rarity = source[`${prefix}DcMode`] === GemCheckService.DC_MODE_RARITY;
+      return {
+        mode: rarity ? GemCheckService.DC_MODE_RARITY : (source[`${prefix}Dc`] ? "custom" : ""),
+        rarity: GemCheckService.normalizeRarityDcs(rarity ? source[`${prefix}RarityDcs`] : null)
+      };
+    };
     const condition = draft?.condition ?? slotConfig.condition;
     const description = draft?.description ?? slotConfig.description;
     const frameImg = normalizeSlotFrameImg(draft?.frameImg ?? slotConfig.frameImg);
@@ -389,8 +407,9 @@ export class SocketSlotConfigApp extends BaseApplication {
       slotNumber,
       railSlots,
       canAddSocket: this.#editable,
-      tabDescActive: this.#activeTab !== "cond",
+      tabDescActive: this.#activeTab === "desc",
       tabCondActive: this.#activeTab === "cond",
+      tabChecksActive: this.#activeTab === "checks",
       hasGem: Boolean(slot?.gem || slot?._gemData),
       gemName: GemConcealmentService.describeGem(this.#hostItem, slot, slot?.gem ?? slot?._gemData).name ?? "",
       gemImg: GemConcealmentService.describeGem(this.#hostItem, slot, slot?.gem ?? slot?._gemData).img ?? "",
@@ -410,17 +429,24 @@ export class SocketSlotConfigApp extends BaseApplication {
       slotConfigName: name,
       hidden,
       deleteGemOnRemoval,
-      removalCheck: {
-        enabled: ModuleSettings.isGemRemovalCheckEnabled(),
-        dc: removalCheckDc,
-        failureOptions: [
-          {
-            value: "",
-            label: Constants.localize("SCSockets.SocketSlotConfig.RemovalCheck.Failure.Inherit", "Use the global setting")
-          },
-          ...ModuleSettings.getRemovalFailureChoices()
-        ].map((option) => ({ ...option, selected: option.value === removalCheckFailure }))
-      },
+      checks: [
+        this.#buildCheckOverride("insertion", checkChoices, {
+          enabled: ModuleSettings.isGemInsertionCheckEnabled(),
+          type: insertionCheckType,
+          dc: insertionCheckDc,
+          ...checkDc("insertionCheck"),
+          failure: insertionCheckFailure,
+          failureChoices: ModuleSettings.getInsertionFailureChoices()
+        }),
+        this.#buildCheckOverride("removal", checkChoices, {
+          enabled: ModuleSettings.isGemRemovalCheckEnabled(),
+          type: removalCheckType,
+          dc: removalCheckDc,
+          ...checkDc("removalCheck"),
+          failure: removalCheckFailure,
+          failureChoices: ModuleSettings.getRemovalFailureChoices()
+        })
+      ],
       canEditVisibility: this.#canEditVisibility(),
       canEditRemovalCheck: this.#canEditRemovalCheck(),
       condition,
@@ -523,6 +549,14 @@ export class SocketSlotConfigApp extends BaseApplication {
         "SCSockets.SocketSlotConfig.Tabs.Condition",
         "Condition"
       ),
+      tabChecks: Constants.localize(
+        "SCSockets.SocketSlotConfig.Tabs.Checks",
+        "Checks"
+      ),
+      checksHint: Constants.localize(
+        "SCSockets.SocketSlotConfig.Checks.Hint",
+        "Override, for this slot only, the checks configured in the module settings. Anything left on the global setting follows it."
+      ),
       hiddenLabel: Constants.localize(
         "SCSockets.SocketSlotConfig.Hidden.Label",
         "Hide slot"
@@ -542,26 +576,6 @@ export class SocketSlotConfigApp extends BaseApplication {
       deleteGemOnRemovalHint: Constants.localize(
         "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Hint",
         "When enabled, this slot deletes its gem when unsocketed even if the global setting is disabled."
-      ),
-      removalCheckDcLabel: Constants.localize(
-        "SCSockets.SocketSlotConfig.RemovalCheck.Dc.Label",
-        "Removal check DC"
-      ),
-      removalCheckDcHint: Constants.localize(
-        "SCSockets.SocketSlotConfig.RemovalCheck.Dc.Hint",
-        "A number or a formula without dice. Leave blank to use the global DC; 0 removes the check from this slot."
-      ),
-      removalCheckDcPlaceholder: Constants.localize(
-        "SCSockets.SocketSlotConfig.RemovalCheck.Dc.Placeholder",
-        "Global"
-      ),
-      removalCheckFailureLabel: Constants.localize(
-        "SCSockets.SocketSlotConfig.RemovalCheck.Failure.Label",
-        "On a failed removal check"
-      ),
-      removalCheckFailureHint: Constants.localize(
-        "SCSockets.SocketSlotConfig.RemovalCheck.Failure.Hint",
-        "What happens to the gem in this slot when the removal check fails."
       ),
       destructiveBadge: Constants.localize(
         "SCSockets.SocketSlotConfig.DeleteGemOnRemoval.Badge",
@@ -804,6 +818,9 @@ export class SocketSlotConfigApp extends BaseApplication {
     const targetName = target.getAttribute?.("name")
       ?? target.closest?.("file-picker[name]")?.getAttribute?.("name")
       ?? null;
+    if (targetName?.endsWith?.("CheckDcMode")) {
+      this.#refreshCheckDcRows();
+    }
     if (targetName === "gemResource.recovery.type" || targetName === "gemResource.recovery.period") {
       this.#refreshRecoveryControls();
       return;
@@ -926,7 +943,7 @@ export class SocketSlotConfigApp extends BaseApplication {
   }
 
   #switchTab(tab) {
-    const nextTab = tab === "cond" ? "cond" : "desc";
+    const nextTab = ["cond", "checks"].includes(tab) ? tab : "desc";
     if (nextTab === this.#activeTab) {
       return;
     }
@@ -1058,7 +1075,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     if (!(await this.#commitCurrentDraft())) {
       return;
     }
-    await SocketService.addGem(this.#hostItem, this.#slotIndex, data);
+    await SocketService.addGem(this.#hostItem, this.#slotIndex, data, { insertionCheck: true });
     this.#parentApp?.render?.();
     this.render();
   }
@@ -1124,7 +1141,7 @@ export class SocketSlotConfigApp extends BaseApplication {
         name: "",
         hidden: this.#currentHiddenValue(),
         deleteGemOnRemoval: this.#currentDeleteGemOnRemovalValue(),
-        ...this.#currentRemovalCheckValues(),
+        ...this.#currentCheckValues(),
         condition: "",
         description: "",
         color: "",
@@ -1136,7 +1153,7 @@ export class SocketSlotConfigApp extends BaseApplication {
       name: this.#readFieldValue("slotConfig.name"),
       hidden: this.#canEditVisibility() ? this.#readCheckboxValue("slotConfig.hidden") : this.#currentHiddenValue(),
       deleteGemOnRemoval: this.#readCheckboxValue("slotConfig.deleteGemOnRemoval"),
-      ...this.#readRemovalCheckValues(),
+      ...this.#readCheckValues(),
       condition: this.#readFieldValue("slotConfig.condition"),
       description: this.#readFieldValue("slotConfig.description"),
       color: normalizeSlotColor(this.#readFieldValue("slotConfig.colorHex")),
@@ -1164,7 +1181,7 @@ export class SocketSlotConfigApp extends BaseApplication {
     return Boolean(this.#editable && game.user?.isGM);
   }
 
-  /** The removal check overrides decide the risk of pulling a gem out, so only a GM sets them. */
+  /** The check overrides decide the risk of socketing or pulling a gem, so only a GM sets them. */
   #canEditRemovalCheck() {
     return Boolean(this.#editable && game.user?.isGM);
   }
@@ -1179,30 +1196,144 @@ export class SocketSlotConfigApp extends BaseApplication {
     return SocketSlotConfigService.getConfig(slot).deleteGemOnRemoval;
   }
 
-  #currentRemovalCheckValues() {
-    const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
-    const config = SocketSlotConfigService.getConfig(slot);
+  /** The rows of one check in the Checks tab: its check, DC and failure overrides. */
+  #buildCheckOverride(id, checkChoices, { enabled, type, dc, mode, rarity, failure, failureChoices }) {
+    const name = id === "insertion" ? "Insertion" : "Removal";
+    const text = (key, fallback) => Constants.localize(`SCSockets.SocketSlotConfig.${name}Check.${key}`, fallback);
+    const inherit = {
+      value: "",
+      label: Constants.localize("SCSockets.SocketSlotConfig.RemovalCheck.Failure.Inherit", "Use the global setting")
+    };
+    const shared = (key, fallback) => Constants.localize(`SCSockets.SocketSlotConfig.Checks.${key}`, fallback);
+    const typeChoices = [
+      { value: GemCheckService.TYPE_NONE, label: shared("NoCheck", "No check for this slot") },
+      ...checkChoices
+    ];
+    if (type && !typeChoices.some((choice) => choice.value === type)) {
+      typeChoices.push({ value: type, label: type });
+    }
+    const selected = (options, value) => options.map((option) => ({ ...option, selected: option.value === value }));
+
     return {
-      removalCheckDc: config.removalCheckDc ?? "",
-      removalCheckFailure: config.removalCheckFailure ?? ""
+      id,
+      enabled,
+      title: text("Title", id === "insertion" ? "Insertion check" : "Removal check"),
+      disabledNote: text(
+        "Disabled",
+        "This check is turned off in the module settings. These overrides only apply once it is enabled."
+      ),
+      rows: [
+        {
+          key: `${id}CheckType`,
+          label: text("Type.Label", "Check"),
+          hint: text("Type.Hint", "The roll made for this slot instead of the global check."),
+          options: selected([inherit, ...typeChoices], type)
+        },
+        {
+          key: `${id}CheckDcMode`,
+          label: shared("DcMode.Label", "DC"),
+          hint: shared("DcMode.Hint", "Use the global DC, or give this slot its own: a number or formula, or a DC for each gem rarity."),
+          options: selected([
+            { value: "", label: shared("DcMode.Global", "Use the global DC") },
+            { value: "custom", label: shared("DcMode.Custom", "Number or formula") },
+            { value: GemCheckService.DC_MODE_RARITY, label: shared("DcMode.Rarity", "By gem rarity") }
+          ], mode)
+        },
+        {
+          key: `${id}CheckDc`,
+          dcRow: "custom",
+          hidden: mode !== "custom",
+          label: text("Dc.Label", id === "insertion" ? "Insertion check DC" : "Removal check DC"),
+          hint: shared(
+            "DcHint",
+            "A number or a formula without dice, e.g. 10 + 2 * @gem.rarity. A DC of 0 removes the check from this slot."
+          ),
+          isText: true,
+          value: dc,
+          placeholder: "15"
+        },
+        {
+          key: `${id}CheckRarityDcs`,
+          dcRow: GemCheckService.DC_MODE_RARITY,
+          hidden: mode !== GemCheckService.DC_MODE_RARITY,
+          label: shared("RarityDcs.Label", "DC by gem rarity"),
+          hint: shared("RarityDcs.Hint", "The DC for each rarity of the gem. A DC of 0 needs no check."),
+          isRarity: true,
+          rarities: GemCheckService.listRarityOptions().map((option) => ({ ...option, dc: rarity[option.value] }))
+        },
+        {
+          key: `${id}CheckFailure`,
+          label: text("Failure.Label", id === "insertion" ? "On a failed insertion check" : "On a failed removal check"),
+          hint: text("Failure.Hint", "What happens to the gem when this slot's check fails."),
+          options: selected([inherit, ...failureChoices], failure)
+        }
+      ]
     };
   }
 
-  /**
-   * The removal check fields are rendered only while the feature is enabled.
-   * When they are absent the stored overrides are kept, so saving a slot with
-   * the feature turned off does not erase them. They are also kept for anyone
-   * who is not a GM, whatever the form holds.
-   */
-  #readRemovalCheckValues() {
+  #currentCheckValues() {
+    const slot = SocketSlotConfigService.getSlot(this.#hostItem, this.#slotIndex) ?? {};
+    const config = SocketSlotConfigService.getConfig(slot);
+    return {
+      insertionCheckType: config.insertionCheckType ?? "",
+      insertionCheckDc: config.insertionCheckDc ?? "",
+      insertionCheckFailure: config.insertionCheckFailure ?? "",
+      removalCheckType: config.removalCheckType ?? "",
+      removalCheckDc: config.removalCheckDc ?? "",
+      removalCheckFailure: config.removalCheckFailure ?? "",
+      insertionCheckDcMode: config.insertionCheckDcMode ?? "",
+      insertionCheckRarityDcs: config.insertionCheckRarityDcs ?? null,
+      removalCheckDcMode: config.removalCheckDcMode ?? "",
+      removalCheckRarityDcs: config.removalCheckRarityDcs ?? null
+    };
+  }
+
+  /** A slot's own DC: nothing (global), a number or formula, or a table by gem rarity. */
+  #readCheckDc(prefix) {
+    const mode = this.#readFieldValue(`slotConfig.${prefix}DcMode`);
+    if (mode === GemCheckService.DC_MODE_RARITY) {
+      return {
+        [`${prefix}Dc`]: "",
+        [`${prefix}DcMode`]: mode,
+        [`${prefix}RarityDcs`]: GemCheckService.normalizeRarityDcs(
+          Object.fromEntries(GemCheckService.RARITY_KEYS.map((key) => [
+            key,
+            Number.parseInt(this.#readFieldValue(`slotConfig.${prefix}RarityDcs.${key}`), 10)
+          ]))
+        )
+      };
+    }
+    return {
+      [`${prefix}Dc`]: mode === "custom"
+        ? normalizeSlotRemovalCheckDc(this.#readFieldValue(`slotConfig.${prefix}Dc`))
+        : "",
+      [`${prefix}DcMode`]: "",
+      [`${prefix}RarityDcs`]: null
+    };
+  }
+
+  #refreshCheckDcRows() {
+    this.element?.querySelectorAll?.("[data-check-dc-row]")?.forEach((row) => {
+      row.hidden = row.dataset.checkDcRow !== this.#readFieldValue(`slotConfig.${row.dataset.checkDcMode}`);
+    });
+  }
+
+  /** The check overrides are kept as stored for anyone who is not a GM, whatever the form holds. */
+  #readCheckValues() {
     if (
       !this.#canEditRemovalCheck()
       || !this.form?.querySelector?.('[name="slotConfig.removalCheckDc"]')
     ) {
-      return this.#currentRemovalCheckValues();
+      return this.#currentCheckValues();
     }
     return {
-      removalCheckDc: normalizeSlotRemovalCheckDc(this.#readFieldValue("slotConfig.removalCheckDc")),
+      insertionCheckType: normalizeSlotCheckType(this.#readFieldValue("slotConfig.insertionCheckType")),
+      ...this.#readCheckDc("insertionCheck"),
+      insertionCheckFailure: normalizeSlotInsertionCheckFailure(
+        this.#readFieldValue("slotConfig.insertionCheckFailure")
+      ),
+      removalCheckType: normalizeSlotCheckType(this.#readFieldValue("slotConfig.removalCheckType")),
+      ...this.#readCheckDc("removalCheck"),
       removalCheckFailure: normalizeSlotRemovalCheckFailure(
         this.#readFieldValue("slotConfig.removalCheckFailure")
       )
@@ -1240,6 +1371,15 @@ export class SocketSlotConfigApp extends BaseApplication {
       deleteGemOnRemoval: Boolean(payload.deleteGemOnRemoval),
       removalCheckDc: normalizeSlotRemovalCheckDc(payload.removalCheckDc),
       removalCheckFailure: normalizeSlotRemovalCheckFailure(payload.removalCheckFailure),
+      insertionCheckDc: normalizeSlotInsertionCheckDc(payload.insertionCheckDc),
+      insertionCheckFailure: normalizeSlotInsertionCheckFailure(payload.insertionCheckFailure),
+      insertionCheckType: normalizeSlotCheckType(payload.insertionCheckType),
+      removalCheckType: normalizeSlotCheckType(payload.removalCheckType),
+      checkRarityDcs: ["insertionCheck", "removalCheck"].map((prefix) => (
+        payload[`${prefix}DcMode`] === GemCheckService.DC_MODE_RARITY
+          ? GemCheckService.normalizeRarityDcs(payload[`${prefix}RarityDcs`])
+          : null
+      )),
       condition: String(payload.condition ?? ""),
       description: String(payload.description ?? ""),
       color: normalizeSlotColor(payload.color ?? ""),

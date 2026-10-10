@@ -19,6 +19,25 @@ export class ScMoreActivitiesGemRepairActivityData extends dnd5e.dataModels.acti
     return {
       ...super.defineSchema(),
       repair: new fields.SchemaField({
+        action: new fields.StringField({
+          required: false,
+          initial: "repair",
+          choices: ["repair", "break"]
+        }),
+        amount: new fields.SchemaField({
+          mode: new fields.StringField({
+            required: false,
+            initial: "count",
+            choices: ["count", "all"]
+          }),
+          count: new fields.NumberField({
+            required: false,
+            nullable: false,
+            integer: true,
+            min: 1,
+            initial: 1
+          })
+        }),
         check: new fields.SchemaField({
           type: new fields.StringField({
             required: false,

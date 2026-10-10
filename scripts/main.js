@@ -35,6 +35,7 @@ import { SocketCountUsesService } from "./core/services/SocketCountUsesService.j
 import { SocketUsesUI } from "./core/ui/SocketUsesUI.js";
 import { BrokenGemUI } from "./core/ui/BrokenGemUI.js";
 import { GemConcealmentService } from "./domain/gems/GemConcealmentService.js";
+import { HiddenSocketContentIntegration } from "./core/integration/HiddenSocketContentIntegration.js";
 
 const gemSheet = new GemSheetExtension();
 const itemSocketSheet = new ItemSocketExtension();
@@ -92,6 +93,7 @@ Hooks.once("setup", () => {
   ActorGemBadges.activate();
   ActorGemFormulaUI.activate();
   ItemActivityBadges.activate();
+  HiddenSocketContentIntegration.activate();
   SocketConsumptionTargetUI.activate();
   TransferFilterUI.activate();
   SocketTooltipUI.activate();

@@ -1,3 +1,4 @@
+import { ItemResolver } from "../ItemResolver.js";
 import { Compatibility } from "../support/Compatibility.js";
 import { Constants } from "../Constants.js";
 import { ActivityReferenceRemapper } from "./ActivityReferenceRemapper.js";
@@ -24,6 +25,7 @@ export class ActivityTransferService {
       await ActivityTransferService.removeForSlot(hostItem, slotIndex, options);
     }
 
+    const identity = ItemResolver.getSourceMeta(gemItem);
     const sourceActivities = gemItem.system?.activities?.contents ?? [];
     if (!sourceActivities.length) {
       if (Object.keys(extraUpdateData).length) {
@@ -37,6 +39,11 @@ export class ActivityTransferService {
     const createdIds = [];
     const activityMeta = {};
     const activityIdMap = new Map();
+    // Every activity is written by the single host update below, the way
+    // Item5e#createActivity writes one: a write per activity costs a server
+    // round trip, a sheet render and a reconcile pass each.
+    const payloads = {};
+    let sort = ActivityTransferService.#nextActivitySort(hostItem);
     for (const activity of sourceActivities) {
       const original = activity.toObject();
       const type = original.type;
@@ -72,26 +79,17 @@ export class ActivityTransferService {
       const payload = doc.toObject();
       ActivityTransferService.#sanitizeTransferredActivityPayload(payload, hostItem);
 
-      const createdActivity = await ActivityTransferService.#createTransferredActivity(
-        hostItem,
-        type,
-        payload,
-        activity.id
-      );
-      hostItem = ItemSheetSync.resolve(hostItem);
-
-      const newId = createdActivity?.id ?? createdActivity?._id ?? null;
-      if (!newId) {
-        continue;
-      }
+      const newId = payload._id ?? doc.id ?? foundry.utils.randomID();
+      payloads[newId] = { ...payload, _id: newId, sort };
+      sort += ActivityTransferService.#SORT_STEP;
       createdIds.push(newId);
       activityIdMap.set(String(activity.id), String(newId));
       activityMeta[newId] = {
         sourceId: activity.id,
         hostActivityId: newId,
         slot: slotIndex,
-        gemImg: gemItem.img,
-        gemName: gemItem.name,
+        gemImg: identity.img,
+        gemName: identity.name,
         gemUuid: gemItem.uuid,
         activityName: original.name
       };
@@ -108,16 +106,22 @@ export class ActivityTransferService {
 
     const flagPayload = {
       gemUuid: gemItem.uuid,
-      gemName: gemItem.name,
-      gemImg: gemItem.img,
+      gemName: identity.name,
+      gemImg: identity.img,
       activityIds: createdIds,
       activityMeta
     };
 
-    const updateData = {
-      ...extraUpdateData,
-      ...ActivityReferenceRemapper.buildUpdateData(sourceActivities, activityIdMap)
-    };
+    const updateData = { ...extraUpdateData };
+    // References between the gem's own activities point at the new ids.
+    const remapped = ActivityReferenceRemapper.buildUpdateData(sourceActivities, activityIdMap);
+    for (const [path, value] of Object.entries(remapped)) {
+      const [id, ...rest] = path.slice("system.activities.".length).split(".");
+      foundry.utils.setProperty(payloads[id], rest.join("."), value);
+    }
+    for (const [id, payload] of Object.entries(payloads)) {
+      updateData[`system.activities.${id}`] = payload;
+    }
     const flagPath = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${slotIndex}`;
     updateData[flagPath] = flagPayload;
     await ActivityTransferService.#updateHostItem(hostItem, updateData, updateOptions, {
@@ -312,8 +316,8 @@ export class ActivityTransferService {
       const prevGemImg1 = previous.gemImg !== Constants.SOCKET_SLOT_IMG ? previous.gemImg : null;
       rebuilt[slotKey] ??= {
         gemUuid: previous.gemUuid ?? sourceGem?.uuid ?? slot?.gem?.uuid ?? null,
-        gemName: previous.gemName ?? slot?.gem?.name ?? slot?.name ?? fallbackName,
-        gemImg: prevGemImg1 ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
+        gemName: ItemResolver.getSnapshotMeta(slot?._gemData)?.name || slot?.gem?.name || previous.gemName || slot?.name || fallbackName,
+        gemImg: ItemResolver.getSnapshotMeta(slot?._gemData)?.img || slot?.gem?.img || prevGemImg1 || Constants.SOCKET_SLOT_IMG,
         activityIds: [],
         activityMeta: {}
       };
@@ -323,8 +327,8 @@ export class ActivityTransferService {
         sourceId: previousMeta.sourceId ?? sourceGem?.sourceId ?? null,
         hostActivityId: activityId,
         slot: slotIndex,
-        gemImg: previousMeta.gemImg ?? rebuilt[slotKey].gemImg,
-        gemName: previousMeta.gemName ?? rebuilt[slotKey].gemName,
+        gemImg: rebuilt[slotKey].gemImg,
+        gemName: rebuilt[slotKey].gemName,
         gemUuid: previousMeta.gemUuid ?? rebuilt[slotKey].gemUuid,
         activityName: previousMeta.activityName ?? activity?.name ?? null
       };
@@ -343,8 +347,8 @@ export class ActivityTransferService {
         const prevGemImg2 = payload?.gemImg !== Constants.SOCKET_SLOT_IMG ? payload?.gemImg : null;
         rebuilt[slotKey] ??= {
           gemUuid: payload?.gemUuid ?? slot?.gem?.uuid ?? null,
-          gemName: payload?.gemName ?? slot?.gem?.name ?? slot?.name ?? fallbackName,
-          gemImg: prevGemImg2 ?? slot?.gem?.img ?? Constants.SOCKET_SLOT_IMG,
+          gemName: ItemResolver.getSnapshotMeta(slot?._gemData)?.name || slot?.gem?.name || payload?.gemName || slot?.name || fallbackName,
+          gemImg: ItemResolver.getSnapshotMeta(slot?._gemData)?.img || slot?.gem?.img || prevGemImg2 || Constants.SOCKET_SLOT_IMG,
           activityIds: [],
           activityMeta: {}
         };
@@ -354,8 +358,8 @@ export class ActivityTransferService {
           sourceId: previousMeta.sourceId ?? null,
           hostActivityId: activityId,
           slot: slotIndex,
-          gemImg: previousMeta.gemImg ?? rebuilt[slotKey].gemImg,
-          gemName: previousMeta.gemName ?? rebuilt[slotKey].gemName,
+          gemImg: rebuilt[slotKey].gemImg,
+          gemName: rebuilt[slotKey].gemName,
           gemUuid: previousMeta.gemUuid ?? rebuilt[slotKey].gemUuid,
           activityName: previousMeta.activityName ?? activities[activityId]?.name ?? null
         };
@@ -468,28 +472,13 @@ export class ActivityTransferService {
     return payload;
   }
 
-  static async #createTransferredActivity(hostItem, type, payload, sourceId) {
-    const currentHost = ItemSheetSync.resolve(hostItem);
-    if (!currentHost || typeof currentHost.createActivity !== "function") {
-      return null;
-    }
+  static get #SORT_STEP() {
+    return globalThis.CONST?.SORT_INTEGER_DENSITY ?? 100000;
+  }
 
-    const beforeIds = new Set(
-      Array.from(currentHost.system?.activities ?? []).map((activity) => activity.id)
-    );
-
-    await currentHost.createActivity(type, payload, { renderSheet: false });
-
-    const refreshedHost = ItemSheetSync.resolve(currentHost);
-    const created = Array.from(refreshedHost?.system?.activities ?? []).find((activity) => {
-      if (!activity?.id || beforeIds.has(activity.id)) {
-        return false;
-      }
-      const sourceGem = activity.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_SOURCE_GEM];
-      return sourceGem?.sourceId === sourceId;
-    });
-
-    return created ?? null;
+  static #nextActivitySort(hostItem) {
+    const sorts = Array.from(hostItem.system?.activities ?? [], (activity) => Number(activity?.sort) || 0);
+    return sorts.length ? Math.max(...sorts) + ActivityTransferService.#SORT_STEP : 0;
   }
 
   static async #updateHostItem(hostItem, updateData, updateOptions, context = {}) {

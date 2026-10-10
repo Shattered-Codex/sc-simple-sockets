@@ -4,6 +4,7 @@ import { canUserSeeSlot, getSlotConfig, resolveSlotFrameImg } from "../helpers/s
 import { ModuleSettings } from "../settings/ModuleSettings.js";
 import { DebugTrace } from "../support/DebugTrace.js";
 import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
+import { SocketContentVisibilityUI } from "./SocketContentVisibilityUI.js";
 
 export class ActorGemBadges {
   static CSS_CLASS = "sc-sockets-badges";
@@ -101,6 +102,10 @@ export class ActorGemBadges {
 
     const root = this.#rootOf(html);
     if (!root) return;
+
+    const renderVisibility = () => SocketContentVisibilityUI.render(root, { actor: sheet.actor });
+    renderVisibility();
+    SocketContentVisibilityUI.observe(root, renderVisibility);
 
     this.#clearBadges(root);
 

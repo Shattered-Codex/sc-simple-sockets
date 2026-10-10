@@ -241,6 +241,46 @@ describe("unidentified gem concealment", () => {
     assert.equal(returned.system.unidentified.name, "Unidentified Gem");
   });
 
+  test("extracted unidentified gems mask their own artwork and grants without overwriting source data", async () => {
+    install();
+    const { actor, hostItem } = createHost();
+    await SocketService.removeGem(hostItem, 0);
+    const gem = Array.from(actor.items.values()).find((item) => item.type === "loot");
+    const source = gem.toObject();
+    gem._source = source;
+    gem.toObject = () => foundry.utils.deepClone(source);
+    const activity = { name: "Poison Strike", img: "poison.webp", flags: {}, description: "Secret" };
+    const effect = { name: "Poison Resistance", img: "poison.webp", flags: {}, disabled: false };
+    gem.system.activities = [activity];
+    gem.effects.contents = [effect];
+    GemConcealmentService.maskTransferredContent(gem);
+    assert.equal(gem.img, GemConcealmentService.PLACEHOLDER_IMG);
+    assert.equal(activity.name, "Unidentified Gem");
+    assert.equal(effect.name, "Unidentified Gem");
+    assert.equal(effect.disabled, false);
+    assert.equal(ItemResolver.expandSnapshot(ItemResolver.snapshotOne(gem)).img, "icons/poison.webp");
+    assert.equal(source.name, "Poison Gem");
+
+    gem.system.identified = true;
+    GemConcealmentService.maskTransferredContent(gem);
+    assert.equal(gem.img, "icons/poison.webp");
+    assert.equal(activity.name, "Poison Strike");
+    assert.equal(effect.name, "Poison Resistance");
+  });
+
+  test("GM and disabling concealment restore standalone gem artwork", async () => {
+    install();
+    const gem = createTestItem(gemData({ identified: false }));
+    GemConcealmentService.maskTransferredContent(gem);
+    assert.equal(gem.img, GemConcealmentService.PLACEHOLDER_IMG);
+    GemConcealmentService.maskTransferredContent(gem, { isGM: true });
+    assert.equal(gem.img, "icons/poison.webp");
+    GemConcealmentService.maskTransferredContent(gem);
+    await game.settings.set(Constants.MODULE_ID, "concealUnidentifiedGems", false);
+    GemConcealmentService.maskTransferredContent(gem);
+    assert.equal(gem.img, "icons/poison.webp");
+  });
+
   test("a gem removed from an identified item returns as it was", async () => {
     install();
     const { actor, hostItem } = createHost({ identified: true });
@@ -260,6 +300,59 @@ describe("unidentified gem concealment", () => {
     assert.equal(GemConcealmentService.isSnapshotUnidentified(next[0]._gemData), false);
     assert.equal(ItemResolver.expandSnapshot(next[0]._gemData).system.identified, true);
     // Nothing to write when every gem is already identified.
+    assert.equal(GemConcealmentService.identifySlots(next), null);
+  });
+
+  for (const identified of [false, true]) {
+    test(`extracting and resocketing an unknown gem preserves its real identity (host identified=${identified})`, async () => {
+      install();
+      const { actor, hostItem } = createHost();
+      assert.equal((await SocketService.removeGem(hostItem, 0)).success, true);
+      const returned = Array.from(actor.items.values()).find((item) => item.type === "loot");
+      // dnd5e prepares a display name, while toObject() retains the source name.
+      const source = returned.toObject();
+      returned.name = "Unidentified Gem";
+      returned.img = "unknown.webp";
+      returned.toObject = () => foundry.utils.deepClone(source);
+      hostItem.system.identified = identified;
+
+      assert.equal((await SocketService.addGem(hostItem, 0, returned)).success, true);
+      let slot = SocketService.getSlots(hostItem)[0];
+      assert.equal(slot.gem.name, "Poison Gem");
+      assert.equal(slot.gem.img, "icons/poison.webp");
+      assert.equal(slot.name, "Poison Gem");
+      assert.equal(GemConcealmentService.maskSlot(hostItem, slot).gem.name, "Unidentified Gem");
+
+      hostItem.system.identified = true;
+      await GemConcealmentService.identifyHostGems(hostItem);
+      slot = SocketService.getSlots(hostItem)[0];
+      assert.equal(GemConcealmentService.maskSlot(hostItem, slot).gem.name, "Poison Gem");
+      assert.equal(ItemResolver.expandSnapshot(slot._gemData).system.identified, true);
+      assert.equal((await SocketService.removeGem(hostItem, 0)).success, true);
+      const extracted = Array.from(actor.items.values()).find((item) => item.type === "loot");
+      assert.equal(extracted.name, "Poison Gem");
+      assert.equal(extracted.system.identified, true);
+    });
+  }
+
+  test("identification repairs previously saved placeholder names and preserves custom socket names", () => {
+    install();
+    const slots = [false, true].flatMap((identified) => ["", "Pommel"].map((name) => ({
+      ...filledSlot({ gem: gemData({ identified }), slotConfig: { name, hidden: true } }),
+      gem: { name: "Unidentified Gem", img: GemConcealmentService.PLACEHOLDER_IMG },
+      name: name || "Unidentified Gem",
+      img: GemConcealmentService.PLACEHOLDER_IMG
+    })));
+    const next = GemConcealmentService.identifySlots(slots);
+    next.forEach((slot, index) => {
+      assert.equal(slot.gem.name, "Poison Gem");
+      assert.equal(slot.gem.img, "icons/poison.webp");
+      assert.equal(slot.img, "icons/poison.webp");
+      assert.equal(slot.name, index % 2 ? "Pommel" : "Poison Gem");
+      assert.equal(slot.slotConfig.hidden, true);
+      assert.equal(slot._gemInstanceId, slots[index]._gemInstanceId);
+    });
+    assert.equal(slots[0].gem.name, "Unidentified Gem", "repair does not mutate input");
     assert.equal(GemConcealmentService.identifySlots(next), null);
   });
 

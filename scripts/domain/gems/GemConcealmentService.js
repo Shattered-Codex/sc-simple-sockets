@@ -4,11 +4,11 @@ import { ModuleSettings } from "../../core/settings/ModuleSettings.js";
 import { SocketStore } from "../../core/SocketStore.js";
 import { HostOperationQueue } from "../../core/support/HostOperationQueue.js";
 import { HostItemUpdateService } from "../../core/support/HostItemUpdateService.js";
+import { GemCriteria } from "./GemCriteria.js";
 
 /**
- * Hides the identity of socketed gems from players while it should be unknown:
- * when the item holding the socket is unidentified, or when the gem itself was
- * unidentified when it was socketed.
+ * Hides the identity of gems from players while it should be unknown, both in
+ * inventory and in sockets whose host or stored gem is unidentified.
  *
  * Nothing stored is changed. Players get a masked view (name, image and
  * description) and GMs always see the real gem, which mirrors how dnd5e treats
@@ -21,6 +21,7 @@ export class GemConcealmentService {
   static #maskedDocuments = new WeakMap();
   /** Items holding at least one masked activity or effect. */
   static #maskedItems = new WeakSet();
+  static #maskedGemImages = new WeakMap();
   /** Encoded snapshot -> whether it holds an unidentified gem. */
   static #snapshotCache = new Map();
   static #SNAPSHOT_CACHE_LIMIT = 500;
@@ -45,6 +46,27 @@ export class GemConcealmentService {
   /** Accepts an Item document or plain item data. */
   static isUnidentified(itemOrData) {
     return itemOrData?.system?.identified === false;
+  }
+
+  /** An unknown inventory gem has no socket/source flags after extraction. */
+  static isGemConcealed(item, user = globalThis.game?.user) {
+    return GemConcealmentService.appliesToUser(user)
+      && GemConcealmentService.isUnidentified(item)
+      && GemCriteria.matches(item);
+  }
+
+  static #maskGemImage(item, concealed) {
+    if (concealed) {
+      if (!GemConcealmentService.#maskedGemImages.has(item) || item.img !== GemConcealmentService.PLACEHOLDER_IMG) {
+        GemConcealmentService.#maskedGemImages.set(item, item._source?.img ?? item.img);
+      }
+      item.img = GemConcealmentService.PLACEHOLDER_IMG;
+    } else if (GemConcealmentService.#maskedGemImages.has(item)) {
+      if (item.img === GemConcealmentService.PLACEHOLDER_IMG) {
+        item.img = item._source?.img ?? GemConcealmentService.#maskedGemImages.get(item);
+      }
+      GemConcealmentService.#maskedGemImages.delete(item);
+    }
   }
 
   /**
@@ -176,26 +198,53 @@ export class GemConcealmentService {
   }
 
   /**
-   * Returns the slots with every unidentified gem snapshot identified, or null
-   * when none needed it. Used when the item holding them is identified.
+   * Identifies gem snapshots and restores cached identity from source data,
+   * including slots previously saved with an unidentified alias. Returns null
+   * when nothing needs updating.
    */
-  static identifySlots(slots) {
+  static #slotSources(slots) {
+    return new Map((Array.isArray(slots) ? slots : []).map((slot, index) => [index, ItemResolver.expandSnapshot(slot?._gemData)]));
+  }
+
+  /** Recognize old localized masks, but never replace a known original name. */
+  static isPlaceholderName(name, gem, originalName = gem?.name) {
+    if (name && name === originalName) return false;
+    // Both shipped translations can exist in saved data regardless of client language.
+    return !name || new Set([this.placeholderName(), "Unidentified Gem", "Gema não identificada",
+      gem?.system?.unidentified?.name]).has(name);
+  }
+
+  static identifySlots(slots, sources = this.#slotSources(slots)) {
     if (!Array.isArray(slots)) {
       return null;
     }
 
     let changed = false;
-    const next = slots.map((slot) => {
-      if (!GemConcealmentService.isSnapshotUnidentified(slot?._gemData)) {
+    const next = slots.map((slot, index) => {
+      const source = sources.get(index);
+      if (!source?.system) {
         return slot;
       }
-      const source = ItemResolver.expandSnapshot(slot._gemData);
-      if (!source?.system) {
+      const maskedName = (name) => this.isPlaceholderName(name, source);
+      const name = maskedName(slot.gem?.name) ? source.name || slot.gem?.name : slot.gem.name;
+      const img = !slot.gem?.img || slot.gem.img === this.PLACEHOLDER_IMG
+        ? source.img || slot.gem?.img : slot.gem.img;
+      const slotName = slot.slotConfig?.name || (maskedName(slot.name) ? name : slot.name);
+      const slotImg = !slot.img || slot.img === this.PLACEHOLDER_IMG ? img : slot.img;
+      if (!GemConcealmentService.isUnidentified(source)
+        && slot.gem?.name === name && slot.gem?.img === img
+        && slot.name === slotName && slot.img === slotImg) {
         return slot;
       }
       source.system.identified = true;
       changed = true;
-      return { ...slot, _gemData: ItemResolver.compactSnapshot(source) };
+      return {
+        ...slot,
+        name: slotName,
+        img: slotImg,
+        gem: { ...slot.gem, name, img },
+        _gemData: ItemResolver.compactSnapshot(source)
+      };
     });
     return changed ? next : null;
   }
@@ -205,9 +254,54 @@ export class GemConcealmentService {
     return HostOperationQueue.enqueue(item, async () => {
       const current = HostItemUpdateService.resolve(item);
       if (!current || GemConcealmentService.isUnidentified(current)) return;
-      const slots = GemConcealmentService.identifySlots(SocketStore.peekSlots(current));
-      if (slots) await SocketStore.setSlots(current, slots);
+      const storedSlots = SocketStore.peekSlots(current);
+      const sources = this.#slotSources(storedSlots);
+      const slots = this.identifySlots(storedSlots, sources);
+      const { updates, effects } = this.#repairStoredIdentity(current, sources);
+      if (slots) updates[`flags.${Constants.MODULE_ID}.${Constants.FLAGS.sockets}`] =
+        ItemResolver.normalizeSocketSlots(foundry.utils.deepClone(slots));
+      const hasUpdate = Object.keys(updates).length > 0;
+      // Preserve the embedded-effect lifecycle; the final parent update renders
+      // slots and cached identity together. No partial slot write precedes repair.
+      if (effects.length) await current.updateEmbeddedDocuments("ActiveEffect", effects, { render: !hasUpdate });
+      if (hasUpdate) await HostItemUpdateService.update(current, updates);
     });
+  }
+
+  /** Build a repair patch without writing or parsing a snapshot more than once. */
+  static #repairStoredIdentity(item, sources) {
+    const source = item?.toObject?.();
+    const updates = {};
+    if (!source) return { updates, effects: [] };
+    const grants = source.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_SOCKET_ACTIVITIES] ?? {};
+    for (const [index, grant] of Object.entries(grants)) {
+      const gem = sources.get(Number(index));
+      if (!gem || !grant || typeof grant !== "object") continue;
+      const prefix = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_ACTIVITIES}.${index}`;
+      for (const [path, cached] of [[prefix, grant], ...Object.entries(grant.activityMeta ?? {})
+        .map(([id, meta]) => [`${prefix}.activityMeta.${id}`, meta])]) {
+        if (!cached || typeof cached !== "object") continue;
+        if (gem.name && cached.gemName !== gem.name) updates[`${path}.gemName`] = gem.name;
+        if (gem.img && cached.gemImg !== gem.img) updates[`${path}.gemImg`] = gem.img;
+      }
+    }
+
+    const effects = [];
+    for (const effect of source.effects ?? []) {
+      if (!effect?._id) continue;
+      const origin = effect.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_SOURCE_GEM];
+      const gem = origin?.slot == null ? null : sources.get(Number(origin.slot));
+      if (!gem) continue;
+      const original = gem.effects?.find((entry) => entry?._id === origin.sourceId);
+      const patch = { _id: effect._id };
+      if (this.isPlaceholderName(effect.name, gem, original?.name || gem.name)) {
+        if (original?.name || gem.name) patch.name = original?.name || gem.name;
+      }
+      const img = original?.img || gem.img;
+      if (effect.img === this.PLACEHOLDER_IMG && img && img !== effect.img) patch.img = img;
+      if (Object.keys(patch).length > 1) effects.push(patch);
+    }
+    return { updates, effects };
   }
 
   /** A setting change must update prepared content as well as rendered sheets. */
@@ -222,6 +316,7 @@ export class GemConcealmentService {
     for (const actor of actors) {
       for (const item of actor.items ?? []) GemConcealmentService.maskTransferredContent(item);
     }
+    globalThis.Hooks?.callAll?.(`${Constants.MODULE_ID}.concealmentChanged`);
   }
 
   // ---------------------------------------------------------------------------
@@ -266,6 +361,8 @@ export class GemConcealmentService {
   }
 
   static maskTransferredContent(item, user = globalThis.game?.user) {
+    const standalone = GemConcealmentService.isGemConcealed(item, user);
+    GemConcealmentService.#maskGemImage(item, standalone);
     // This runs on every item preparation for every user, so the common cases
     // (a GM, an item without sockets, nothing concealed) leave before any work.
     const wasMasked = GemConcealmentService.#maskedItems.has(item);
@@ -282,7 +379,7 @@ export class GemConcealmentService {
         }
       });
     }
-    if (!wasMasked && !concealedSlots.size) {
+    if (!wasMasked && !standalone && !concealedSlots.size) {
       return;
     }
 
@@ -305,12 +402,12 @@ export class GemConcealmentService {
       }
       GemConcealmentService.#maskedItems.delete(item);
     }
-    if (!concealedSlots.size) {
+    if (!standalone && !concealedSlots.size) {
       return;
     }
 
     const name = GemConcealmentService.placeholderName();
-    const fromConcealedGem = (document) => concealedSlots.has(
+    const fromConcealedGem = (document) => standalone || concealedSlots.has(
       Number(document?.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_SOURCE_GEM]?.slot)
     );
 

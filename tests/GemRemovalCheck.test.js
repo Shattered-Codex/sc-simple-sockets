@@ -354,6 +354,20 @@ describe("gem removal check", () => {
     assert.deepEqual(rolls, [{ tool: "jeweler", target: 20 }]);
   });
 
+  test("a slot can be exempt from the removal check or use its own DC by gem rarity", async () => {
+    install();
+    const exempt = createHost({ slotConfig: { removalCheckType: "none" }, rollTotal: 1 });
+    assert.equal((await SocketService.removeGem(exempt.hostItem, 0)).reason, "gem-removed");
+    assert.equal(exempt.rolls.length, 0);
+
+    const byRarity = createHost({
+      slotConfig: { removalCheckDcMode: "rarity", removalCheckRarityDcs: { rare: 23 } },
+      rollTotal: 23
+    });
+    assert.equal((await SocketService.removeGem(byRarity.hostItem, 0)).reason, "gem-removed");
+    assert.deepEqual(byRarity.rolls, [{ tool: "jeweler", target: 23 }]);
+  });
+
   test("only a GM changes the visibility and removal check overrides of a slot", async () => {
     install();
     const { hostItem, slot } = createHost({

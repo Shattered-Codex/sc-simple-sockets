@@ -1391,6 +1391,31 @@ body.sc-sockets-extract-cursor * {
   box-shadow: none;
 }
 
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option[aria-pressed]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option.is-selected {
+  border-color: var(--dnd5e-color-gold, #9f9275);
+  box-shadow: inset 0 0 0 1px var(--dnd5e-color-gold, #9f9275);
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__check {
+  flex: 0 0 auto;
+  color: var(--dnd5e-color-gold, #9f9275);
+  visibility: hidden;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__option.is-selected .sc-sockets-scma-picker__check {
+  visibility: visible;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__selection {
+  margin: 0;
+  text-align: right;
+}
+
 .sc-sockets-scma-picker .sc-sockets-scma-picker__option-main {
   display: flex;
   align-items: center;
@@ -1429,6 +1454,31 @@ body.sc-sockets-extract-cursor * {
 
 .sc-sockets-scma-picker .sc-sockets-scma-picker__footer {
   margin-top: 0.15rem;
+  gap: 0.5rem;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__footer button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* With a confirm action, it is the wide primary button and Cancel steps back. */
+.sc-sockets-scma-picker .sc-sockets-scma-picker__footer [data-action="confirm"] {
+  flex: 1 1 auto;
+  border-color: var(--dnd5e-color-gold, #9f9275);
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__footer [data-action="confirm"]:disabled {
+  border-color: transparent;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sc-sockets-scma-picker .sc-sockets-scma-picker__footer [data-action="confirm"] ~ [data-action="close"] {
+  flex: 0 0 auto;
+  min-width: 7rem;
 }
 
 .sc-sockets-scma-picker .sc-sockets-scma-picker__filter {

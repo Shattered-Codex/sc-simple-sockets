@@ -1,3 +1,4 @@
+import { HostOperationQueue } from "../support/HostOperationQueue.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { DebugTrace } from "../support/DebugTrace.js";
 import { GemBreakService } from "../../domain/gems/GemBreakService.js";
@@ -13,10 +14,36 @@ export class InventoryService {
     "ownership"
   ]);
 
-  static async consumeOne(gemItem, options = {}) {
+  /**
+   * Takes one unit of a gem out of its actor's inventory. Returns whether a
+   * unit was taken: false when the gem is gone by now, or broken while
+   * `requireIntact` is set.
+   *
+   * Every inventory change runs in the actor's queue and reads the gem again
+   * inside it, so two operations on the same stack never both act on the
+   * quantity one of them is about to change.
+   */
+  static async consumeOne(gemItem, options = {}, { requireIntact = false } = {}) {
     if (!gemItem?.actor) {
-      return;
+      return false;
     }
+    return HostOperationQueue.enqueue(
+      gemItem.actor,
+      () => InventoryService.consumeOneLocked(gemItem, options, { requireIntact })
+    );
+  }
+
+  /** `consumeOne` for a caller that already runs inside the actor's queue. */
+  static async consumeOneLocked(gemItem, options = {}, { requireIntact = false } = {}) {
+    const actor = gemItem?.actor;
+    if (!actor) {
+      return false;
+    }
+    const current = typeof actor.items?.get === "function" ? actor.items.get(gemItem.id) : gemItem;
+    if (!current || (requireIntact && GemBreakService.isBroken(current))) {
+      return false;
+    }
+    gemItem = current;
     DebugTrace.log("inventory.consumeOne.start", {
       gemItem: DebugTrace.describeItem(gemItem),
       actor: DebugTrace.describeActor(gemItem.actor),
@@ -26,15 +53,28 @@ export class InventoryService {
     if (qty > 1) {
       await gemItem.update({ "system.quantity": qty - 1 }, options);
     } else {
-      await gemItem.actor.deleteEmbeddedDocuments("Item", [gemItem.id], options);
+      await actor.deleteEmbeddedDocuments("Item", [gemItem.id], options);
     }
     DebugTrace.log("inventory.consumeOne.done", {
       gemItem: DebugTrace.describeItem(gemItem),
       actor: DebugTrace.describeActor(gemItem.actor)
     });
+    return true;
   }
 
+  /** Puts one unit of a gem into the inventory of `hostItem`'s actor, in that actor's queue. */
   static async returnOne(hostItem, snap, options = {}) {
+    if (!snap || !hostItem?.actor) {
+      return;
+    }
+    return HostOperationQueue.enqueue(
+      hostItem.actor,
+      () => InventoryService.returnOneLocked(hostItem, snap, options)
+    );
+  }
+
+  /** `returnOne` for a caller that already runs inside the actor's queue. */
+  static async returnOneLocked(hostItem, snap, options = {}) {
     if (!snap) {
       return;
     }

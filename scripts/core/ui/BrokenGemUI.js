@@ -1,3 +1,4 @@
+import { SheetMutationObserver } from "./SheetMutationObserver.js";
 import { Constants } from "../Constants.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
 import { GemBreakService } from "../../domain/gems/GemBreakService.js";
@@ -19,7 +20,7 @@ export class BrokenGemUI {
 
   static #activated = false;
   static #observers = new WeakMap();
-  /** Tracked roots: element -> { collect, observer, frame, count }. */
+  /** Tracked roots: element -> { collect, count }. */
   static #roots = new Map();
 
   static activate() {
@@ -118,30 +119,19 @@ export class BrokenGemUI {
   static #track(root, collect) {
     let state = BrokenGemUI.#roots.get(root);
     if (!state) {
-      state = { collect, observer: null, frame: 0, count: 0 };
-      if (typeof MutationObserver === "function") {
-        state.observer = new MutationObserver(() => BrokenGemUI.#schedule(root));
-        state.observer.observe(root, { childList: true, subtree: true });
-      }
+      state = { collect, count: 0 };
       BrokenGemUI.#roots.set(root, state);
     }
     state.collect = collect;
+    SheetMutationObserver.subscribe(root, this, () => BrokenGemUI.#reconcile(root, state), {
+      relevant: (mutation) => mutation.type === "childList",
+      dispose: () => BrokenGemUI.#untrack(root, state)
+    });
     BrokenGemUI.#reconcile(root, state);
   }
 
   static #schedule(root) {
-    const state = BrokenGemUI.#roots.get(root);
-    if (!state || state.frame) {
-      return;
-    }
-    state.frame = requestAnimationFrame(() => {
-      state.frame = 0;
-      if (!root.isConnected) {
-        BrokenGemUI.#untrack(root, state);
-        return;
-      }
-      BrokenGemUI.#reconcile(root, state);
-    });
+    SheetMutationObserver.schedule(root, this);
   }
 
   static #scheduleAll() {
@@ -155,8 +145,8 @@ export class BrokenGemUI {
   }
 
   static #untrack(root, state) {
-    if (state.frame) cancelAnimationFrame(state.frame);
-    state.observer?.disconnect();
+    if (!BrokenGemUI.#roots.delete(root)) return;
+    SheetMutationObserver.unsubscribe(root, this);
     for (const overlay of root.querySelectorAll(`.${BrokenGemUI.OVERLAY_CLASS}`)) {
       BrokenGemUI.#removeOverlay(overlay);
     }

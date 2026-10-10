@@ -40,6 +40,8 @@ export class Constants {
   static UNIDENTIFIED_GEM_IMG = "icons/commodities/gems/gem-faceted-diamond-silver-.webp";
   /** What a failed gem removal check can do, shared by the settings and the slot overrides. */
   static REMOVAL_FAILURE_OUTCOMES = Object.freeze(["stay", "lose", "break"]);
+  /** What a failed gem insertion check can do to the gem that was not socketed. */
+  static INSERTION_FAILURE_OUTCOMES = Object.freeze(["keep", "lose", "break"]);
   static BROKEN_GEM_OVERLAY_IMG = `modules/${this.MODULE_ID}/assets/imgs/broke.webp`;
   static MODULE_WIKI_URL = "https://wiki.shattered-codex.com/modules/sc-simple-sockets";
   static DISCORD_URL = "https://discord.gg/6mWCQEJEwG";
@@ -65,6 +67,12 @@ export class Constants {
   static normalizeRemovalFailureOutcome(value) {
     const normalized = String(value ?? "").trim().toLowerCase();
     return Constants.REMOVAL_FAILURE_OUTCOMES.includes(normalized) ? normalized : "";
+  }
+
+  /** Returns a valid insertion failure outcome, or "" when the value is not one. */
+  static normalizeInsertionFailureOutcome(value) {
+    const normalized = String(value ?? "").trim().toLowerCase();
+    return Constants.INSERTION_FAILURE_OUTCOMES.includes(normalized) ? normalized : "";
   }
 
   static localize(key, fallback = key) {

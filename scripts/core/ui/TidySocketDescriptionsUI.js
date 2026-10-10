@@ -113,6 +113,10 @@ export class TidySocketDescriptionsUI {
 
     root.querySelectorAll(TidySocketDescriptionsUI.SELECTOR).forEach((node) => node.remove());
 
+    const tab = root.closest?.(".tidy-tab.description")
+      ?? root.querySelector?.(".tidy-tab.description");
+    if (!tab) return;
+
     if (!item) {
       return;
     }
@@ -134,11 +138,17 @@ export class TidySocketDescriptionsUI {
       item
     });
 
-    const descriptionItem = root.querySelector(".collapsible-editor") ?? null;
+    // Tidy hands over the whole sheet. A lone description (unidentified item,
+    // non-owner) renders without the collapsible list, so stay inside the tab.
+    // The tab can be unmounted while descriptions are being enriched.
+    if (!tab.isConnected) return;
+    const container = tab.querySelector(".item-descriptions") ?? tab;
+    const descriptionItem = container.querySelector(".collapsible-editor") ?? null;
     if (descriptionItem?.after) {
       descriptionItem.after(section);
     } else {
-      root.append(section);
+      section.classList.add("sc-sockets-tidy-editor--solo");
+      container.append(section);
     }
 
     TidySocketDescriptionsUI.#bindActions(section, item);

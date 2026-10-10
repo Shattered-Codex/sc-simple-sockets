@@ -831,8 +831,15 @@ export class ScMoreActivitiesIntegration {
       try {
         // Inventory mutations must keep rendering enabled so open actor sheets refresh
         // immediately; render suppression only applies to the host item's chained updates.
-        await InventoryService.consumeOne(currentGemItem);
-        consumedGem = true;
+        consumedGem = await InventoryService.consumeOne(currentGemItem, {}, { requireIntact: true });
+        // Spent or broken by another operation on the same stack meanwhile.
+        if (!consumedGem) {
+          return ScMoreActivitiesIntegration.#failure(
+            "gem-not-available",
+            "SCSockets.Integrations.ScMoreActivities.GemReload.Warnings.GemNotFound",
+            "The selected gem is no longer available in the source actor inventory."
+          );
+        }
 
         const effectIdMap = await EffectService.applyGemEffects(currentItem, slotIndex, currentGemItem, mutationOptions);
         await ActivityTransferService.applyFromGem(currentItem, slotIndex, currentGemItem, {

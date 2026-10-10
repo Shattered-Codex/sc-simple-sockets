@@ -1231,6 +1231,59 @@
   display: none;
 }
 
+.socket-slot-config-app .slotcfg-check {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--slotcfg-border-soft);
+}
+
+.socket-slot-config-app .slotcfg-check .slotcfg-switchrow + .slotcfg-switchrow {
+  border-top: 1px solid var(--slotcfg-border-soft);
+}
+
+.socket-slot-config-app .slotcfg-pane--checks .slotcfg-switchrow {
+  padding: 10px 2px;
+}
+
+.socket-slot-config-app .slotcfg-pane--checks .slotcfg-switchrow .slotcfg-input--compact {
+  flex: 0 0 240px;
+  width: 240px;
+}
+
+.socket-slot-config-app .slotcfg-switchrow[hidden] {
+  display: none;
+}
+
+.socket-slot-config-app .slotcfg-switchrow--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.socket-slot-config-app .slotcfg-rarity {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.socket-slot-config-app .slotcfg-rarity-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  font-size: 0.7rem;
+  color: var(--slotcfg-text-mute);
+}
+
+.socket-slot-config-app .slotcfg-rarity-cell .slotcfg-input {
+  width: 100%;
+}
+
+.socket-slot-config-app .slotcfg-check-note {
+  margin: 4px 0 2px;
+}
+
 .socket-slot-config-app .slotcfg-help-link {
   flex: 0 0 auto;
   display: inline-flex;

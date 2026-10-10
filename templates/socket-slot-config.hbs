@@ -375,53 +375,6 @@
             <span class="slotcfg-toggle-track"></span>
           </label>
         </div>
-
-        {{#if removalCheck.enabled}}
-          <div class="slotcfg-card-divider"></div>
-
-          <div class="slotcfg-switchrow">
-            <span class="slotcfg-switchrow-text">
-              <strong>
-                {{strings.removalCheckDcLabel}}
-                <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.removalCheckDcHint}}"></i>
-              </strong>
-              <small id="{{appId}}-removal-check-dc-hint" hidden>{{strings.removalCheckDcHint}}</small>
-            </span>
-            <input
-              type="text"
-              name="slotConfig.removalCheckDc"
-              class="slotcfg-input slotcfg-input--compact"
-              value="{{removalCheck.dc}}"
-              placeholder="{{strings.removalCheckDcPlaceholder}}"
-              aria-label="{{strings.removalCheckDcLabel}}"
-              aria-describedby="{{appId}}-removal-check-dc-hint"
-              {{#unless canEditRemovalCheck}}disabled{{/unless}}
-            />
-          </div>
-
-          <div class="slotcfg-card-divider"></div>
-
-          <div class="slotcfg-switchrow">
-            <span class="slotcfg-switchrow-text">
-              <strong>
-                {{strings.removalCheckFailureLabel}}
-                <i class="fa-solid fa-circle-info slotcfg-info" data-tooltip="{{strings.removalCheckFailureHint}}"></i>
-              </strong>
-              <small id="{{appId}}-removal-check-failure-hint" hidden>{{strings.removalCheckFailureHint}}</small>
-            </span>
-            <select
-              name="slotConfig.removalCheckFailure"
-              class="slotcfg-input slotcfg-input--compact"
-              aria-label="{{strings.removalCheckFailureLabel}}"
-              aria-describedby="{{appId}}-removal-check-failure-hint"
-              {{#unless canEditRemovalCheck}}disabled{{/unless}}
-            >
-              {{#each removalCheck.failureOptions as |opt|}}
-                <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
-              {{/each}}
-            </select>
-          </div>
-        {{/if}}
       </div>
     </div>
 
@@ -432,6 +385,9 @@
         </button>
         <button type="button" id="{{appId}}-tab-cond" class="slotcfg-tab {{#if tabCondActive}}is-active{{/if}}" data-action="switchTab" data-tab="cond" role="tab" aria-selected="{{tabCondActive}}" aria-controls="{{appId}}-pane-cond" tabindex="{{#if tabCondActive}}0{{else}}-1{{/if}}">
           {{strings.tabCondition}}
+        </button>
+        <button type="button" id="{{appId}}-tab-checks" class="slotcfg-tab {{#if tabChecksActive}}is-active{{/if}}" data-action="switchTab" data-tab="checks" role="tab" aria-selected="{{tabChecksActive}}" aria-controls="{{appId}}-pane-checks" tabindex="{{#if tabChecksActive}}0{{else}}-1{{/if}}">
+          {{strings.tabChecks}}
         </button>
       </div>
 
@@ -504,6 +460,69 @@
             </div>
           </div>
         {{/if}}
+      </div>
+
+      <div class="slotcfg-pane slotcfg-pane--checks" id="{{appId}}-pane-checks" role="tabpanel" aria-labelledby="{{appId}}-tab-checks" data-tab-pane="checks" {{#unless tabChecksActive}}hidden{{/unless}}>
+        <p class="slotcfg-hint">{{strings.checksHint}}</p>
+        {{#each checks as |check|}}
+          <div class="slotcfg-check">
+            <div class="slotcfg-section-head">
+              <span class="slotcfg-section-title">{{check.title}}</span>
+            </div>
+            {{#unless check.enabled}}
+              <p class="slotcfg-hint slotcfg-check-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> {{check.disabledNote}}</p>
+            {{/unless}}
+            {{#each check.rows as |row|}}
+              <div class="slotcfg-switchrow {{#if row.isRarity}}slotcfg-switchrow--stacked{{/if}}" {{#if row.dcRow}}data-check-dc-row="{{row.dcRow}}" data-check-dc-mode="{{check.id}}CheckDcMode"{{/if}} {{#if row.hidden}}hidden{{/if}}>
+                <span class="slotcfg-switchrow-text">
+                  <strong>{{row.label}}</strong>
+                  <small id="{{@root.appId}}-{{row.key}}-hint">{{row.hint}}</small>
+                </span>
+                {{#if row.isRarity}}
+                  <span class="slotcfg-rarity">
+                    {{#each row.rarities as |rarity|}}
+                      <label class="slotcfg-rarity-cell">
+                        <span>{{rarity.label}}</span>
+                        <input
+                          type="number"
+                          name="slotConfig.{{row.key}}.{{rarity.value}}"
+                          class="slotcfg-input"
+                          min="0"
+                          step="1"
+                          value="{{rarity.dc}}"
+                          {{#unless @root.canEditRemovalCheck}}disabled{{/unless}}
+                        />
+                      </label>
+                    {{/each}}
+                  </span>
+                {{else if row.isText}}
+                  <input
+                    type="text"
+                    name="slotConfig.{{row.key}}"
+                    class="slotcfg-input slotcfg-input--compact"
+                    value="{{row.value}}"
+                    placeholder="{{row.placeholder}}"
+                    aria-label="{{row.label}}"
+                    aria-describedby="{{@root.appId}}-{{row.key}}-hint"
+                    {{#unless @root.canEditRemovalCheck}}disabled{{/unless}}
+                  />
+                {{else}}
+                  <select
+                    name="slotConfig.{{row.key}}"
+                    class="slotcfg-input slotcfg-input--compact"
+                    aria-label="{{row.label}}"
+                    aria-describedby="{{@root.appId}}-{{row.key}}-hint"
+                    {{#unless @root.canEditRemovalCheck}}disabled{{/unless}}
+                  >
+                    {{#each row.options as |opt|}}
+                      <option value="{{opt.value}}" {{#if opt.selected}}selected{{/if}}>{{opt.label}}</option>
+                    {{/each}}
+                  </select>
+                {{/if}}
+              </div>
+            {{/each}}
+          </div>
+        {{/each}}
       </div>
     </div>
   </div>

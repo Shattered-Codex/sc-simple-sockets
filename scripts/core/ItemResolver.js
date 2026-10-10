@@ -22,6 +22,12 @@ export class ItemResolver {
     return GemCriteria.matches(itemDoc);
   }
 
+  /** Persistent identity must never come from a player's prepared/masked view. */
+  static getSourceMeta(item) {
+    const source = item?._source ?? item?.toObject?.(true) ?? item;
+    return { name: source?.name || null, img: source?.img || null };
+  }
+
   static snapshotOne(gemItem) {
     const full = gemItem.toObject();
     delete full._id;
