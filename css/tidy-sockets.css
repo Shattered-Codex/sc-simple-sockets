@@ -993,3 +993,8 @@
     gap: 0.55rem;
   }
 }
+
+/* Socket descriptions placed after a lone description, outside Tidy's collapsible list. */
+.sc-sockets-tidy-editor--solo {
+  margin-top: 0.75rem;
+}

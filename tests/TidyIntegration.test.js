@@ -96,6 +96,38 @@ describe("TidyIntegration tab configuration sync", () => {
     assert.equal(item.getFlag("tidy5e-sheet", "tab-configuration"), undefined);
   });
 
+  test("unidentified inventory gems do not enable Tidy gem tabs or disclose socket descriptions", async () => {
+    const tabs = [];
+    const associations = [];
+    hooks.get("tidy5e-sheet.ready")({
+      models: { HandlebarsTab: class { constructor(options) { Object.assign(this, options); } } },
+      registerItemTab: (tab) => tabs.push(tab),
+      associateExistingItemTab: (_type, id, options) => associations.push({ id, ...options })
+    });
+    game.user.isGM = false;
+    await game.settings.set(Constants.MODULE_ID, "concealUnidentifiedGems", true);
+    const item = createTestItem({
+      type: "loot",
+      system: { identified: false, type: { value: "gem" } },
+      flags: { [Constants.MODULE_ID]: { [Constants.FLAG_SOCKET_DESCRIPTION]: "Secret lightning bonus" } }
+    });
+    const context = { item, document: item, itemDescriptions: [] };
+    assert.equal(tabs.length, 2);
+    assert.ok(tabs.every((tab) => tab.enabled(context) === false));
+    assert.ok(associations.every((tab) => tab.tabCondition.predicate(context) === false));
+    hooks.get("tidy5e-sheet.prepareSheetContext")(item, {}, context);
+    assert.deepEqual(context.itemDescriptions, []);
+
+    item.system.identified = true;
+    assert.ok(tabs.every((tab) => tab.enabled(context) === true));
+    assert.ok(associations.every((tab) => tab.tabCondition.predicate(context) === true));
+    hooks.get("tidy5e-sheet.prepareSheetContext")(item, {}, context);
+    assert.equal(context.itemDescriptions[0].content, "Secret lightning bonus");
+    item.system.identified = false;
+    game.user.isGM = true;
+    assert.ok(tabs.every((tab) => tab.enabled(context) === true));
+  });
+
   test("does not create a minimal Tidy whitelist when runtime tab defaults are unavailable", async () => {
     const item = createTestItem({
       id: "weapon-1",

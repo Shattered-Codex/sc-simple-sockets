@@ -1,6 +1,7 @@
 import { Constants } from "../Constants.js";
 import { GemTargetFilterBuilder } from "../../domain/gems/GemTargetFilterBuilder.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
+import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
 import { GemDetailsBuilder } from "../../domain/gems/GemDetailsBuilder.js";
 import { TransferFilterUI } from "../ui/TransferFilterUI.js";
 import { GemDetailsUI } from "../ui/GemDetailsUI.js";
@@ -110,7 +111,7 @@ export class TidyIntegration {
       }),
       enabled: (context) => {
         const item = TidyIntegration.#resolveItem(context);
-        return GemCriteria.matches(item);
+        return GemCriteria.matches(item) && !GemConcealmentService.isGemConcealed(item);
       },
       onRender: (params) => {
         const container = params.tabContentsElement ?? params.element;
@@ -143,7 +144,7 @@ export class TidyIntegration {
       }),
       enabled: (context) => {
         const item = TidyIntegration.#resolveItem(context);
-        return GemCriteria.matches(item);
+        return GemCriteria.matches(item) && !GemConcealmentService.isGemConcealed(item);
       },
       onRender: (params) => {
         const container = params.tabContentsElement ?? params.element;
@@ -233,6 +234,10 @@ export class TidyIntegration {
       }
 
       const field = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_DESCRIPTION}`;
+      if (GemConcealmentService.isGemConcealed(item)) {
+        context.itemDescriptions = context.itemDescriptions.filter((entry) => entry.field !== field);
+        return;
+      }
       const raw = foundry?.utils?.getProperty?.(item, field) ?? "";
       const hasContent = String(raw ?? "").trim().length > 0;
       if (!item.isOwner && !hasContent) {
@@ -366,14 +371,15 @@ export class TidyIntegration {
         predicate: (context) => {
           const item = TidyIntegration.#resolveItem(context) ?? null;
           if (item) {
-            return GemCriteria.matches(item);
+            return GemCriteria.matches(item) && !GemConcealmentService.isGemConcealed(item);
           }
           const subtype = foundry?.utils?.getProperty?.(context, "system.type.value")
             ?? foundry?.utils?.getProperty?.(context, "system.type.subtype");
-          return GemCriteria.matches({
+          const data = {
             type: Constants.ITEM_TYPE_LOOT,
-            system: { type: { value: subtype, subtype } }
-          });
+            system: { ...context?.system, type: { value: subtype, subtype } }
+          };
+          return GemCriteria.matches(data) && !GemConcealmentService.isGemConcealed(data);
         },
         mode: "overwrite"
       }

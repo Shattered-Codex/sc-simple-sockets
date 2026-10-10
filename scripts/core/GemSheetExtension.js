@@ -4,6 +4,7 @@ import { GemCriteria } from "../domain/gems/GemCriteria.js";
 import { GemTargetFilterBuilder } from "../domain/gems/GemTargetFilterBuilder.js";
 import { GemDetailsBuilder } from "../domain/gems/GemDetailsBuilder.js";
 import { Compatibility } from "./support/Compatibility.js";
+import { GemConcealmentService } from "../domain/gems/GemConcealmentService.js";
 
 export class GemSheetExtension extends SheetExtension {
 
@@ -41,6 +42,7 @@ export class GemSheetExtension extends SheetExtension {
 
   applyChanges() {
     this.updateTabCondition("effects", this.#condition, { mode: "or" });
+    this.updateTabCondition("effects", (item) => !GemConcealmentService.isGemConcealed(item));
     this.#registerGemDetailsTab();
     this.#registerGemTargetFilter();
     const Sheet = this.sheetClass;
@@ -53,6 +55,7 @@ export class GemSheetExtension extends SheetExtension {
     this.updateTabCondition(
       "activities",
       (item) => {
+        if (GemConcealmentService.isGemConcealed(item)) return false;
         if (item?.type === Constants.ITEM_TYPE_LOOT) {
           return this.#condition(item);
         }
@@ -156,7 +159,7 @@ export class GemSheetExtension extends SheetExtension {
     this.addTab({
       tab: tabId,
       label: Constants.localize("SCSockets.GemDetails.TabLabel", "+Details"),
-      condition: this.#condition
+      condition: (item) => this.#condition(item) && !GemConcealmentService.isGemConcealed(item)
     });
 
     this.addPart({
@@ -193,6 +196,7 @@ export class GemSheetExtension extends SheetExtension {
     }
 
     const evaluate = function (item, originalResult) {
+      if (GemConcealmentService.isGemConcealed(item)) return false;
       if (originalResult) {
         return true;
       }

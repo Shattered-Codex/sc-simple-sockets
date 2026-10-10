@@ -1,0 +1,6 @@
+/* Shared by item sheets, actor sheets, activity dialogs and chat cards. */
+[data-sc-sockets-hidden],
+.sc-sockets-hidden-content,
+.sc-sockets-hidden-section {
+  display: none !important;
+}

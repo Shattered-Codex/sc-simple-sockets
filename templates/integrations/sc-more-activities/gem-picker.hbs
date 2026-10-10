@@ -16,8 +16,9 @@
       <li class="sc-sockets-scma-picker__item" data-gem-name="{{ gem.filterName }}">
         <button
           type="button"
-          class="sc-sockets-scma-picker__option"
+          class="sc-sockets-scma-picker__option {{#if gem.isSelected}}is-selected{{/if}}"
           data-gem-uuid="{{ gem.uuid }}"
+          {{#if ../multiple}}aria-pressed="{{#if gem.isSelected}}true{{else}}false{{/if}}"{{/if}}
           aria-label="{{ gem.ariaLabel }}"
           title="{{ gem.titleText }}"
           {{#if gem.isSubmitting}}disabled{{/if}}>
@@ -37,6 +38,9 @@
               {{/if}}
             </span>
           </span>
+          {{#if ../multiple}}
+            <span class="sc-sockets-scma-picker__check" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+          {{/if}}
           {{#if gem.destinationSlot}}
             <span class="sc-sockets-scma-picker__gem-dest-visual">
               <span class="sc-sockets-slot-visual sc-sockets-scma-picker__slot-visual {{#if gem.destinationSlot.hasSlotTint}}has-slot-tint{{/if}}" aria-hidden="true" {{#if gem.destinationSlot.hasSlotTint}}style="{{ gem.destinationSlot.slotMaskStyle }}"{{/if}}>
@@ -54,7 +58,17 @@
     {{/if}}
   {{/if}}
 
+  {{#if multiple}}
+    <p class="hint sc-sockets-scma-picker__selection" data-role="gem-selection" aria-live="polite"></p>
+  {{/if}}
+
   <footer class="sheet-footer flexrow sc-sockets-scma-picker__footer">
+    {{#if multiple}}
+      <button type="button" data-action="confirm" disabled>
+        <i class="{{ confirmIcon }}" aria-hidden="true"></i>
+        {{ confirmLabel }}
+      </button>
+    {{/if}}
     <button type="button" data-action="close">
       {{ closeLabel }}
     </button>

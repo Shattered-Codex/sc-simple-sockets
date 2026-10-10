@@ -34,6 +34,11 @@ export class GemSocketDescriptionUI {
     const root = GemSocketDescriptionUI.#rootOf(html ?? sheet?.element);
     if (!root) return;
 
+    if (GemConcealmentService.isGemConcealed(item)) {
+      root.querySelectorAll(GemSocketDescriptionUI.SELECTOR).forEach((node) => node.remove());
+      return;
+    }
+
     const container = root.querySelector(".item-descriptions");
     if (!container || container.querySelector(GemSocketDescriptionUI.SELECTOR)) {
       return;
@@ -48,13 +53,8 @@ export class GemSocketDescriptionUI {
       return;
     }
 
-    // An unidentified gem keeps its socket description from players, the same
-    // way dnd5e keeps its regular description: the card only says so.
-    const concealed = GemConcealmentService.appliesToUser() && GemConcealmentService.isUnidentified(item);
     const target = `flags.${Constants.MODULE_ID}.${Constants.FLAG_SOCKET_DESCRIPTION}`;
-    const rawValue = concealed
-      ? `<p>${GemConcealmentService.placeholderDescription()}</p>`
-      : foundry?.utils?.getProperty?.(item?._source ?? item, target) ?? "";
+    const rawValue = foundry?.utils?.getProperty?.(item?._source ?? item, target) ?? "";
     const enrichmentOptions = {
       secrets: item?.isOwner ?? false,
       relativeTo: item,
@@ -80,10 +80,10 @@ export class GemSocketDescriptionUI {
       collapsible,
       expanded,
       isEmpty,
-      isEditable: !concealed && (sheet?.isEditable ?? false)
+      isEditable: sheet?.isEditable ?? false
     });
 
-    descriptionCard.after(card);
+    if (!GemConcealmentService.isGemConcealed(item)) descriptionCard.after(card);
   }
 
   static #buildCard({

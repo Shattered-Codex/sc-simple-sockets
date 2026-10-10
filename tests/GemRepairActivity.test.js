@@ -42,12 +42,15 @@ function createActorWithGems(gems) {
   return { actor, rolls };
 }
 
-function createActivity(actor, check = { type: "none" }) {
-  return { actor, item: { actor }, repair: { check }, getRollData: () => ({}) };
+function createActivity(actor, check = { type: "none" }, amount = { mode: "count", count: 1 }, action) {
+  return { actor, item: { actor }, repair: { action, amount, check }, getRollData: () => ({}) };
 }
 
 describe("gem repair activity", () => {
-  let Service;
+  let Service, Picker, pickers;
+  // The picker is driven instead of rendered: by default it confirms what it
+  // preselected, or what `choose` toggles.
+  let choose;
 
   beforeEach(async () => {
     installFoundryStubs({
@@ -60,9 +63,22 @@ describe("gem repair activity", () => {
       HandlebarsApplicationMixin: (Base) => class extends Base {}
     };
     ({ ScMoreActivitiesGemRepairActivityService: Service } = await import(SERVICE_PATH));
+    ({ ScMoreActivitiesGemPickerApp: Picker } = await import(
+      "../scripts/core/integrations/sc-more-activities/ScMoreActivitiesGemPickerApp.js"
+    ));
+    pickers = [];
+    choose = null;
+    Picker.prototype.render = function render() {
+      pickers.push(this);
+      choose?.(this);
+      if (this.selection.length) this.confirm();
+      else this._onClose();
+      return this;
+    };
   });
 
   afterEach(() => {
+    delete Picker.prototype.render;
     clearFoundryStubs();
   });
 
@@ -82,7 +98,95 @@ describe("gem repair activity", () => {
 
     assert.equal(result.ok, true);
     assert.equal(rolls.length, 0);
+    assert.equal(pickers.length, 1);
     assert.equal(GemBreakService.isBroken(actor.items.get("gem-1")), false);
+  });
+
+  test("asks which gems to repair and stops choices at the activity's limit", async () => {
+    const { actor } = createActorWithGems([
+      { id: "gem-1", name: "Ruby" }, { id: "gem-2", name: "Topaz" }, { id: "gem-3", name: "Opal" }
+    ]);
+    const uuid = (id) => actor.items.get(id).uuid;
+    choose = (picker) => {
+      assert.deepEqual(picker.selection, []);
+      for (const id of ["gem-3", "gem-1", "gem-2"]) picker.toggle(uuid(id));
+    };
+
+    const result = await Service.execute(createActivity(actor, { type: "none" }, { mode: "count", count: 2 }));
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.gems.map((gem) => gem.id), ["gem-3", "gem-1"]);
+    assert.equal(GemBreakService.isBroken(actor.items.get("gem-2")), true);
+  });
+
+  test("an unlimited activity preselects every broken gem and repairs whole stacks", async () => {
+    const { actor } = createActorWithGems([
+      { id: "gem-1", name: "Ruby", system: { quantity: 2 } }, { id: "gem-2", name: "Topaz" }
+    ]);
+
+    const result = await Service.execute(createActivity(actor, { type: "none" }, { mode: "all" }));
+
+    assert.equal(result.gems.length, 3);
+    assert.equal(Array.from(actor.items.values()).some((gem) => GemBreakService.isBroken(gem)), false);
+  });
+
+  test("a limit spends its units on a stack and each unit gets its own check", async () => {
+    const { actor, rolls } = createActorWithGems([{ id: "gem-1", name: "Ruby", system: { quantity: 3 } }]);
+    choose = (picker) => picker.toggle(actor.items.get("gem-1").uuid);
+
+    await Service.execute(createActivity(actor, { type: "tool", tool: "jeweler", dc: 10 }, { mode: "count", count: 2 }));
+
+    assert.equal(rolls.length, 2);
+    assert.equal(actor.items.get("gem-1").system.quantity, 1);
+  });
+
+  test("an activity set to break lists intact gems, preselects none and breaks the chosen units", async () => {
+    const { actor, rolls } = createActorWithGems([
+      { id: "gem-1", name: "Ruby", broken: false, system: { quantity: 3 } },
+      { id: "gem-2", name: "Topaz" },
+      { id: "gem-3", name: "Opal", broken: false }
+    ]);
+    const activity = createActivity(actor, { type: "tool", tool: "jeweler", dc: 10 }, { mode: "all" }, "break");
+    assert.equal(Service.ensureRepairable(activity), true);
+    assert.equal((await Service.execute(activity, { results: "untouched" })), "untouched");
+
+    choose = (picker) => {
+      assert.deepEqual(picker.selection, []);
+      picker.toggle(actor.items.get("gem-2").uuid);
+      picker.toggle(actor.items.get("gem-1").uuid);
+    };
+    const limited = createActivity(actor, { type: "tool", tool: "jeweler", dc: 10 }, { mode: "count", count: 2 }, "break");
+    const result = await Service.execute(limited);
+
+    assert.equal(result.reason, "gem-broken");
+    assert.equal(rolls.length, 2);
+    assert.equal(actor.items.get("gem-1").system.quantity, 1);
+    assert.equal(GemBreakService.isBroken(actor.items.get("gem-1")), false);
+    assert.equal(GemBreakService.isBroken(actor.items.get("gem-3")), false);
+    const broken = Array.from(actor.items.values()).filter((gem) => GemBreakService.isBroken(gem));
+    assert.equal(broken.reduce((total, gem) => total + gem.system.quantity, 0), 3);
+  });
+
+  test("a failed break check leaves the gem intact, and nothing to break refuses the use", async () => {
+    const { actor } = createActorWithGems([{ id: "gem-1", name: "Ruby", broken: false }]);
+    const activity = createActivity(actor, { type: "tool", tool: "jeweler", dc: 15 }, undefined, "break");
+    choose = (picker) => picker.toggle(actor.items.get("gem-1").uuid);
+    actor.nextRollTotal = 5;
+
+    const failed = await Service.execute(activity);
+    assert.equal(failed.reason, "break-check-failed");
+    assert.equal(GemBreakService.isBroken(actor.items.get("gem-1")), false);
+
+    await Service.breakOne(actor.items.get("gem-1"));
+    assert.equal(Service.ensureRepairable(activity), false);
+  });
+
+  test("dismissing the picker repairs nothing", async () => {
+    const { actor } = createActorWithGems([{ id: "gem-1", name: "Ruby" }, { id: "gem-2", name: "Topaz" }]);
+    const results = { spent: true };
+
+    assert.equal(await Service.execute(createActivity(actor), { results }), results);
+    assert.equal(Array.from(actor.items.values()).every((gem) => GemBreakService.isBroken(gem)), true);
   });
 
   test("rolls against the DC of the gem rarity and keeps the gem broken on a failure", async () => {
@@ -111,6 +215,7 @@ describe("gem repair activity", () => {
 
   test("repairs one unit of a broken stack and leaves the rest broken", async () => {
     const { actor } = createActorWithGems([{ id: "gem-1", name: "Ruby", system: { quantity: 3 } }]);
+    choose = (picker) => picker.toggle(actor.items.get("gem-1").uuid);
 
     await Service.execute(createActivity(actor));
 

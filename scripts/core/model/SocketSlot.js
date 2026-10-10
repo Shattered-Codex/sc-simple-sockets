@@ -1,4 +1,5 @@
 import { Constants } from "../Constants.js";
+import { ItemResolver } from "../ItemResolver.js";
 import { getSlotConfig, normalizeSlotConfig, resolveSlotFrameImg } from "../helpers/socketSlotConfig.js";
 
 export class SocketSlot {
@@ -16,16 +17,22 @@ export class SocketSlot {
 
   static fillFromGem(prev, gemItem, gemSnap, slotIndex) {
     const slotConfig = getSlotConfig(prev);
+    // dnd5e's prepared document name may be the unidentified alias, even for a
+    // GM. The snapshot comes from source data and retains the real identity.
+    const source = ItemResolver.getSnapshotMeta(gemSnap);
+    const identity = ItemResolver.getSourceMeta(gemItem);
+    const name = source?.name || identity.name;
+    const img = source?.img || identity.img;
 
     return {
       ...(prev ?? this.makeDefault()),
       slotConfig,
       gem: {
-        name: gemItem.name,
-        img: gemItem.img
+        name,
+        img
       },
-      name: slotConfig.name || gemItem.name,
-      img: gemItem.img,
+      name: slotConfig.name || name,
+      img,
       _srcGemId: gemItem.id,
       _gemData: gemSnap,
       // Persistent per-socketing identity: deferred writes (recovery rolls,

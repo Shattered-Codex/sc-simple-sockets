@@ -1,3 +1,4 @@
+import { ItemResolver } from "../ItemResolver.js";
 import { Dnd5eActivityCompatibility } from "../support/Dnd5eActivityCompatibility.js";
 import { Constants } from "../Constants.js";
 
@@ -8,14 +9,15 @@ export class EffectService {
     if (!src.length) {
       return new Map();
     }
+    const identity = ItemResolver.getSourceMeta(gemItem);
     const activityEffectIds = EffectService.#getActivityEffectIds(gemItem);
     const sourceEffectIds = src.map(eff => eff.id);
     const toCreate = src.map(eff => {
       const data = eff.toObject();
       delete data._id;
-      data.name ??= eff.name ?? gemItem.name ??
+      data.name ||= identity.name ??
         Constants.localize("SCSockets.Effects.DefaultName", "Gem Effect");
-      data.img ??= eff.img ?? gemItem.img;
+      data.img ||= identity.img;
       data.disabled = false;
       if (EffectService.#isEnchantmentEffect(data)) {
         data.transfer = false;

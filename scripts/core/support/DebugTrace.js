@@ -79,13 +79,14 @@ export class DebugTrace {
       ...payload
     });
 
+    // Foundry's own z-index counter must stay ahead of every window: forcing a
+    // higher value here would leave later dialogs opening behind this sheet.
     try {
       Compatibility.bringWindowToFront(app);
     } catch {
-      // Keep the z-index/focus fallbacks below.
+      // Keep the focus fallback below.
     }
 
-    DebugTrace.#forceHighestZIndex(app);
     DebugTrace.#focusAppElement(app);
 
     DebugTrace.log("ui.bringToTop.after", {
@@ -236,26 +237,6 @@ export class DebugTrace {
     return element;
   }
 
-  static #forceHighestZIndex(app) {
-    const element = DebugTrace.#resolveElement(app?.element);
-    if (!(element instanceof HTMLElement)) {
-      return;
-    }
-
-    const highest = DebugTrace.#highestKnownZIndex();
-    const next = highest + 5;
-
-    try {
-      if (typeof app?.setPosition === "function") {
-        app.setPosition({ zIndex: next });
-      }
-    } catch {
-      // Keep the DOM fallback below.
-    }
-
-    element.style.zIndex = String(next);
-  }
-
   static #focusAppElement(app) {
     const element = DebugTrace.#resolveElement(app?.element);
     if (!(element instanceof HTMLElement)) {
@@ -275,50 +256,6 @@ export class DebugTrace {
         // Ignore focus failures.
       }
     }
-  }
-
-  static #highestKnownZIndex() {
-    const values = [];
-    const push = (app) => {
-      const element = DebugTrace.#resolveElement(app?.element);
-      if (!(element instanceof HTMLElement)) {
-        return;
-      }
-
-      const inline = Number(element.style.zIndex);
-      if (Number.isFinite(inline) && inline > 0) {
-        values.push(inline);
-      }
-
-      const computed = Number(DebugTrace.#readComputedZIndex(element));
-      if (Number.isFinite(computed) && computed > 0) {
-        values.push(computed);
-      }
-
-      const positionZ = Number(app?.position?.zIndex);
-      if (Number.isFinite(positionZ) && positionZ > 0) {
-        values.push(positionZ);
-      }
-    };
-
-    for (const app of Object.values(ui?.windows ?? {})) {
-      push(app);
-    }
-
-    const applicationInstances = foundry?.applications?.instances;
-    const instances = applicationInstances instanceof Map
-      ? Array.from(applicationInstances.values())
-      : Array.isArray(applicationInstances)
-        ? applicationInstances
-        : applicationInstances && typeof applicationInstances === "object"
-          ? Object.values(applicationInstances)
-          : [];
-
-    for (const app of instances) {
-      push(app);
-    }
-
-    return values.length ? Math.max(...values) : 0;
   }
 
   static #readComputedZIndex(element) {

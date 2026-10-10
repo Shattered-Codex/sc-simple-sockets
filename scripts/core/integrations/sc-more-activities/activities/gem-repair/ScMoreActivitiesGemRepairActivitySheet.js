@@ -31,7 +31,15 @@ export class ScMoreActivitiesGemRepairActivitySheet extends dnd5e.applications.a
     const dcMode = GemCheckService.normalizeDcMode(check.dcMode);
     const rarity = GemCheckService.normalizeRarityDcs(check.rarity);
 
+    const amount = this.activity?.repair?.amount ?? {};
+    const amountMode = amount.mode === "all" ? "all" : "count";
+
     context.repair = {
+      action: this.activity?.repair?.action === "break" ? "break" : "repair",
+      amount: {
+        mode: amountMode,
+        count: amount.count ?? 1
+      },
       check: {
         type,
         ability: check.ability ?? "",
@@ -42,6 +50,15 @@ export class ScMoreActivitiesGemRepairActivitySheet extends dnd5e.applications.a
         formula: check.formula ?? ""
       }
     };
+    context.actionOptions = ["repair", "break"].map((value) => ({
+      value,
+      label: game.i18n.localize(`${I18N}.Fields.Action.Choices.${value.charAt(0).toUpperCase()}${value.slice(1)}`)
+    }));
+    context.amountModeOptions = ["count", "all"].map((value) => ({
+      value,
+      label: game.i18n.localize(`${I18N}.Fields.Amount.Mode.Choices.${value.charAt(0).toUpperCase()}${value.slice(1)}`)
+    }));
+    context.isCountAmount = amountMode === "count";
     context.checkTypeOptions = [
       GemCheckService.TYPE_NONE,
       GemCheckService.TYPE_TOOL,

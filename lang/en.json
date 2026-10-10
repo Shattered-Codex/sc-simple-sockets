@@ -941,17 +941,38 @@
         },
         "GemRepair": {
           "Title": "Gem Repair",
-          "Hint": "Repair a broken gem from the user's inventory, optionally after a check.",
+          "Hint": "Repair broken gems from the user's inventory, or break intact ones, optionally after a check.",
           "Sections": {
             "Configuration": "Gem Repair Configuration",
             "Check": "Repair Check"
           },
           "Fields": {
-            "TargetingHint": "When used, this activity repairs one broken gem from the inventory of the actor using it. If the actor carries more than one broken gem, a prompt asks which one to repair.",
+            "TargetingHint": "When used, this activity lists the gems in the inventory of the actor using it that it can act on and asks which ones to choose.",
+            "Action": {
+              "Label": "Action",
+              "Hint": "Repair lists the actor's broken gems. Break lists the intact ones and marks the chosen gems as broken.",
+              "Choices": {
+                "Repair": "Repair gems",
+                "Break": "Break gems"
+              }
+            },
+            "Amount": {
+              "Mode": {
+                "Label": "Gems per use",
+                "Hint": "How many gems one use can repair or break. Each unit of a stack counts as one gem, and each gem gets its own check.",
+                "Choices": {
+                  "Count": "Limited number",
+                  "All": "All listed gems"
+                }
+              },
+              "Count": {
+                "Label": "Maximum gems"
+              }
+            },
             "Check": {
               "Type": {
                 "Label": "Check",
-                "Hint": "Optional roll required to repair the gem. On a failure the gem stays broken.",
+                "Hint": "Optional roll required to repair or break the gem. On a failure the gem stays as it was.",
                 "Choices": {
                   "None": "No check",
                   "Tool": "Tool check",
@@ -981,22 +1002,36 @@
                 "Hint": "A formula without dice. It can use the activity's roll data, plus @gem.rarity (0 for no rarity, 1 common … 6 artifact)."
               },
               "Rarity": {
-                "Hint": "The DC used for each rarity of the gem being repaired."
+                "Hint": "The DC used for each rarity of the gem being repaired or broken."
               }
             }
           },
           "App": {
-            "Title": "Choose Gem to Repair",
-            "Subtitle": "{actor} has {count} broken gems. Choose which one to repair."
+            "Title": "Choose Gems to Repair",
+            "Subtitle": "{actor} has {count} broken gems. Choose up to {limit} to repair.",
+            "SubtitleAll": "{actor} has {count} broken gems. Choose which ones to repair.",
+            "Confirm": "Repair",
+            "Selected": "{count} selected",
+            "SelectedOf": "{count} of {limit} selected"
+          },
+          "BreakApp": {
+            "Title": "Choose Gems to Break",
+            "Subtitle": "{actor} has {count} intact gems. Choose up to {limit} to break.",
+            "SubtitleAll": "{actor} has {count} intact gems. Choose which ones to break.",
+            "Confirm": "Break"
           },
           "RollFlavor": "Gem repair: {gem}",
+          "BreakRollFlavor": "Gem break: {gem}",
           "Notifications": {
             "Repaired": "{name} was repaired.",
-            "Failed": "The attempt to repair {name} failed."
+            "Failed": "The attempt to repair {name} failed.",
+            "Broken": "{name} was broken.",
+            "BreakFailed": "The attempt to break {name} failed."
           },
           "Warnings": {
             "NoActor": "This activity must be used by an actor.",
             "NoBrokenGems": "{actor} has no broken gems to repair.",
+            "NoIntactGems": "{actor} has no gems to break.",
             "InvalidDcFormula": "The repair DC formula \"{formula}\" could not be resolved; using DC {dc}."
           }
         }

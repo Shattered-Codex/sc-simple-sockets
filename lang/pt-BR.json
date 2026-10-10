@@ -941,17 +941,38 @@
         },
         "GemRepair": {
           "Title": "Gem Repair",
-          "Hint": "Repara uma gema quebrada do inventário do usuário, opcionalmente após um teste.",
+          "Hint": "Repara gemas quebradas do inventário do usuário, ou quebra gemas intactas, opcionalmente após um teste.",
           "Sections": {
             "Configuration": "Configuração do Gem Repair",
             "Check": "Teste de reparo"
           },
           "Fields": {
-            "TargetingHint": "Ao usar esta atividade, uma gema quebrada do inventário do ator que a usa é reparada. Se o ator tiver mais de uma gema quebrada, uma janela pergunta qual reparar.",
+            "TargetingHint": "Ao usar esta atividade, uma janela lista as gemas do inventário do ator que a usa sobre as quais ela pode agir e pergunta quais escolher.",
+            "Action": {
+              "Label": "Ação",
+              "Hint": "Reparar lista as gemas quebradas do ator. Quebrar lista as intactas e marca as escolhidas como quebradas.",
+              "Choices": {
+                "Repair": "Reparar gemas",
+                "Break": "Quebrar gemas"
+              }
+            },
+            "Amount": {
+              "Mode": {
+                "Label": "Gemas por uso",
+                "Hint": "Quantas gemas um uso pode reparar ou quebrar. Cada unidade de uma pilha conta como uma gema, e cada gema tem o seu próprio teste.",
+                "Choices": {
+                  "Count": "Quantidade limitada",
+                  "All": "Todas as gemas listadas"
+                }
+              },
+              "Count": {
+                "Label": "Máximo de gemas"
+              }
+            },
             "Check": {
               "Type": {
                 "Label": "Teste",
-                "Hint": "Rolagem opcional exigida para reparar a gema. Em caso de falha, a gema continua quebrada.",
+                "Hint": "Rolagem opcional exigida para reparar ou quebrar a gema. Em caso de falha, a gema fica como estava.",
                 "Choices": {
                   "None": "Sem teste",
                   "Tool": "Teste de ferramenta",
@@ -981,22 +1002,36 @@
                 "Hint": "Uma fórmula sem dados. Pode usar os dados de rolagem da atividade, além de @gem.rarity (0 para sem raridade, 1 comum … 6 artefato)."
               },
               "Rarity": {
-                "Hint": "A CD usada para cada raridade da gema que está sendo reparada."
+                "Hint": "A CD usada para cada raridade da gema que está sendo reparada ou quebrada."
               }
             }
           },
           "App": {
-            "Title": "Escolha a gema para reparar",
-            "Subtitle": "{actor} tem {count} gemas quebradas. Escolha qual reparar."
+            "Title": "Escolha as gemas para reparar",
+            "Subtitle": "{actor} tem {count} gemas quebradas. Escolha até {limit} para reparar.",
+            "SubtitleAll": "{actor} tem {count} gemas quebradas. Escolha quais reparar.",
+            "Confirm": "Reparar",
+            "Selected": "{count} selecionadas",
+            "SelectedOf": "{count} de {limit} selecionadas"
           },
+          "BreakApp": {
+            "Title": "Escolha as gemas para quebrar",
+            "Subtitle": "{actor} tem {count} gemas intactas. Escolha até {limit} para quebrar.",
+            "SubtitleAll": "{actor} tem {count} gemas intactas. Escolha quais quebrar.",
+            "Confirm": "Quebrar"
+          },
+          "BreakRollFlavor": "Quebra de gema: {gem}",
           "RollFlavor": "Reparo de gema: {gem}",
           "Notifications": {
             "Repaired": "{name} foi reparada.",
-            "Failed": "A tentativa de reparar {name} falhou."
+            "Failed": "A tentativa de reparar {name} falhou.",
+            "Broken": "{name} foi quebrada.",
+            "BreakFailed": "A tentativa de quebrar {name} falhou."
           },
           "Warnings": {
             "NoActor": "Esta atividade precisa ser usada por um ator.",
             "NoBrokenGems": "{actor} não tem gemas quebradas para reparar.",
+            "NoIntactGems": "{actor} não tem gemas para quebrar.",
             "InvalidDcFormula": "A fórmula da CD de reparo \"{formula}\" não pôde ser resolvida; usando CD {dc}."
           }
         }

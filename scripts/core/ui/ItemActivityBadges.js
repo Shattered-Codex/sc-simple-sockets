@@ -1,17 +1,17 @@
+import { HiddenSocketContent as Content } from "../../domain/gems/HiddenSocketContent.js";
 import { Constants } from "../Constants.js";
 import { GemConcealmentService } from "../../domain/gems/GemConcealmentService.js";
+import { canUserSeeSlot } from "../helpers/socketSlotConfig.js";
+import { SocketContentVisibilityUI } from "./SocketContentVisibilityUI.js";
 
 const LEGACY_ACTIVITY_BADGE_CLASS = "sc-sockets-activity-badge";
 const BADGE_HOST_CLASS = "sc-sockets-entry-name-with-badges";
 const BADGE_WRAPPER_CLASS = "sc-sockets-entry-badges";
-const OBSERVER_DEBOUNCE_MS = 50;
 
 const SOCKET_FLAG = Constants.FLAGS?.sockets ?? "sockets";
-const MODULE_MUTATION_CLASSES = [BADGE_WRAPPER_CLASS];
 
 export class ItemActivityBadges {
   static #handlers = new Map();
-  static #observerState = new WeakMap();
 
   static render(sheet, html) {
     const item = sheet?.item ?? sheet?.document;
@@ -21,7 +21,7 @@ export class ItemActivityBadges {
     if (!root) return;
 
     this.#renderBadges(root, item);
-    this.#observeLazyTidyContent(root, item);
+    SocketContentVisibilityUI.observe(root, () => this.#renderBadges(root, sheet?.item ?? sheet?.document ?? item), { badges: true });
   }
 
   static activate() {
@@ -56,10 +56,15 @@ export class ItemActivityBadges {
     const activityMap = this.#buildActivityMap(item);
     const effectMap = this.#buildEffectMap(item);
     const renderedHosts = new Set();
+    SocketContentVisibilityUI.render(root, {
+      item,
+      activityMap,
+      effectMap
+    });
 
-    for (const activity of this.#entries(activities)) {
+    for (const activity of Content.entries(activities)) {
       const meta = activityMap.get(activity.id);
-      if (!meta) continue;
+      if (!meta || meta.hidden) continue;
 
       const host = this.#findActivityBadgeHost(root, activity.id);
       if (!host) continue;
@@ -68,9 +73,9 @@ export class ItemActivityBadges {
       this.#syncBadges(host, [meta]);
     }
 
-    for (const effect of this.#entries(effects)) {
+    for (const effect of Content.entries(effects)) {
       const meta = effectMap.get(effect.id);
-      if (!meta) continue;
+      if (!meta || meta.hidden) continue;
 
       const host = this.#findEffectBadgeHost(root, effect.id);
       if (!host) continue;
@@ -90,14 +95,13 @@ export class ItemActivityBadges {
     if (!root) return;
 
     const activities = item.system?.activities;
-    if (!activities?.size) return;
-
     const activityMap = this.#buildActivityMap(item);
-    if (!activityMap.size) return;
+    SocketContentVisibilityUI.render(root, { item, activityMap });
 
+    const byId = new Map(Content.entries(activities).map((activity) => [activity.id, activity]));
     root.querySelectorAll("button[data-activity-id]").forEach((button) => {
       const id = button.dataset.activityId;
-      const activity = activities.get?.(id) ?? activities.find?.((a) => a.id === id);
+      const activity = byId.get(id);
       if (!activity) return;
       const icon = button.querySelector(".icon");
       this.#decorateChoiceIcon(icon, activity, activityMap.get(activity.id));
@@ -109,16 +113,6 @@ export class ItemActivityBadges {
     if (html.jquery || typeof html.get === "function") return html[0] ?? html.get(0);
     if (html instanceof Element || html?.querySelector) return html;
     return null;
-  }
-
-  static #entries(collection) {
-    if (!collection) return [];
-    if (typeof collection.values === "function") return Array.from(collection.values());
-    if (Array.isArray(collection)) return collection;
-    if (typeof collection === "object") {
-      return Object.values(collection).filter((entry) => entry && typeof entry === "object");
-    }
-    return [];
   }
 
   static #findActivityBadgeHost(root, activityId) {
@@ -199,17 +193,17 @@ export class ItemActivityBadges {
         const info = meta[activityId] ?? {};
         const flagImg = info.gemImg !== Constants.SOCKET_SLOT_IMG ? info.gemImg : null;
         const entryImg = entry.gemImg !== Constants.SOCKET_SLOT_IMG ? entry.gemImg : null;
-        map.set(activityId, this.#concealGem(item, socketInfo, {
+        map.set(activityId, this.#describeGemForUser(item, socketInfo, {
           slot: slotKey,
           gemImg: socketInfo?.gem?.img ?? flagImg ?? entryImg ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
-          gemName: info.gemName ?? entry.gemName ?? socketInfo?.gem?.name ?? socketInfo?.name ?? item.name,
+          gemName: socketInfo?.gem?.name ?? info.gemName ?? entry.gemName ?? socketInfo?.name ?? item.name,
           activityName: info.activityName ?? null,
           sourceId: info.sourceId ?? null
         }));
       }
     }
 
-    for (const activity of this.#entries(activities)) {
+    for (const activity of Content.entries(activities)) {
       if (!activity?.id || map.has(activity.id)) continue;
 
       const sourceGem = this.#getModuleFlags(activity)[Constants.FLAG_SOURCE_GEM];
@@ -217,7 +211,7 @@ export class ItemActivityBadges {
 
       const slotKey = String(sourceGem.slot);
       const socketInfo = Array.isArray(sockets) ? sockets[sourceGem.slot] : sockets?.[slotKey];
-      map.set(activity.id, this.#concealGem(item, socketInfo, {
+      map.set(activity.id, this.#describeGemForUser(item, socketInfo, {
         slot: slotKey,
         gemImg: socketInfo?.gem?.img ?? socketInfo?._gemData?.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
         gemName: socketInfo?.gem?.name ?? socketInfo?._gemData?.name ?? socketInfo?.name ?? item.name,
@@ -233,7 +227,7 @@ export class ItemActivityBadges {
     const sockets = item.getFlag(Constants.MODULE_ID, SOCKET_FLAG) ?? [];
     const map = new Map();
 
-    for (const effect of this.#entries(item.effects)) {
+    for (const effect of Content.entries(item.effects)) {
       if (!effect?.id) continue;
 
       const sourceGem = this.#getModuleFlags(effect)[Constants.FLAG_SOURCE_GEM];
@@ -244,7 +238,7 @@ export class ItemActivityBadges {
       const socketInfo = Array.isArray(sockets) ? sockets[slotIndex] : sockets?.[slotKey];
       const socketGem = socketInfo?.gem ?? {};
 
-      map.set(effect.id, this.#concealGem(item, socketInfo, {
+      map.set(effect.id, this.#describeGemForUser(item, socketInfo, {
         slot: slotKey,
         gemImg: socketGem.img ?? socketInfo?._gemData?.img ?? socketInfo?.img ?? Constants.SOCKET_SLOT_IMG,
         gemName: socketGem.name ?? socketInfo?._gemData?.name ?? socketInfo?.name ?? item.name,
@@ -255,13 +249,14 @@ export class ItemActivityBadges {
     return map;
   }
 
-  /** Badge data never names a gem the current user must not identify. */
-  static #concealGem(item, slot, meta) {
+  /** Resolve slot visibility and mask the gem identity for the viewing user. */
+  static #describeGemForUser(item, slot, meta) {
+    const visibleMeta = { ...meta, hidden: !canUserSeeSlot(slot) };
     if (!GemConcealmentService.isSlotConcealed(item, slot)) {
-      return meta;
+      return visibleMeta;
     }
     return {
-      ...meta,
+      ...visibleMeta,
       gemImg: GemConcealmentService.PLACEHOLDER_IMG,
       gemName: GemConcealmentService.placeholderName()
     };
@@ -353,63 +348,11 @@ export class ItemActivityBadges {
     });
   }
 
-  static #observeLazyTidyContent(root, item) {
-    if (!(root instanceof HTMLElement)) return;
-    this.#disconnectObserver(root);
-
-    if (!this.#isTidyRoot(root)) return;
-
-    const state = { timer: null };
-    const observer = new MutationObserver((mutations) => {
-      if (mutations.every((mutation) => this.#isOwnBadgeMutation(mutation))) return;
-
-      if (state.timer) clearTimeout(state.timer);
-      state.timer = setTimeout(() => {
-        state.timer = null;
-        if (!root.isConnected) {
-          this.#disconnectObserver(root);
-          return;
-        }
-        this.#renderBadges(root, item);
-      }, OBSERVER_DEBOUNCE_MS);
-    });
-
-    observer.observe(root, { childList: true, subtree: true });
-    this.#observerState.set(root, { observer, state });
-  }
-
-  static #disconnectObserver(root) {
-    const existing = this.#observerState.get(root);
-    if (!existing) return;
-
-    existing.observer.disconnect();
-    if (existing.state.timer) clearTimeout(existing.state.timer);
-    this.#observerState.delete(root);
-  }
-
-  static #isTidyRoot(root) {
-    return root.matches?.(".tidy5e-sheet, .tidy-tab, .tidy-table, [data-tidy-sheet-part]")
-      || Boolean(root.querySelector(".tidy5e-sheet, .tidy-tab, .tidy-table, [data-tidy-sheet-part]"));
-  }
-
-  static #isOwnBadgeMutation(mutation) {
-    const nodes = [...mutation.addedNodes, ...mutation.removedNodes];
-    if (!nodes.length) return false;
-
-    return nodes.every((node) => (
-      node instanceof HTMLElement
-      && MODULE_MUTATION_CLASSES.some((className) => (
-        node.classList.contains(className)
-        || Boolean(node.closest?.(`.${className}`))
-      ))
-    ));
-  }
-
   static #decorateChoiceIcon(node, activity, meta) {
     if (!node) return;
     node.querySelector(`.${LEGACY_ACTIVITY_BADGE_CLASS}`)?.remove();
 
-    if (!meta) return;
+    if (!meta || meta.hidden) return;
 
     const imgSrc = meta.gemImg ?? Constants.SOCKET_SLOT_IMG;
     const label = meta.gemName ?? activity.name;
