@@ -110,7 +110,7 @@ const RELEASE_SECTIONS = [
     items: [
       {
         title: "Optional gem removal checks",
-        text: "Enable removal checks in Module configuration → Socket rules. Choose a tool, skill, ability, or flat d20 check, with a fixed DC, a formula, or a DC per gem rarity. Failure can break the gem, destroy it, or leave it socketed. GMs skip checks by default and can override each slot's DC and failure outcome; DC 0 skips the check. The Extract Gem macro follows the same checks."
+        text: "Enable removal checks in Module configuration → Gem checks. Choose a tool, skill, ability, or flat d20 check, with a fixed DC, a formula, or a DC per gem rarity. Failure can break the gem, destroy it, or leave it socketed. GMs skip checks by default and can override each slot's DC and failure outcome; DC 0 skips the check. The Extract Gem macro follows the same checks."
       },
       {
         title: "Broken gems and GM repair controls",

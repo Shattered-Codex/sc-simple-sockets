@@ -30,6 +30,7 @@
       "SourceGemMissing": "The gem that provides this activity is no longer socketed.",
       "InvalidConsumptionSlot": "The socket slot configured for consumption does not exist.",
       "InvalidConsumptionTarget": "This socket consumption target is not configured.",
+      "GemUnavailable": "That gem is no longer available.",
       "GemBroken": "This gem is broken and must be repaired before it can be socketed."
     },
     "Effects": {
@@ -192,7 +193,8 @@
       "Saved": "Slot settings saved.",
       "Tabs": {
         "Description": "Description",
-        "Condition": "Condition"
+        "Condition": "Condition",
+        "Checks": "Checks"
       },
       "Hidden": {
         "Label": "Hide slot",
@@ -261,7 +263,45 @@
         "Hint": "When and how this gem's charges change automatically — rests, combat periods, or the Recharge d6 check — recovering all charges, losing all charges, or rolling a custom formula.",
         "FormulaPlaceholder": "e.g. 1d4"
       },
+      "Checks": {
+        "Hint": "Override, for this slot only, the checks configured in the module settings. Anything left on the global setting follows it.",
+        "NoCheck": "No check for this slot",
+        "DcMode": {
+          "Label": "DC",
+          "Hint": "Use the global DC, or give this slot its own: a number or formula, or a DC for each gem rarity.",
+          "Global": "Use the global DC",
+          "Custom": "Number or formula",
+          "Rarity": "By gem rarity"
+        },
+        "DcHint": "A number or a formula without dice, e.g. 10 + 2 * @gem.rarity. A DC of 0 removes the check from this slot.",
+        "RarityDcs": {
+          "Label": "DC by gem rarity",
+          "Hint": "The DC for each rarity of the gem. A DC of 0 needs no check."
+        }
+      },
+      "InsertionCheck": {
+        "Title": "Insertion check",
+        "Disabled": "This check is turned off in the module settings. These overrides only apply once it is enabled.",
+        "Type": {
+          "Label": "Check",
+          "Hint": "The roll made to socket a gem into this slot, instead of the global check."
+        },
+        "Dc": {
+          "Label": "Insertion check DC",
+          "Hint": "A number or a formula without dice. Leave blank to use the global DC; 0 removes the check from this slot."
+        },
+        "Failure": {
+          "Label": "On a failed insertion check",
+          "Hint": "What happens to the gem when the check to socket it into this slot fails."
+        }
+      },
       "RemovalCheck": {
+        "Title": "Removal check",
+        "Disabled": "This check is turned off in the module settings. These overrides only apply once it is enabled.",
+        "Type": {
+          "Label": "Check",
+          "Hint": "The roll made to take the gem out of this slot, instead of the global check."
+        },
         "Dc": {
           "Label": "Removal check DC",
           "Hint": "A number or a formula without dice. Leave blank to use the global DC; 0 removes the check from this slot.",
@@ -449,7 +489,11 @@
         "Cancel": "Cancel",
         "Sections": {
           "Rules": "Socket rules",
-          "RulesHint": "Control who can edit sockets and how gems behave when attached or removed.",
+          "RulesHint": "Set how many sockets an item can have and what happens to gems in them.",
+          "Permissions": "Permissions",
+          "PermissionsHint": "Choose the minimum role needed to change the sockets of an item.",
+          "Checks": "Gem checks",
+          "ChecksHint": "Optionally require a roll to socket a gem or to take one out, and decide what a failure does.",
           "Display": "Display",
           "DisplayHint": "Adjust how gem damage and the socket tab are presented in the UI."
         }
@@ -486,6 +530,46 @@
       "DebugTrace": {
         "Name": "Debug trace logging",
         "Hint": "Logs item updates, sheet renders, and focus changes to the browser console to diagnose socket UI issues."
+      },
+      "InsertionCheck": {
+        "Section": "Gem insertion check",
+        "Enabled": {
+          "Name": "Require a check to socket gems",
+          "Hint": "When enabled, a player dropping a gem on a socket must pass a check against a DC. A failed check can break or lose the gem."
+        },
+        "Type": {
+          "Name": "Check",
+          "Hint": "The roll made by the actor that owns the item: a tool, skill or ability check, or a flat d20."
+        },
+        "DcMode": {
+          "Name": "DC",
+          "Hint": "How the DC is calculated. Each socket can override it in its own settings; a DC of 0 means no check."
+        },
+        "Dc": {
+          "Name": "Fixed DC",
+          "Hint": "The DC used for every gem."
+        },
+        "DcFormula": {
+          "Name": "DC formula",
+          "Hint": "A formula without dice. It can use the roll data of the item that holds the socket, plus @gem.rarity (0 for no rarity, 1 common … 6 artifact)."
+        },
+        "RarityDcs": {
+          "Name": "DC by gem rarity",
+          "Hint": "The DC used for each rarity of the gem being socketed."
+        },
+        "Failure": {
+          "Name": "On a failed check",
+          "Hint": "The gem can stay in the inventory untouched, break (it must be repaired before it can be socketed) or be destroyed.",
+          "Choices": {
+            "Keep": "Nothing happens: the gem stays in the inventory",
+            "Break": "The gem breaks",
+            "Lose": "The gem is lost"
+          }
+        },
+        "Gm": {
+          "Name": "GMs also roll",
+          "Hint": "By default a GM sockets gems without rolling."
+        }
       },
       "RemovalCheck": {
         "Section": "Gem removal check",
@@ -1121,6 +1205,16 @@
       },
       "Rarity": {
         "None": "No rarity"
+      }
+    },
+    "InsertionCheck": {
+      "Flavor": "Gem socketing",
+      "FlavorNamed": "Gem socketing: {gem}",
+      "Notifications": {
+        "Keep": "The check failed: the gem was not socketed.",
+        "Broke": "The check failed: the gem broke while being socketed.",
+        "Lost": "The check failed: the gem was destroyed while being socketed.",
+        "RollFailed": "The insertion check could not be rolled, so the gem was not socketed."
       }
     },
     "RemovalCheck": {

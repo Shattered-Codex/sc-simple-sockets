@@ -184,7 +184,7 @@ export class ScMoreActivitiesGemRepairActivityService {
       }
       await current.update({ "system.quantity": quantity - 1 });
       try {
-        const changed = await InventoryService.returnOne(current, data);
+        const changed = await InventoryService.returnOneLocked(current, data);
         if (!changed) {
           throw new Error("The gem could not be returned to the inventory.");
         }

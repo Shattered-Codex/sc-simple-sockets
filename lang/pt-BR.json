@@ -30,6 +30,7 @@
       "SourceGemMissing": "A gema que fornece esta atividade não está mais socketada.",
       "InvalidConsumptionSlot": "O slot de socket configurado para consumo não existe.",
       "InvalidConsumptionTarget": "Este alvo de consumo socketado não está configurado.",
+      "GemUnavailable": "Essa gema não está mais disponível.",
       "GemBroken": "Esta gema está quebrada e precisa ser reparada antes de ser encaixada."
     },
     "Effects": {
@@ -192,7 +193,8 @@
       "Saved": "Configurações do slot salvas.",
       "Tabs": {
         "Description": "Descrição",
-        "Condition": "Condição"
+        "Condition": "Condição",
+        "Checks": "Testes"
       },
       "Hidden": {
         "Label": "Ocultar slot",
@@ -261,7 +263,45 @@
         "Hint": "Quando e como as cargas desta gema mudam automaticamente — descansos, períodos de combate ou o teste de Recarga no d6 — recuperando todas as cargas, perdendo todas ou rolando uma fórmula customizada.",
         "FormulaPlaceholder": "ex.: 1d4"
       },
+      "Checks": {
+        "Hint": "Sobrescreva, só para este slot, os testes configurados no módulo. O que ficar na configuração global segue a global.",
+        "NoCheck": "Sem teste neste slot",
+        "DcMode": {
+          "Label": "CD",
+          "Hint": "Use a CD global ou dê a este slot a sua própria: um número ou fórmula, ou uma CD para cada raridade de gema.",
+          "Global": "Usar a CD global",
+          "Custom": "Número ou fórmula",
+          "Rarity": "Por raridade da gema"
+        },
+        "DcHint": "Um número ou uma fórmula sem dados, ex.: 10 + 2 * @gem.rarity. Uma CD 0 remove o teste deste slot.",
+        "RarityDcs": {
+          "Label": "CD por raridade da gema",
+          "Hint": "A CD para cada raridade da gema. Uma CD 0 dispensa o teste."
+        }
+      },
+      "InsertionCheck": {
+        "Title": "Teste de inserção",
+        "Disabled": "Este teste está desativado nas configurações do módulo. Estas opções só valem quando ele for ativado.",
+        "Type": {
+          "Label": "Teste",
+          "Hint": "A rolagem feita para encaixar uma gema neste slot, no lugar do teste global."
+        },
+        "Dc": {
+          "Label": "CD do teste de inserção",
+          "Hint": "Um número ou uma fórmula sem dados. Deixe em branco para usar a CD global; 0 remove o teste deste slot."
+        },
+        "Failure": {
+          "Label": "Em caso de falha no teste de inserção",
+          "Hint": "O que acontece com a gema quando o teste para encaixá-la neste slot falha."
+        }
+      },
       "RemovalCheck": {
+        "Title": "Teste de remoção",
+        "Disabled": "Este teste está desativado nas configurações do módulo. Estas opções só valem quando ele for ativado.",
+        "Type": {
+          "Label": "Teste",
+          "Hint": "A rolagem feita para retirar a gema deste slot, no lugar do teste global."
+        },
         "Dc": {
           "Label": "CD do teste de remoção",
           "Hint": "Um número ou uma fórmula sem dados. Deixe em branco para usar a CD global; 0 remove o teste deste slot.",
@@ -461,7 +501,11 @@
         "Title": "Simple Sockets — Configurações",
         "Tabs": {
           "Rules": "Regras de soquete",
-          "RulesHint": "Controle quem pode editar soquetes e como gemas se comportam ao serem encaixadas ou removidas.",
+          "RulesHint": "Defina quantos soquetes um item pode ter e o que acontece com as gemas neles.",
+          "Permissions": "Permissões",
+          "PermissionsHint": "Escolha o papel mínimo necessário para alterar os soquetes de um item.",
+          "Checks": "Testes de gema",
+          "ChecksHint": "Opcionalmente, exija uma rolagem para encaixar ou retirar uma gema e decida o que uma falha causa.",
           "Display": "Exibição",
           "DisplayHint": "Ajuste como o dano de gemas e a aba de soquetes aparecem na interface.",
           "Types": "Tipos de item",
@@ -486,6 +530,46 @@
       "DebugTrace": {
         "Name": "Log de depuração",
         "Hint": "Registra atualizações de itens, renderizações de fichas e mudanças de foco no console do navegador para diagnosticar problemas na interface de encaixes."
+      },
+      "InsertionCheck": {
+        "Section": "Teste de inserção de gema",
+        "Enabled": {
+          "Name": "Exigir um teste para encaixar gemas",
+          "Hint": "Quando ativado, um jogador que solta uma gema em um soquete precisa passar em um teste contra uma CD. Uma falha pode quebrar ou perder a gema."
+        },
+        "Type": {
+          "Name": "Teste",
+          "Hint": "A rolagem feita pelo ator dono do item: um teste de ferramenta, perícia ou atributo, ou um d20 puro."
+        },
+        "DcMode": {
+          "Name": "CD",
+          "Hint": "Como a CD é calculada. Cada soquete pode sobrescrevê-la nas próprias configurações; uma CD 0 significa sem teste."
+        },
+        "Dc": {
+          "Name": "CD fixa",
+          "Hint": "A CD usada para todas as gemas."
+        },
+        "DcFormula": {
+          "Name": "Fórmula da CD",
+          "Hint": "Uma fórmula sem dados. Pode usar os dados de rolagem do item que tem o soquete, além de @gem.rarity (0 para sem raridade, 1 comum … 6 artefato)."
+        },
+        "RarityDcs": {
+          "Name": "CD por raridade da gema",
+          "Hint": "A CD usada para cada raridade da gema que está sendo encaixada."
+        },
+        "Failure": {
+          "Name": "Em caso de falha no teste",
+          "Hint": "A gema pode ficar intacta no inventário, quebrar (precisa ser reparada antes de ser encaixada) ou ser destruída.",
+          "Choices": {
+            "Keep": "Nada acontece: a gema fica no inventário",
+            "Break": "A gema quebra",
+            "Lose": "A gema é perdida"
+          }
+        },
+        "Gm": {
+          "Name": "GMs também rolam",
+          "Hint": "Por padrão, um GM encaixa gemas sem rolar."
+        }
       },
       "RemovalCheck": {
         "Section": "Teste de remoção de gema",
@@ -1121,6 +1205,16 @@
       },
       "Rarity": {
         "None": "Sem raridade"
+      }
+    },
+    "InsertionCheck": {
+      "Flavor": "Encaixe de gema",
+      "FlavorNamed": "Encaixe de gema: {gem}",
+      "Notifications": {
+        "Keep": "O teste falhou: a gema não foi encaixada.",
+        "Broke": "O teste falhou: a gema quebrou ao ser encaixada.",
+        "Lost": "O teste falhou: a gema foi destruída ao ser encaixada.",
+        "RollFailed": "Não foi possível rolar o teste de inserção, então a gema não foi encaixada."
       }
     },
     "RemovalCheck": {

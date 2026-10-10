@@ -49,6 +49,39 @@ export class ModuleSettings {
   static REMOVAL_FAILURE_BREAK = "break";
   static REMOVAL_FAILURE_OUTCOMES = Constants.REMOVAL_FAILURE_OUTCOMES;
   static DEFAULT_REMOVAL_CHECK_TYPE = "tool:jeweler";
+  static SETTING_INSERTION_CHECK_ENABLED = "gemInsertionCheckEnabled";
+  static SETTING_INSERTION_CHECK_TYPE = "gemInsertionCheckType";
+  static SETTING_INSERTION_CHECK_DC_MODE = "gemInsertionCheckDcMode";
+  static SETTING_INSERTION_CHECK_DC = "gemInsertionCheckDc";
+  static SETTING_INSERTION_CHECK_DC_FORMULA = "gemInsertionCheckDcFormula";
+  static SETTING_INSERTION_CHECK_RARITY_DCS = "gemInsertionCheckRarityDcs";
+  static SETTING_INSERTION_CHECK_FAILURE = "gemInsertionCheckFailure";
+  static SETTING_INSERTION_CHECK_GM = "gemInsertionCheckAppliesToGm";
+  static INSERTION_FAILURE_KEEP = "keep";
+  static INSERTION_FAILURE_LOSE = "lose";
+  static INSERTION_FAILURE_BREAK = "break";
+  static DEFAULT_INSERTION_CHECK_TYPE = "tool:jeweler";
+  /** The settings behind each gem check, keyed the same way for both checks. */
+  static REMOVAL_CHECK_SETTINGS = Object.freeze({
+    enabled: "gemRemovalCheckEnabled",
+    type: "gemRemovalCheckType",
+    dcMode: "gemRemovalCheckDcMode",
+    dc: "gemRemovalCheckDc",
+    dcFormula: "gemRemovalCheckDcFormula",
+    rarityDcs: "gemRemovalCheckRarityDcs",
+    failure: "gemRemovalCheckFailure",
+    appliesToGm: "gemRemovalCheckAppliesToGm"
+  });
+  static INSERTION_CHECK_SETTINGS = Object.freeze({
+    enabled: "gemInsertionCheckEnabled",
+    type: "gemInsertionCheckType",
+    dcMode: "gemInsertionCheckDcMode",
+    dc: "gemInsertionCheckDc",
+    dcFormula: "gemInsertionCheckDcFormula",
+    rarityDcs: "gemInsertionCheckRarityDcs",
+    failure: "gemInsertionCheckFailure",
+    appliesToGm: "gemInsertionCheckAppliesToGm"
+  });
   static SETTING_GEM_ROLL_LAYOUT = "gemRollLayout";
   static SETTING_GEM_FORMULA_LAYOUT = "gemFormulaLayout";
   static SETTING_GEM_FORMULA_SHOW_IMAGE = "gemFormulaShowImage";
@@ -220,6 +253,71 @@ export class ModuleSettings {
       {
         value: ModuleSettings.REMOVAL_FAILURE_STAY,
         label: Constants.localize("SCSockets.Settings.RemovalCheck.Failure.Choices.Stay", "The gem stays in the socket")
+      }
+    ];
+  }
+
+  // Gem insertion check --------------------------------------------------------
+
+  static isGemInsertionCheckEnabled() {
+    return ModuleSettings.#getRegistered(ModuleSettings.SETTING_INSERTION_CHECK_ENABLED, false) === true;
+  }
+
+  static doesGemInsertionCheckApplyToGm() {
+    return ModuleSettings.#getRegistered(ModuleSettings.SETTING_INSERTION_CHECK_GM, false) === true;
+  }
+
+  /** Compact check id, e.g. "flat", "skill:slt" or "tool:jeweler". */
+  static getGemInsertionCheckType() {
+    const value = String(
+      ModuleSettings.#getRegistered(
+        ModuleSettings.SETTING_INSERTION_CHECK_TYPE,
+        ModuleSettings.DEFAULT_INSERTION_CHECK_TYPE
+      ) ?? ""
+    ).trim();
+    return value.length ? value : ModuleSettings.DEFAULT_INSERTION_CHECK_TYPE;
+  }
+
+  /** Raw global DC configuration: `{ mode, value, formula, rarity }`. */
+  static getGemInsertionCheckDcConfig() {
+    return {
+      mode: GemCheckService.normalizeDcMode(
+        ModuleSettings.#getRegistered(ModuleSettings.SETTING_INSERTION_CHECK_DC_MODE, GemCheckService.DC_MODE_FIXED)
+      ),
+      value: Number(
+        ModuleSettings.#getRegistered(ModuleSettings.SETTING_INSERTION_CHECK_DC, GemCheckService.DEFAULT_DC)
+      ),
+      formula: String(
+        ModuleSettings.#getRegistered(
+          ModuleSettings.SETTING_INSERTION_CHECK_DC_FORMULA,
+          GemCheckService.DEFAULT_DC_FORMULA
+        ) ?? ""
+      ),
+      rarity: GemCheckService.normalizeRarityDcs(
+        ModuleSettings.#getRegistered(ModuleSettings.SETTING_INSERTION_CHECK_RARITY_DCS, {})
+      )
+    };
+  }
+
+  static getGemInsertionFailureOutcome() {
+    return Constants.normalizeInsertionFailureOutcome(
+      ModuleSettings.#getRegistered(ModuleSettings.SETTING_INSERTION_CHECK_FAILURE, ModuleSettings.INSERTION_FAILURE_KEEP)
+    ) || ModuleSettings.INSERTION_FAILURE_KEEP;
+  }
+
+  static getInsertionFailureChoices() {
+    return [
+      {
+        value: ModuleSettings.INSERTION_FAILURE_KEEP,
+        label: Constants.localize("SCSockets.Settings.InsertionCheck.Failure.Choices.Keep", "The gem stays in the inventory")
+      },
+      {
+        value: ModuleSettings.INSERTION_FAILURE_BREAK,
+        label: Constants.localize("SCSockets.Settings.InsertionCheck.Failure.Choices.Break", "The gem breaks")
+      },
+      {
+        value: ModuleSettings.INSERTION_FAILURE_LOSE,
+        label: Constants.localize("SCSockets.Settings.InsertionCheck.Failure.Choices.Lose", "The gem is lost")
       }
     ];
   }

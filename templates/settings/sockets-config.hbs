@@ -21,22 +21,23 @@
     </nav>
 
     <div class="sc-config__content">
-      {{!-- ── Tab · Socket rules ─────────────────────────────── --}}
+      {{!-- ── Tabs · Socket rules, Permissions, Gem checks ───── --}}
+      {{#each fieldPanels}}
       <section
-        id="{{formId}}-panel-rules"
+        id="{{../formId}}-panel-{{this.id}}"
         class="sc-config__panel"
         role="tabpanel"
-        aria-labelledby="{{formId}}-tab-rules"
-        data-tab-panel="rules"
-        {{#unless rules.active}}hidden{{/unless}}
+        aria-labelledby="{{../formId}}-tab-{{this.id}}"
+        data-tab-panel="{{this.id}}"
+        {{#unless this.active}}hidden{{/unless}}
       >
         <header class="sc-config__panel-head">
-          <h2 class="sc-config__panel-title">{{rules.title}}</h2>
-          <p class="sc-config__panel-hint">{{rules.hint}}</p>
+          <h2 class="sc-config__panel-title">{{this.title}}</h2>
+          <p class="sc-config__panel-hint">{{this.hint}}</p>
         </header>
 
         <div class="sc-config__rows">
-          {{#each rules.fields}}
+          {{#each this.fields}}
             {{#if this.sectionTitle}}
               <h3 class="sc-config__section-title">{{this.sectionTitle}}</h3>
             {{/if}}
@@ -123,6 +124,7 @@
           {{/each}}
         </div>
       </section>
+      {{/each}}
 
       {{!-- ── Tab · Display ──────────────────────────────────── --}}
       <section

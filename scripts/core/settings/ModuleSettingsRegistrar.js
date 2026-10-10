@@ -252,6 +252,16 @@ export class ModuleSettingsRegistrar {
     register(ModuleSettings.SETTING_REMOVAL_CHECK_RARITY_DCS, Object, { ...GemCheckService.DEFAULT_RARITY_DCS });
     register(ModuleSettings.SETTING_REMOVAL_CHECK_FAILURE, String, ModuleSettings.REMOVAL_FAILURE_BREAK);
     register(ModuleSettings.SETTING_REMOVAL_CHECK_GM, Boolean, false);
+
+    // The insertion check is opt-in the same way.
+    register(ModuleSettings.SETTING_INSERTION_CHECK_ENABLED, Boolean, false);
+    register(ModuleSettings.SETTING_INSERTION_CHECK_TYPE, String, ModuleSettings.DEFAULT_INSERTION_CHECK_TYPE);
+    register(ModuleSettings.SETTING_INSERTION_CHECK_DC_MODE, String, GemCheckService.DC_MODE_FIXED);
+    register(ModuleSettings.SETTING_INSERTION_CHECK_DC, Number, GemCheckService.DEFAULT_DC);
+    register(ModuleSettings.SETTING_INSERTION_CHECK_DC_FORMULA, String, GemCheckService.DEFAULT_DC_FORMULA);
+    register(ModuleSettings.SETTING_INSERTION_CHECK_RARITY_DCS, Object, { ...GemCheckService.DEFAULT_RARITY_DCS });
+    register(ModuleSettings.SETTING_INSERTION_CHECK_FAILURE, String, ModuleSettings.INSERTION_FAILURE_KEEP);
+    register(ModuleSettings.SETTING_INSERTION_CHECK_GM, Boolean, false);
   }
 
   #registerGemRollLayoutSetting() {
