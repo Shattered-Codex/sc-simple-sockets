@@ -124,6 +124,37 @@ describe("Gem damage formulas", () => {
     assert.equal(entry.source.name, "Monk Gem");
   });
 
+  test("crit multiplier does not create options on dnd5e damage configs", () => {
+    const handlers = {};
+    globalThis.Hooks.on = (name, handler) => { handlers[name] = handler; };
+    const gem = createTestItem({
+      type: "loot",
+      flags: { [Constants.MODULE_ID]: { [Constants.FLAG_GEM_CRIT_MULTIPLIER]: 3 } }
+    });
+    const host = createTestItem({
+      type: "weapon",
+      flags: {
+        [Constants.MODULE_ID]: {
+          [Constants.FLAGS.sockets]: [{ _slot: 0, _gemData: gem.toObject() }]
+        }
+      }
+    });
+    const config = {
+      subject: { item: host, type: "attack" },
+      rolls: [{ parts: ["1d8"], options: { type: "slashing" } }]
+    };
+
+    GemDamageService.activate();
+    try {
+      handlers["dnd5e.preRollDamage"](config);
+    } finally {
+      GemDamageService.deactivate();
+    }
+
+    assert.equal(config.options, undefined);
+    assert.equal(config.critical.multiplier, 3);
+  });
+
   test("rejects invalid custom formulas", () => {
     assert.equal(GemDamageService.buildFormula({
       custom: {

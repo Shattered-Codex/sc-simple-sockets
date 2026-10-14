@@ -109,12 +109,14 @@ Hooks.once("setup", () => {
   SocketUsesUI.activate();
   BrokenGemUI.activate();
   GemConcealmentService.activate();
-
+  // Must register before Automated Conditions 5e (ready / midi-qol.midiReady):
+  // AC5e snapshots config.rolls in its preRollDamage handler and later truncates
+  // the rolls back to that snapshot, dropping gem rolls appended after it.
+  GemDamageService.activate();
 });
 
 Hooks.once("ready", async () => {
   await DataMigration.run();
-  GemDamageService.activate();
   const mode = ModuleSettings.getGemRollLayoutMode();
   DamageRollGemLayout.activate({ mode });
   await maybeShowSupportCard();

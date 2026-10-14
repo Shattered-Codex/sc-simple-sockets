@@ -26,3 +26,12 @@ test("socket effect formulas activate during init, before actors apply their eff
   assert.ok(activation < firstAwait, "activation must happen before init's first await");
   assert.ok(activation < setupStart, "activation must not wait until setup");
 });
+
+test("gem damage hooks register during setup, before modules that hook damage rolls on ready", () => {
+  const setupStart = source.indexOf('Hooks.once("setup"');
+  const readyStart = source.indexOf('Hooks.once("ready"');
+  const activation = source.indexOf("GemDamageService.activate();");
+
+  assert.ok(activation > setupStart, "gem damage should activate inside setup");
+  assert.ok(activation < readyStart, "activation must not wait until ready");
+});

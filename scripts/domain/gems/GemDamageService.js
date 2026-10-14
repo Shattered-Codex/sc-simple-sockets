@@ -301,13 +301,16 @@ export class GemDamageService {
 
     // Also update the shared config so downstream merges see the multiplier.
     config.isCritical ||= GemDamageService.#isCriticalAction(config, rolls[0], { strict: true });
-    config.options ??= {};
-    config.options.isCritical ??= config.isCritical;
     config.critical ??= {};
     config.critical.multiplier = Math.max(
       Number.isFinite(config.critical.multiplier) ? config.critical.multiplier : 2,
       multiplier
     );
+
+    // dnd5e damage configs have no `options`; creating one makes Automated
+    // Conditions 5e store a partial config there and crash on dialog render.
+    if (!config.options) return;
+    config.options.isCritical ??= config.isCritical;
     config.options.critical ??= {};
     config.options.critical.multiplier = Math.max(
       Number.isFinite(config.options.critical.multiplier) ? config.options.critical.multiplier : 2,

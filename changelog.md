@@ -57,6 +57,7 @@
 - Fixed follow-up clicks leaking through after an item-selection prompt completes.
 - Updated support UI and sheet refresh compatibility for Foundry VTT v14 APIs.
 - Fixed the +Details tab so the critical threshold, critical multiplier, and attack bonus controls no longer duplicate labels or inject extra interface text into the interface.
+- Socketed gem extra damage is no longer dropped from weapon damage rolls when Automated Conditions 5e is active, and gems with a critical multiplier no longer break the Automated Conditions 5e damage dialog.
 
 ## 2.0.7
 
