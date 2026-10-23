@@ -79,10 +79,10 @@ export class SocketContentVisibilityUI {
 
   static renderChat(message, root) {
     if (!root?.querySelectorAll) return;
-    const activity = message.getAssociatedActivity?.()
+    const activity = this.#associated(message, "getAssociatedActivity")
       ?? Content.resolve(message.getFlag?.("dnd5e", "activity.uuid"));
     this.#toggle(root.closest?.(".message") ?? root, Content.documentHidden(activity));
-    const item = message.getAssociatedItem?.();
+    const item = this.#associated(message, "getAssociatedItem") ?? activity?.item;
     for (const row of root.querySelectorAll(ROWS)) {
       const hidden = this.#rowHidden(row, item);
       this.#toggle(row, hidden);
@@ -91,6 +91,15 @@ export class SocketContentVisibilityUI {
       const rows = Array.from(section.querySelectorAll(ROWS));
       section.classList.toggle("sc-sockets-hidden-section", rows.length > 0 && rows.every((row) => row.classList.contains(this.HIDDEN_CLASS)));
     }
+  }
+
+  /**
+   * dnd5e's message lookups can throw: on midi-qol roll cards `system.origin` is a
+   * bare message ID, and dnd5e calls a private method on it when the item is gone.
+   */
+  static #associated(message, lookup) {
+    try { return message[lookup]?.() ?? null; }
+    catch { return null; }
   }
 
   /** Framework class rewrites cannot remove our visibility attribute. */

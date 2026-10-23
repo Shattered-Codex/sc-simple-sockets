@@ -142,6 +142,26 @@ test("chat cards respect the viewing user and restore after revealing the socket
   assert.equal(f.root.classList.contains(UI.HIDDEN_CLASS), false);
 });
 
+test("midi roll cards whose dnd5e lookups throw still conceal hidden content from the activity flag", () => {
+  const f = fixture();
+  f.root.classList.add("message");
+  // dnd5e 6 calls a private method on `system.origin`, which midi sets to a bare message ID.
+  class ChatMessage5e {
+    system = { origin: "originCardId" };
+    #storedItemData() {}
+    getAssociatedItem() { return this.system.origin.#storedItemData(); }
+    getAssociatedActivity() { return this.getAssociatedItem(); }
+    getFlag(scope, key) { return scope === "dnd5e" && key === "activity.uuid" ? "Item.weapon.Activity.gem" : undefined; }
+  }
+  globalThis.fromUuidSync = (uuid) => (uuid === "Item.weapon.Activity.gem" ? f.activity : null);
+  const message = new ChatMessage5e();
+  assert.throws(() => message.getAssociatedActivity(), TypeError);
+  UI.renderChat(message, f.root);
+  assert.equal(f.root.classList.contains(UI.HIDDEN_CLASS), true);
+  assert.equal(f.rows[0].hasAttribute(UI.HIDDEN_ATTRIBUTE), true);
+  assert.equal(f.rows[1].hasAttribute(UI.HIDDEN_ATTRIBUTE), false);
+});
+
 test("mixed chat cards hide only the hidden activity and its empty section", () => {
   const f = fixture();
   f.root.innerHTML = '<section class="activities"><li data-activity-uuid="hidden">Fire</li></section><p>Ordinary item content</p>';
