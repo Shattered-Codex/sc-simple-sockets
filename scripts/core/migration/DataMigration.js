@@ -1,4 +1,5 @@
 import { Compatibility } from "../support/Compatibility.js";
+import { Dnd5eEffectCompatibility } from "../support/Dnd5eEffectCompatibility.js";
 import { Constants } from "../Constants.js";
 import { ItemResolver } from "../ItemResolver.js";
 import { GemCriteria } from "../../domain/gems/GemCriteria.js";
@@ -20,7 +21,7 @@ export class DataMigration {
    * Bump this string whenever a new migration is added.
    * Format: "<module-version>-<short-description>"
    */
-  static #CURRENT_VERSION = "2.0.8-gem-subtype-flags";
+  static #CURRENT_VERSION = "2.0.28-socketed-enchantment-transfer";
 
   /** Entry point — call once from the `ready` hook (GM only). */
   static async run() {
@@ -37,6 +38,7 @@ export class DataMigration {
       await DataMigration.#migrateLootActivityFields();
       await DataMigration.#migrateSocketGemSnapshots();
       await DataMigration.#migrateGemSubtypeFlags();
+      await DataMigration.#migrateSocketedEnchantmentTransfer();
     } catch (e) {
       console.error(`[${Constants.MODULE_ID}] | Migration failed, will retry on next load:`, e);
       return;
@@ -234,9 +236,17 @@ export class DataMigration {
 
   static #collectAllItemsWithSockets() {
     const worldItems = [...(game.items ?? [])];
-    const actorItems = [...(game.actors ?? [])]
+    const actorItems = [...(game.actors ?? []), ...DataMigration.#collectUnlinkedTokenActors()]
       .flatMap((actor) => [...(actor?.items ?? [])]);
     return [...worldItems, ...actorItems];
+  }
+
+  /** Unlinked tokens own synthetic actors whose items are not in `game.actors`. */
+  static #collectUnlinkedTokenActors() {
+    return [...(game.scenes ?? [])]
+      .flatMap((scene) => [...(scene?.tokens ?? [])])
+      .filter((token) => !token.actorLink && token.actor)
+      .map((token) => token.actor);
   }
 
   static async #migrateGemSubtypeFlags() {
@@ -294,6 +304,42 @@ export class DataMigration {
       } catch (error) {
         console.warn(`[${Constants.MODULE_ID}] | Failed to migrate gem subtype flag for "${item.name}" (${item.uuid}):`, error);
       }
+    }
+  }
+
+  /**
+   * Enables `transfer` on socketed gem enchantments copied before dnd5e 6
+   * support, so they apply to their host item again.
+   *
+   * Worlds still on dnd5e 5.x are skipped: dnd5e 6 migrates applied
+   * enchantments on its own when the system is upgraded.
+   *
+   * Throws after attempting every item if any update failed, so the migration
+   * version is not stored and the next load retries.
+   */
+  static async #migrateSocketedEnchantmentTransfer() {
+    if (!Dnd5eEffectCompatibility.enchantmentAppliesViaTransfer()) return;
+
+    let failures = 0;
+    for (const item of DataMigration.#collectAllItemsWithSockets()) {
+      const updates = (item.effects?.contents ?? [])
+        .filter((effect) => effect.type === "enchantment"
+          && effect.flags?.[Constants.MODULE_ID]?.[Constants.FLAG_SOURCE_GEM]
+          && !effect.transfer
+          && !effect.system?.isOnActivity)
+        .map((effect) => ({ _id: effect.id, transfer: true }));
+      if (!updates.length) continue;
+
+      try {
+        await item.updateEmbeddedDocuments("ActiveEffect", updates);
+      } catch (error) {
+        failures++;
+        console.warn(`[${Constants.MODULE_ID}] | Failed to migrate socketed enchantments for "${item.name}" (${item.uuid}):`, error);
+      }
+    }
+
+    if (failures) {
+      throw new Error(`Failed to migrate socketed enchantments on ${failures} item(s).`);
     }
   }
 }

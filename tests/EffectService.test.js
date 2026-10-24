@@ -59,3 +59,48 @@ describe("EffectService activity references", () => {
     assert.equal(copied.transfer, true);
   });
 });
+
+describe("EffectService enchantments", () => {
+  beforeEach(() => installFoundryStubs());
+  afterEach(() => clearFoundryStubs());
+
+  async function copyEnchantment(systemVersion, activityEffects = []) {
+    globalThis.game.system = { version: systemVersion };
+    let copied;
+    const gem = {
+      uuid: "Item.gem",
+      effects: { contents: [{
+        id: "enchant",
+        uuid: "Item.gem.ActiveEffect.enchant",
+        toObject: () => ({ _id: "enchant", name: "+1", type: "enchantment", transfer: false, disabled: true })
+      }] },
+      system: { activities: { contents: [{ toObject: () => ({ effects: activityEffects }) }] } }
+    };
+    await EffectService.applyGemEffects({
+      uuid: "Item.host",
+      async createEmbeddedDocuments(_type, data) {
+        copied = data[0];
+        return [{ id: "copy" }];
+      }
+    }, 0, gem);
+    return copied;
+  }
+
+  test("applies a socketed enchantment through transfer on dnd5e 6", async () => {
+    const copied = await copyEnchantment("6.0.6");
+    assert.equal(copied.transfer, true);
+    assert.equal(copied.disabled, false);
+    assert.equal(copied.origin, "Item.gem.ActiveEffect.enchant");
+  });
+
+  test("keeps socketed enchantments non-transferable on dnd5e 5", async () => {
+    const copied = await copyEnchantment("5.3.0");
+    assert.equal(copied.transfer, false);
+    assert.equal(copied.origin, "Item.gem.ActiveEffect.enchant");
+  });
+
+  test("keeps an enchant activity profile unapplied on dnd5e 6", async () => {
+    const copied = await copyEnchantment("6.0.6", [{ _id: "enchant" }]);
+    assert.equal(copied.transfer, false);
+  });
+});

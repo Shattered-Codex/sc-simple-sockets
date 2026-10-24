@@ -93,7 +93,72 @@ describe("DataMigration", () => {
 
     assert.equal(
       globalThis.game.settings.get(Constants.MODULE_ID, DataMigration.SETTING_MIGRATION_VERSION),
-      "2.0.8-gem-subtype-flags"
+      "2.0.28-socketed-enchantment-transfer"
+    );
+  });
+
+  test("enables transfer on socketed gem enchantments on dnd5e 6", async () => {
+    globalThis.game.system = { version: "6.0.6" };
+    const sourceGem = { [Constants.MODULE_ID]: { [Constants.FLAG_SOURCE_GEM]: { slot: 0 } } };
+    const effects = [
+      { id: "socketed", type: "enchantment", transfer: false, flags: sourceGem },
+      { id: "profile", type: "enchantment", transfer: false, flags: sourceGem, system: { isOnActivity: true } },
+      { id: "native", type: "enchantment", transfer: false, flags: {} }
+    ];
+    let updates;
+    globalThis.game.items.set("host", {
+      id: "host",
+      effects: { contents: effects },
+      getFlag() {},
+      async updateEmbeddedDocuments(_type, data) {
+        updates = data;
+      }
+    });
+
+    await DataMigration.run();
+
+    assert.deepEqual(updates, [{ _id: "socketed", transfer: true }]);
+  });
+
+  function createEnchantedHost(id, updateEmbeddedDocuments) {
+    const sourceGem = { [Constants.MODULE_ID]: { [Constants.FLAG_SOURCE_GEM]: { slot: 0 } } };
+    return {
+      id,
+      effects: { contents: [{ id: "socketed", type: "enchantment", transfer: false, flags: sourceGem }] },
+      getFlag() {},
+      updateEmbeddedDocuments
+    };
+  }
+
+  test("migrates socketed enchantments on unlinked token actors", async () => {
+    globalThis.game.system = { version: "6.0.6" };
+    let updates;
+    const tokenItem = createEnchantedHost("token-host", async (_type, data) => {
+      updates = data;
+    });
+    globalThis.game.scenes = [{
+      tokens: [
+        { actorLink: false, actor: { items: [tokenItem] } },
+        { actorLink: true, actor: actor }
+      ]
+    }];
+
+    await DataMigration.run();
+
+    assert.deepEqual(updates, [{ _id: "socketed", transfer: true }]);
+  });
+
+  test("does not store the migration version when a socketed enchantment update fails", async () => {
+    globalThis.game.system = { version: "6.0.6" };
+    globalThis.game.items.set("host", createEnchantedHost("host", async () => {
+      throw new Error("update failed");
+    }));
+
+    await DataMigration.run();
+
+    assert.equal(
+      globalThis.game.settings.get(Constants.MODULE_ID, DataMigration.SETTING_MIGRATION_VERSION),
+      ""
     );
   });
 });

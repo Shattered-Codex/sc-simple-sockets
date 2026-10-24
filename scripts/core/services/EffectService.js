@@ -1,5 +1,6 @@
 import { ItemResolver } from "../ItemResolver.js";
 import { Dnd5eActivityCompatibility } from "../support/Dnd5eActivityCompatibility.js";
+import { Dnd5eEffectCompatibility } from "../support/Dnd5eEffectCompatibility.js";
 import { Constants } from "../Constants.js";
 
 export class EffectService {
@@ -20,7 +21,9 @@ export class EffectService {
       data.img ||= identity.img;
       data.disabled = false;
       if (EffectService.#isEnchantmentEffect(data)) {
-        data.transfer = false;
+        // Enchant activity profiles must stay unapplied on the host item.
+        data.transfer = Dnd5eEffectCompatibility.enchantmentAppliesViaTransfer()
+          && !activityEffectIds.has(eff.id);
         data.origin = EffectService.#getAppliedEnchantmentOrigin(data, eff, gemItem, hostItem);
         data.flags ??= {};
         data.flags.dnd5e ??= {};
