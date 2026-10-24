@@ -17,7 +17,21 @@ export class Dnd5eEffectCompatibility {
    * @returns {object} A `type` (dnd5e 6.x) or `mode` (dnd5e 5.x) property.
    */
   static getAttributionOperation() {
-    const systemMajor = Number.parseInt(globalThis.game?.system?.version ?? "", 10);
-    return systemMajor >= 6 ? { type: "add" } : { mode: 2 };
+    return Dnd5eEffectCompatibility.#isDnd5eV6OrNewer() ? { type: "add" } : { mode: 2 };
+  }
+
+  /**
+   * dnd5e 6 applies an enchantment to its parent item only when `transfer` is true.
+   * dnd5e 5.x applies it when its origin differs from the parent, and expects
+   * `transfer` to be false.
+   *
+   * @returns {boolean}
+   */
+  static enchantmentAppliesViaTransfer() {
+    return Dnd5eEffectCompatibility.#isDnd5eV6OrNewer();
+  }
+
+  static #isDnd5eV6OrNewer() {
+    return Number.parseInt(globalThis.game?.system?.version ?? "", 10) >= 6;
   }
 }

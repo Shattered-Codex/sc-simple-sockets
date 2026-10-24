@@ -58,6 +58,7 @@
 - Updated support UI and sheet refresh compatibility for Foundry VTT v14 APIs.
 - Fixed the +Details tab so the critical threshold, critical multiplier, and attack bonus controls no longer duplicate labels or inject extra interface text into the interface.
 - Socketed gem extra damage is no longer dropped from weapon damage rolls when Automated Conditions 5e is active, and gems with a critical multiplier no longer break the Automated Conditions 5e damage dialog.
+- Enchantment effects on socketed gems (such as a +1 magical bonus) apply to the host item again with dnd5e 6. Items socketed before this fix are migrated automatically when the GM loads the world.
 - Midi-QOL roll cards no longer raise "Receiver must be an instance of class ChatMessage5e" errors on render with dnd5e 6, and hidden socket content on those cards stays hidden from players.
 
 ## 2.0.7
